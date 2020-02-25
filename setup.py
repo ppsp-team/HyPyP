@@ -12,7 +12,7 @@ setup(
     license = "BSD",
     keywords = "hyperscanning EEG",
     url = "https://github.com/GHFC/HyPyR",
-    packages=['hypy'],
+    packages=['hypyr'],
     classifiers=[
         "Development Status :: 1 - Planning",
         "Topic :: Scientific/Engineering",
