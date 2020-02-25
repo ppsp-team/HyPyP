@@ -2,7 +2,7 @@ import os
 from setuptools import setup
 
 setup(
-    name = "HyPy",
+    name = "HyPyR",
     version = "0.1",
     author = "Florence BRUN, Anaël AYROLLLES, Guillaume DUMAS",
     author_email = "florence.brun@pasteur.fr, anael.ayrollles@pasteur.fr, guillaume.dumas@pasteur.fr",
@@ -11,7 +11,7 @@ setup(
     description = "A hyperscanning toolkit in Python.",
     license = "BSD",
     keywords = "hyperscanning EEG",
-    url = "https://github.com/GHFC/HyPy",
+    url = "https://github.com/GHFC/HyPyR",
     packages=['hypy'],
     classifiers=[
         "Development Status :: 1 - Planning",
