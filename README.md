@@ -1,2 +1,2 @@
 # HyPyP
-A hyperscanning toolkit in Python
+The **Hy**perscanning **Py**thon **P**ipeline
