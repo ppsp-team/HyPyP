@@ -10,17 +10,11 @@
 # ==============================================================================
 
 import mne
-from mne.stats import permutation_t_test, permutation_cluster_1samp_test
 import numpy as np
-from mne.viz import plot_topomap
-import matplotlib.pyplot as plt
-import statistics
 
 
 def statsCond(PSDs_task_normLog, Epochs_task, n_permutations, alpha_bonferroni, alpha):
-    """
-    Compute statistical t test on Power Spectral Density values for a condition.
-
+    """Compute statistical t test on Power Spectral Density values for a condition.
 
     Note that this ttest calculates if the observed mean significantly deviates
     from 0, it does not compare two periods, but one period with the null hypothesis.
@@ -33,7 +27,6 @@ def statsCond(PSDs_task_normLog, Epochs_task, n_permutations, alpha_bonferroni, 
 
     Note that the frequency dimension is reduced to one for the test (average in the
     frequency band-of-interest). To take frequencies into account, use cluster statistics.
-
 
     Parameters
     -----
@@ -51,11 +44,9 @@ def statsCond(PSDs_task_normLog, Epochs_task, n_permutations, alpha_bonferroni, 
 
     alpha: the threhold for ttest, int. Can be set to 0.05.
 
-
     Plot
     -----
     topomap with T_statistic for the significant sensors.
-
 
     Returns
     -----
