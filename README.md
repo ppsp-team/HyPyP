@@ -29,5 +29,3 @@ Florence BRUN, Anaël AYROLLLES, Phoebe CHEN, Amir DJALOVSKI, Suzanne DIKKER, Gu
 ```
 pip install PyPyP
 ```
-
-## Getting started
