@@ -2,6 +2,8 @@
 
 The **Hy**perscanning **Py**thon **P**ipeline
 
+[![Gitter](https://badges.gitter.im/GHFC/HyPyP.svg)](https://gitter.im/GHFC/HyPyP)
+
 ## Roadmap
 
 🛠 Loaders & basic tools
