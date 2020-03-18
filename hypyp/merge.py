@@ -26,7 +26,8 @@ Epochs are MNE objects (data are stored in an array of shape
 
 Returns
 -----
-ep_hyper : Epochs object for the dyad (with merged data of the 2 subject aligned).
+ep_hyper : Epochs object for the dyad (with merged data of the 2 subjects). The time alignement has 
+been done qt raw data creation.
 
 """
 
