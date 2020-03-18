@@ -8,11 +8,11 @@ The **Hy**perscanning **Py**thon **P**ipeline
 
 ⚙️ Preprocessing (ICA & AutoReject)
 
-🔠 Wide choice of connectivity
+🔠 Wide choice of connectivity measures
 
-📈 Statistics (e.g. permutations, cluster analyses)
+📈 Statistics (permutations & cluster statistics)
 
-🧠 Inter-brain visualization.
+🧠 Inter-brain visualization
 
 
 ## Installation
