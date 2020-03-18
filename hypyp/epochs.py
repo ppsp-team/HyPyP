@@ -11,21 +11,21 @@ Compute epochs from raws and vizualize PSD on average epochs.
 
 Parameters
 -----
-raw_S1, raw_S2 : list of raws for each subject (for example first raw for subject 1 
-corresponds to the baseline, second raw corresponds to the task). Raws are MNE objects
-(data are ndarray and info is a disctionnary sampling parameters).
+raw_S1, raw_S2 : list of raws for each subject (with the different occurences of
+a condition, for example the baseline, across different experiments. The length can be 1). 
+Raws are MNE objects (data are ndarray with shape (n_channels, n_times) 
+and info is a disctionnary sampling parameters).
 
 freq_bands : list of tuple summarizing frequency bands-of-interest.
 
 Plots
 -----
 Power spectral density calculated with welch FFT for each epoch and each subject, 
-average in each frequency band-of-interest.
+averaged in each frequency band-of-interest.
 
 Returns
 -----
-List of epochs (for example first epoch for subject 1 corresponds to the baseline, 
-second epoch corresponds to the task) for each subject.
+List of epochs for each subject.
 
 """
 
