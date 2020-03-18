@@ -34,7 +34,7 @@ thresh = 0.99
 plt.figure(figsize=(10, 20))
 plt.gca().set_aspect('equal', 'box')
 plt.axis('off')
-plot_sensors_2d(loc1, loc2)
+plot_sensors_2d(loc1, loc2, lab1, lab2)
 plot_links_2d(loc1, loc2, C, threshold=0.9, steps=10)
 plt.tight_layout()
 plt.show()
