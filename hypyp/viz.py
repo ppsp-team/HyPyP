@@ -3,7 +3,7 @@
 # ==============================================================================
 # title           : viz.py
 # description     : basic visualization functions
-# author          : Guillaume Dumas
+# author          : Guillaume Dumas, Amir Djalovski
 # date            : 2020-03-18
 # version         : 1
 # python_version  : 3.7
