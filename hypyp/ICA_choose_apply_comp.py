@@ -27,7 +27,7 @@ List of 2 clean Epochs (for each subject).
 """
 
 
-def choice_ICA_comp(icas, epochs):
+def ICA_choice_comp(icas, epochs):
 
     ## plotting Independant Components for each subject
     for ica in icas:
