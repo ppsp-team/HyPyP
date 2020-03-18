@@ -18,35 +18,35 @@ from mne.time_frequency import psd_welch
 
 def PSD(epochs_baseline, epochs_task, fmin, fmax):
     """
-    Compute Power Spectral Density calculation on Epochs for a condition and the baseline,
-    normalize PSD in the condition by the baseline.
-
+    Compute the Power Spectral Density (PSD) on Epochs for a condition and
+    normalize by the PSD of the baseline.
 
     Parameters
     -----
-    epochs_baseline, epochs_task : Epochs object for the baseline and a condition
-    ('task' for example), for a subject. epochs_baseline, epochs_task can result
+    epochs_baseline, epochs_task : Epochs for the baseline and the condition
+    ('task' for example), for a subject. epochs_baseline, epochs_task result
     from the concatenation of epochs from different occurences of the condition
-    across experiments. Epochs are MNE objects (data are stored in an array of shape
-    (n_epochs, n_channels, n_times) and info is a disctionnary sampling parameters).
-
+    across experiments. Epochs are MNE objects (data are stored in arrays of
+    shape (n_epochs, n_channels, n_times) and info are into a dictionnary).
 
     Note that the function can be iterated on the group and/or on conditions:
-    for epochs_baseline,epochs_task in zip(epochs['epochs_%s_%s_%s_baseline'
-    % (subj,group,cond_name)], epochs['epochs_%s_%s_%s_task' % (subj,group,cond_name)]).
+    for epochs_baseline, epochs_task in zip(
+        epochs['epochs_%s_%s_%s_baseline' % (subj, group, cond_name)],
+        epochs['epochs_%s_%s_%s_task' % (subj, group, cond_name)]).
 
-    You can then visualize PSD distribution on the group with the toolbox vizualisation
-    to check normality for statistics for example.
+    You can then visualize PSD distribution on the group with the toolbox
+    vizualisation to check normality for statistics for example.
 
-    fmin, fmax : minimum and maximum frequencies for Power Spectral Density calculation (in Hz).
+    fmin, fmax : minimum and maximum frequencies for PSD (in Hz).
 
     Returns
     -----
-    m_baseline, psds_welch_task_m : ndarray, PSD average across epochs for each channel and each frequency,
-    for baseline and 'task' condition respectively.
+    m_baseline, psds_welch_task_m : ndarray
+    PSD average across epochs for each channel and each frequency,
+    for the baseline and the 'task' condition respectively.
 
-    psd_mean_task_normZ, psd_mean_task_normLog : ndarray, Zscore and Logratio of average PSD
-    during 'task' condition (normalisation by baseline condition).
+    psd_mean_task_normZ, psd_mean_task_normLog : ndarray
+    Zscore and Logratio of the average PSD during 'task' condition
     """
     # dropping EOG channels (incompatible with connectivity map model in stats)
     for ch in epochs_baseline.info['chs']:
