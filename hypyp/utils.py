@@ -8,8 +8,7 @@
 # version         : 1
 # python_version  : 3.7
 # ==============================================================================
-import copy
-import matplotlib.pyplot as plt
+
 import numpy as np
 import pandas as pd
 import mne
@@ -42,7 +41,7 @@ def create_epochs(raw_S1, raw_S2, freq_bands):
     epoch_S1 = []
     epoch_S2 = []
 
-    for raw1,raw2 in zip(raw_S1,raw_S2):
+    for raw1, raw2 in zip(raw_S1, raw_S2):
         # creating fixed events
         fixed_events1 = mne.make_fixed_length_events(raw1, id=1, start=0, stop=None, duration=1.0, first_samp=True, overlap=0.0)
         fixed_events2 = mne.make_fixed_length_events(raw2, id=1, start=0, stop=None, duration=1.0, first_samp=True, overlap=0.0)
@@ -86,15 +85,15 @@ def merge(epoch_S1, epoch_S2):
     ep_hyper : Epochs object for the dyad (with merged data of the 2 subjects). The time alignement has been done qt raw data creation.
     """
     # checking bad ch for epochs, interpolating and removing them from 'bads' if needed
-    if len(epoch_S1_concat.info['bads']) > 0:
-        epoch_S1_concat = mne.Epochs.interpolate_bads(
-            epoch_S1_concat, reset_bads=True, mode='accurate', origin='auto', verbose=None)  # head-digitization-based origin fit
-    if len(epoch_S2_concat.info['bads']) > 0:
-        epoch_S2_concat = mne.Epochs.interpolate_bads(
-            epoch_S2_concat, reset_bads=True, mode='accurate', origin='auto', verbose=None)
+    if len(epoch_S1.info['bads']) > 0:
+        epoch_S1 = mne.Epochs.interpolate_bads(
+            epoch_S1, reset_bads=True, mode='accurate', origin='auto', verbose=None)  # head-digitization-based origin fit
+    if len(epoch_S2.info['bads']) > 0:
+        epoch_S2 = mne.Epochs.interpolate_bads(
+            epoch_S2, reset_bads=True, mode='accurate', origin='auto', verbose=None)
 
-    sfreq = epoch_S1_concat[0].info['sfreq']
-    ch_names = epoch_S1_concat[0].info['ch_names']
+    sfreq = epoch_S1[0].info['sfreq']
+    ch_names = epoch_S1[0].info['ch_names']
 
     # creating channels label for each subject
     ch_names1 = []
@@ -106,10 +105,10 @@ def merge(epoch_S1, epoch_S2):
 
     merges = []
 
-    ## picking data per epoch
-    for l in range(0, len(epoch_S1_concat)):
-        data_S1 = epoch_S1_concat[l].get_data()
-        data_S2 = epoch_S2_concat[l].get_data()
+    # picking data per epoch
+    for l in range(0, len(epoch_S1)):
+        data_S1 = epoch_S1[l].get_data()
+        data_S2 = epoch_S2[l].get_data()
 
         data_S1 = np.squeeze(data_S1, axis=0)
         data_S2 = np.squeeze(data_S2, axis=0)
@@ -117,12 +116,12 @@ def merge(epoch_S1, epoch_S2):
         dicdata1 = {i: data_S1[:, i] for i in range(0, len(data_S1[0, :]))}
         dicdata2 = {i: data_S2[:, i] for i in range(0, len(data_S2[0, :]))}
 
-        ## creating dataframe to merge data for each time point
+        # creating dataframe to merge data for each time point
         dataframe1 = pd.DataFrame(dicdata1, index=ch_names1)
         dataframe2 = pd.DataFrame(dicdata2, index=ch_names2)
         merge = pd.concat([dataframe1, dataframe2])
 
-        ## reconverting to array and joining the info file
+        # reconverting to array and joining the info file
         merge_arr = merge.to_numpy()
         merges.append(merge_arr)
 
@@ -133,7 +132,7 @@ def merge(epoch_S1, epoch_S2):
     ep_hyper = mne.EpochsArray(merged, info)
 
     # info about task
-    ep_hyper.info['description'] = epoch_S1_concat[0].info['description']
+    ep_hyper.info['description'] = epoch_S1[0].info['description']
 
     # ep_hyper.plot()
 
