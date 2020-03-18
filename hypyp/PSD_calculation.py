@@ -33,10 +33,10 @@ fmin, fmax : minimum and maximum frequencies for Power Spectral Density calculat
 
 Returns 
 -----
-m_baseline, psds_welch_task_m : PSD average across epochs for each channel and each frequency,
+m_baseline, psds_welch_task_m : ndarray, PSD average across epochs for each channel and each frequency,
 for baseline and 'task' condition respectively.
 
-psd_mean_task_normZ, psd_mean_task_normLog : Zscore and Logratio of average PSD 
+psd_mean_task_normZ, psd_mean_task_normLog : ndarray, Zscore and Logratio of average PSD 
 during 'task' condition (normalisation by baseline condition).
 
 """
