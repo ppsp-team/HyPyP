@@ -43,7 +43,7 @@ for more details.
 """
 
 
-def ICA_comp(epochs, n_components, method, random_state):
+def ICA_fit(epochs, n_components, method, random_state):
 
     icas = []
     for epoch in epochs: # per subj
