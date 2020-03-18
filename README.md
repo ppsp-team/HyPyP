@@ -11,7 +11,7 @@ Florence BRUN, Anaël AYROLLLES, Phoebe CHEN, Amir DJALOVSKI, Suzanne DIKKER, Gu
 
 🛠 [io.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/io.py) — Loaders (Florence, Anaël, Guillaume)
 
-🧰 [utils.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/utils.py) — basic tools (Amir, Florence, Guilaume)
+🧰 [utils.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/utils.py) — Basic tools (Amir, Florence, Guilaume)
 
 ⚙️ [prep.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/prep.py) — Preprocessing (ICA & AutoReject) (Anaël, Florence, Guillaume)
 
