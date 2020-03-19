@@ -131,6 +131,7 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
     
     Parameters
     ----------
+    ax : Matplotlib axis created with projection='3d'
     loc1, loc2 : arrays of shape (n_sensors, 3)
                  3d coordinates of the sensors
     lab1, lab2 : lists of strings
@@ -143,7 +144,7 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
             x1, y1, z1 = loc1[idx1, :]
             ax.scatter(x1, y1, z1, marker='o', color='blue')
             if lab1:
-                plt.text(x1, y1 ,z1, lab1[idx1],
+                ax.text(x1, y1 ,z1, lab1[idx1],
                         horizontalalignment='center',
                         verticalalignment='center')
 
@@ -151,16 +152,17 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
         x2, y2, z2 = loc2[idx2, :]
         ax.scatter(x2, y2, z2, marker='o', color='red')
         if lab2:
-            plt.text(x2, y2, z2, lab2[idx2],
+            ax.text(x2, y2, z2, lab2[idx2],
                     horizontalalignment='center',
                     verticalalignment='center')
 
 
-def plot_links_3d(loc1, loc2, C, threshold=0.95, steps=10):
+def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
     """Plot hyper-conenctivity in 3D.
     
     Parameters
     ----------
+    ax : Matplotlib axis created with projection='3d'
     loc1, loc2 : arrays of shape (n_sensors, 3)
                  3d coordinates of the sensors
     C : array, (len(loc1), len(loc2))
@@ -177,10 +179,10 @@ def plot_links_3d(loc1, loc2, C, threshold=0.95, steps=10):
     None : plot the links in 3D within the current axis.
     """
     ctr1 = np.nanmean(loc1, 0)
+    ctr1[2] -= 0.2
     ctr2 = np.nanmean(loc2, 0)
+    ctr2[2] -= 0.2
 
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
         y1 = loc1[e1, 1]
@@ -188,7 +190,7 @@ def plot_links_3d(loc1, loc2, C, threshold=0.95, steps=10):
         for e2 in range(len(loc2)):
             x2 = loc2[e2, 0]
             y2 = loc2[e2, 1]
-            z1 = loc2[e1, 2]
+            z2 = loc2[e2, 2]
             if C[e1, e2] >= threshold:
                 if steps <= 2:
                     ax.plot([loc1[e1, 0], loc2[e2, 0]],
@@ -217,12 +219,12 @@ def plot_links_3d(loc1, loc2, C, threshold=0.95, steps=10):
                                3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
                                b**3 * y2)
                         zn = ((1-a)**3 * z1 +
-                              3 * (1-a)**2 * a * (2 * z1 - ctr1[1]) +
-                              3 * (1-a) * a**2 * (2 * z2 - ctr2[1]) +
+                              3 * (1-a)**2 * a * (2 * z1 - ctr1[2]) +
+                              3 * (1-a) * a**2 * (2 * z2 - ctr2[2]) +
                               a**3 * z2)
                         znn = ((1-b)**3 * z1 +
-                               3 * (1-b)**2 * b * (2 * z1 - ctr1[1]) +
-                               3 * (1-b) * b**2 * (2 * z2 - ctr2[1]) +
+                               3 * (1-b)**2 * b * (2 * z1 - ctr1[2]) +
+                               3 * (1-b) * b**2 * (2 * z2 - ctr2[2]) +
                                b**3 * z2)
                         ax.plot([xn, xnn], [yn, ynn], [zn, znn],
                                  '-', color='black')
