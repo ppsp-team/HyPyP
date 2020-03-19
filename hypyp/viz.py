@@ -139,24 +139,21 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
     -------
     None : plot the sensors in 3D within the current axis.
     """
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-for idx1 in range(len(loc1)):
-        x1, y1, z1 = loc1[idx1, :]
-        ax.scatter(x1, y1, z1, marker='o', color='blue')
-        if lab1:
-            plt.text(x1, y1 ,z1, lab1[idx1],
-                     horizontalalignment='center',
-                     verticalalignment='center')
+    for idx1 in range(len(loc1)):
+            x1, y1, z1 = loc1[idx1, :]
+            ax.scatter(x1, y1, z1, marker='o', color='blue')
+            if lab1:
+                plt.text(x1, y1 ,z1, lab1[idx1],
+                        horizontalalignment='center',
+                        verticalalignment='center')
 
-for idx2 in range(len(loc2)):
-    x2, y2, z2 = loc2[idx2, :]
-    ax.scatter(x2, y2, z2, marker='o', color='red')
-    if lab2:
-        plt.text(x2, y2, z2, lab2[idx2],
-                 horizontalalignment='center',
-                 verticalalignment='center')
-
+    for idx2 in range(len(loc2)):
+        x2, y2, z2 = loc2[idx2, :]
+        ax.scatter(x2, y2, z2, marker='o', color='red')
+        if lab2:
+            plt.text(x2, y2, z2, lab2[idx2],
+                    horizontalalignment='center',
+                    verticalalignment='center')
 
 
 def plot_links_3d(loc1, loc2, C, threshold=0.95, steps=10):
