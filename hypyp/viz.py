@@ -126,8 +126,8 @@ def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
                                  '-', color='black')
 
 
-def plot_sensors_3d(loc1, loc2, lab1=[], lab2=[]):
-    """Plot sensors in 2D.
+def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
+    """Plot sensors in 3D.
     
     Parameters
     ----------
