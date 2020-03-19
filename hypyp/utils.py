@@ -16,43 +16,47 @@ from mne.io.constants import FIFF
 
 
 def create_epochs(raw_S1, raw_S2, freq_bands):
-    """
-    Compute epochs from raws and vizualize PSD on average epochs.
-
+    """Compute epochs from raws and vizualize PSD on average epochs.
     Parameters
     -----
-    raw_S1, raw_S2 : list of raws for each subject (with the different occurences of
-    a condition, for example the baseline, across different experiments. The length can be 1).
+    raw_S1, raw_S2 : list of raws for each subject (with the different
+    occurences of a condition, for example the baseline, across different
+    experiments. The length can be 1).
     Raws are MNE objects (data are ndarray with shape (n_channels, n_times)
-    and info is a disctionnary sampling parameters).
-
+    and info is a dictionnary sampling parameters).
     freq_bands : list of tuple summarizing frequency bands-of-interest.
-
     Plots
     -----
-    Power spectral density calculated with welch FFT for each epoch and each subject,
-    averaged in each frequency band-of-interest.
-
+    Power spectral density calculated with welch FFT for each epoch and
+    each subject, averaged in each frequency band-of-interest.
     Returns
     -----
-    List of epochs for each subject.
-
+    epoch_S1,epoch_S2 : list of epochs for each subject.
     """
     epoch_S1 = []
     epoch_S2 = []
 
     for raw1, raw2 in zip(raw_S1, raw_S2):
         # creating fixed events
-        fixed_events1 = mne.make_fixed_length_events(raw1, id=1, start=0, stop=None, duration=1.0, first_samp=True, overlap=0.0)
-        fixed_events2 = mne.make_fixed_length_events(raw2, id=1, start=0, stop=None, duration=1.0, first_samp=True, overlap=0.0)
+        fixed_events1 = mne.make_fixed_length_events(raw1, id=1, start=0,
+                                                     stop=None, duration=1.0,
+                                                     first_samp=True,
+                                                     overlap=0.0)
+        fixed_events2 = mne.make_fixed_length_events(raw2, id=1, start=0,
+                                                     stop=None, duration=1.0,
+                                                     first_samp=True,
+                                                     overlap=0.0)
 
         # epoching the events per time window
-        epoch1 = mne.Epochs(raw1, fixed_events1, event_id=1, tmin=0, tmax=1, baseline=None, preload=True, proj=True)  # reject=reject_criteria, no baseline correction
+        epoch1 = mne.Epochs(raw1, fixed_events1, event_id=1, tmin=0, tmax=1,
+                            baseline=None, preload=True, proj=True)
+        # reject=reject_criteria, no baseline correction
 
-        # preload needed after
-        epoch2 = mne.Epochs(raw2, fixed_events2, event_id=1, tmin=0, tmax=1, baseline=None, preload=True, proj=True)
+        # preload needed for following steps
+        epoch2 = mne.Epochs(raw2, fixed_events2, event_id=1, tmin=0, tmax=1,
+                            baseline=None, preload=True, proj=True)
 
-        # vizu topoplots of PSD for epochs
+        # vizualisation: topoplots of PSD for epochs
         # epoch1.plot()
         epoch1.plot_psd_topomap(bands=freq_bands)  # welch FFT
         epoch1.plot_psd_topomap(bands=freq_bands)  # welch FFT
@@ -64,33 +68,39 @@ def create_epochs(raw_S1, raw_S2, freq_bands):
 
 
 def merge(epoch_S1, epoch_S2):
-    """Merging Epochs from 2 subjects after interpolation of bad channels for each subject.
-
+    """Merging Epochs from 2 subjects after interpolation of bad channels
+    for each subject.
     Note that bad channels info is removed.
-
-    Note that average on reference can not be done anymore. Similarly, montage can not be set
-    to the data and as a result topographies in MNE are not possible anymore. Use toolbox
-    vizualisations instead.
-
+    Note that average on reference can not be done anymore. Similarly, montage
+    can not be set to the data and as a result topographies in MNE are not
+    possible anymore. Use toolbox vizualisations instead.
     Parameters
     -----
     epoch_S1,epoch_S2 : Epochs objects for each subject. epoch_S1 and epoch_S2
-    correspond to a condition and can result from the concatenation of epochs from
-    different occurences of the condition across experiments.
+    correspond to a condition and can result from the concatenation of epochs
+    from different occurences of the condition across experiments.
     Epochs are MNE objects (data are stored in an array of shape
-    (n_epochs, n_channels, n_times) and info is a disctionnary sampling parameters).
-
+    (n_epochs, n_channels, n_times) and info is a dictionnary sampling
+    parameters).
     Returns
     -----
-    ep_hyper : Epochs object for the dyad (with merged data of the 2 subjects). The time alignement has been done qt raw data creation.
+    ep_hyper : Epochs object for the dyad (with merged data of the 2 subjects).
+    The time alignement has been done at raw data creation.
     """
-    # checking bad ch for epochs, interpolating and removing them from 'bads' if needed
+    # checking bad ch for epochs, interpolating and removing them from 'bads'
     if len(epoch_S1.info['bads']) > 0:
-        epoch_S1 = mne.Epochs.interpolate_bads(
-            epoch_S1, reset_bads=True, mode='accurate', origin='auto', verbose=None)  # head-digitization-based origin fit
+        epoch_S1 = mne.Epochs.interpolate_bads(epoch_S1,
+                                               reset_bads=True,
+                                               mode='accurate',
+                                               origin='auto',
+                                               verbose=None)
+        # head-digitization-based origin fit
     if len(epoch_S2.info['bads']) > 0:
-        epoch_S2 = mne.Epochs.interpolate_bads(
-            epoch_S2, reset_bads=True, mode='accurate', origin='auto', verbose=None)
+        epoch_S2 = mne.Epochs.interpolate_bads(epoch_S2,
+                                               reset_bads=True,
+                                               mode='accurate',
+                                               origin='auto',
+                                               verbose=None)
 
     sfreq = epoch_S1[0].info['sfreq']
     ch_names = epoch_S1[0].info['ch_names']
@@ -142,21 +152,19 @@ def merge(epoch_S1, epoch_S2):
 def split(raw_merge):
     """
     Split merged raw data into 2 subjects raw data.
-
-    Note that subject's raw data is set to the standard montage 1020 available in MNE.
-    An average is computed to avoid reference bias (see MNE documentation about set_eeg_reference).
-
+    Note that subject's raw data is set to the standard montage 1020
+    available in MNE. A mastoids average is computed to avoid reference bias
+    (see MNE documentation about set_eeg_reference).
     Parameters
     -----
-    raw_merge : Raw data for the dyad with data from subject 1 and data from subject 2
-    (channels name are defined with the suffix S1 or S2 respectively).
-
+    raw_merge : Raw data for the dyad with data from subject 1 and data
+    from subject 2 (channels name are defined with the suffix S1 or S2
+    respectively).
     Returns
     -----
     raw_1020_S1, raw_1020_S2 : Raw data for each subject separately.
     Raws are MNE objects (data are ndarray with shape (n_channels, n_times)
-    and info is a disctionnary sampling parameters).
-
+    and info is a dictionnary sampling parameters).
     """
     ch_S1 = []
     ch_S2 = []
@@ -199,14 +207,13 @@ def split(raw_merge):
     raw_1020_S2 = raw_S2.copy().set_montage(montage)
     # raw_1020_S1.plot_sensors()
 
-    # set reference to electrodes average (instate of initial ref to avoid ref biais)
-    # and storing it in raw.info['projs']: applied when Epochs
+    # set reference to mastoids average instead of initial reference
+    # to avoid reference biais
+    # storing it in raw.info['projs']: applied when Epochs
     raw_1020_S1, _ = mne.set_eeg_reference(
         raw_1020_S1, 'average', projection=True)
     raw_1020_S2, _ = mne.set_eeg_reference(
         raw_1020_S2, 'average', projection=True)
-
-    # TO DO annotations, subj name, events, task description different across subj
 
     # raw_1020_S1.plot()
     # raw_1020_S1.plot_psd()
@@ -216,20 +223,19 @@ def split(raw_merge):
 
 def concatenate_epochs(epoch_S1, epoch_S2):
     """
-    Concatenate a list of epochs in one epoch.
-
+    Concatenate a list of Epochs in one epoch.
     Parameters
     -----
-    epoch_S1, epoch_S2 : list of epochs for each subject (for example the list
-    samples the different occurences of the baseline condition across experiments).
-    Epochs are MNE objects (data are stored in an array of shape
-    (n_epochs, n_channels, n_times) and info is a disctionnary sampling parameters).
-
+    epoch_S1, epoch_S2 : list of Epochs for each subject (for example the list
+    samples the different occurences of the baseline condition across
+    experiments). Epochs are MNE objects (data are stored in an array of shape
+    (n_epochs, n_channels, n_times) and info is a dictionnary sampling
+    parameters).
     Returns
     -----
-    List of concatenate epochs (for example one epoch with all the occurences of the
-    baseline condition across experiments) for each subject.
-
+    epoch_S1_concat, epoch_S2_concat : list of concatenate Epochs
+    (for example one epoch with all the occurences of the baseline
+    condition across experiments) for each subject.
     """
     epoch_S1_concat = mne.concatenate_epochs(epoch_S1)
     epoch_S2_concat = mne.concatenate_epochs(epoch_S2)
