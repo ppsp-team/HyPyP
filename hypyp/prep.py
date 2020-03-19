@@ -65,9 +65,11 @@ def ICA_choice_comp(icas, epochs):
     window = tk.Tk()
     window.withdraw()
     subj_numb = simpledialog.askstring(title="choice ICA template",
-                                       prompt="Which subject ICA do you want to use as a template for artifacts rejection?")
+                                       prompt='Which subject ICA do you want to use '
+                                       'as a template for artifacts rejection?')
     comp_number = simpledialog.askstring(title="choice ICA template",
-                                        prompt ="Which IC do you want to use as a template?")
+                                        prompt='Which IC do you want to use '
+                                       'as a template?')
 
     # applyinf ICA
     if (len(subj_numb) != 0 and len(comp_number) != 0):
