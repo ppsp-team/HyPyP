@@ -20,11 +20,11 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # Loading data files & extracting sensor infos
-epo1 = mne.read_epochs(os.path.join("data", "subject1.fif"), preload=True)
+epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
 loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
 lab1 = [ch + "_1" for ch in epo1.ch_names]
 
-epo2 = mne.read_epochs(os.path.join("data", "subject2.fif"), preload=True)
+epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
 loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
 lab2 = [ch + "_2" for ch in epo2.ch_names]
 loc2 = transform(loc2)
