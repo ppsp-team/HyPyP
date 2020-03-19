@@ -13,7 +13,8 @@ import mne
 import numpy as np
 
 
-def statsCond(PSDs_task_normLog, Epochs_task,n_permutations, alpha_bonferroni, alpha):
+def statsCond(PSDs_task_normLog, Epochs_task,
+              n_permutations, alpha_bonferroni, alpha):
 
     """Compute statistical t test on Power Spectral Density values for a condition.
     Note that this ttest calculates if the observed mean significantly deviates
