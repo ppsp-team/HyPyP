@@ -2,8 +2,8 @@
 # coding=utf-8
 # ==============================================================================
 # title           : analyses.py
-# description     : inter-brain connectivity functions
-# author          : Phoebe Chen, Guillaume Dumas
+# description     : intra- and inter-brain measures functions
+# author          : Phoebe Chen, Florence Brun, Guillaume Dumas
 # date            : 2020-03-18
 # version         : 1
 # python_version  : 3.7
@@ -13,6 +13,71 @@ import numpy as np
 import scipy.signal as signal
 from astropy.stats import circcorrcoef
 import mne
+from mne.time_frequency import psd_welch
+
+
+def PSD(epochs_baseline, epochs_task, fmin, fmax):
+    """
+    Compute the Power Spectral Density (PSD) on Epochs for a condition and
+    normalize by the PSD of the baseline.
+
+    Parameters
+    -----
+    epochs_baseline, epochs_task : Epochs for the baseline and the condition
+    ('task' for example), for a subject. epochs_baseline, epochs_task result
+    from the concatenation of epochs from different occurences of the condition
+    across experiments. Epochs are MNE objects (data are stored in arrays of
+    shape (n_epochs, n_channels, n_times) and info are into a dictionnary).
+
+    Note that the function can be iterated on the group and/or on conditions:
+    for epochs_baseline, epochs_task in zip(
+        epochs['epochs_%s_%s_%s_baseline' % (subj, group, cond_name)],
+        epochs['epochs_%s_%s_%s_task' % (subj, group, cond_name)]).
+
+    You can then visualize PSD distribution on the group with the toolbox
+    vizualisation to check normality for statistics for example.
+
+    fmin, fmax : minimum and maximum frequencies for PSD (in Hz).
+
+    Returns
+    -----
+    m_baseline, psds_welch_task_m : ndarray
+    PSD average across epochs for each channel and each frequency,
+    for the baseline and the 'task' condition respectively.
+
+    psd_mean_task_normZ, psd_mean_task_normLog : ndarray
+    Zscore and Logratio of the average PSD during 'task' condition
+    """
+    # dropping EOG channels (incompatible with connectivity map model in stats)
+    for ch in epochs_baseline.info['chs']:
+        if ch['kind'] == 202:  # FIFFV_EOG_CH
+            epochs_baseline.drop_channels([ch['ch_name']])
+    for ch in epochs_task.info['chs']:
+        if ch['kind'] == 202:  # FIFFV_EOG_CH
+            epochs_task.drop_channels([ch['ch_name']])
+
+    # computing power spectral density on epochs signal
+    # average in the 1second window around event (mean but can choose 'median')
+    kwargs = dict(fmin=fmin, fmax=fmax, n_jobs=1)
+    psds_welch_baseline, freqs_mean = psd_welch(
+        epochs_baseline, **kwargs, average='mean', picks='all')  # or median
+    psds_welch_task, freqs_mean = psd_welch(
+        epochs_task, **kwargs, average='mean', picks='all')  # or median
+
+    # averaging power across epochs for each ch and each f
+    m_baseline = np.mean(psds_welch_baseline, axis=0)
+    std_baseline = np.std(psds_welch_baseline, axis=0)
+    psds_welch_task_m = np.mean(psds_welch_task, axis=0)
+
+    # normalizing power during task by baseline average power across events
+    # Z score
+    s = np.subtract(psds_welch_task_m, m_baseline)
+    psd_mean_task_normZ = np.divide(s, std_baseline)
+    # Log ratio
+    d = np.divide(psds_welch_task_m, m_baseline)
+    psd_mean_task_normLog = np.log10(d)
+
+    return m_baseline, psds_welch_task_m, psd_mean_task_normZ, psd_mean_task_normLog
 
 
 def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
@@ -53,7 +118,6 @@ def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
     result : array
         Computed connectivity measure(s). The shape of each array is either (n_freq, n_epochs, n_channels, n_channels)
         if epoch_wise is True and time_resolved is False, or (n_freq, n_channels, n_channels) in other conditions.
-
     """
     # Data consists of two lists of np.array (n_epochs, n_channels, epoch_size)
     assert data[0].shape[0] == data[1].shape[0], "Two streams much have the same lengths."
@@ -90,7 +154,6 @@ def compute_sync(complex_signal, mode, epoch_wise, time_resolved):
         Computed connectivity measure(s). The shape of each array is either (n_freq, n_epochs, n_channels, n_channels)
         if epoch_wise is True and time_resolved is False, or (n_freq, n_channels, n_channels) in other conditions.
     """
-
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
         complex_signal.shape[3], complex_signal.shape[4]
 
@@ -218,7 +281,6 @@ def compute_single_freq(data, freq_range):
     Returns
     -------
     complex_signal : array, shape is (2, n_epochs, n_channels, n_frequencies, n_times)
-
     """
     n_samp = data[0].shape[2]
 
@@ -245,7 +307,6 @@ def compute_freq_bands(data, freq_bands):
     Returns
     -------
     complex_signal : array, shape is (2, n_epochs, n_channels, n_freq_bands, n_times)
-
     """
     assert data[0].shape[0] == data[1].shape[0]
     n_epoch = data[0].shape[0]
@@ -268,12 +329,12 @@ def compute_freq_bands(data, freq_bands):
     return complex_signal
 
 
-## Synchrony metrics
+#  Synchrony metrics
+
 
 def _plv(X, Y):
     """Phase Locking Value
     takes two vectors (phase) and compute their plv
-
     """
     return np.abs(np.sum(np.exp(1j * (X - Y)))) / len(X)
 
@@ -289,12 +350,9 @@ def _coh(X, Y):
     A1: envelope of X
     A2: envelope of Y
     reference: Kida, Tetsuo, Emi Tanaka, and Ryusuke Kakigi. “Multi-Dimensional Dynamics of Human Electromagnetic Brain Activity.” Frontiers in Human Neuroscience 9 (January 19, 2016). https://doi.org/10.3389/fnhum.2015.00713.
-
     """
-
-    # use np.angle
-    X_phase = X / np.abs(X)
-    Y_phase = Y / np.abs(Y)
+    X_phase = np.angle(X)
+    Y_phase = np.angle(Y)
 
     Sxy = np.abs(X) * np.abs(Y) * np.exp(1j * (X_phase - Y_phase))
     Sxx = np.abs(X)**2
@@ -312,9 +370,8 @@ def _icoh(X, Y):
     iCoh = -----------------------------
                sqrt(A1^2 * A2^2)
     """
-
-    X_phase = X / np.abs(X)
-    Y_phase = Y / np.abs(Y)
+    X_phase = np.angle(X)
+    Y_phase = np.angle(Y)
 
     iSxy = np.abs(X) * np.abs(Y) * np.sin(X_phase - Y_phase)
     Sxx = np.abs(X)**2

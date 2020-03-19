@@ -14,7 +14,22 @@ import matplotlib.pyplot as plt
 
 
 def transform(locs, traY=0.25, rotZ=np.pi):
-    '''Calculating new locations for the EEG locations.'''
+    """Calculating new locations for the EEG locations.
+    
+    Parameters
+    ----------
+    locs : array of shape (n_sensors, 3)
+           3d coordinates of the sensors
+    traY : float
+        Y translation to apply to the sensors
+    rotZ : float
+        Z rotation to apply to the sensors
+
+    Returns
+    -------
+    result : array (n_sensors, 3)
+        new 3d coordinates of the sensors
+    """
     newX = locs[:, 0] * np.cos(rotZ) - locs[:, 1] * np.sin(rotZ)
     newY = locs[:, 0] * np.sin(rotZ) + locs[:, 1] * np.cos(rotZ)
     locs[:, 0] = newX
@@ -24,7 +39,18 @@ def transform(locs, traY=0.25, rotZ=np.pi):
 
 
 def plot_sensors_2d(loc1, loc2, lab1=[], lab2=[]):
-    '''Plot sensors in 2D.'''
+    """Plot sensors in 2D.
+    
+    Parameters
+    ----------
+    loc1, loc2 : arrays of shape (n_sensors, 3)
+                 3d coordinates of the sensors
+    lab1, lab2 : lists of strings
+                 sensor labels
+    Returns
+    -------
+    None : plot the sensors in 2D within the current axis.
+    """
     for idx1 in range(len(loc1)):
         x1, y1, z1 = loc1[idx1, :]
         plt.plot(x1, y1, marker='o', color='blue')
@@ -42,7 +68,25 @@ def plot_sensors_2d(loc1, loc2, lab1=[], lab2=[]):
 
 
 def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
-    '''Plot hyper-conenctivity in 2D.'''
+    """Plot hyper-conenctivity in 2D.
+    
+    Parameters
+    ----------
+    loc1, loc2 : arrays of shape (n_sensors, 3)
+                 3d coordinates of the sensors
+    C : array, (len(loc1), len(loc2))
+        matrix with the values of hyper-connectivity
+    threshold : float
+                threshold for the links
+                only those above will be ploted
+    steps : int
+            number of steps for the Bezier curves
+            if <3 equivalent to ploting straight lines           
+
+    Returns
+    -------
+    None : plot the links in 2D within the current axis.
+    """
     ctr1 = np.nanmean(loc1, 0)
     ctr2 = np.nanmean(loc2, 0)
 
