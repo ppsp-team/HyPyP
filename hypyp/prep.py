@@ -65,8 +65,7 @@ def ICA_choice_comp(icas, epochs):
     window = tk.Tk()
     window.withdraw()
     subj_numb = simpledialog.askstring(title="choice ICA template",
-                                       prompt="Which subject ICA do you want
-                                       to use as a template for artifacts rejection?")
+                                       prompt="Which subject ICA do you want to use as a template for artifacts rejection?")
     comp_number = simpledialog.askstring(title="choice ICA template",
                                         prompt ="Which IC do you want to use as a template?")
 
@@ -237,4 +236,6 @@ def AR_local(cleaned_epochs_ICA):
         # Problème titre ne s'affiche pas pour le deuxieme axe !!!
         axes[1].set_title('After autoreject')
         plt.tight_layout()
+        
     return cleaned_epochs_AR
+
