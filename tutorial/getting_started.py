@@ -11,13 +11,10 @@
 
 import os
 import mne
-#from hypyp.viz import transform, plot_sensors_2d, plot_links_2d
+from hypyp.viz import transform, plot_sensors_2d, plot_links_2d
 from copy import copy
 import numpy as np
 import matplotlib.pyplot as plt
-
-
-os.chdir("D:/Amir/Dropbox/Studies BIU/Ruth Feldman/My Thesis/My Analysis/EEG/EEG/shared/HyPyP")
 
 # Loading data files & extracting sensor infos
 epo1 = mne.read_epochs(os.path.join("data", "subject1.fif"), preload=True)
@@ -29,11 +26,7 @@ loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
 lab2 = [ch + "_2" for ch in epo2.ch_names]
 loc2 = transform(loc2)
 
-# Connectivity measure and threshold
-C = np.random.rand(len(loc1), len(loc2))
-thresh = 0.99
-
-# Visualization
+# Visualization of inter-brain connectivity
 plt.figure(figsize=(10, 20))
 plt.gca().set_aspect('equal', 'box')
 plt.axis('off')
