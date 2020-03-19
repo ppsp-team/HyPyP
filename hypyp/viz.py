@@ -127,7 +127,7 @@ def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
 
 
 def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
-    """Plot sensors in 2D.
+    """Plot sensors in 3D.
     
     Parameters
     ----------
@@ -138,7 +138,7 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
                  sensor labels
     Returns
     -------
-    None : plot the sensors in 2D within the current axis.
+    None : plot the sensors in 3D within the current axis.
     """
     for idx1 in range(len(loc1)):
         x1, y1, z1 = loc1[idx1, :]
