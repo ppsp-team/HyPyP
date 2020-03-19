@@ -36,18 +36,20 @@ def filt(epochs_concat):
 
 
 def ICA_choice_comp(icas, epochs):
-    """Plot Independant Components for each subject, let the user choose the relevant components
-    for artefacts rejection and apply ICA on Epochs.
+    """Plot Independant Components for each subject, let the user
+    choose the relevant components for artefacts rejection and apply ICA
+    on Epochs.
 
     Parameters
     -----
     icas : list of independant components for each subject, IC are MNE objects.
 
-    epochs : list of 2 Epochs objects (for each subject). Epochs_S1 and Epochs_S2
-    correspond to a condition and can result from the concatenation of epochs from
-    different occurences of the condition across experiments.
-    Epochs are MNE objects (data are stored in an array of shape
-    (n_epochs, n_channels, n_times) and info is a disctionnary sampling parameters).
+    epochs : list of 2 Epochs objects (for each subject). Epochs_S1
+    and Epochs_S2 correspond to a condition and can result from the
+    concatenation of epochs from different occurences of the condition
+    across experiments.
+    Epochs are MNE objects (data are stored in an array of shape(n_epochs,
+    n_channels, n_times) and info is a disctionnary sampling parameters).
 
     Returns
     -----
@@ -63,9 +65,10 @@ def ICA_choice_comp(icas, epochs):
     window = tk.Tk()
     window.withdraw()
     subj_numb = simpledialog.askstring(title="choice ICA template",
-                                       prompt="Which subject ICA do you want to use as a template for artifacts rejection?")
+                                       prompt="Which subject ICA do you want
+                                       to use as a template for artifacts rejection?")
     comp_number = simpledialog.askstring(title="choice ICA template",
-                                         prompt="Which IC do you want to use as a template?")
+                                        prompt ="Which IC do you want to use as a template?")
 
     # applyinf ICA
     if (len(subj_numb) != 0 and len(comp_number) != 0):
@@ -86,7 +89,8 @@ def ICA_apply(icas, subj_number, comp_number, epochs):
 
     # applying corrmap with at least 1 component detected for each subj
     fig_template, fig_detected = corrmap(
-        icas, template=template_eog_component, threshold=0.9, label='blink', ch_type='eeg')
+        icas, template=template_eog_component, threshold=0.9,
+        label='blink', ch_type='eeg')
 
     # labeling the ICs that capture blink artifacts
     print([ica.labels_ for ica in icas])
@@ -113,30 +117,35 @@ def ICA_fit(epochs, n_components, method, random_state):
 
     Parameters
     -----
-    epochs : list of 2 Epochs objects (for each subject). Epochs_S1 and Epochs_S2
-    correspond to a condition and can result from the concatenation of epochs from
-    different occurences of the condition across experiments.
-    Epochs are MNE objects (data are stored in an array of shape
-    (n_epochs, n_channels, n_times) and info is a disctionnary sampling parameters).
+    epochs : list of 2 Epochs objects (for each subject).
+             Epochs_S1 and Epochs_S2 correspond to a condition and can result
+             from the concatenation of epochs from different occurences of the
+             condition across experiments.
+             Epochs are MNE objects (data are stored in an array of shape
+             (n_epochs, n_channels, n_times) and info is a dictionnary
+             sampling parameters).
 
-    n_components : the number of principal components that are passed to the ICA algorithm
-    during fitting, for a first estimation, n_components can be set to 15.
+    n_components : the number of principal components that are passed to the
+                   ICA algorithm during fitting, for a first estimation,
+                   n_components can be set to 15.
 
-    method : the ICA method used, 'fastica', 'infomax' or 'picard'. 'Fastica' is the most
-    frequently used.
+    method : the ICA method used, 'fastica', 'infomax' or 'picard'.
+             Fastica' is the most frequently used.
 
-    random_state : the parameter used to compute random distributions for ICA calulation,
-    int or None. It can be useful to fix random_state value to have reproducible results.
-    For 15 components, random_state can be set to 97 for example.
+    random_state : the parameter used to compute random distributions
+                   for ICA calulation, int or None. It can be useful to fix
+                   random_state value to have reproducible results. For 15
+                   components, random_state can be set to 97 for example.
 
     Info
     -----
-    If Autoreject and ICA take too much time, change the decim value (see MNE documentation).
+    If Autoreject and ICA take too much time, change the decim value (see MNE
+    documentation).
 
     Returns
     -----
-    List of independant components for each subject. IC are MNE objects, see MNE documentation
-    for more details.
+    List of independant components for each subject. IC are MNE objects, see
+    MNE documentation for more details.
     """
     icas = []
     for epoch in epochs:  # per subj
@@ -173,7 +182,12 @@ def AR_local(cleaned_epochs_ICA):
     for clean_epochs in cleaned_epochs_ICA:  # per subj
 
         picks = mne.pick_types(
-            clean_epochs[0].info, meg=False, eeg=True, stim=False, eog=False, exclude=[])
+            clean_epochs[0].info,
+            meg=False,
+            eeg=True,
+            stim=False,
+            eog=False,
+            exclude=[])
 
         ar = AutoReject(n_interpolates, consensus_percs, picks=picks,
                         thresh_method='random_search', random_state=42)
