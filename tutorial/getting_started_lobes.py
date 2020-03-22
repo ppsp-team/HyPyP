@@ -19,6 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+#rois
 rightTemporal = ["FT10", "TP10",  "T8"]
 leftTemporal = ["FT9", "TP9", "T7"]
 center = ["Cz", "Fz", "Pz"]
