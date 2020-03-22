@@ -157,7 +157,7 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
                     verticalalignment='center')
 
 
-def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
+def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10, homologous = "no"):
     """Plot hyper-conenctivity in 3D.
     
     Parameters
@@ -195,7 +195,9 @@ def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
             y2 = loc2[e2, 1]
             z2 = loc2[e2, 2]
             if C[e1, e2] >= threshold:
-                if steps <= 2:
+                if homologous == "yes" and e1 != e2:
+                    continue                
+                elif steps <= 2:
                     ax.plot([loc1[e1, 0], loc2[e2, 0]],
                              [loc1[e1, 1], loc2[e2, 1]],
                              [loc1[e1, 2], loc2[e2, 2]],
