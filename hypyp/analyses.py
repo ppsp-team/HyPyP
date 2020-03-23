@@ -80,6 +80,68 @@ def PSD(epochs_baseline, epochs_task, fmin, fmax):
     return m_baseline, psds_welch_task_m, psd_mean_task_normZ, psd_mean_task_normLog
 
 
+def indexes_connectivity_intrabrain(epochs):
+    """ Compute indexes for connectivity analysis between
+    all EEG sensors for one subject.
+    To use instead of (n_channels, n_channels) connections.
+
+    Parameters
+    -----
+    epochs : one subject Epochs object to get channels info.
+
+    Returns
+    -----
+    electrodes : electrodes pairs for which connectivity
+    indices will be computed, list of tuples with channels
+    indexes.
+
+    """
+    n = len(epochs.info['ch_names'])
+    # n = 64
+    bin=0
+    idx = []
+    electrodes = []
+    for e1 in range(n):
+        for e2 in range(n):
+            if e2>e1:
+                idx.append(bin)
+                electrodes.append((e1, e2))
+            bin = bin + 1
+    return electrodes
+
+
+def indexes_connectivity_interbrains(epoch_hyper):
+    """ Compute indexes for interbrains connectivity analyses
+    between all EEG sensors for 2 subjects (merge data).
+
+    Note that only interbrains connectivity will be computed.
+
+    Parameters
+    -----
+    epoch_hyper : one dyad Epochs object to get channels info.
+
+    Returns
+    -----
+    electrodes : electrodes pairs for which connectivity
+    indices will be computed, list of tuples with channels
+    indexes.
+
+    """
+    electrodes = []
+    l = list(range(0, int(len(epoch_hyper.info['ch_names'])/2)))
+    # l = list(range(0,62))
+    L = []
+    M = len(l)*list(range(len(l), len(l)*2))
+    for i in range(0, len(l)):
+        for p in range(0, len(l)):
+            L.append(l[i])
+    for i in range(0, len(L)):
+        electrodes.append((L[i], M[i]))
+
+    return electrodes
+
+
+
 def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
     """Compute frequency- and time-frequency-domain connectivity measures.
 
