@@ -10,6 +10,7 @@
 # ==============================================================================
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import mne
 
@@ -82,7 +83,10 @@ def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
                 only those above will be ploted
     steps : int
             number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines           
+            if <3 equivalent to ploting straight lines
+    weight : numpy.float
+         Connectivity weight to determine the thickness
+         of the link               
 
     Returns
     -------
@@ -91,19 +95,26 @@ def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
     ctr1 = np.nanmean(loc1, 0)
     ctr2 = np.nanmean(loc2, 0)
 
+    cmap = matplotlib.cm.get_cmap('Reds')
+    norm = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
+       
+
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
         y1 = loc1[e1, 1]
         for e2 in range(len(loc2)):
             x2 = loc2[e2, 0]
             y2 = loc2[e2, 1]
+            color = cmap(norm(C[e1, e2]))  
             if C[e1, e2] >= threshold:
                 if steps <= 2:
+                    weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
                     plt.plot([loc1[e1, 0], loc2[e2, 0]],
                              [loc1[e1, 1], loc2[e2, 1]],
-                             '-', color='black')
+                             '-', color=color, linewidth=weight)
                 else:
                     alphas = np.linspace(0, 1, steps)
+                    weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
                     for idx in range(len(alphas)-1):
                         a = alphas[idx]
                         b = alphas[idx+1]
@@ -124,7 +135,7 @@ def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
                                3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
                                b**3 * y2)
                         plt.plot([xn, xnn], [yn, ynn],
-                                 '-', color='black')
+                                 '-', color=color, linewidth=weight)
 
 
 def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
@@ -173,16 +184,23 @@ def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
                 only those above will be ploted
     steps : int
             number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines           
+            if <3 equivalent to ploting straight lines
+    weight : numpy.float
+         Connectivity weight to determine the thickness
+         of the link             
 
     Returns
     -------
     None : plot the links in 3D within the current axis.
-    """
+    """  
+
     ctr1 = np.nanmean(loc1, 0)
     ctr1[2] -= 0.2
     ctr2 = np.nanmean(loc2, 0)
     ctr2[2] -= 0.2
+
+    cmap = matplotlib.cm.get_cmap('Reds')
+    norm = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
 
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
@@ -192,14 +210,17 @@ def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
             x2 = loc2[e2, 0]
             y2 = loc2[e2, 1]
             z2 = loc2[e2, 2]
+            color = cmap(norm(C[e1, e2])) 
             if C[e1, e2] >= threshold:
                 if steps <= 2:
+                    weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
                     ax.plot([loc1[e1, 0], loc2[e2, 0]],
                              [loc1[e1, 1], loc2[e2, 1]],
                              [loc1[e1, 2], loc2[e2, 2]],
-                             '-', color='black')
+                             '-', color=color, linewidth=weight)
                 else:
                     alphas = np.linspace(0, 1, steps)
+                    weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
                     for idx in range(len(alphas)-1):
                         a = alphas[idx]
                         b = alphas[idx+1]
@@ -228,7 +249,7 @@ def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
                                3 * (1-b) * b**2 * (2 * z2 - ctr2[2]) +
                                b**3 * z2)
                         ax.plot([xn, xnn], [yn, ynn], [zn, znn],
-                                 '-', color='black')
+                                 '-', color=color, linewidth=weight)
 
                         
                         
