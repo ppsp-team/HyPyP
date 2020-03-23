@@ -163,7 +163,7 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
 
     """
 
-    metaconn = np.zeros(len(electrodes), len(electrodes))
+    metaconn = np.zeros((len(electrodes), len(electrodes)))
     for ne1, (e11,e12) in tqdm(enumerate(electrodes)):
         for ne2, (e21,e22) in enumerate(electrodes):
             # remove subject suffixe to match ch_con channels names
@@ -217,7 +217,7 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
 
     """
 
-    metaconn = np.zeros(len(electrodes), len(electrodes))
+    metaconn = np.zeros((len(electrodes), len(electrodes)))
     for ne1, (e11,e12) in tqdm(enumerate(electrodes)):
         for ne2, (e21,e22) in enumerate(electrodes):
             # print(ne1,e11,e12,ne2,e21,e22)
