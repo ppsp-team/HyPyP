@@ -38,7 +38,6 @@ def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha
 
     Parameters
     -----
-
     PSDs_task_normLog: array of subjects PSD Logratio (ndarray) for a condition
     (n_samples, n_tests with n_tests the different channels).
 
@@ -53,10 +52,8 @@ def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha
 
     alpha: the threshold for ttest, int. Can be set to 0.05.
 
-
     Returns
     -----
-
     T_obs: T-statistic observed for all variables, array of shape (n_tests).
 
     p_values: p-values for all the tests, array of shape (n_tests).
@@ -99,16 +96,13 @@ def con_matrix(epochs, freqs_mean):
 
     Parameters
     -----
-
     epochs : one subject Epochs object to sample channels information in info.
 
     freqs_mean : list of frequencies in frequency-band-of-interest used by MNE
     for power or coherence spectral density calculation.
 
-
     Returns
     -----
-
     ch_con : connectivity matrix between sensors along space based on their
     position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
 
@@ -147,7 +141,6 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
 
     Parameters
     -----
-
     electrodes : electrodes pairs for which connectivity indices have
     been computed, list of tuples.
 
@@ -156,7 +149,6 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
 
     freqs_mean : list of frequencies in the frequency-band-of-interest used
     by MNE for coherence spectral density calculation (connectivity indices).
-
 
     Returns
     -----
@@ -203,7 +195,6 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
 
     Parameters
     -----
-
     electrodes : electrodes pairs for which connectivity has been computed,
     list of tuples.
 
@@ -212,7 +203,6 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
 
     freqs_mean : list of frequencies in the frequency-band-of-interest used
     by MNE for coherence spectral density calculation (connectivity indices).
-
 
     Returns
     -----
@@ -254,7 +244,6 @@ def statscondCluster(data, freqs_mean, ch_con_freq, tail, n_permutations, alpha)
 
     Parameters
     -----
-
     data : values from different conditions or different groups to compare,
     list of arrays (3d for time-frequency power or connectivity values).
 
@@ -272,10 +261,8 @@ def statscondCluster(data, freqs_mean, ch_con_freq, tail, n_permutations, alpha)
     alpha : threshold to consider clusters significant, can be set to 0.05
     or less.
 
-
     Returns
     -----
-
     F_obs : statistic (F by default) observed for all variables,
     array of shape (n_tests,).
 
