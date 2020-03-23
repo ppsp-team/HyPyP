@@ -64,30 +64,33 @@ def create_epochs(raw_S1, raw_S2, freq_bands):
 
 
 def merge(epoch_S1, epoch_S2):
-    """Merging Epochs from 2 subjects after interpolation of bad channels for each subject.
-
+    """Merging Epochs from 2 subjects after interpolation of bad channels for each
+    subject.
     Note that bad channels info is removed.
-
-    Note that average on reference can not be done anymore. Similarly, montage can not be set
-    to the data and as a result topographies in MNE are not possible anymore. Use toolbox
-    vizualisations instead.
+    Note that average on reference can not be done anymore. Similarly, montage
+    can not be set to the data and as a result topographies in MNE are not
+    possible anymore. Use toolbox vizualisations instead.
 
     Parameters
     -----
     epoch_S1,epoch_S2 : Epochs objects for each subject. epoch_S1 and epoch_S2
-    correspond to a condition and can result from the concatenation of epochs from
-    different occurences of the condition across experiments.
+    correspond to a condition and can result from the concatenation of epochs
+    from different occurences of the condition across experiments.
     Epochs are MNE objects (data are stored in an array of shape
-    (n_epochs, n_channels, n_times) and info is a disctionnary sampling parameters).
+    (n_epochs, n_channels, n_times) and info is a disctionnary sampling
+    parameters).
 
     Returns
     -----
-    ep_hyper : Epochs object for the dyad (with merged data of the 2 subjects). The time alignement has been done qt raw data creation.
+    ep_hyper : Epochs object for the dyad (with merged data of the 2 subjects).
+    The time alignement has been done at raw data creation.
+
     """
     # checking bad ch for epochs, interpolating and removing them from 'bads' if needed
     if len(epoch_S1.info['bads']) > 0:
         epoch_S1 = mne.Epochs.interpolate_bads(
-            epoch_S1, reset_bads=True, mode='accurate', origin='auto', verbose=None)  # head-digitization-based origin fit
+            epoch_S1, reset_bads=True, mode='accurate', origin='auto', verbose=None)
+        # head-digitization-based origin fit
     if len(epoch_S2.info['bads']) > 0:
         epoch_S2 = mne.Epochs.interpolate_bads(
             epoch_S2, reset_bads=True, mode='accurate', origin='auto', verbose=None)
@@ -130,6 +133,19 @@ def merge(epoch_S1, epoch_S2):
     info = mne.create_info(ch_names_merged, sfreq, ch_types='eeg',
                            montage=None, verbose=None)
     ep_hyper = mne.EpochsArray(merged, info)
+
+    # setting channels type
+    EOG_ch = []
+    for ch in epoch_S1.info['chs']:
+        if ch['kind'] == FIFF.FIFFV_EOG_CH:
+            EOG_ch.append(ch['ch_name'])
+
+    for ch in ep_hyper.info['chs']:
+        if ch['ch_name'].split('_')[0] in EOG_ch:
+            # print('emg')
+            ch['kind'] = FIFF.FIFFV_EOG_CH
+        else:
+            ch['kind'] = FIFF.FIFFV_EEG_CH
 
     # info about task
     ep_hyper.info['description'] = epoch_S1[0].info['description']
