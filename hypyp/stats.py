@@ -163,13 +163,13 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
 
     """
 
+    n = max(electrodes)[0]+1
+    # n = 62
     metaconn = np.zeros((len(electrodes), len(electrodes)))
     for ne1, (e11,e12) in enumerate(electrodes):
         for ne2, (e21,e22) in enumerate(electrodes):
             # print(ne1,e11,e12,ne2,e21,e22)
             # considering no a priori connectivity between the 2 brains
-            n = max(electrodes)[0]+1
-            # n = 62
             metaconn[ne1, ne2] = (((ch_con[e11,e21]) and (ch_con[e12-n,e22-n])) or
                                   ((ch_con[e11,e21]) and (e12 == e22)) or
                                   ((ch_con[e12-n,e22-n]) and (e11 == e21)) or
