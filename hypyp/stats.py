@@ -35,7 +35,6 @@ def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha
 
     For vizualisation, use plot_significant_sensors function in the toolbox.
 
-
     Parameters
     -----
     PSDs_task_normLog: array of subjects PSD Logratio (ndarray) for a condition
@@ -91,6 +90,7 @@ def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha
 
     return T_obs, p_values, H0, adj_p, T_obs_plot
 
+
 def con_matrix(epochs, freqs_mean):
     """Compute a priori channels connectivity across space and frequencies.
 
@@ -129,7 +129,6 @@ def con_matrix(epochs, freqs_mean):
     return ch_con, ch_con_freq
 
 
-
 def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
     """Compute a priori connectivity across space and frequencies
     between pairs of sensors for which connectivity indices have
@@ -138,11 +137,11 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
     Note that it has been assumed that there was no a priori connectivity
     between electrodes from the 2 subjects.
 
-
     Parameters
     -----
     electrodes : electrodes pairs for which connectivity indices have
-    been computed, list of tuples with channels indexes.
+    been computed, list of tuples with channels indexes, see
+    indexes_connectivity_interbrains function in toolbox (analyses).
 
     ch_con : connectivity matrix between sensors along space based on their
     position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
@@ -190,11 +189,11 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
     connectivity indices have been calculated, across space and frequencies
     (based on sensors location).
 
-
     Parameters
     -----
     electrodes : electrodes pairs for which connectivity has been computed,
-    list of tuples with channels indexes.
+    list of tuples with channels indexes, see indexes_connectivity_intrabrains
+    function in toolbox (analyses).
 
     ch_con : connectivity matrix between sensors along space based on their
     position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
