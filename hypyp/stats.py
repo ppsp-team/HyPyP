@@ -142,7 +142,7 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
     Parameters
     -----
     electrodes : electrodes pairs for which connectivity indices have
-    been computed, list of tuples.
+    been computed, list of tuples with channels indexes.
 
     ch_con : connectivity matrix between sensors along space based on their
     position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
@@ -166,11 +166,6 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
     metaconn = np.zeros((len(electrodes), len(electrodes)))
     for ne1, (e11,e12) in tqdm(enumerate(electrodes)):
         for ne2, (e21,e22) in enumerate(electrodes):
-            # remove subject suffixe to match ch_con channels names
-            e11 = e11.split('_')[0]
-            e12 = e12.split('_')[0]
-            e21 = e21.split('_')[0]
-            e22 = e22.split('_')[0]
             # print(ne1,e11,e12,ne2,e21,e22)
             # considering no a priori connectivity between the 2 brains
             metaconn[ne1, ne2] = (((ch_con[0][e11,e21]) and (ch_con[0][e12,e22])) or
@@ -196,7 +191,7 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
     Parameters
     -----
     electrodes : electrodes pairs for which connectivity has been computed,
-    list of tuples.
+    list of tuples with channels indexes.
 
     ch_con : connectivity matrix between sensors along space based on their
     position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
