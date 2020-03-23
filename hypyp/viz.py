@@ -11,6 +11,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import mne
 
 
 def transform(locs, traY=0.25, rotZ=np.pi):
@@ -240,18 +241,14 @@ def plot_significant_sensors(T_obs_plot, epochs):
 
     Parameters
     -----
-
     T_obs_plot : satistical values to plot, from sensors above alpha threshold,
     array of shape (n_tests,).
 
     epochs : one subject Epochs object to sample channels information in info.
 
-
     Plot
     -----
-
     Topomap with the T or F statistics for significant sensors.
-
 
     Returns
     -----
