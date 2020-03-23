@@ -228,3 +228,51 @@ def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
                                b**3 * z2)
                         ax.plot([xn, xnn], [yn, ynn], [zn, znn],
                                  '-', color='black')
+
+                        
+                        
+def plot_significant_sensors(T_obs_plot, epochs):
+    """Plots the significant sensors from a statistical test (simple t test or
+    clusters corrected t test) computed between groups or conditions, on power
+    or connectivity values, across simple subjects. For satistics with
+    interbrains connectivity values on dyads (merge data), use the
+    plot_links_3d function of the toolbox.
+
+    Parameters
+    -----
+
+    T_obs_plot : satistical values to plot, from sensors above alpha threshold,
+    array of shape (n_tests,).
+
+    epochs : one subject Epochs object to sample channels information in info.
+
+
+    Plot
+    -----
+
+    Topomap with the T or F statistics for significant sensors.
+
+
+    Returns
+    -----
+    None.
+
+    """
+
+    # getting sensors position
+    pos = np.array([[0, 0]])
+    for i in range(0, len(epochs.info['ch_names'])):
+        cor = np.array([epochs.info['chs'][i]['loc'][0:2]])
+        pos = np.concatenate((pos, cor), axis = 0)
+    pos = pos[1:]
+    # topoplot of significant sensors
+    if np.max(np.abs(T_obs_plot)) != 0:
+        vmax = np.max(np.abs(T_obs_plot))
+        vmin = -vmax
+    else:
+        vmax = None
+        vmin = None
+        mne.viz.plot_topomap(T_obs_plot, pos, vmin=vmin, vmax=vmax,
+                             sensors=True)
+
+    return None
