@@ -164,13 +164,13 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
     """
 
     metaconn = np.zeros((len(electrodes), len(electrodes)))
-    for ne1, (e11,e12) in tqdm(enumerate(electrodes)):
+    for ne1, (e11,e12) in enumerate(electrodes):
         for ne2, (e21,e22) in enumerate(electrodes):
             # print(ne1,e11,e12,ne2,e21,e22)
             # considering no a priori connectivity between the 2 brains
-            metaconn[ne1, ne2] = (((ch_con[0][e11,e21]) and (ch_con[0][e12,e22])) or
-                                  ((ch_con[0][e11,e21]) and (e12 == e22)) or
-                                  ((ch_con[0][e12,e22]) and (e11 == e21)))
+            metaconn[ne1, ne2] = (((ch_con[e11,e21]) and (ch_con[e12,e22])) or
+                                  ((ch_con[e11,e21]) and (e12 == e22)) or
+                                  ((ch_con[e12,e22]) and (e11 == e21)))
 
     # duplicating the array 'freqs_mean' times to take channels connectivity
     # across frequencies into account
@@ -213,15 +213,15 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
     """
 
     metaconn = np.zeros((len(electrodes), len(electrodes)))
-    for ne1, (e11,e12) in tqdm(enumerate(electrodes)):
+    for ne1, (e11,e12) in enumerate(electrodes):
         for ne2, (e21,e22) in enumerate(electrodes):
             # print(ne1,e11,e12,ne2,e21,e22)
-            metaconn[ne1, ne2] = (((ch_con[0][e11,e21]) and (ch_con[0][e12,e22])) or
-                                  ((ch_con[0][e11,e22]) and (ch_con[0][e12,e21])) or
-                                  ((ch_con[0][e11,e21]) and (e12 == e22)) or
-                                  ((ch_con[0][e12,e21]) and (e11 == e22)) or
-                                  ((ch_con[0][e11,e22]) and (e12 == e21)) or 
-                                  ((ch_con[0][e12,e22]) and (e11 == e21)))
+            metaconn[ne1, ne2] = (((ch_con[e11,e21]) and (ch_con[e12,e22])) or
+                                  ((ch_con[e11,e22]) and (ch_con[e12,e21])) or
+                                  ((ch_con[e11,e21]) and (e12 == e22)) or
+                                  ((ch_con[e12,e21]) and (e11 == e22)) or
+                                  ((ch_con[e11,e22]) and (e12 == e21)) or 
+                                  ((ch_con[e12,e22]) and (e11 == e21)))
 
     # duplicating the array 'freqs_mean' times to take channels connectivity
     # across frequencies into account
