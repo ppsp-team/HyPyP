@@ -81,29 +81,33 @@ def ICA_choice_comp(icas, epochs):
 
 
 def ICA_apply(icas, subj_number, comp_number, epochs):
-
+    """Apply ICA with template model from 1 subject in the dyad."""
+    
     cleaned_epochs_ICA = []
+    ## selecting which ICs corresponding to the template 
+    template_eog_component = icas[subj_number].get_components()[:,comp_number]
 
-    # selecting which ICs in the other subject correspond to the template
-    template_eog_component = icas[subj_number].get_components()[:, comp_number]
+    ## applying corrmap with at least 1 component detected for each subj
+    fig_template, fig_detected = corrmap(icas, template=template_eog_component, threshold=0.9, label='blink', ch_type='eeg')
 
-    # applying corrmap with at least 1 component detected for each subj
-    fig_template, fig_detected = corrmap(
-        icas, template=template_eog_component, threshold=0.9,
-        label='blink', ch_type='eeg')
-
-    # labeling the ICs that capture blink artifacts
+    ## labeling the ICs that capture blink artifacts
     print([ica.labels_ for ica in icas])
 
-    # selecting ICA components after viz
+    ## selecting ICA components after viz
     for i in icas:
         i.exclude = i.labels_['blink']
 
-    # applying ica on clean_epochs
-    for i in range(0, len(epochs)):
-        for j in icas:  # per subj
-            j.apply(epochs[i])
-            cleaned_epochs_ICA.append(epochs[i])
+    epoch_all_ch = []
+    ## applying ica on clean_epochs
+    # for each subject
+    for i,j in zip(range(0,len(epochs)),icas):
+        # taking all channels to apply ICA
+        bads = epochs[i].info['bads']
+        epoch_all_ch.append(mne.Epochs.copy(epochs[i]))
+        epoch_all_ch[i].info['bads'] = []
+        j.apply(epoch_all_ch[i])
+        epoch_all_ch[i].info['bads'] = bads
+        cleaned_epochs_ICA.append(epoch_all_ch[i])
 
     return cleaned_epochs_ICA
 
@@ -148,16 +152,19 @@ def ICA_fit(epochs, n_components, method, random_state):
     MNE documentation for more details.
     """
     icas = []
-    for epoch in epochs:  # per subj
-
-        # applying AR to find global rejection threshold
-        reject = get_rejection_threshold(epoch, ch_types='eeg')
+    for epoch in epochs: # per subj
+             
+        ## applying AR to find global rejection threshold
+        reject = get_rejection_threshold(epoch,ch_types='eeg') 
+        # if very long, can change decim value
         print('The rejection dictionary is %s' % reject)
 
-        # fitting ICA on filt_raw after AR
-        ica = ICA(n_components=n_components,
-                  method=method, random_state=random_state)
-        icas.append(ica.fit(epoch, reject=reject, tstep=1))
+        ## fitting ICA on filt_raw after AR
+        ica = ICA(n_components=15, method='fastica', random_state=97)
+        # take bad channels into account in ICA fit
+        epoch_all_ch = mne.Epochs.copy(epoch)
+        epoch_all_ch.info['bads'] = []
+        icas.append(ica.fit(epoch_all_ch,reject=reject, tstep=1))
 
     return icas
 
