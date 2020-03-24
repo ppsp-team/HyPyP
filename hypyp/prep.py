@@ -16,21 +16,23 @@ from mne.preprocessing import ICA, corrmap
 import numpy as np
 
 
-def filt(epochs_concat):
+def filt(raw_S):
     """Before ICA : Filter raw data to remove slow drifts
     Parameters
     ----------
-    epoch_concat : instance of Epochs
+    raw_S : list of raws for different occurences of a condition, for
+    a subject.
 
     Returns
     -------
-    epochs : instance of Epochs
+    raws : list of high-pass filtered raws.
+    
     """
-    epochs = []
-    for epoch_concat in epochs_concat:  # per subj
-        epochs.append(mne.filter.filter_data(
-            epoch_concat, epoch_concat.info['sfreq'], l_freq=2., h_freq=None))
-    return epochs
+    raws=[]
+    for raw in raw_S: # per subj
+        raws.append(mne.io.Raw.filter(raw,l_freq=2., h_freq=None))
+    
+    return raws
 
 
 def ICA_choice_comp(icas, epochs):
