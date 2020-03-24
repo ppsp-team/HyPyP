@@ -61,8 +61,12 @@ def ICA_choice_comp(icas, epochs):
     # choosing subject and its component as a template for the other subject
     # if do not want to apply ICA on the data, do not fill the answer
     subj_numb = input("Which subject ICA do you want"
-                      "to use as a template for artifacts rejection?")
-    comp_number = input("Which IC do you want to use as a template?")
+                      " to use as a template for artifacts rejection?"
+                      " Index begins at zero. If you do not want to apply"
+                      " ICA on your data, enter nothing.")
+    comp_number = input("Which IC do you want to use as a template?"
+                        " Index begins at zero. If you do not want to apply"
+                        " ICA on your data, enter nothing.")
 
     # applying ICA
     if (len(subj_numb) != 0 and len(comp_number) != 0):
