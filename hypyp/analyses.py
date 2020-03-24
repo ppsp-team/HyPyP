@@ -41,6 +41,9 @@ def PSD(epochs_baseline, epochs_task, fmin, fmax):
 
     Returns
     -----
+    freqs_mean : list of frequencies in frequency-band-of-interest used by MNE
+    for power spectral density calculation.
+
     m_baseline, psds_welch_task_m : ndarray
     PSD average across epochs for each channel and each frequency,
     for the baseline and the 'task' condition respectively.
@@ -77,7 +80,7 @@ def PSD(epochs_baseline, epochs_task, fmin, fmax):
     d = np.divide(psds_welch_task_m, m_baseline)
     psd_mean_task_normLog = np.log10(d)
 
-    return m_baseline, psds_welch_task_m, psd_mean_task_normZ, psd_mean_task_normLog
+    return freqs_mean, m_baseline, psds_welch_task_m, psd_mean_task_normZ, psd_mean_task_normLog
 
 
 def indexes_connectivity_intrabrain(epochs):
