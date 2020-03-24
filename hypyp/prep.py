@@ -14,8 +14,6 @@ import matplotlib.pyplot as plt
 import mne
 from mne.preprocessing import ICA, corrmap
 import numpy as np
-import tkinter as tk
-from tkinter import simpledialog
 
 
 def filt(epochs_concat):
@@ -62,18 +60,16 @@ def ICA_choice_comp(icas, epochs):
 
     # choosing subject and its component as a template for the other subject
     # if do not want to apply ICA on the data, do not fill the answer
-    window = tk.Tk()
-    window.withdraw()
-    subj_numb = simpledialog.askstring(title="choice ICA template",
-                                       prompt="Which subject ICA do you want
-                                       to use as a template for artifacts rejection?")
-    comp_number = simpledialog.askstring(title="choice ICA template",
-                                        prompt ="Which IC do you want to use as a template?")
+    subj_numb = input("Which subject ICA do you want"
+                      "to use as a template for artifacts rejection?")
+    comp_number = input("Which IC do you want to use as a template?")
 
-    # applyinf ICA
+    # applying ICA
     if (len(subj_numb) != 0 and len(comp_number) != 0):
-        cleaned_epochs_ICA = ICA_apply(
-            icas, int(subj_numb), int(comp_number), epochs)
+        cleaned_epochs_ICA = ICA_apply(icas,
+                                       int(subj_numb),
+                                       int(comp_number),
+                                       epochs)
     else:
         cleaned_epochs_ICA = epochs
 
