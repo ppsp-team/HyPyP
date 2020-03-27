@@ -187,7 +187,17 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
     # duplicating the array 'freqs_mean' times to take channels connectivity
     # across frequencies into account
     l_freq = len(freqs_mean)
-    metaconn_freq = np.tile(metaconn, (l_freq, l_freq))
+
+    init = np.zeros((l_freq*len(electrodes),
+                     l_freq*len(electrodes)))
+    for i in range(0, l_freq*len(electrodes)):
+        for p in range(0, l_freq*len(electrodes)):
+            if (p//len(electrodes) == i//len(electrodes)) or (p//len(electrodes) == i//len(electrodes) + 1) or (p//len(electrodes) == i//len(electrodes) - 1):
+                init[i][p] = 1
+
+    metaconn_mult = np.tile(metaconn, (l_freq, l_freq))
+    metaconn_freq = np.multiply(init, metaconn_mult)
+
     # vizualising the array
     plt.spy(metaconn_freq)
 
@@ -238,7 +248,17 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
     # duplicating the array 'freqs_mean' times to take channels connectivity
     # across frequencies into account
     l_freq = len(freqs_mean)
-    metaconn_freq = np.tile(metaconn, (l_freq, l_freq))
+
+    init = np.zeros((l_freq*len(electrodes),
+                     l_freq*len(electrodes)))
+    for i in range(0, l_freq*len(electrodes)):
+        for p in range(0, l_freq*len(electrodes)):
+            if (p//len(electrodes) == i//len(electrodes)) or (p//len(electrodes) == i//len(electrodes) + 1) or (p//len(electrodes) == i//len(electrodes) - 1):
+                init[i][p] = 1
+
+    metaconn_mult = np.tile(metaconn, (l_freq, l_freq))
+    metaconn_freq = np.multiply(init, metaconn_mult)
+
     # vizualising the array
     plt.spy(metaconn_freq)
 
