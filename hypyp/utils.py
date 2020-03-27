@@ -109,14 +109,14 @@ def merge(epoch_S1, epoch_S2):
 
     merges = []
 
+    # checking wether data have the same size
+    if len(epoch_S1) != len(epoch_S2):
+        sys.exit('data from S1 and S2 have not the same size!')
+    
     # picking data per epoch
     for l in range(0, len(epoch_S1)):
         data_S1 = epoch_S1[l].get_data()
         data_S2 = epoch_S2[l].get_data()
-
-        # checking wether data have the same size
-        if data_S1.shape[2] != data_S2.shape[2]:
-            sys.exit('data from S1 and S2 have not the same size!')
 
         data_S1 = np.squeeze(data_S1, axis=0)
         data_S2 = np.squeeze(data_S2, axis=0)
