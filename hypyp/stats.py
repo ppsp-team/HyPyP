@@ -120,9 +120,19 @@ def con_matrix(epochs, freqs_mean):
     ch_con_arr = ch_con.toarray()
 
     # duplicating the array 'freqs_mean' or 'freqs' times (PSD or CSD)
-    # to take channels connectivity across frequencies into account
+    # to take channels connectivity across neighboring frequencies into
+    # account
     l_freq = len(freqs_mean)
-    ch_con_freq = np.tile(ch_con_arr, (l_freq, l_freq))
+    init = np.zeros((l_freq*len(ch_names_con),
+                     l_freq*len(ch_names_con)))
+    for i in range(0, l_freq*len(ch_names_con)):
+        for p in range(0, l_freq*len(ch_names_con)):
+            if (p//len(ch_names_con) == i//len(ch_names_con)) or (p//len(ch_names_con) == i//len(ch_names_con) + 1) or (p//len(ch_names_con) == i//len(ch_names_con) - 1):
+                init[i][p] = 1
+
+    ch_con_mult = np.tile(ch_con_arr, (l_freq, l_freq))
+    ch_con_freq = np.multiply(init, ch_con_mult)
+
     # vizualising the array
     plt.spy(ch_con_freq)
 
