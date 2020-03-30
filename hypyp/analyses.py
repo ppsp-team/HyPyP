@@ -104,7 +104,7 @@ def indexes_connectivity_intrabrain(epochs):
     for ch in epochs.info['chs']:
             if ch['kind'] == FIFF.FIFFV_EOG_CH:
                 names.remove(ch['ch_name'])
-    
+
     n = len(names)
     # n = 64
     bin = 0
@@ -116,7 +116,7 @@ def indexes_connectivity_intrabrain(epochs):
                 idx.append(bin)
                 electrodes.append((e1, e2))
             bin = bin + 1
-            
+
     return electrodes
 
 
