@@ -185,7 +185,7 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
                                   ((e12 == e22) and (e11 == e21)))
 
     # duplicating the array 'freqs_mean' times to take channels connectivity
-    # across frequencies into account
+    # across neighboring frequencies into account
     l_freq = len(freqs_mean)
 
     init = np.zeros((l_freq*len(electrodes),
@@ -246,7 +246,7 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
                                   ((ch_con[e12,e22]) and (e11 == e21)))
 
     # duplicating the array 'freqs_mean' times to take channels connectivity
-    # across frequencies into account
+    # across neighboring frequencies into account
     l_freq = len(freqs_mean)
 
     init = np.zeros((l_freq*len(electrodes),
