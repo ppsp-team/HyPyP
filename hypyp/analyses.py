@@ -10,6 +10,7 @@
 # ==============================================================================
 
 import numpy as np
+import copy
 import scipy.signal as signal
 from astropy.stats import circcorrcoef
 import mne
@@ -99,17 +100,23 @@ def indexes_connectivity_intrabrain(epochs):
     indexes.
 
     """
-    n = len(epochs.info['ch_names'])
+    names = copy.deepcopy(epochs.info['ch_names'])
+    for ch in epochs.info['chs']:
+            if ch['kind'] == FIFF.FIFFV_EOG_CH:
+                names.remove(ch['ch_name'])
+    
+    n = len(names)
     # n = 64
-    bin=0
+    bin = 0
     idx = []
     electrodes = []
     for e1 in range(n):
         for e2 in range(n):
-            if e2>e1:
+            if e2 > e1:
                 idx.append(bin)
                 electrodes.append((e1, e2))
             bin = bin + 1
+            
     return electrodes
 
 
@@ -131,7 +138,12 @@ def indexes_connectivity_interbrains(epoch_hyper):
 
     """
     electrodes = []
-    l = list(range(0, int(len(epoch_hyper.info['ch_names'])/2)))
+    names = copy.deepcopy(epoch_hyper.info['ch_names'])
+    for ch in epoch_hyper.info['chs']:
+            if ch['kind'] == FIFF.FIFFV_EOG_CH:
+                names.remove(ch['ch_name'])
+
+    l = list(range(0, int(len(names)/2)))
     # l = list(range(0,62))
     L = []
     M = len(l)*list(range(len(l), len(l)*2))
