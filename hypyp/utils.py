@@ -55,8 +55,8 @@ def create_epochs(raw_S1, raw_S2, freq_bands):
 
         # vizu topoplots of PSD for epochs
         # epoch1.plot()
-        epoch1.plot_psd_topomap(bands=freq_bands)  # welch FFT
-        epoch1.plot_psd_topomap(bands=freq_bands)  # welch FFT
+        # epoch1.plot_psd_topomap(bands=freq_bands)  # welch FFT
+        # epoch1.plot_psd_topomap(bands=freq_bands)  # welch FFT
 
         epoch_S1.append(epoch1)
         epoch_S2.append(epoch2)
