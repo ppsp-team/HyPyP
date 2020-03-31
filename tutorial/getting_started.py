@@ -53,7 +53,7 @@ icas = ICA_fit(epochs,
                n_components=15,
                method='fastica',
                random_state=42)
-
+w
 # selecting components semi auto and fitting them
 cleaned_epochs_ICA = ICA_choice_comp(icas, epochs)  # no ICA_component selected
 plt.close('all')
