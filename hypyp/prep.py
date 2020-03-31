@@ -171,12 +171,13 @@ def ICA_fit(epochs, n_components, method, random_state):
     return icas
 
 
-def AR_local(cleaned_epochs_ICA):
+def AR_local(cleaned_epochs_ICA, plot=False):
     """Apply local Autoreject
     Parameters
     ----------
     clean_epoch_concat : instance of Epochs after global Autoreject
                          and ICA
+    plot : Boolean for plotting data before/after AR 
 
     Returns
     -------
@@ -227,23 +228,25 @@ def AR_local(cleaned_epochs_ICA):
     evoked_before = []
     for clean_epochs in cleaned_epochs_ICA:  # per subj
         evoked_before.append(clean_epochs.average())
+
     evoked_after_AR = []
     for clean in cleaned_epochs_AR:
         evoked_after_AR.append(clean.average())
 
-    for i, j in zip(evoked_before, evoked_after_AR):
-        fig, axes = plt.subplots(2, 1, figsize=(6, 6))
-        for ax in axes:
-            ax.tick_params(axis='x', which='both', bottom='off', top='off')
-            ax.tick_params(axis='y', which='both', left='off', right='off')
+    if plot:
+        for i, j in zip(evoked_before, evoked_after_AR):
+            fig, axes = plt.subplots(2, 1, figsize=(6, 6))
+            for ax in axes:
+                ax.tick_params(axis='x', which='both', bottom='off', top='off')
+                ax.tick_params(axis='y', which='both', left='off', right='off')
 
-        ylim = dict(grad=(-170, 200))
-        i.pick_types(eeg=True, exclude=[])
-        i.plot(exclude=[], axes=axes[0], ylim=ylim, show=False)
-        axes[0].set_title('Before autoreject')
-        j.pick_types(eeg=True, exclude=[])
-        j.plot(exclude=[], axes=axes[1], ylim=ylim)
-        # Problème titre ne s'affiche pas pour le deuxieme axe !!!
-        axes[1].set_title('After autoreject')
-        plt.tight_layout()
+            ylim = dict(grad=(-170, 200))
+            i.pick_types(eeg=True, exclude=[])
+            i.plot(exclude=[], axes=axes[0], ylim=ylim, show=False)
+            axes[0].set_title('Before autoreject')
+            j.pick_types(eeg=True, exclude=[])
+            j.plot(exclude=[], axes=axes[1], ylim=ylim)
+            # Problème titre ne s'affiche pas pour le deuxieme axe !!!
+            axes[1].set_title('After autoreject')
+            plt.tight_layout()
     return cleaned_epochs_AR
