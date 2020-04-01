@@ -139,7 +139,7 @@ def con_matrix(epochs, freqs_mean):
     return ch_con, ch_con_freq
 
 
-def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
+def metacon_matrix_2brains(electrodes, ch_con, freqs_mean, plot=False):
     """Compute a priori connectivity across space and frequencies
     between pairs of sensors for which connectivity indices have
     been calculated, for merge data (2 brains).
@@ -159,6 +159,8 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
     freqs_mean : list of frequencies in the frequency-band-of-interest used
     by MNE for coherence spectral density calculation (connectivity indices).
 
+    plot : Boolean for plotting data before/after AR 
+
     Returns
     -----
     metaconn : a priori connectivity based on sensors location, between pairs
@@ -172,16 +174,16 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
 
     """
 
-    n = max(electrodes)[0]+1
+    n = np.max(electrodes, axis=0)[0]+1
     # n = 62
     metaconn = np.zeros((len(electrodes), len(electrodes)))
     for ne1, (e11,e12) in enumerate(electrodes):
         for ne2, (e21,e22) in enumerate(electrodes):
             # print(ne1,e11,e12,ne2,e21,e22)
             # considering no a priori connectivity between the 2 brains
-            metaconn[ne1, ne2] = (((ch_con[e11,e21]) and (ch_con[e12-n,e22-n])) or
-                                  ((ch_con[e11,e21]) and (e12 == e22)) or
-                                  ((ch_con[e12-n,e22-n]) and (e11 == e21)) or
+            metaconn[ne1, ne2] = (((ch_con[e11, e21]) and (ch_con[e12-n, e22-n])) or
+                                  ((ch_con[e11, e21]) and (e12 == e22)) or
+                                  ((ch_con[e12-n, e22-n]) and (e11 == e21)) or
                                   ((e12 == e22) and (e11 == e21)))
 
     # duplicating the array 'freqs_mean' times to take channels connectivity
@@ -198,8 +200,11 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean):
     metaconn_mult = np.tile(metaconn, (l_freq, l_freq))
     metaconn_freq = np.multiply(init, metaconn_mult)
 
-    # vizualising the array
-    plt.spy(metaconn_freq)
+    if plot:
+        # vizualising the array
+        plt.figure()
+        plt.spy(metaconn_freq)
+        plt.title("Meta-connectivity matrix")
 
     return metaconn, metaconn_freq
 
