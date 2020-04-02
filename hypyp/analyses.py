@@ -15,6 +15,7 @@ import scipy.signal as signal
 from astropy.stats import circcorrcoef
 import mne
 from mne.time_frequency import psd_welch
+from mne.io.constants import FIFF
 
 
 def PSD(epochs_baseline, epochs_task, fmin, fmax):
