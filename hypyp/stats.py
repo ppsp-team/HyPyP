@@ -280,11 +280,11 @@ def statscondCluster(data, freqs_mean, bsr_matrix(ch_con_freq), tail, n_permutat
     list of arrays (3d for time-frequency power or connectivity values).
 
     freqs_mean : frequencies in frequency-band-of-interest used by MNE for PSD
-    or CSD calculation.
+    or CSD calculation, list.
 
     ch_con_freq : connectivity or metaconnectivity matrix for PSD or CSD
     values to assess a priori connectivity between sensors across space and
-    frequencies, based on their position, bsr_matrix.
+    frequencies based on their position, bsr_matrix.
 
     tail : direction of the ttest, can be set to 1, 0 or -1.
 
