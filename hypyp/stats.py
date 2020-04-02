@@ -270,7 +270,7 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
     return metaconn, metaconn_freq
 
 
-def statscondCluster(data, freqs_mean, ch_con_freq, tail, n_permutations, alpha):
+def statscondCluster(data, freqs_mean, bsr_matrix(ch_con_freq), tail, n_permutations, alpha):
     """Compute cluster-level statistical permutation test, corrected with
     channels connectivity across space and frequencies.
 
@@ -284,7 +284,7 @@ def statscondCluster(data, freqs_mean, ch_con_freq, tail, n_permutations, alpha)
 
     ch_con_freq : connectivity or metaconnectivity matrix for PSD or CSD
     values to assess a priori connectivity between sensors across space and
-    frequencies, based on their position.
+    frequencies, based on their position, bsr_matrix.
 
     tail : direction of the ttest, can be set to 1, 0 or -1.
 
