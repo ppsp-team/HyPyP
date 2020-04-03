@@ -9,11 +9,11 @@
 # python_version  : 3.7
 # ==============================================================================
 
-from autoreject import get_rejection_threshold, AutoReject
+import numpy as np
 import matplotlib.pyplot as plt
 import mne
+from autoreject import get_rejection_threshold, AutoReject
 from mne.preprocessing import ICA, corrmap
-import numpy as np
 
 
 def filt(raw_S):
