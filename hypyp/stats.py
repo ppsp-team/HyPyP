@@ -9,10 +9,10 @@
 # python_version  : 3.7
 # ==============================================================================
 
-import mne
 import numpy as np
-import matplotlib.pylab as plt
 from scipy import sparse
+import matplotlib.pylab as plt
+import mne
 from mne.channels import find_ch_connectivity
 from mne.stats import permutation_cluster_test
 
