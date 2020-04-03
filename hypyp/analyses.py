@@ -9,8 +9,8 @@
 # python_version  : 3.7
 # ==============================================================================
 
-import numpy as np
 import copy
+import numpy as np
 import scipy.signal as signal
 from astropy.stats import circcorrcoef
 import mne

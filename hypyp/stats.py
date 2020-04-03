@@ -9,10 +9,10 @@
 # python_version  : 3.7
 # ==============================================================================
 
-import mne
 import numpy as np
-import matplotlib.pylab as plt
 from scipy import sparse
+import matplotlib.pylab as plt
+import mne
 from mne.channels import find_ch_connectivity
 from mne.stats import permutation_cluster_test
 
@@ -278,7 +278,7 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
     return metaconn, metaconn_freq
 
 
-def statscondCluster(data, freqs_mean, ch_con_freq, tail, n_permutations, alpha):
+def statscondCluster(data, freqs_mean, bsr_matrix(ch_con_freq), tail, n_permutations, alpha):
     """Compute cluster-level statistical permutation test, corrected with
     channels connectivity across space and frequencies.
 
@@ -288,11 +288,11 @@ def statscondCluster(data, freqs_mean, ch_con_freq, tail, n_permutations, alpha)
     list of arrays (3d for time-frequency power or connectivity values).
 
     freqs_mean : frequencies in frequency-band-of-interest used by MNE for PSD
-    or CSD calculation.
+    or CSD calculation, list.
 
     ch_con_freq : connectivity or metaconnectivity matrix for PSD or CSD
     values to assess a priori connectivity between sensors across space and
-    frequencies, based on their position.
+    frequencies based on their position, bsr_matrix.
 
     tail : direction of the ttest, can be set to 1, 0 or -1.
 

@@ -9,9 +9,9 @@
 # python_version  : 3.7
 # ==============================================================================
 
+import sys
 import numpy as np
 import pandas as pd
-import sys
 import mne
 from mne.io.constants import FIFF
 
@@ -110,8 +110,7 @@ def merge(epoch_S1, epoch_S2):
     merges = []
 
     # checking wether data have the same size
-    if len(epoch_S1) != len(epoch_S2):
-        sys.exit('data from S1 and S2 have not the same size!')
+    assert(len(epoch_S1) == len(epoch_S2)), "Epochs from S1 and S2 should have the same size!"
     
     # picking data per epoch
     for l in range(0, len(epoch_S1)):
