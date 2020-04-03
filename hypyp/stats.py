@@ -91,7 +91,7 @@ def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha
     return T_obs, p_values, H0, adj_p, T_obs_plot
 
 
-def con_matrix(epochs, freqs_mean):
+def con_matrix(epochs, freqs_mean, draw=False):
     """Compute a priori channels connectivity across space and frequencies.
 
     Parameters
@@ -100,6 +100,8 @@ def con_matrix(epochs, freqs_mean):
 
     freqs_mean : list of frequencies in frequency-band-of-interest used by MNE
     for power or coherence spectral density calculation.
+
+    draw : boolean flag for plotting the connectivity matrices
 
     Returns
     -----
@@ -115,8 +117,7 @@ def con_matrix(epochs, freqs_mean):
     # creating channels connectivity matrix in space
     ch_con, ch_names_con = find_ch_connectivity(epochs.info,
                                                 ch_type='eeg')
-    # vizualising the matrix and transforming it into array
-    plt.spy(ch_con)
+
     ch_con_arr = ch_con.toarray()
 
     # duplicating the array 'freqs_mean' or 'freqs' times (PSD or CSD)
@@ -133,8 +134,15 @@ def con_matrix(epochs, freqs_mean):
     ch_con_mult = np.tile(ch_con_arr, (l_freq, l_freq))
     ch_con_freq = np.multiply(init, ch_con_mult)
 
-    # vizualising the array
-    plt.spy(ch_con_freq)
+    if draw:
+        plt.figure()
+        # vizualising the matrix and transforming it into array
+        plt.subplot(1, 2, 1)
+        plt.spy(ch_con)
+        plt.title("Connectivity matrix")
+        plt.subplot(1, 2, 2)
+        plt.spy(ch_con_freq)
+        plt.title("Meta-connectivity matrix")
 
     return ch_con, ch_con_freq
 
@@ -315,6 +323,7 @@ def statscondCluster(data, freqs_mean, ch_con_freq, tail, n_permutations, alpha)
     # computing the cluster permutation t test
     F_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(data,
                                                                      threshold=None,
+                                                                     tail=0,
                                                                      n_permutations=n_permutations,
                                                                      tail=tail, connectivity=ch_con_freq,
                                                                      t_power=1, out_type='indices')
