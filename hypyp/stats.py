@@ -278,7 +278,7 @@ def metacon_matrix(electrodes, ch_con, freqs_mean):
     return metaconn, metaconn_freq
 
 
-def statscondCluster(data, freqs_mean, bsr_matrix(ch_con_freq), tail, n_permutations, alpha):
+def statscondCluster(data, freqs_mean, ch_con_freq, tail, n_permutations, alpha):
     """Compute cluster-level statistical permutation test, corrected with
     channels connectivity across space and frequencies.
 
