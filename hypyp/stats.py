@@ -323,7 +323,6 @@ def statscondCluster(data, freqs_mean, ch_con_freq, tail, n_permutations, alpha)
     # computing the cluster permutation t test
     F_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(data,
                                                                      threshold=None,
-                                                                     tail=0,
                                                                      n_permutations=n_permutations,
                                                                      tail=tail, connectivity=ch_con_freq,
                                                                      t_power=1, out_type='indices')
