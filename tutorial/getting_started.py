@@ -15,6 +15,13 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import mne
+import meshio
+
+import mpl3d
+from mpl3d import glm
+from mpl3d.mesh import Mesh
+from mpl3d.camera import Camera
+
 from hypyp.viz import transform
 from hypyp.viz import plot_sensors_2d, plot_links_2d
 from hypyp.viz import plot_sensors_3d, plot_links_3d
@@ -84,7 +91,38 @@ theta, alpha_low, alpha_high, beta, gamma = result
 C = (alpha_low - np.mean(alpha_low[:])) / np.std(alpha_low[:])
 
 # Visualization of inter-brain connectivity in 2D
-plt.figure(figsize=(10, 20))
+# With head plot 
+
+x_max = max ([np.max(loc1[:,0]), np.max(loc2[:,0])])
+y_max = max ([np.max(loc1[:,1]), np.max(loc2[:,1])])
+
+fig = plt.figure(figsize=(4,4))
+ax = fig.add_axes([0,0,1,1],
+                  xlim = [- x_max, x_max],
+                  ylim = [- y_max, y_max],
+                  aspect=1)
+ax.axis("off") 
+mesh = meshio.read("data/Basehead.obj")
+vertices = mesh.points
+faces = mesh.cells[0].data  
+
+camera1= Camera("ortho", theta=90, phi=180, scale=0.5)
+vertices = glm.fit_unit_cube(vertices)
+mesh = Mesh(ax, camera1.transform, vertices, faces,
+            facecolors=white,  edgecolors=black, linewidths=.25)
+camera1.connect(ax, mesh.update)
+   
+camera2 = Camera("ortho", theta=270, phi=360, scale=0.5)
+vertices = glm.fit_unit_cube(vertices)
+mesh = Mesh(ax,
+            camera2.transform  @glm.translate(x=0, y=0, z=-0.80),
+            vertices, faces,
+            facecolors=white,
+            edgecolors=black,
+            linewidths=.25)
+
+camera2.connect(ax, mesh.update)
+    
 plt.gca().set_aspect('equal', 'box')
 plt.axis('off')
 plot_sensors_2d(loc1, loc2, lab1, lab2)
