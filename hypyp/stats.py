@@ -10,7 +10,6 @@
 # ==============================================================================
 
 import numpy as np
-from scipy import sparse
 import matplotlib.pylab as plt
 import mne
 from mne.channels import find_ch_connectivity
@@ -147,7 +146,7 @@ def con_matrix(epochs, freqs_mean, draw=False):
     return ch_con, ch_con_freq
 
 
-def metacon_matrix_2brains(electrodes, ch_con, freqs_mean, plot=False):
+def metaconn_matrix_2brains(electrodes, ch_con, freqs_mean, plot=False):
     """Compute a priori connectivity across space and frequencies
     between pairs of sensors for which connectivity indices have
     been calculated, for merge data (2 brains).
@@ -167,7 +166,7 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean, plot=False):
     freqs_mean : list of frequencies in the frequency-band-of-interest used
     by MNE for coherence spectral density calculation (connectivity indices).
 
-    plot : Boolean for plotting data before/after AR 
+    plot : Boolean for plotting data before/after AR
 
     Returns
     -----
@@ -217,7 +216,7 @@ def metacon_matrix_2brains(electrodes, ch_con, freqs_mean, plot=False):
     return metaconn, metaconn_freq
 
 
-def metacon_matrix(electrodes, ch_con, freqs_mean):
+def metaconn_matrix(electrodes, ch_con, freqs_mean):
     """Compute a priori connectivity between pairs of sensors for which
     connectivity indices have been calculated, across space and frequencies
     (based on sensors location).
