@@ -22,6 +22,7 @@ def test_metaconn():
     
     # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
+    #computing ch_con and sensors pairs for metaconn calculatio
     ch_con, ch_con_freq = stats.con_matrix(epoch_merge, frequencies)
     sensor_pairs = analyses.indexes_connectivity_interbrains(epoch_merge)
     
@@ -32,22 +33,22 @@ def test_metaconn():
     random.seed(42)  # Init the random number generator for reproducibility
     n = random.randrange(0, 63)
     p = random.randrange(63, 125)
-    # for each pair in which ch_name is, check
-    # whether ch_name linked with himself, also
-    # in neighbouring frequencies
-    assertEqual(metaconn_freq[n+62, p], metaconn_freq[n, p])
-    assertEqual(metaconn_freq[n-62, p], metaconn_freq[n, p])
-    assertEqual(metaconn_freq[n+62, p+62], metaconn_freq[n, p])
-    assertEqual(metaconn_freq[n-62, p-62], metaconn_freq[n, p])
-    assertEqual(metaconn_freq[n, p+62], metaconn_freq[n, p])
-    assertEqual(metaconn_freq[n, p-62], metaconn_freq[n, p])
+    # checking for each pair in which ch_name is,
+    # whether ch_name linked himself
+    # (in neighbouring frequencies also)
+    self.assertEqual(metaconn_freq[n+62, p], metaconn_freq[n, p])
+    self.assertEqual(metaconn_freq[n-62, p], metaconn_freq[n, p])
+    self.assertEqual(metaconn_freq[n+62, p+62], metaconn_freq[n, p])
+    self.assertEqual(metaconn_freq[n-62, p-62], metaconn_freq[n, p])
+    self.assertEqual(metaconn_freq[n, p+62], metaconn_freq[n, p])
+    self.assertEqual(metaconn_freq[n, p-62], metaconn_freq[n, p])
     # and not in the other frequencies
     for i in range(1, len(frequencies)):
-        assertFalse(metaconn_freq[n+62*(i+1), p] == metaconn_freq[n, p])
-        assertFalse(metaconn_freq[n-62*(i+1), p] == metaconn_freq[n, p])
-        assertFalse(metaconn_freq[n+62*(i+1), p+62*(i+1)] == metaconn_freq[n, p])
-        assertFalse(metaconn_freq[n-62*(i+1), p-62*(i+1)] == metaconn_freq[n, p])
-        assertFalse(metaconn_freq[n, p+62*(i+1)] == metaconn_freq[n, p])
-        assertFalse(metaconn_freq[n, p-62*(i+1)] == metaconn_freq[n, p])
+        self.assertFalse(metaconn_freq[n+62*(i+1), p] == metaconn_freq[n, p])
+        self.assertFalse(metaconn_freq[n-62*(i+1), p] == metaconn_freq[n, p])
+        self.assertFalse(metaconn_freq[n+62*(i+1), p+62*(i+1)] == metaconn_freq[n, p])
+        self.assertFalse(metaconn_freq[n-62*(i+1), p-62*(i+1)] == metaconn_freq[n, p])
+        self.assertFalse(metaconn_freq[n, p+62*(i+1)] == metaconn_freq[n, p])
+        self.assertFalse(metaconn_freq[n, p-62*(i+1)] == metaconn_freq[n, p])
         # check for each f if connects to the good other ch and not to more
-        assertEqual(metaconn_freq[n+62*i, p+62*i], ch_con_freq[n, p-62])
+        self.assertEqual(metaconn_freq[n+62*i, p+62*i], ch_con_freq[n, p-62])
