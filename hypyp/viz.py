@@ -9,13 +9,14 @@
 # python_version  : 3.7
 # ==============================================================================
 
+from copy import copy
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import mne
+import meshio
 
-
-def transform(locs, traY=0.25, rotZ=np.pi):
+def transform(locs, traY, rotZ):
     """Calculating new locations for the EEG locations.
     
     Parameters
@@ -294,3 +295,37 @@ def plot_significant_sensors(T_obs_plot, epochs):
                              sensors=True)
 
     return None
+
+def get_3d_heads():
+    """
+    Returns Vertices and Faces of a 3D OBJ representing two facing heads.
+    """
+
+    # Extract vertices and faces for the first head
+    mesh = meshio.read("data/Basehead.obj")
+    zoom = 0.15
+    interval = 0.55
+
+    head1_v = mesh.points*zoom
+    head1_f = mesh.cells[0].data
+
+    # Copy the first head to create a second head
+    head2_v = copy(mesh.points*zoom)
+    # Move the vertices by Y rotation and Z translation
+    rotY = np.pi
+    newX = head2_v[:, 0] * np.cos(rotY) - head2_v[:, 2] * np.sin(rotY)
+    newZ = head2_v[:, 0] * np.sin(rotY) + head2_v[:, 2] * np.cos(rotY)
+    head2_v[:, 0] = newX
+    head2_v[:, 2] = newZ
+
+    head1_v[:, 2] = head1_v[:, 2] - interval/2
+    head2_v[:, 2] = head2_v[:, 2] + interval/2
+
+    # Use the same faces
+    head2_f = copy(mesh.cells[0].data)
+
+    # Concatenate the vertices
+    vertices = np.concatenate((head1_v, head2_v))
+    # Concatenate the faces, shift vertices indexes for second head
+    faces = np.concatenate((head1_f, head2_f + len(head1_v)))
+    return vertices, faces

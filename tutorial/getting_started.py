@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import mne
-import meshio
 
 import mpl3d
 from mpl3d import glm
@@ -24,6 +23,7 @@ from mpl3d.camera import Camera
 
 from hypyp.viz import transform
 from hypyp.viz import plot_sensors_2d, plot_links_2d
+from hypyp.viz import get_3d_heads
 from hypyp.viz import plot_sensors_3d, plot_links_3d
 from hypyp.prep import ICA_fit, ICA_choice_comp, AR_local
 from hypyp.analyses import compute_freq_bands, compute_sync
@@ -42,11 +42,12 @@ freq_bands = OrderedDict(freq_bands)  # Force to keep order
 epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
 loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
 lab1 = [ch + "_1" for ch in epo1.ch_names]
+loc1 = transform(loc1, traY=-0.15, rotZ=0)
 
 epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
 loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
 lab2 = [ch + "_2" for ch in epo2.ch_names]
-loc2 = transform(loc2)
+loc2 = transform(loc2, traY=+0.15, rotZ=np.pi)
 
 # Equalize epochs size
 mne.epochs.equalize_epoch_counts([epo1, epo2])
@@ -91,38 +92,14 @@ theta, alpha_low, alpha_high, beta, gamma = result
 C = (alpha_low - np.mean(alpha_low[:])) / np.std(alpha_low[:])
 
 # Visualization of inter-brain connectivity in 2D
-# With head plot 
+fig, ax = plt.subplots(1,1)
+ax.axis("off")
+vertices, faces = get_3d_heads()
+camera = Camera("ortho", theta=90, phi=180, scale=0.5)
+mesh = Mesh(ax, camera.transform, vertices, faces,
+            facecolors='white',  edgecolors='black', linewidths=.25)
+camera.connect(ax, mesh.update)
 
-x_max = max ([np.max(loc1[:,0]), np.max(loc2[:,0])])
-y_max = max ([np.max(loc1[:,1]), np.max(loc2[:,1])])
-
-fig = plt.figure(figsize=(4,4))
-ax = fig.add_axes([0,0,1,1],
-                  xlim = [- x_max, x_max],
-                  ylim = [- y_max, y_max],
-                  aspect=1)
-ax.axis("off") 
-mesh = meshio.read("data/Basehead.obj")
-vertices = mesh.points
-faces = mesh.cells[0].data  
-
-camera1= Camera("ortho", theta=90, phi=180, scale=0.5)
-vertices = glm.fit_unit_cube(vertices)
-mesh = Mesh(ax, camera1.transform, vertices, faces,
-            facecolors=white,  edgecolors=black, linewidths=.25)
-camera1.connect(ax, mesh.update)
-   
-camera2 = Camera("ortho", theta=270, phi=360, scale=0.5)
-vertices = glm.fit_unit_cube(vertices)
-mesh = Mesh(ax,
-            camera2.transform  @glm.translate(x=0, y=0, z=-0.80),
-            vertices, faces,
-            facecolors=white,
-            edgecolors=black,
-            linewidths=.25)
-
-camera2.connect(ax, mesh.update)
-    
 plt.gca().set_aspect('equal', 'box')
 plt.axis('off')
 plot_sensors_2d(loc1, loc2, lab1, lab2)
@@ -131,11 +108,9 @@ plt.tight_layout()
 plt.show()
 
 # Visualization of inter-brain connectivity in 3D
-loc2 = transform(loc2, traY=0.15, rotZ=0)
-
 fig = plt.figure()
 ax = fig.gca(projection='3d')
-plt.axis('off')
+ax.axis("off")
 plot_sensors_3d(ax, loc1, loc2, lab1, lab2)
 plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
