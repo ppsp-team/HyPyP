@@ -9,23 +9,25 @@ from hypyp import utils
 from hypyp import analyses
 
 
-def test_metaconn():
+def test_metaconn(self):
     """
     Test that con indices are good
     """
 
     # Loading data files & extracting sensor infos
-    epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
-    epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
+    epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"),
+                           preload=True)
+    epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"),
+                           preload=True)
     mne.epochs.equalize_epoch_counts([epo1, epo2])
-    epoch_merge = [epo1, epo2]
-    
+    epoch_merge = utils.merge([epo1, epo2])
+
     # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
-    #computing ch_con and sensors pairs for metaconn calculatio
-    ch_con, ch_con_freq = stats.con_matrix(epoch_merge, frequencies)
+    # computing ch_con and sensors pairs for metaconn calculation
+    ch_con, ch_con_freq = stats.con_matrix(epo1, frequencies, draw=False)
     sensor_pairs = analyses.indexes_connectivity_interbrains(epoch_merge)
-    
+
     # computing metaconn_freq and test it
     metaconn, metaconn_freq = stats.metaconn_matrix_2brains(
         sensor_pairs, ch_con, frequencies)
