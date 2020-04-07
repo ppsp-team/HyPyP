@@ -3,6 +3,7 @@
 
 import os
 import random
+import mne
 from hypyp import stats
 from hypyp import utils
 from hypyp import analyses
@@ -16,11 +17,15 @@ def test_metaconn():
     # Loading data files & extracting sensor infos
     epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
     epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
+    mne.epochs.equalize([epo1, epo2])
     epoch_merge = [epo1, epo2]
-
+    
+    # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
-    ch_con, ch_con_freq = stats.con_matrix(epoch_merge[0], frequencies)
+    ch_con, ch_con_freq = stats.con_matrix(epoch_merge, frequencies)
     sensor_pairs = analyses.indexes_connectivity_interbrains(epoch_merge)
+    
+    # computing metaconn_freq and test it
     metaconn, metaconn_freq = stats.metaconn_matrix_2brains(
         sensor_pairs, ch_con, frequencies)
     # take a random ch_name:
