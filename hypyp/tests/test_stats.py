@@ -48,12 +48,13 @@ def test_metaconn():
     assert(metaconn_freq[n, p+tot] == metaconn_freq[n, p])
     assert(metaconn_freq[n, p-tot] == metaconn_freq[n, p])
     # and not in the other frequencies
-    for i in range(1, len(frequencies)):
-        assert(metaconn_freq[n+tot*(i+1), p] != metaconn_freq[n, p])
-        assert(metaconn_freq[n-tot*(i+1), p] != metaconn_freq[n, p])
-        assert(metaconn_freq[n+tot*(i+1), p+tot*(i+1)] != metaconn_freq[n, p])
-        assert(metaconn_freq[n-tot*(i+1), p-tot*(i+1)] != metaconn_freq[n, p])
-        assert(metaconn_freq[n, p+tot*(i+1)] != metaconn_freq[n, p])
-        assert(metaconn_freq[n, p-tot*(i+1)] != metaconn_freq[n, p])
-        # check for each f if connects to the good other ch and not to more
-        assert(metaconn_freq[n+tot*i, p+tot*i] == ch_con_freq[n, p-tot])
+    if metaconn_freq[n, p] == 1:
+        for i in range(1, len(frequencies)):
+            assert(metaconn_freq[n+tot*(i+1), p] != metaconn_freq[n, p])
+            assert(metaconn_freq[n-tot*(i+1), p] != metaconn_freq[n, p])
+            assert(metaconn_freq[n+tot*(i+1), p+tot*(i+1)] != metaconn_freq[n, p])
+            assert(metaconn_freq[n-tot*(i+1), p-tot*(i+1)] != metaconn_freq[n, p])
+            assert(metaconn_freq[n, p+tot*(i+1)] != metaconn_freq[n, p])
+            assert(metaconn_freq[n, p-tot*(i+1)] != metaconn_freq[n, p])
+            # check for each f if connects to the good other ch and not to more
+            assert(metaconn_freq[n+tot*i, p+tot*i] == ch_con_freq[n, p-tot])
