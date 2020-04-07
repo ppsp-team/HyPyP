@@ -1,4 +1,5 @@
 mne>=0.19.2
 matplotlib>=3.0.2
 pandas>=0.20.3
+numpy>=1.16.0
 astropy>=4.0.1
