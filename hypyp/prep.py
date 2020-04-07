@@ -175,7 +175,7 @@ def AR_local(cleaned_epochs_ICA, plot=False):
     """Apply local Autoreject
     Parameters
     ----------
-    clean_epoch_concat : instance of Epochs after global Autoreject
+    clean_epochs_ICA : instance of Epochs after global Autoreject
                          and ICA
     plot : Boolean for plotting data before/after AR 
 
@@ -221,8 +221,12 @@ def AR_local(cleaned_epochs_ICA, plot=False):
     # picking good epochs for the two subj
     cleaned_epochs_AR = []
     for clean_epochs in cleaned_epochs_ICA:  # per subj
-        clean_epochs_AR = clean_epochs.drop(indices=bad)
+        clean_epochs_ep = clean_epochs.drop(indices=bad)
+        # interpolating bads or removing epochs
+        clean_epochs_AR = ar.transform(clean_epochs_ep)
         cleaned_epochs_AR.append(clean_epochs_AR)
+    # equalizing epochs length between two subjects
+    mne.epochs.equalize_epoch_counts(cleaned_epochs_AR)
 
     # Vizualisation before after AR
     evoked_before = []
