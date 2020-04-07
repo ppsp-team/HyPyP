@@ -8,7 +8,7 @@ from hypyp import utils
 from hypyp import analyses
 
 
-def test_metaconn(self):
+def test_metaconn():
     """
     Test that con indices are good
     """
