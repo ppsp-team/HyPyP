@@ -17,7 +17,7 @@ def test_metaconn():
     # Loading data files & extracting sensor infos
     epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
     epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
-    mne.epochs.equalize([epo1, epo2])
+    mne.epochs.equalize_epoch_counts([epo1, epo2])
     epoch_merge = [epo1, epo2]
     
     # taking random freq-of-interest to test metaconn_freq
