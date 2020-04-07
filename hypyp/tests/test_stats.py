@@ -36,8 +36,8 @@ def test_metaconn():
     # n = random.randrange(0, 63)
     # for our data taske into account EOG ch!!!
     n = random.randrange(0, len(epo1.info['ch_names']))
-    tot = len(epoch_merge.info['ch_names'])
-    p = random.randrange(len(epo1.info['ch_names'], tot)
+    tot = len(epo1.info['ch_names'])
+    p = random.randrange(len(epo1.info['ch_names'], len(epoch_merge.info['ch_names']))
     # checking for each pair in which ch_name is,
     # whether ch_name linked himself
     # (in neighbouring frequencies also)
@@ -51,8 +51,8 @@ def test_metaconn():
     for i in range(1, len(frequencies)):
         assert(metaconn_freq[n+tot*(i+1), p] != metaconn_freq[n, p])
         assert(metaconn_freq[n-tot*(i+1), p] != metaconn_freq[n, p])
-        assert(metaconn_freq[n+tot*(i+1), p+62*(i+1)] != metaconn_freq[n, p])
-        assert(metaconn_freq[n-tot*(i+1), p-62*(i+1)] != metaconn_freq[n, p])
+        assert(metaconn_freq[n+tot*(i+1), p+tot*(i+1)] != metaconn_freq[n, p])
+        assert(metaconn_freq[n-tot*(i+1), p-tot*(i+1)] != metaconn_freq[n, p])
         assert(metaconn_freq[n, p+tot*(i+1)] != metaconn_freq[n, p])
         assert(metaconn_freq[n, p-tot*(i+1)] != metaconn_freq[n, p])
         # check for each f if connects to the good other ch and not to more
