@@ -20,7 +20,7 @@ def test_metaconn():
     epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"),
                            preload=True)
     mne.epochs.equalize_epoch_counts([epo1, epo2])
-    epoch_merge = utils.merge([epo1, epo2])
+    epoch_merge = utils.merge(epo1, epo2)
 
     # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
