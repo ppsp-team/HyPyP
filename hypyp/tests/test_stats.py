@@ -38,19 +38,19 @@ def test_metaconn():
     # checking for each pair in which ch_name is,
     # whether ch_name linked himself
     # (in neighbouring frequencies also)
-    assertEqual(metaconn_freq[n+62, p], metaconn_freq[n, p])
-    assertEqual(metaconn_freq[n-62, p], metaconn_freq[n, p])
-    assertEqual(metaconn_freq[n+62, p+62], metaconn_freq[n, p])
-    assertEqual(metaconn_freq[n-62, p-62], metaconn_freq[n, p])
-    assertEqual(metaconn_freq[n, p+62], metaconn_freq[n, p])
-    assertEqual(metaconn_freq[n, p-62], metaconn_freq[n, p])
+    assert(metaconn_freq[n+62, p] == metaconn_freq[n, p])
+    assert(metaconn_freq[n-62, p] == metaconn_freq[n, p])
+    assert(metaconn_freq[n+62, p+62] == metaconn_freq[n, p])
+    assert(metaconn_freq[n-62, p-62] == metaconn_freq[n, p])
+    assert(metaconn_freq[n, p+62] == metaconn_freq[n, p])
+    assert(metaconn_freq[n, p-62] == metaconn_freq[n, p])
     # and not in the other frequencies
     for i in range(1, len(frequencies)):
-        assertFalse(metaconn_freq[n+62*(i+1), p] == metaconn_freq[n, p])
-        assertFalse(metaconn_freq[n-62*(i+1), p] == metaconn_freq[n, p])
-        assertFalse(metaconn_freq[n+62*(i+1), p+62*(i+1)] == metaconn_freq[n, p])
-        assertFalse(metaconn_freq[n-62*(i+1), p-62*(i+1)] == metaconn_freq[n, p])
-        assertFalse(metaconn_freq[n, p+62*(i+1)] == metaconn_freq[n, p])
-        assertFalse(metaconn_freq[n, p-62*(i+1)] == metaconn_freq[n, p])
+        assert(metaconn_freq[n+62*(i+1), p] != metaconn_freq[n, p])
+        assert(metaconn_freq[n-62*(i+1), p] != metaconn_freq[n, p])
+        assert(metaconn_freq[n+62*(i+1), p+62*(i+1)] != metaconn_freq[n, p])
+        assert(metaconn_freq[n-62*(i+1), p-62*(i+1)] != metaconn_freq[n, p])
+        assert(metaconn_freq[n, p+62*(i+1)] != metaconn_freq[n, p])
+        assert(metaconn_freq[n, p-62*(i+1)] != metaconn_freq[n, p])
         # check for each f if connects to the good other ch and not to more
-        assertEqual(metaconn_freq[n+62*i, p+62*i], ch_con_freq[n, p-62])
+        assert(metaconn_freq[n+62*i, p+62*i] == ch_con_freq[n, p-62])
