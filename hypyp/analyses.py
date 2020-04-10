@@ -18,71 +18,59 @@ from mne.time_frequency import psd_welch
 from mne.io.constants import FIFF
 
 
-def PSD(epochs_baseline, epochs_task, fmin, fmax):
+def PSD(epochs, fmin, fmax, time_resolved):
     """
     Compute the Power Spectral Density (PSD) on Epochs for a condition and
     normalize by the PSD of the baseline.
 
     Parameters
     -----
-    epochs_baseline, epochs_task : Epochs for the baseline and the condition
-    ('task' for example), for a subject. epochs_baseline, epochs_task result
+    epochs : Epochs for a condition, for a subject (can result
     from the concatenation of epochs from different occurences of the condition
-    across experiments. Epochs are MNE objects (data are stored in arrays of
+    across experiments). Epochs are MNE objects (data are stored in arrays of
     shape (n_epochs, n_channels, n_times) and info are into a dictionnary).
 
     Note that the function can be iterated on the group and/or on conditions:
-    for epochs_baseline, epochs_task in zip(
-        epochs['epochs_%s_%s_%s_baseline' % (subj, group, cond_name)],
-        epochs['epochs_%s_%s_%s_task' % (subj, group, cond_name)]).
+    for epochs in epochs['epochs_%s_%s_%s' % (subj, group, cond_name)], you can
+    then visualize PSD distribution on the group with the toolbox vizualisation
+    to check normality for statistics for example.
 
-    You can then visualize PSD distribution on the group with the toolbox
-    vizualisation to check normality for statistics for example.
+    fmin, fmax : minimum and maximum frequencies-of-interest for power spectral
+    density calculation (in Hz).
 
-    fmin, fmax : minimum and maximum frequencies for PSD (in Hz).
+    time_resolved : boolean
+    Whether to collapse the time course, only effective when set tot True.
+    If False, PSD won't be averaged over epochs, and the time course
+    is maintained. If True, PSD values are averaged over epochs.
 
     Returns
     -----
     freqs_mean : list of frequencies in frequency-band-of-interest used by MNE
     for power spectral density calculation.
 
-    m_baseline, psds_welch_task_m : ndarray
-    PSD average across epochs for each channel and each frequency,
-    for the baseline and the 'task' condition respectively.
+    PSD_welch : ndarray (n_epochs, n_channels, n_frequencies)
+    PSD value in epochs for each channel and each frequency.
+    Note that if time_resolved==True, PSD values are averaged across epochs.
 
-    psd_mean_task_normZ, psd_mean_task_normLog : ndarray
-    Zscore and Logratio of the average PSD during 'task' condition
     """
     # dropping EOG channels (incompatible with connectivity map model in stats)
-    for ch in epochs_baseline.info['chs']:
+    for ch in epochs.info['chs']:
         if ch['kind'] == 202:  # FIFFV_EOG_CH
-            epochs_baseline.drop_channels([ch['ch_name']])
-    for ch in epochs_task.info['chs']:
-        if ch['kind'] == 202:  # FIFFV_EOG_CH
-            epochs_task.drop_channels([ch['ch_name']])
+            epochs.drop_channels([ch['ch_name']])
 
     # computing power spectral density on epochs signal
     # average in the 1second window around event (mean but can choose 'median')
     kwargs = dict(fmin=fmin, fmax=fmax, n_jobs=1)
-    psds_welch_baseline, freqs_mean = psd_welch(
-        epochs_baseline, **kwargs, average='mean', picks='all')  # or median
-    psds_welch_task, freqs_mean = psd_welch(
-        epochs_task, **kwargs, average='mean', picks='all')  # or median
+    psds_welch, freqs_mean = psd_welch(
+        epochs, **kwargs, average='mean', picks='all')  # or median
 
-    # averaging power across epochs for each ch and each f
-    m_baseline = np.mean(psds_welch_baseline, axis=0)
-    std_baseline = np.std(psds_welch_baseline, axis=0)
-    psds_welch_task_m = np.mean(psds_welch_task, axis=0)
+    if time_resolved is True:
+        # averaging power across epochs for each ch and each f
+        PSD_welch = np.mean(psds_welch, axis=0)
+    else:
+        PSD_welch = psds_welch
 
-    # normalizing power during task by baseline average power across events
-    # Z score
-    s = np.subtract(psds_welch_task_m, m_baseline)
-    psd_mean_task_normZ = np.divide(s, std_baseline)
-    # Log ratio
-    d = np.divide(psds_welch_task_m, m_baseline)
-    psd_mean_task_normLog = np.log10(d)
-
-    return freqs_mean, m_baseline, psds_welch_task_m, psd_mean_task_normZ, psd_mean_task_normLog
+    return freqs_mean, PSD_welch
 
 
 def indexes_connectivity_intrabrain(epochs):
@@ -157,11 +145,11 @@ def indexes_connectivity_interbrains(epoch_hyper):
     return electrodes
 
 
-
 def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
     """Compute frequency- and time-frequency-domain connectivity measures.
 
-    Note that it is computed for all possible electrode pairs between the dyad, but doesn't include intrabrain synchrony
+    Note that it is computed for all possible electrode pairs between the dyad,
+    but doesn't include intrabrain synchrony
 
     Parameters
     ----------
@@ -184,18 +172,23 @@ def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
         'proj': projected power correlation
     epoch_wise : boolean
         whether to compute epoch-to-epoch synchrony. default is True.
-        if False, complex values from epochs will be concatenated before computing synchrony
+        if False, complex values from epochs will be concatenated before
+        computing synchrony
         if True, synchrony is computed from matched epochs
     time_resolved : boolean
-        whether to collapse the time course, only effective when epoch_wise==True
-        if False, synchrony won't be averaged over epochs, and the time course is maintained.
+        whether to collapse the time course, only effective when
+        epoch_wise==True,
+        if False, synchrony won't be averaged over epochs, and the time course
+        is maintained.
         if True, synchrony is averaged over epochs.
 
     Returns
     -------
     result : array
-        Computed connectivity measure(s). The shape of each array is either (n_freq, n_epochs, n_channels, n_channels)
-        if epoch_wise is True and time_resolved is False, or (n_freq, n_channels, n_channels) in other conditions.
+        Computed connectivity measure(s). The shape of each array is either
+        (n_freq, n_epochs, n_channels, n_channels) if epoch_wise is True
+        and time_resolved is False, or (n_freq, n_channels, n_channels)
+        in other conditions.
     """
     # Data consists of two lists of np.array (n_epochs, n_channels, epoch_size)
     assert data[0].shape[0] == data[1].shape[0], "Two streams much have the same lengths."
@@ -217,20 +210,24 @@ def compute_sync(complex_signal, mode, epoch_wise, time_resolved):
 
     Parameters
     ----------
-    complex_signal : array-like, shape is (2, n_epochs, n_channels, n_frequencies, n_times)
+    complex_signal : array-like, shape is
+    (2, n_epochs, n_channels, n_frequencies, n_times)
         complex array from which to compute synchrony for the two subjects.
     mode: str
         Connectivity measure to compute.
     epoch_wise : boolean
         whether to compute epoch-to-epoch synchrony. default is True.
     time_resolved : boolean
-        whether to collapse the time course, only effective when epoch_wise==True
+        whether to collapse the time course, only effective when
+        epoch_wise==True
 
     Returns
     -------
     result : array
-        Computed connectivity measure(s). The shape of each array is either (n_freq, n_epochs, n_channels, n_channels)
-        if epoch_wise is True and time_resolved is False, or (n_freq, n_channels, n_channels) in other conditions.
+        Computed connectivity measure(s). The shape of each array is either
+        (n_freq, n_epochs, n_channels, n_channels)
+        if epoch_wise is True and time_resolved is False, or
+        (n_freq, n_channels, n_channels) in other conditions.
     """
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
         complex_signal.shape[3], complex_signal.shape[4]
@@ -347,7 +344,8 @@ def compute_sync(complex_signal, mode, epoch_wise, time_resolved):
 
 
 def compute_single_freq(data, freq_range):
-    """Compute analytic signal per frequency bin using a multitaper method implemented in mne
+    """Compute analytic signal per frequency bin using a multitaper method
+    implemented in MNE.
 
     Parameters
     ----------
@@ -358,7 +356,8 @@ def compute_single_freq(data, freq_range):
 
     Returns
     -------
-    complex_signal : array, shape is (2, n_epochs, n_channels, n_frequencies, n_times)
+    complex_signal : array, shape is
+    (2, n_epochs, n_channels, n_frequencies, n_times)
     """
     n_samp = data[0].shape[2]
 
@@ -373,7 +372,8 @@ def compute_single_freq(data, freq_range):
 
 
 def compute_freq_bands(data, freq_bands):
-    """Compute analytic signal per frequency band using filtering and hilbert transform
+    """Compute analytic signal per frequency band using filtering
+    and hilbert transform
 
     Parameters
     ----------
@@ -384,7 +384,8 @@ def compute_freq_bands(data, freq_bands):
 
     Returns
     -------
-    complex_signal : array, shape is (2, n_epochs, n_channels, n_freq_bands, n_times)
+    complex_signal : array, shape is
+    (2, n_epochs, n_channels, n_freq_bands, n_times)
     """
     assert data[0].shape[0] == data[1].shape[0]
     n_epoch = data[0].shape[0]
@@ -419,7 +420,8 @@ def _plv(X, Y):
 
 def _coh(X, Y):
     """Coherence
-    instantaneous coherence computed from hilbert transformed signal, then averaged across time points
+    instantaneous coherence computed from hilbert transformed signal,
+    then averaged across time points
 
             |A1·A2·e^(i*delta_phase)|
     Coh = -----------------------------
@@ -427,7 +429,8 @@ def _coh(X, Y):
 
     A1: envelope of X
     A2: envelope of Y
-    reference: Kida, Tetsuo, Emi Tanaka, and Ryusuke Kakigi. “Multi-Dimensional Dynamics of Human Electromagnetic Brain Activity.” Frontiers in Human Neuroscience 9 (January 19, 2016). https://doi.org/10.3389/fnhum.2015.00713.
+    reference: Kida, Tetsuo, Emi Tanaka, and Ryusuke Kakigi.
+    “Multi-Dimensional Dynamics of Human Electromagnetic Brain Activity.” Frontiers in Human Neuroscience 9 (January 19, 2016). https://doi.org/10.3389/fnhum.2015.00713.
     """
     X_phase = np.angle(X)
     Y_phase = np.angle(Y)

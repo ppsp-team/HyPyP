@@ -21,8 +21,9 @@ def create_epochs(raw_S1, raw_S2, freq_bands):
 
     Parameters
     -----
-    raw_S1, raw_S2 : list of raws for each subject (with the different occurences of
-    a condition, for example the baseline, across different experiments. The length can be 1).
+    raw_S1, raw_S2 : list of raws for each subject (with the different
+    occurences of a condition, for example the baseline, across different
+    experiments. The length can be 1).
     Raws are MNE objects (data are ndarray with shape (n_channels, n_times)
     and info is a disctionnary sampling parameters).
 
@@ -30,8 +31,8 @@ def create_epochs(raw_S1, raw_S2, freq_bands):
 
     Plots
     -----
-    Power spectral density calculated with welch FFT for each epoch and each subject,
-    averaged in each frequency band-of-interest.
+    Power spectral density calculated with welch FFT for each epoch and each
+    subject, averaged in each frequency band-of-interest.
 
     Returns
     -----
@@ -86,7 +87,8 @@ def merge(epoch_S1, epoch_S2):
     The time alignement has been done at raw data creation.
 
     """
-    # checking bad ch for epochs, interpolating and removing them from 'bads' if needed
+    # checking bad ch for epochs, interpolating
+    # and removing them from 'bads' if needed
     if len(epoch_S1.info['bads']) > 0:
         epoch_S1 = mne.Epochs.interpolate_bads(
             epoch_S1, reset_bads=True, mode='accurate', origin='auto', verbose=None)
@@ -110,7 +112,7 @@ def merge(epoch_S1, epoch_S2):
 
     # checking wether data have the same size
     assert(len(epoch_S1) == len(epoch_S2)), "Epochs from S1 and S2 should have the same size!"
-    
+
     # picking data per epoch
     for l in range(0, len(epoch_S1)):
         data_S1 = epoch_S1[l].get_data()
@@ -162,13 +164,15 @@ def split(raw_merge):
     """
     Split merged raw data into 2 subjects raw data.
 
-    Note that subject's raw data is set to the standard montage 1020 available in MNE.
-    An average is computed to avoid reference bias (see MNE documentation about set_eeg_reference).
+    Note that subject's raw data is set to the standard montage 1020
+    available in MNE. An average is computed to avoid reference bias
+    (see MNE documentation about set_eeg_reference).
 
     Parameters
     -----
-    raw_merge : Raw data for the dyad with data from subject 1 and data from subject 2
-    (channels name are defined with the suffix S1 or S2 respectively).
+    raw_merge : Raw data for the dyad with data from subject 1
+    and data from subject 2 (channels name are defined with
+    the suffix S1 or S2 respectively).
 
     Returns
     -----
@@ -218,14 +222,16 @@ def split(raw_merge):
     raw_1020_S2 = raw_S2.copy().set_montage(montage)
     # raw_1020_S1.plot_sensors()
 
-    # set reference to electrodes average (instate of initial ref to avoid ref biais)
+    # set reference to electrodes average
+    # (instate of initial ref to avoid ref biais)
     # and storing it in raw.info['projs']: applied when Epochs
     raw_1020_S1, _ = mne.set_eeg_reference(
         raw_1020_S1, 'average', projection=True)
     raw_1020_S2, _ = mne.set_eeg_reference(
         raw_1020_S2, 'average', projection=True)
 
-    # TO DO annotations, subj name, events, task description different across subj
+    # TODO: annotations, subj name, events
+    # task description different across subj
 
     # raw_1020_S1.plot()
     # raw_1020_S1.plot_psd()
@@ -240,17 +246,53 @@ def concatenate_epochs(epoch_S1, epoch_S2):
     Parameters
     -----
     epoch_S1, epoch_S2 : list of epochs for each subject (for example the list
-    samples the different occurences of the baseline condition across experiments).
+    samples the different occurences of the baseline condition
+    across experiments).
     Epochs are MNE objects (data are stored in an array of shape
-    (n_epochs, n_channels, n_times) and info is a disctionnary sampling parameters).
+    (n_epochs, n_channels, n_times) and info is a disctionnary sampling
+    parameters).
 
     Returns
     -----
-    List of concatenate epochs (for example one epoch with all the occurences of the
-    baseline condition across experiments) for each subject.
+    List of concatenate epochs (for example one epoch with all
+    the occurences of the baseline condition across experiments)
+    for each subject.
 
     """
     epoch_S1_concat = mne.concatenate_epochs(epoch_S1)
     epoch_S2_concat = mne.concatenate_epochs(epoch_S2)
 
     return epoch_S1_concat, epoch_S2_concat
+
+
+def normalizing(baseline, task, type):
+    """
+    Computes Zscore or Logratio of a value between a 'task' condition and
+    a baseline.
+
+    Parameters
+    -----
+    baseline, task : PSD or CSD values for the condition 'task' and a baseline,
+    ndarray, shape (n_epochs, n_channels, n_frequencies).
+    type : type of normalization, 'Zscore' or 'Logratio' (str).
+
+    Returns
+    -----
+    Normed_task : PSD or CSD values for the condition 'task' normed by values
+    in a baseline and average across epochs, ndarray, shape
+    (n_channels, n_frequencies).
+
+    """
+    m_baseline = np.mean(baseline, axis=0)
+    m_task = np.mean(task, axis=0)
+    std_baseline = np.std(baseline, axis=0)
+    # normalizing power during task by baseline average power across events
+    if type == 'Zscore':
+        s = np.subtract(m_task, m_baseline)
+        Normed_task = np.divide(s, std_baseline)
+    if type == 'Logratio':
+        d = np.divide(m_task, m_baseline)
+        Normed_task = np.log10(d)
+
+    return Normed_task
+
