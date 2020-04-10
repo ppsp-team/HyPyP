@@ -171,13 +171,13 @@ def ICA_fit(epochs, n_components, method, random_state):
     return icas
 
 
-def AR_local(cleaned_epochs_ICA, plot=False):
+def AR_local(cleaned_epochs_ICA, verbose=False):
     """Apply local Autoreject
     Parameters
     ----------
     clean_epochs_ICA : instance of Epochs after global Autoreject
                          and ICA
-    plot : Boolean for plotting data before/after AR 
+    verbose : Boolean for verbose and plot of data before/after AR 
 
     Returns
     -------
@@ -200,7 +200,8 @@ def AR_local(cleaned_epochs_ICA, plot=False):
             exclude=[])
 
         ar = AutoReject(n_interpolates, consensus_percs, picks=picks,
-                        thresh_method='random_search', random_state=42)
+                        thresh_method='random_search', random_state=42,
+                        verbose=verbose)
 
         # fitting AR to get bad epochs
         ar.fit(clean_epochs)
@@ -215,8 +216,8 @@ def AR_local(cleaned_epochs_ICA, plot=False):
     bad2 = np.where(log2.bad_epochs == True)
 
     bad = list(set(bad1[0].tolist()).intersection(bad2[0].tolist()))
-    print('%s percent of bad epochs' %
-          int(len(bad)/len(list(log1.bad_epochs))*100))
+    if verbose:
+        print('%s percent of bad epochs' % int(len(bad)/len(list(log1.bad_epochs))*100))
 
     # picking good epochs for the two subj
     cleaned_epochs_AR = []
@@ -237,7 +238,7 @@ def AR_local(cleaned_epochs_ICA, plot=False):
     for clean in cleaned_epochs_AR:
         evoked_after_AR.append(clean.average())
 
-    if plot:
+    if verbose:
         for i, j in zip(evoked_before, evoked_after_AR):
             fig, axes = plt.subplots(2, 1, figsize=(6, 6))
             for ax in axes:
