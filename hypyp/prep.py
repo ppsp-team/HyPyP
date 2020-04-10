@@ -28,9 +28,9 @@ def filt(raw_S):
     raws : list of high-pass filtered raws.
     
     """
-    raws=[]
+    raws = []
     for raw in raw_S: # per subj
-        raws.append(mne.io.Raw.filter(raw,l_freq=2., h_freq=None))
+        raws.append(mne.io.Raw.filter(raw, l_freq=2., h_freq=None))
     
     return raws
 

@@ -9,7 +9,6 @@
 # python_version  : 3.7
 # ==============================================================================
 
-import sys
 import numpy as np
 import pandas as pd
 import mne
