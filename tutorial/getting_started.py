@@ -115,3 +115,37 @@ plot_sensors_3d(ax, loc1, loc2, lab1, lab2)
 plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
+
+
+# Visualization of inter-brain connectivity in 3D with get_3D_heads
+## NE FONCTIONNE PAS
+
+fig, ax = plt.subplots(1,1)
+ax.axis("off")
+vertices, faces = get_3d_heads()
+
+xmax = max ([np.max(loc1[:,0]), np.max(loc2[:,0])])
+ymax = max ([np.max(loc1[:,1]), np.max(loc2[:,1])])
+zmax = max ([np.max(loc1[:,2]), np.max(loc2[:,2])])
+xmin = min ([np.max(loc1[:,0]), np.max(loc2[:,0])])
+ymin = min ([np.max(loc1[:,1]), np.max(loc2[:,1])])
+zmin = min ([np.max(loc1[:,2]), np.max(loc2[:,2])])
+
+scale = max([xmax-xmin, ymax-ymin, zmax-zmin])
+vertices /= scale
+vertices[:,0] -= (xmax+xmin)/2/scale
+vertices[:,1] -= (ymax+ymin)/2/scale
+vertices[:,2] -= (zmax+zmin)/2/scale
+
+camera = Camera("ortho", theta=90, phi=180, scale=0.5)
+mesh = Mesh(ax, camera.transform, vertices, faces,
+            facecolors='white',  edgecolors='black', linewidths=.25)
+camera.connect(ax, mesh.update)
+
+fig = plt.figure()
+ax = fig.gca(projection='3d')
+ax.axis("off")
+plot_sensors_3d(ax, loc1, loc2, lab1, lab2)
+plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
+plt.tight_layout()
+plt.show()
