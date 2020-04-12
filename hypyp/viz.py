@@ -330,7 +330,7 @@ def get_3d_heads():
     faces = np.concatenate((head1_f, head2_f + len(head1_v)))
     return vertices, faces
 
-def plot_3d_head(ax, vertices, faces):
+def plot_3d_heads(ax, vertices, faces):
     """Plot heads models in 3D.
     
     Parameters
@@ -346,9 +346,9 @@ def plot_3d_head(ax, vertices, faces):
     None : plot the head faces in 3D within the current axis.
     """
 
-    x_V = vertices[:,0]
-    y_V = vertices[:,1]
-    z_V = vertices[:,2]
+    x_V = vertices[:,2]
+    y_V = vertices[:,0]
+    z_V = vertices[:,1]
     for F in range(len(faces)):
         V0 = faces[F,0]
         V1 = faces[F,1]
