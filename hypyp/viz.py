@@ -329,3 +329,44 @@ def get_3d_heads():
     # Concatenate the faces, shift vertices indexes for second head
     faces = np.concatenate((head1_f, head2_f + len(head1_v)))
     return vertices, faces
+
+def plot_3d_head(ax, vertices, faces):
+    """Plot heads models in 3D.
+    
+    Parameters
+    ----------
+    ax : Matplotlib axis created with projection='3d'
+    vertices : arrays of shape (V, 3)
+               3d coordinates of the vertices
+    faces : arrays of shape (F, 4)
+            vertices number of face
+
+    Returns
+    -------
+    None : plot the head faces in 3D within the current axis.
+    """
+
+    x_V = vertices[:,0]
+    y_V = vertices[:,1]
+    z_V = vertices[:,2]
+    for F in range(len(faces)):
+        V0 = faces[F,0]
+        V1 = faces[F,1]
+        V2 = faces[F,2]
+        V3 = faces[F,3]
+        ax.plot([x_V[V0],x_V[V1]],
+                [y_V[V0],y_V[V1]],
+                [z_V[V0],z_V[V1]],
+                '-', color= 'black', linewidth=0.3)
+        ax.plot([x_V[V1],x_V[V2]],
+                [y_V[V1],y_V[V2]],
+                [z_V[V1],z_V[V2]],
+                '-', color= 'black', linewidth=0.3)
+        ax.plot([x_V[V2],x_V[V3]],
+                [y_V[V2],y_V[V3]],
+                [z_V[V2],z_V[V3]],
+                '-', color= 'black', linewidth=0.3)
+        ax.plot([x_V[V3],x_V[V1]],
+                [y_V[V3],y_V[V1]],
+                [z_V[V3],z_V[V1]],
+                '-', color= 'black', linewidth=0.3)

@@ -39,12 +39,12 @@ freq_bands = {'Theta': [4, 7],
 freq_bands = OrderedDict(freq_bands)  # Force to keep order
 
 # Loading data files & extracting sensor infos
-epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
+epo1 = mne.read_epochs(os.path.join("/Users/ayrolles/DEV/HyPyP/data/subject1-epo.fif"), preload=True)
 loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
 lab1 = [ch + "_1" for ch in epo1.ch_names]
 loc1 = transform(loc1, traY=-0.15, rotZ=0)
 
-epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
+epo2 = mne.read_epochs(os.path.join("/Users/ayrolles/DEV/HyPyP/data/subject2-epo.fif"), preload=True)
 loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
 lab2 = [ch + "_2" for ch in epo2.ch_names]
 loc2 = transform(loc2, traY=+0.15, rotZ=np.pi)
@@ -107,21 +107,10 @@ plot_links_2d(loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
 
-# Visualization of inter-brain connectivity in 3D
-fig = plt.figure()
-ax = fig.gca(projection='3d')
-ax.axis("off")
-plot_sensors_3d(ax, loc1, loc2, lab1, lab2)
-plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
-plt.tight_layout()
-plt.show()
-
 
 # Visualization of inter-brain connectivity in 3D with get_3D_heads
-## NE FONCTIONNE PAS
+# PROBLEMES ECHELLE ET MATCHING SENSOR A REGLER 
 
-fig, ax = plt.subplots(1,1)
-ax.axis("off")
 vertices, faces = get_3d_heads()
 
 xmax = max ([np.max(loc1[:,0]), np.max(loc2[:,0])])
@@ -137,15 +126,14 @@ vertices[:,0] -= (xmax+xmin)/2/scale
 vertices[:,1] -= (ymax+ymin)/2/scale
 vertices[:,2] -= (zmax+zmin)/2/scale
 
-camera = Camera("ortho", theta=90, phi=180, scale=0.5)
-mesh = Mesh(ax, camera.transform, vertices, faces,
-            facecolors='white',  edgecolors='black', linewidths=.25)
-camera.connect(ax, mesh.update)
 
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 ax.axis("off")
+plot_3d_head(ax, vertices,faces)
 plot_sensors_3d(ax, loc1, loc2, lab1, lab2)
 plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
+
+
