@@ -15,11 +15,11 @@ Florence BRUN, Anaël AYROLLLES, Phoebe CHEN, Amir DJALOVSKI, Suzanne DIKKER, Gu
 
 ⚙️ [prep.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/prep.py) — Preprocessing (ICA & AutoReject) (Anaël, Florence, Guillaume)
 
-🔠 [analyses.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/analyses.py) — Wide choice of connectivity measures (Phoebe, Suzanne, Guillaume)
+🔠 [analyses.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/analyses.py) — Power spectral density and wide choice of connectivity measures (Phoebe, Suzanne, Florence, Guillaume)
 
 📈 [stats.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/stats.py) — Statistics (permutations & cluster statistics) (Florence, Guillaume)
 
-🧠 [viz.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/viz.py) — Inter-brain visualization (Amir, Anaël, Guillaume)
+🧠 [viz.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/viz.py) — Inter-brain visualization (Amir, Anaël, Florence, Guillaume)
 
 🎓 [Tutorials](https://github.com/GHFC/HyPyP/tree/master/tutorial) — HPC & Multithreading (Guillaume)
 
