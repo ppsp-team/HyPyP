@@ -16,8 +16,8 @@ import mne
 
 
 def transform(locs, traY=0.25, rotZ=np.pi):
-    """Calculating new locations for the EEG locations.
-    
+    """Calculates new locations for the EEG locations.
+
     Parameters
     ----------
     locs : array of shape (n_sensors, 3)
@@ -41,8 +41,8 @@ def transform(locs, traY=0.25, rotZ=np.pi):
 
 
 def plot_sensors_2d(loc1, loc2, lab1=[], lab2=[]):
-    """Plot sensors in 2D.
-    
+    """Plots sensors in 2D.
+
     Parameters
     ----------
     loc1, loc2 : arrays of shape (n_sensors, 3)
@@ -70,8 +70,8 @@ def plot_sensors_2d(loc1, loc2, lab1=[], lab2=[]):
 
 
 def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
-    """Plot hyper-conenctivity in 2D.
-    
+    """Plots hyper-conenctivity in 2D.
+
     Parameters
     ----------
     loc1, loc2 : arrays of shape (n_sensors, 3)
@@ -86,7 +86,7 @@ def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
             if <3 equivalent to ploting straight lines
     weight : numpy.float
          Connectivity weight to determine the thickness
-         of the link               
+         of the link
 
     Returns
     -------
@@ -97,7 +97,7 @@ def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
 
     cmap = matplotlib.cm.get_cmap('Reds')
     norm = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
-       
+
 
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
@@ -139,8 +139,8 @@ def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
 
 
 def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
-    """Plot sensors in 3D.
-    
+    """Plots sensors in 3D.
+
     Parameters
     ----------
     ax : Matplotlib axis created with projection='3d'
@@ -170,8 +170,8 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
 
 
 def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
-    """Plot hyper-conenctivity in 3D.
-    
+    """Plots hyper-conenctivity in 3D.
+
     Parameters
     ----------
     ax : Matplotlib axis created with projection='3d'
@@ -187,13 +187,12 @@ def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
             if <3 equivalent to ploting straight lines
     weight : numpy.float
          Connectivity weight to determine the thickness
-         of the link             
+         of the link
 
     Returns
     -------
     None : plot the links in 3D within the current axis.
-    """  
-
+    """
     ctr1 = np.nanmean(loc1, 0)
     ctr1[2] -= 0.2
     ctr2 = np.nanmean(loc2, 0)
@@ -251,10 +250,10 @@ def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
                         ax.plot([xn, xnn], [yn, ynn], [zn, znn],
                                  '-', color=color, linewidth=weight)
 
-                        
-                        
+
 def plot_significant_sensors(T_obs_plot, epochs):
-    """Plots the significant sensors from a statistical test (simple t test or
+    """
+    Plots the significant sensors from a statistical test (simple t test or
     clusters corrected t test) computed between groups or conditions, on power
     or connectivity values, across simple subjects. For satistics with
     interbrains connectivity values on dyads (merge data), use the
@@ -263,7 +262,7 @@ def plot_significant_sensors(T_obs_plot, epochs):
     Parameters
     -----
     T_obs_plot : satistical values to plot, from sensors above alpha threshold,
-    array of shape (n_tests,).
+                 array of shape (n_tests,).
 
     epochs : one subject Epochs object to sample channels information in info.
 
@@ -274,7 +273,6 @@ def plot_significant_sensors(T_obs_plot, epochs):
     Returns
     -----
     None.
-
     """
 
     # getting sensors position
