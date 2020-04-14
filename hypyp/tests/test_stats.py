@@ -77,5 +77,12 @@ def test_intraCSD():
     data = np.array([epo1, epo1])
     coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
                                time_resolved=True)
-    coh_mne, freqs, time, epoch, taper = spectral_connectivity(data, method='plv', mode='fourier', indices=None, sfreq=500, fmin=11, fmax=13, faverage=True)
+    coh_mne, freqs, time, epoch, taper = mne.connectivity.spectral_connectivity(data,
+                                                                                method='plv',
+                                                                                mode='fourier',
+                                                                                indices=None,
+                                                                                sfreq=500,
+                                                                                fmin=11,
+                                                                                fmax=13,
+                                                                                faverage=True)
     assert(coh == coh_mne)
