@@ -20,7 +20,7 @@ from mne.io.constants import FIFF
 
 def PSD(epochs, fmin, fmax, time_resolved):
     """
-    Compute the Power Spectral Density (PSD) on Epochs for a condition.
+    Computes the Power Spectral Density (PSD) on Epochs for a condition.
 
     Parameters
     -----
@@ -52,7 +52,6 @@ def PSD(epochs, fmin, fmax, time_resolved):
                 ndarray (n_epochs, n_channels, n_frequencies).
                 Note that if time_resolved == True, PSD values are averaged
                 across epochs.
-
     """
     # dropping EOG channels (incompatible with connectivity map model in stats)
     for ch in epochs.info['chs']:
@@ -76,7 +75,7 @@ def PSD(epochs, fmin, fmax, time_resolved):
 
 def indexes_connectivity_intrabrain(epochs):
     """
-    Compute indexes for connectivity analysis between all EEG
+    Computes indexes for connectivity analysis between all EEG
     sensors for one subject. Can be used instead of
     (n_channels, n_channels) that takes into account intra electrode
     connectivity.
@@ -90,7 +89,6 @@ def indexes_connectivity_intrabrain(epochs):
     -----
     electrodes : electrodes pairs for which connectivity indices will be
                  computed, list of tuples with channels indexes.
-
     """
     names = copy.deepcopy(epochs.info['ch_names'])
     for ch in epochs.info['chs']:
@@ -114,7 +112,7 @@ def indexes_connectivity_intrabrain(epochs):
 
 def indexes_connectivity_interbrains(epoch_hyper):
     """
-    Compute indexes for interbrains connectivity analyses between all EEG
+    Computes indexes for interbrains connectivity analyses between all EEG
     sensors for 2 subjects (merge data).
 
     Note that only interbrains connectivity will be computed.
@@ -128,7 +126,6 @@ def indexes_connectivity_interbrains(epoch_hyper):
     -----
     electrodes : electrodes pairs for which connectivity indices will be
                  computed, list of tuples with channels indexes.
-
     """
     electrodes = []
     names = copy.deepcopy(epoch_hyper.info['ch_names'])

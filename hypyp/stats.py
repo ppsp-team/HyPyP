@@ -17,7 +17,8 @@ from mne.stats import permutation_cluster_test
 
 
 def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha):
-    """Compute statistical t test on Power Spectral Density values for a condition.
+    """
+    Computes statistical t test on Power Spectral Density values for a condition.
 
     Note that this ttest calculates if the observed mean significantly deviates
     from 0, it does not compare two periods, but one period with the null
@@ -37,16 +38,16 @@ def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha
     Parameters
     -----
     PSDs_task_normLog: array of subjects PSD Logratio (ndarray) for a condition
-    (n_samples, n_tests with n_tests the different channels).
+                       (n_samples, n_tests : n_tests the different channels).
 
     epochs: Epochs object for a condition from a random subject, only used to
-    get parameters from the info (sampling frequencies for example).
+            get parameters from the info (sampling frequencies for example).
 
     n_permutations: the number of permutations, int. Should be at least 2*n
-    sample, can be set to 50000 for example.
+                    sample, can be set to 50000 for example.
 
     alpha_bonferroni: the threshold for bonferroni correction, int.
-    Can be set to 0.05.
+                      Can be set to 0.05.
 
     alpha: the threshold for ttest, int. Can be set to 0.05.
 
@@ -57,15 +58,14 @@ def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha
     p_values: p-values for all the tests, array of shape (n_tests).
 
     H0: T-statistic obtained by permutations and t-max trick for multiple
-    comparison, array of shape (n_permutations).
+        comparison, array of shape (n_permutations).
 
     adj_p: adjusted p values from bonferroni correction, array of shape
-    (n_tests, n_tests), with boolean assessment for p values and p values
-    corrected.
+           (n_tests, n_tests), with boolean assessment for p values and
+           p values corrected.
 
     T_obs_plot : satistical values to plot, from sensors above alpha threshold,
     array of shape (n_tests,).
-
     """
     # averaging across frequencies (compute stats only in ch space)
     power = np.mean(PSDs_task_normLog, axis=2)
@@ -91,26 +91,27 @@ def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha
 
 
 def con_matrix(epochs, freqs_mean, draw=False):
-    """Compute a priori channels connectivity across space and frequencies.
+    """
+    Computes a priori channels connectivity across space and frequencies.
 
     Parameters
     -----
     epochs : one subject Epochs object to sample channels information in info.
 
     freqs_mean : list of frequencies in frequency-band-of-interest used by MNE
-    for power or coherence spectral density calculation.
+                 for power or coherence spectral density calculation.
 
-    draw : boolean flag for plotting the connectivity matrices
+    draw : boolean flag for plotting the connectivity matrices.
 
     Returns
     -----
     ch_con : connectivity matrix between sensors along space based on their
-    position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
+             position, scipy.sparse.csr_matrix of shape
+             (n_channels, n_channels).
 
     ch_con_freq : connectivity matrix between sensors along space and
-    frequencies, scipy.sparse.csr_matrix of shape (n_channels*len(freqs_mean),
-    n_channels*len(freqs_mean)).
-
+                  frequencies, scipy.sparse.csr_matrix of shape
+                  (n_channels*len(freqs_mean), n_channels*len(freqs_mean)).
     """
 
     # creating channels connectivity matrix in space
@@ -147,7 +148,8 @@ def con_matrix(epochs, freqs_mean, draw=False):
 
 
 def metaconn_matrix_2brains(electrodes, ch_con, freqs_mean, plot=False):
-    """Compute a priori connectivity across space and frequencies
+    """
+    Computes a priori connectivity across space and frequencies
     between pairs of sensors for which connectivity indices have
     been calculated, for merge data (2 brains).
 
@@ -157,28 +159,32 @@ def metaconn_matrix_2brains(electrodes, ch_con, freqs_mean, plot=False):
     Parameters
     -----
     electrodes : electrodes pairs for which connectivity indices have
-    been computed, list of tuples with channels indexes, see
-    indexes_connectivity_interbrains function in toolbox (analyses).
+                 been computed, list of tuples with channels indexes, see
+                 indexes_connectivity_interbrains function in toolbox
+                 (analyses).
 
     ch_con : connectivity matrix between sensors along space based on their
-    position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
+             position, scipy.sparse.csr_matrix of shape
+             (n_channels, n_channels).
 
     freqs_mean : list of frequencies in the frequency-band-of-interest used
-    by MNE for coherence spectral density calculation (connectivity indices).
+                 by MNE for coherence spectral density calculation
+                 (connectivity indices).
 
     plot : Boolean for plotting data before/after AR
 
     Returns
     -----
     metaconn : a priori connectivity based on sensors location, between pairs
-    of sensors for which connectivity indices have been calculated, for merge
-    data, matrix of shape (len(electrodes), len(electrodes)).
+               of sensors for which connectivity indices have been calculated,
+               for merge data, matrix of shape
+               (len(electrodes), len(electrodes)).
 
     metaconn_freq : a priori connectivity between pairs of sensors for which
-    connectivity indices have been calculated, across space and frequencies,
-    for merge data, matrix of shape (len(electrodes)*len(freqs_mean),
-    len(electrodes)*len(freqs_mean)).
-
+                    connectivity indices have been calculated, across space and
+                    frequencies, for merge data, matrix of shape
+                    (len(electrodes)*len(freqs_mean),
+                    len(electrodes)*len(freqs_mean)).
     """
 
     n = np.max(electrodes, axis=0)[0]+1
@@ -217,32 +223,36 @@ def metaconn_matrix_2brains(electrodes, ch_con, freqs_mean, plot=False):
 
 
 def metaconn_matrix(electrodes, ch_con, freqs_mean):
-    """Compute a priori connectivity between pairs of sensors for which
+    """
+    Computes a priori connectivity between pairs of sensors for which
     connectivity indices have been calculated, across space and frequencies
     (based on sensors location).
 
     Parameters
     -----
     electrodes : electrodes pairs for which connectivity has been computed,
-    list of tuples with channels indexes, see indexes_connectivity_intrabrains
-    function in toolbox (analyses).
+                 list of tuples with channels indexes, see indexes_connectivity
+                 intrabrains function in toolbox (analyses).
 
     ch_con : connectivity matrix between sensors along space based on their
-    position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
+             position, scipy.sparse.csr_matrix of shape
+             (n_channels, n_channels).
 
     freqs_mean : list of frequencies in the frequency-band-of-interest used
-    by MNE for coherence spectral density calculation (connectivity indices).
+                 by MNE for coherence spectral density calculation
+                 (connectivity indices).
 
     Returns
     -----
     metaconn : a priori connectivity based on sensors location, between pairs
-    of sensors for which connectivity indices have been calculated,
-    matrix of shape (len(electrodes), len(electrodes)).
+               of sensors for which connectivity indices have been calculated,
+               matrix of shape (len(electrodes), len(electrodes)).
 
     metaconn_freq : a priori connectivity between pairs of sensors for which
-    connectivity indices have been calculated, across space and frequencies,
-    for merge data, matrix of shape (len(electrodes)*len(freqs_mean),
-    len(electrodes)*len(freqs_mean)).
+                    connectivity indices have been calculated, across space and
+                    frequencies, for merge data, matrix of shape
+                    (len(electrodes)*len(freqs_mean),
+                    len(electrodes)*len(freqs_mean)).
 
     """
 
@@ -278,45 +288,45 @@ def metaconn_matrix(electrodes, ch_con, freqs_mean):
 
 
 def statscondCluster(data, freqs_mean, ch_con_freq, tail, n_permutations, alpha):
-    """Compute cluster-level statistical permutation test, corrected with
+    """
+    Computes cluster-level statistical permutation test, corrected with
     channels connectivity across space and frequencies.
 
     Parameters
     -----
     data : values from different conditions or different groups to compare,
-    list of arrays (3d for time-frequency power or connectivity values).
+           list of arrays (3d for time-frequency power or connectivity values).
 
     freqs_mean : frequencies in frequency-band-of-interest used by MNE for PSD
-    or CSD calculation, list.
+                 or CSD calculation, list.
 
     ch_con_freq : connectivity or metaconnectivity matrix for PSD or CSD
-    values to assess a priori connectivity between sensors across space and
-    frequencies based on their position, bsr_matrix.
+                  values to assess a priori connectivity between sensors across
+                  space and frequencies based on their position, bsr_matrix.
 
     tail : direction of the ttest, can be set to 1, 0 or -1.
 
     n_permutations : number of permutations computed, can be set to 50000.
 
     alpha : threshold to consider clusters significant, can be set to 0.05
-    or less.
+            or less.
 
     Returns
     -----
     F_obs : statistic (F by default) observed for all variables,
-    array of shape (n_tests,).
+            array of shape (n_tests,).
 
     clusters : list where each sublist contains the indices of locations
-    that together form a cluster, list.
+               that together form a cluster, list.
 
     cluster_pv : p-value for each cluster, array.
 
     H0 : max cluster level stats observed under permutation, array of
-    shape (n_permutations,).
+         shape (n_permutations,).
 
     F_obs_plot : satistical values above alpha threshold, to plot significant
-    sensors (see plot_significant_sensors function in the toolbox), array
-    of shape (n_tests,).
-
+                 sensors (see plot_significant_sensors function in the toolbox)
+                 array of shape (n_tests,).
     """
 
     # computing the cluster permutation t test

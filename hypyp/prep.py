@@ -18,7 +18,7 @@ from mne.preprocessing import ICA, corrmap
 
 def filt(raw_S):
     """
-    Filter list of raw data to remove slow drifts.
+    Filters list of raw data to remove slow drifts.
 
     Parameters
     -----
@@ -39,7 +39,7 @@ def filt(raw_S):
 
 def ICA_choice_comp(icas, epochs):
     """
-    Plot Independant Components for each subject, let the user choose
+    Plots Independant Components for each subject, let the user choose
     the relevant components for artefacts rejection and apply ICA on
     Epochs.
 
@@ -87,7 +87,7 @@ def ICA_choice_comp(icas, epochs):
 
 def ICA_apply(icas, subj_number, comp_number, epochs):
     """
-    Apply ICA with template model from 1 subject in the dyad.
+    Applies ICA with template model from 1 subject in the dyad.
     """
 
     cleaned_epochs_ICA = []
@@ -121,7 +121,7 @@ def ICA_apply(icas, subj_number, comp_number, epochs):
 
 def ICA_fit(epochs, n_components, method, random_state):
     """
-    Compute global Autorejection to fit Independant Components Analysis
+    Computes global Autorejection to fit Independant Components Analysis
     on Epochs, for each subject.
 
     Pre requisite : install autoreject
@@ -177,7 +177,7 @@ def ICA_fit(epochs, n_components, method, random_state):
 
 def AR_local(cleaned_epochs_ICA, verbose=False):
     """
-    Apply local Autoreject to correct or reject bad epochs.
+    Applies local Autoreject to correct or reject bad epochs.
 
     Parameters
     -----
