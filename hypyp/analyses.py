@@ -25,9 +25,10 @@ def PSD(epochs, fmin, fmax, time_resolved):
     Parameters
     -----
     epochs : Epochs for a condition, for a subject (can result from the
-    concatenation of epochs from different occurences of the condition
-    across experiments). Epochs are MNE objects (data are stored in arrays of
-    shape (n_epochs, n_channels, n_times) and info are into a dictionnary).
+             concatenation of epochs from different occurences of the condition
+             across experiments). Epochs are MNE objects (data are stored in
+             arrays of shape (n_epochs, n_channels, n_times) and info are into
+             a dictionnary).
 
     Note that the function can be iterated on the group and/or on conditions:
     for epochs in epochs['epochs_%s_%s_%s' % (subj, group, cond_name)], you can
@@ -35,20 +36,22 @@ def PSD(epochs, fmin, fmax, time_resolved):
     to check normality for statistics for example.
 
     fmin, fmax : minimum and maximum frequencies-of-interest for power spectral
-    density calculation, floats in Hz.
+                 density calculation, floats in Hz.
 
     time_resolved : whether to collapse the time course, boolean.
-    If False, PSD won't be averaged over epochs, the time course is maintained.
-    If True, PSD values are averaged over epochs.
+                    If False, PSD won't be averaged over epochs the time course
+                    is maintained.
+                    If True, PSD values are averaged over epochs.
 
     Returns
     -----
     freqs_mean : list of frequencies in frequency-band-of-interest actually
-    used for power spectral density calculation.
+                 used for power spectral density calculation.
 
     PSD_welch : PSD value in epochs for each channel and each frequency,
-    ndarray (n_epochs, n_channels, n_frequencies).
-    Note that if time_resolved == True, PSD values are averaged across epochs.
+                ndarray (n_epochs, n_channels, n_frequencies).
+                Note that if time_resolved == True, PSD values are averaged
+                across epochs.
 
     """
     # dropping EOG channels (incompatible with connectivity map model in stats)
@@ -81,12 +84,12 @@ def indexes_connectivity_intrabrain(epochs):
     Parameters
     -----
     epochs : one subject Epochs object to get channels info, Epochs
-    are MNE objects.
+             are MNE objects.
 
     Returns
     -----
     electrodes : electrodes pairs for which connectivity indices will be
-    computed, list of tuples with channels indexes.
+                 computed, list of tuples with channels indexes.
 
     """
     names = copy.deepcopy(epochs.info['ch_names'])
@@ -119,12 +122,12 @@ def indexes_connectivity_interbrains(epoch_hyper):
     Parameters
     -----
     epoch_hyper : one dyad Epochs object to get channels info, Epochs
-    are MNE objects.
+                  are MNE objects.
 
     Returns
     -----
     electrodes : electrodes pairs for which connectivity indices will be
-    computed, list of tuples with channels indexes.
+                 computed, list of tuples with channels indexes.
 
     """
     electrodes = []
