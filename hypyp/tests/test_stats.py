@@ -4,6 +4,7 @@
 import os
 import random
 import numpy as np
+from time import time
 import mne
 from hypyp import stats
 from hypyp import utils
@@ -75,8 +76,10 @@ def test_intraCSD():
     # taking random freq-of-interest to test intra-CSD
     frequencies = [11, 12, 13]
     data = np.array([epo1, epo1])
+    now = time()
     coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
                                time_resolved=True)
+    now2 = time()
     coh_mne, freqs, time, epoch, taper = mne.connectivity.spectral_connectivity(data=epo1,
                                                                                 method='plv',
                                                                                 mode='fourier',
@@ -85,4 +88,6 @@ def test_intraCSD():
                                                                                 fmin=11,
                                                                                 fmax=13,
                                                                                 faverage=True)
-    assert(coh == coh_mne)
+    now3 = time()
+    assert((int(now2) - int(now)) == (int(now3) - int(now2)))
+    assert(coh.hape == coh_mne.shape)
