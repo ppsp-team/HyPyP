@@ -3,7 +3,7 @@
 # ==============================================================================
 # title           : viz.py
 # description     : basic visualization functions
-# author          : Guillaume Dumas, Amir Djalovski
+# author          : Guillaume Dumas, Amir Djalovski, Anaël Ayrolles
 # date            : 2020-03-18
 # version         : 1
 # python_version  : 3.7
@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import mne
 import meshio
 
-def transform(locs, traY, rotZ):
+def transform(locs, traX, traY, traZ, rotZ):
     """Calculating new locations for the EEG locations.
     
     Parameters
@@ -36,8 +36,10 @@ def transform(locs, traY, rotZ):
     newX = locs[:, 0] * np.cos(rotZ) - locs[:, 1] * np.sin(rotZ)
     newY = locs[:, 0] * np.sin(rotZ) + locs[:, 1] * np.cos(rotZ)
     locs[:, 0] = newX
+    locs[:, 0] = locs[:, 0] + traX
     locs[:, 1] = newY
     locs[:, 1] = locs[:, 1] + traY
+    locs[:, 2] = locs[:, 2] + traZ
     return locs
 
 

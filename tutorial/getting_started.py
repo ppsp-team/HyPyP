@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import mne
+import meshio
 
 import mpl3d
 from mpl3d import glm
@@ -39,15 +40,15 @@ freq_bands = {'Theta': [4, 7],
 freq_bands = OrderedDict(freq_bands)  # Force to keep order
 
 # Loading data files & extracting sensor infos
-epo1 = mne.read_epochs(os.path.join("/Users/ayrolles/DEV/HyPyP/data/subject1-epo.fif"), preload=True)
+epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
 loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
 lab1 = [ch + "_1" for ch in epo1.ch_names]
-loc1 = transform(loc1, traY=-0.25, rotZ=0)
+loc1 = transform(loc1,traX=-0.15, traY=0, traZ=+0.25, rotZ=(-np.pi/2))
 
-epo2 = mne.read_epochs(os.path.join("/Users/ayrolles/DEV/HyPyP/data/subject2-epo.fif"), preload=True)
+epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
 loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
 lab2 = [ch + "_2" for ch in epo2.ch_names]
-loc2 = transform(loc2, traY=+0.25, rotZ=np.pi)
+loc2 = transform(loc2,traX=+0.15, traY=0, traZ=+0.25, rotZ=np.pi/2)
 
 # Equalize epochs size
 mne.epochs.equalize_epoch_counts([epo1, epo2])
@@ -96,7 +97,7 @@ fig, ax = plt.subplots(1,1)
 ax.axis("off")
 vertices, faces = get_3d_heads()
 camera = Camera("ortho", theta=90, phi=180, scale=0.5)
-mesh = Mesh(ax, camera.transform, vertices, faces,
+mesh = Mesh(ax, camera.transform @ glm.yrotate(90), vertices, faces,
             facecolors='white',  edgecolors='black', linewidths=.25)
 camera.connect(ax, mesh.update)
 
@@ -109,23 +110,8 @@ plt.show()
 
 
 # Visualization of inter-brain connectivity in 3D with get_3D_heads
-# PROBLEMES ECHELLE ET MATCHING SENSOR A REGLER 
 
 vertices, faces = get_3d_heads()
-
-xmax = max ([np.max(loc1[:,0]), np.max(loc2[:,0])])
-ymax = max ([np.max(loc1[:,1]), np.max(loc2[:,1])])
-zmax = max ([np.max(loc1[:,2]), np.max(loc2[:,2])])
-xmin = min ([np.max(loc1[:,0]), np.max(loc2[:,0])])
-ymin = min ([np.max(loc1[:,1]), np.max(loc2[:,1])])
-zmin = min ([np.max(loc1[:,2]), np.max(loc2[:,2])])
-
-scale = max([xmax-xmin, ymax-ymin, zmax-zmin])
-vertices /= scale
-vertices[:,0] -= (xmax+xmin)/2/scale
-vertices[:,1] -= (ymax+ymin)/2/scale
-vertices[:,2] -= (zmax+zmin)/2/scale
-
 
 fig = plt.figure()
 ax = fig.gca(projection='3d')
