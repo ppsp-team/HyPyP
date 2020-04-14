@@ -60,14 +60,14 @@ def plot_sensors_2d(loc1, loc2, lab1=[], lab2=[]):
         x1, y1, z1 = loc1[idx1, :]
         plt.plot(x1, y1, marker='o', color='blue')
         if lab1:
-            plt.text(x1, y1, lab1[idx1],
+            plt.text(x1+0.012, y1+0.012, lab1[idx1],
                      horizontalalignment='center',
                      verticalalignment='center')
     for idx2 in range(len(loc2)):
         x2, y2, z2 = loc2[idx2, :]
         plt.plot(x2, y2, marker='o', color='red')
         if lab2:
-            plt.text(x2, y2, lab2[idx2],
+            plt.text(x2+0.012, y2+0.012, lab2[idx2],
                      horizontalalignment='center',
                      verticalalignment='center')
 

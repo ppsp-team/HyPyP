@@ -98,7 +98,7 @@ ax.axis("off")
 vertices, faces = get_3d_heads()
 camera = Camera("ortho", theta=90, phi=180, scale=1)
 mesh = Mesh(ax, camera.transform @ glm.yrotate(90), vertices, faces,
-            facecolors='white',  edgecolors='grey', linewidths=.25)
+            facecolors='white',  edgecolors='black', linewidths=.25)
 camera.connect(ax, mesh.update)
 
 plt.gca().set_aspect('equal', 'box')
