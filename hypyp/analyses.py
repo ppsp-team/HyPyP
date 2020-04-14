@@ -20,13 +20,12 @@ from mne.io.constants import FIFF
 
 def PSD(epochs, fmin, fmax, time_resolved):
     """
-    Compute the Power Spectral Density (PSD) on Epochs for a condition and
-    normalize by the PSD of the baseline.
+    Compute the Power Spectral Density (PSD) on Epochs for a condition.
 
     Parameters
     -----
-    epochs : Epochs for a condition, for a subject (can result
-    from the concatenation of epochs from different occurences of the condition
+    epochs : Epochs for a condition, for a subject (can result from the
+    concatenation of epochs from different occurences of the condition
     across experiments). Epochs are MNE objects (data are stored in arrays of
     shape (n_epochs, n_channels, n_times) and info are into a dictionnary).
 
@@ -36,21 +35,20 @@ def PSD(epochs, fmin, fmax, time_resolved):
     to check normality for statistics for example.
 
     fmin, fmax : minimum and maximum frequencies-of-interest for power spectral
-    density calculation (in Hz).
+    density calculation, floats in Hz.
 
-    time_resolved : boolean
-    Whether to collapse the time course, only effective when set tot True.
-    If False, PSD won't be averaged over epochs, and the time course
-    is maintained. If True, PSD values are averaged over epochs.
+    time_resolved : whether to collapse the time course, boolean.
+    If False, PSD won't be averaged over epochs, the time course is maintained.
+    If True, PSD values are averaged over epochs.
 
     Returns
     -----
-    freqs_mean : list of frequencies in frequency-band-of-interest used by MNE
-    for power spectral density calculation.
+    freqs_mean : list of frequencies in frequency-band-of-interest actually
+    used for power spectral density calculation.
 
-    PSD_welch : ndarray (n_epochs, n_channels, n_frequencies)
-    PSD value in epochs for each channel and each frequency.
-    Note that if time_resolved==True, PSD values are averaged across epochs.
+    PSD_welch : PSD value in epochs for each channel and each frequency,
+    ndarray (n_epochs, n_channels, n_frequencies).
+    Note that if time_resolved == True, PSD values are averaged across epochs.
 
     """
     # dropping EOG channels (incompatible with connectivity map model in stats)
@@ -74,19 +72,21 @@ def PSD(epochs, fmin, fmax, time_resolved):
 
 
 def indexes_connectivity_intrabrain(epochs):
-    """ Compute indexes for connectivity analysis between
-    all EEG sensors for one subject.
-    To use instead of (n_channels, n_channels) connections.
+    """
+    Compute indexes for connectivity analysis between all EEG
+    sensors for one subject. Can be used instead of
+    (n_channels, n_channels) that takes into account intra electrode
+    connectivity.
 
     Parameters
     -----
-    epochs : one subject Epochs object to get channels info.
+    epochs : one subject Epochs object to get channels info, Epochs
+    are MNE objects.
 
     Returns
     -----
-    electrodes : electrodes pairs for which connectivity
-    indices will be computed, list of tuples with channels
-    indexes.
+    electrodes : electrodes pairs for which connectivity indices will be
+    computed, list of tuples with channels indexes.
 
     """
     names = copy.deepcopy(epochs.info['ch_names'])
@@ -110,20 +110,21 @@ def indexes_connectivity_intrabrain(epochs):
 
 
 def indexes_connectivity_interbrains(epoch_hyper):
-    """ Compute indexes for interbrains connectivity analyses
-    between all EEG sensors for 2 subjects (merge data).
+    """
+    Compute indexes for interbrains connectivity analyses between all EEG
+    sensors for 2 subjects (merge data).
 
     Note that only interbrains connectivity will be computed.
 
     Parameters
     -----
-    epoch_hyper : one dyad Epochs object to get channels info.
+    epoch_hyper : one dyad Epochs object to get channels info, Epochs
+    are MNE objects.
 
     Returns
     -----
-    electrodes : electrodes pairs for which connectivity
-    indices will be computed, list of tuples with channels
-    indexes.
+    electrodes : electrodes pairs for which connectivity indices will be
+    computed, list of tuples with channels indexes.
 
     """
     electrodes = []
