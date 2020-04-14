@@ -3,6 +3,7 @@
 
 import os
 import random
+import numpy as np
 import mne
 from hypyp import stats
 from hypyp import utils
@@ -58,3 +59,23 @@ def test_metaconn():
             assert(metaconn_freq[n, p-tot*(i+1)] != metaconn_freq[n, p])
             # check for each f if connects to the good other ch and not to more
             assert(metaconn_freq[n+tot*i, p+tot*i] == ch_con_freq[n, p-tot])
+
+def test_intraCSD():
+    """
+    Test that con indices are good
+    """
+
+    # Loading data files & extracting sensor infos
+    epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"),
+                           preload=True)
+    epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"),
+                           preload=True)
+    mne.epochs.equalize_epoch_counts([epo1, epo2])
+
+    # taking random freq-of-interest to test intra-CSD
+    frequencies = [11, 12, 13]
+    data = np.array([epo1, epo1])
+    coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
+                               time_resolved=True)
+    coh_mne, freqs, time, epoch, taper = spectral_connectivity(data, method='plv', mode='fourier', indices=None, sfreq=500, fmin=11, fmax=13, faverage=True)
+    assert(coh == coh_mne)
