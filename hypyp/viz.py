@@ -159,7 +159,7 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
             x1, y1, z1 = loc1[idx1, :]
             ax.scatter(x1, y1, z1, marker='o', color='blue')
             if lab1:
-                ax.text(x1, y1 ,z1, lab1[idx1],
+                ax.text(x1+0.012, y1+0.012 ,z1, lab1[idx1],
                         horizontalalignment='center',
                         verticalalignment='center')
 
@@ -167,7 +167,7 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
         x2, y2, z2 = loc2[idx2, :]
         ax.scatter(x2, y2, z2, marker='o', color='red')
         if lab2:
-            ax.text(x2, y2, z2, lab2[idx2],
+            ax.text(x2+0.012, y2+0.012, z2, lab2[idx2],
                     horizontalalignment='center',
                     verticalalignment='center')
 
@@ -305,8 +305,8 @@ def get_3d_heads():
 
     # Extract vertices and faces for the first head
     mesh = meshio.read("data/Basehead.obj")
-    zoom = 0.15
-    interval = 0.55
+    zoom = 0.08
+    interval = 0.3
 
     head1_v = mesh.points*zoom
     head1_f = mesh.cells[0].data
@@ -359,16 +359,16 @@ def plot_3d_heads(ax, vertices, faces):
         ax.plot([x_V[V0],x_V[V1]],
                 [y_V[V0],y_V[V1]],
                 [z_V[V0],z_V[V1]],
-                '-', color= 'black', linewidth=0.3)
+                '-', color= 'grey', linewidth=0.3)
         ax.plot([x_V[V1],x_V[V2]],
                 [y_V[V1],y_V[V2]],
                 [z_V[V1],z_V[V2]],
-                '-', color= 'black', linewidth=0.3)
+                '-', color= 'grey', linewidth=0.3)
         ax.plot([x_V[V2],x_V[V3]],
                 [y_V[V2],y_V[V3]],
                 [z_V[V2],z_V[V3]],
-                '-', color= 'black', linewidth=0.3)
+                '-', color= 'grey', linewidth=0.3)
         ax.plot([x_V[V3],x_V[V1]],
                 [y_V[V3],y_V[V1]],
                 [z_V[V3],z_V[V1]],
-                '-', color= 'black', linewidth=0.3)
+                '-', color= 'grey', linewidth=0.3)
