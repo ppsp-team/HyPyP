@@ -201,7 +201,7 @@ def AR_local(cleaned_epochs_ICA, verbose=False):
 
         ar = AutoReject(n_interpolates, consensus_percs, picks=picks,
                         thresh_method='random_search', random_state=42,
-                        verbose=verbose)
+                        verbose=False)
 
         # fitting AR to get bad epochs
         ar.fit(clean_epochs)

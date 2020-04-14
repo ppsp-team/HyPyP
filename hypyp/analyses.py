@@ -362,8 +362,7 @@ def compute_single_freq(data, freq_range):
     n_samp = data[0].shape[2]
 
     complex_signal = np.array([mne.time_frequency.tfr_array_multitaper(data[subject], sfreq=n_samp,
-                                                                       freqs=np.arange(
-                                                                           freq_range[0], freq_range[1], 1),
+                                                                       freqs=np.arange(freq_range[0], freq_range[1], 1),
                                                                        n_cycles=4,
                                                                        zero_mean=False, use_fft=True, decim=1, output='complex')
                                for subject in range(2)])
