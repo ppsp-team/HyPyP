@@ -76,11 +76,11 @@ def test_intraCSD():
     # taking random freq-of-interest to test intra-CSD
     frequencies = [11, 12, 13]
     data = np.array([epo1, epo1])
-    now = time()
+    # now = time()
     # pb time refered before assignement!!!!!!!!!!!!!!!!!
     coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
                                time_resolved=True)
-    now2 = time()
+    # now2 = time()
     coh_mne, freqs, time, epoch, taper = mne.connectivity.spectral_connectivity(data=epo1,
                                                                                 method='plv',
                                                                                 mode='fourier',
@@ -89,8 +89,8 @@ def test_intraCSD():
                                                                                 fmin=11,
                                                                                 fmax=13,
                                                                                 faverage=True)
-    now3 = time()
-    assert((int(now2) - int(now)) == (int(now3) - int(now2)))
+    # now3 = time()
+    # assert((int(now2) - int(now)) == (int(now3) - int(now2)))
     # inter seem to work, but test same time, same values. 
     # then test intra.
     assert(coh.hape == coh_mne.shape)
