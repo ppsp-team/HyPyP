@@ -89,7 +89,10 @@ def test_intraCSD():
                                                                                 fmax=13,
                                                                                 faverage=True)
     now3 = time.time()
-    assert((int(now2) - int(now)) == (int(now3) - int(now2)))
+    now = time.localtime(now)
+    now2 = time.localtime(now2)
+    now3 = time.localtime(now3)
+    assert((int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec)))
     # inter seem to work, but test same time, same values. 
     # then test intra.
     # assert(coh.shape == coh_mne.shape) OK
