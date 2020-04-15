@@ -79,16 +79,19 @@ def test_intraCSD():
     # intra-ind CSD
     # data = np.array([epo1, epo1])
     # data_mne = epo1
+    # sensors = None
     # inter-ind CSD
     data = np.array([epo1, epo2])
-    data_mne = utils.merge(epo1, epo2)
+    epoch_hyper = utils.merge(epo1, epo2)
+    data_mne = epoch_hyper
+    sensors = analyses.indexes_connectivity_interbrains(epoch_hyper)
 
     # trace trunning ime
     now = time.time()
     coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=data_mne,
                                                                                 method='plv',
                                                                                 mode='fourier',
-                                                                                indices=None,
+                                                                                indices=sensors,
                                                                                 sfreq=500,
                                                                                 fmin=11,
                                                                                 fmax=13,
