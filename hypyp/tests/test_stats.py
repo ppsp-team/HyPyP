@@ -4,7 +4,6 @@
 import os
 import random
 import numpy as np
-from time import time
 import mne
 from hypyp import stats
 from hypyp import utils
@@ -65,6 +64,7 @@ def test_intraCSD():
     """
     Test that con indices are good
     """
+    import time
 
     # Loading data files & extracting sensor infos
     epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"),
@@ -76,11 +76,10 @@ def test_intraCSD():
     # taking random freq-of-interest to test intra-CSD
     frequencies = [11, 12, 13]
     data = np.array([epo1, epo1])
-    # now = time()
-    # pb time refered before assignement!!!!!!!!!!!!!!!!!
+    now = time.time()
     coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
                                time_resolved=True)
-    # now2 = time()
+    now2 = time.time()
     coh_mne, freqs, time, epoch, taper = mne.connectivity.spectral_connectivity(data=epo1,
                                                                                 method='plv',
                                                                                 mode='fourier',
@@ -89,8 +88,9 @@ def test_intraCSD():
                                                                                 fmin=11,
                                                                                 fmax=13,
                                                                                 faverage=True)
-    # now3 = time()
-    # assert((int(now2) - int(now)) == (int(now3) - int(now2)))
+    now3 = time.time()
+    assert((int(now2) - int(now)) == (int(now3) - int(now2)))
     # inter seem to work, but test same time, same values. 
     # then test intra.
-    assert(coh.shape == coh_mne.shape)
+    # assert(coh.shape == coh_mne.shape) OK
+    # fmin and fmax excluded, here nfreq = 1, 12...for both
