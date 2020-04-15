@@ -107,9 +107,9 @@ def test_intraCSD():
     # coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
     #                           time_resolved=True)
     # substeps cf. multitaper step too long?
-    values = compute_single_freq(data, frequencies)
+    values = analyses.compute_single_freq(data, frequencies)
     now3 = time.time()
-    result = compute_sync(values, mode='plv', epoch_wise=True,
+    result = analyses.compute_sync(values, mode='plv', epoch_wise=True,
                           time_resolved=True)
     now4 = time.time()
     # convert time to pick seconds only in GTM ref
