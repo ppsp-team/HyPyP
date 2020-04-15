@@ -80,7 +80,7 @@ def test_intraCSD():
     coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
                                time_resolved=True)
     now2 = time.time()
-    coh_mne, freqs, time, epoch, taper = mne.connectivity.spectral_connectivity(data=epo1,
+    coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=epo1,
                                                                                 method='plv',
                                                                                 mode='fourier',
                                                                                 indices=None,
