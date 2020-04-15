@@ -9,6 +9,8 @@ from hypyp import stats
 from hypyp import utils
 from hypyp import analyses
 
+# TODO: include fixtures for epochs etc.
+# TODO: remove () on assert
 
 def test_metaconn():
     """
@@ -97,6 +99,13 @@ def test_intraCSD():
     now = time.time()
     # mode = 'fourier'
     mode = 'multitaper'
+    # mode to transform signal to analytic signal on which synchrony is computed
+
+    # Phoebe: multitaper with mne.time_frequency.tfr_array_multitaper
+    # BUT step = 1s while coh (icluding the step) < 1s... optimized in MNE
+    # how to optimize the mutitaper step in Phoebe script?
+    # and then the second step same question
+
     coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=data_mne,
                                                                                 method='plv',
                                                                                 mode=mode,
@@ -119,15 +128,18 @@ def test_intraCSD():
     now2 = time.localtime(now2)
     now3 = time.localtime(now3)
     now4 = time.localtime(now4)
+
     # assess time running equivalence for each script 
     # assert (int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec))
     # takes 2 versus 0 seconds (MNE) (and here n channels 31 n epochs not a lot nfreq
     # idem en inter-ind
+
     # test substeps
     assert (int(now2.tm_sec) - int(now.tm_sec)) == ((int(now4.tm_sec) - int(now3.tm_sec))+(int(now3.tm_sec) - int(now2.tm_sec)))
     # one second per step...
     # test mne.time.frequencies.tfr_multitaper(all) = 1 second?
-    # test spectral con with mode = 'multitaper'? 
+    # spectral con with mode = 'multitaper' < 1s...
+
     # assess results: shape equivalence and values
     # assert coh.shape == coh_mne.shape
     # not same output: MNE pairs of electrode (n_connections=31*31, freq=1)
