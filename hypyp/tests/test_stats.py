@@ -96,10 +96,10 @@ def test_intraCSD():
     now2 = time.localtime(now2)
     now3 = time.localtime(now3)
     # assess time running for each script 
-    # assert((int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec)))
+    assert((int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec)))
     # takes 2 versus 0 seconds (MNE) (and here n channels 31 n epochs not a lot nfreq 1
     # peut comprendre que trop de temps quand nous...
-    # idem avec inter?? 
+    # OR inter no difference!
     # assert(coh.shape == coh_mne.shape) OK
     # fmin and fmax excluded, here nfreq = 1, 12...for both
     # assert(coh[0][1][1] == coh_mne.shape[1][1][0])
