@@ -84,9 +84,9 @@ def test_intraCSD():
     data = np.array([epo1, epo2])
     epoch_hyper = utils.merge(epo1, epo2)
     data_mne = epoch_hyper
-    l = list(range(0,int(len(epoch_hyper.info['ch_names'])/2))) 
+    l = list(range(0,int(len(epoch_hyper.info['ch_names'])/2)))
     L = []
-    M = [] 
+    M = []
     for i in range(0,len(l)):
         for p in range(0,len(l)):
             L.append(l[i])
@@ -104,22 +104,26 @@ def test_intraCSD():
                                                                                 fmax=13,
                                                                                 faverage=True)
     now2 = time.time()
-    coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
-                               time_resolved=True)
-    # substeps cf. multitaper step?
-    # values = compute_single_freq(data, frequencies)
+    # coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
+    #                           time_resolved=True)
+    # substeps cf. multitaper step too long?
+    values = compute_single_freq(data, frequencies)
     now3 = time.time()
-    # result = compute_sync(values, mode='plv', epoch_wise=True, time_resolved=True)
-    # now4 = time.time()
+    result = compute_sync(values, mode='plv', epoch_wise=True,
+                          time_resolved=True)
+    now4 = time.time()
     # convert time to pick seconds only in GTM ref
     now = time.localtime(now)
     now2 = time.localtime(now2)
     now3 = time.localtime(now3)
+    now4 = time.localtime(now4)
     # assess time running equivalence for each script 
-    assert((int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec)))
+    # assert (int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec))
     # takes 2 versus 0 seconds (MNE) (and here n channels 31 n epochs not a lot nfreq 1
     # peut comprendre que trop de temps quand nous...
     # idem en inter-ind
+    # test substeps
+    assert (int(now2.tm_sec) - int(now.tm_sec)) == ((int(now4.tm_sec) - int(now3.tm_sec))+(int(now3.tm_sec) - int(now2.tm_sec))
     # assess results: shape equivalence and values
     # assert(coh.shape == coh_mne.shape) 
     # not same output: MNE pairs of electrode (n_connections=31*31, freq=1)
