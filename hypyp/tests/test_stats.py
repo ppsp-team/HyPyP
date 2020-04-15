@@ -93,4 +93,4 @@ def test_intraCSD():
     # assert((int(now2) - int(now)) == (int(now3) - int(now2)))
     # inter seem to work, but test same time, same values. 
     # then test intra.
-    assert(coh.hape == coh_mne.shape)
+    assert(coh.shape == coh_mne.shape)
