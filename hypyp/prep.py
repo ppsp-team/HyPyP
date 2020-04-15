@@ -20,16 +20,14 @@ def filt(raw_S):
     """
     Filters list of raw data to remove slow drifts.
 
-    Parameters
-    -----
-    raw_S : list of Raw data (as an example: different occurences of
-            a condition for a subject). Raws are MNE objects.
+    Arguments:
+        raw_S: list of Raw data (as an example: different occurences of
+          a condition for a subject). Raws are MNE objects.
 
-    Returns
-    -----
-    raws : list of high-pass filtered raws.
-
+    Returns:
+        raws: list of high-pass filtered raws.
     """
+    # TODO: l_freq and h_freq as param
     raws = []
     for raw in raw_S:
         raws.append(mne.io.Raw.filter(raw, l_freq=2., h_freq=None))
@@ -43,21 +41,17 @@ def ICA_choice_comp(icas, epochs):
     the relevant components for artefacts rejection and apply ICA on
     Epochs.
 
-    Parameters
-    -----
-    icas : list of independant components for each subject, IC are MNE objects.
+    Arguments:
+        icas: list of independant components for each subject, IC are MNE objects.
+        epochs: list of 2 Epochs objects (for each subject). Epochs_S1
+          and Epochs_S2 correspond to a condition and can result from the
+          concatenation of epochs from different occurences of the condition
+          across experiments.
+          Epochs are MNE objects (data are stored in an array of shape(n_epochs,
+          n_channels, n_times) and info is a disctionnary sampling parameters).
 
-    epochs : list of 2 Epochs objects (for each subject). Epochs_S1
-    and Epochs_S2 correspond to a condition and can result from the
-    concatenation of epochs from different occurences of the condition
-    across experiments.
-    Epochs are MNE objects (data are stored in an array of shape(n_epochs,
-    n_channels, n_times) and info is a disctionnary sampling parameters).
-
-    Returns
-    -----
-    cleaned_epochs_ICA : list of 2 cleaned Epochs for each subject.
-
+    Returns:
+        cleaned_epochs_ICA: list of 2 cleaned Epochs for each subject.
     """
     # plotting Independant Components for each subject
     for ica in icas:
@@ -127,35 +121,31 @@ def ICA_fit(epochs, n_components, method, random_state):
     Pre requisite : install autoreject
     https://api.github.com/repos/autoreject/autoreject/zipball/master
 
-    Parameters
-    -----
-    epochs : list of 2 Epochs objects (for each subject).
-             Epochs_S1 and Epochs_S2 correspond to a condition and can result
-             from the concatenation of epochs from different occurences of the
-             condition across experiments.
-             Epochs are MNE objects (data are stored in an array of shape
-             (n_epochs, n_channels, n_times) and info is a dictionnary
-             sampling parameters).
+    Arguments:
+        epochs: list of 2 Epochs objects (for each subject).
+          Epochs_S1 and Epochs_S2 correspond to a condition and can result
+          from the concatenation of epochs from different occurences of the
+          condition across experiments.
+          Epochs are MNE objects (data are stored in an array of shape
+          (n_epochs, n_channels, n_times) and info is a dictionnary
+          sampling parameters).
+        n_components: the number of principal components that are passed to the
+          ICA algorithm during fitting, int. For a first estimation,
+          n_components can be set to 15.
+        method: the ICA method used, str 'fastica', 'infomax' or 'picard'.
+          Fastica' is the most frequently used.
+        random_state: the parameter used to compute random distributions
+          for ICA calulation, int or None. It can be useful to fix
+          random_state value to have reproducible results. For 15
+          components, random_state can be set to 97 for example.
 
-    n_components : the number of principal components that are passed to the
-                   ICA algorithm during fitting, int. For a first estimation,
-                   n_components can be set to 15.
+    Note:
+        If Autoreject and ICA take too much time, change the decim value
+        (see MNE documentation).
 
-    method : the ICA method used, str 'fastica', 'infomax' or 'picard'.
-             Fastica' is the most frequently used.
-
-    random_state : the parameter used to compute random distributions
-                   for ICA calulation, int or None. It can be useful to fix
-                   random_state value to have reproducible results. For 15
-                   components, random_state can be set to 97 for example.
-
-    Note that if Autoreject and ICA take too much time, change the decim value
-    (see MNE documentation).
-
-    Returns
-    -----
-    icas : list of independant components for each subject. IC are MNE objects,
-    see MNE documentation for more details.
+    Returns:
+        icas: list of independant components for each subject. IC are MNE objects,
+          see MNE documentation for more details.
     """
     icas = []
     for epoch in epochs:
@@ -179,16 +169,13 @@ def AR_local(cleaned_epochs_ICA, verbose=False):
     """
     Applies local Autoreject to correct or reject bad epochs.
 
-    Parameters
-    -----
-    clean_epochs_ICA : list of Epochs after global Autoreject and ICA
+    Arguments:
+        clean_epochs_ICA: list of Epochs after global Autoreject and ICA
+        verbose: to plot data before and after AR, boolean set to False
+          by default.
 
-    verbose : to plot data before and after AR, boolean set to False
-              by default.
-
-    Returns
-    -----
-    cleaned_epochs_AR : list of Epochs after local Autoreject.
+    Returns:
+        cleaned_epochs_AR: list of Epochs after local Autoreject.
     """
     bad_epochs_AR = []
 
