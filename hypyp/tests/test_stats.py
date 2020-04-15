@@ -95,9 +95,11 @@ def test_intraCSD():
 
     # trace trunning ime
     now = time.time()
+    # mode = 'fourier'
+    mode = 'multitaper'
     coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=data_mne,
                                                                                 method='plv',
-                                                                                mode='fourier',
+                                                                                mode=mode,
                                                                                 indices=sensors,
                                                                                 sfreq=500,
                                                                                 fmin=11,
@@ -119,11 +121,13 @@ def test_intraCSD():
     now4 = time.localtime(now4)
     # assess time running equivalence for each script 
     # assert (int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec))
-    # takes 2 versus 0 seconds (MNE) (and here n channels 31 n epochs not a lot nfreq 1
-    # peut comprendre que trop de temps quand nous...
+    # takes 2 versus 0 seconds (MNE) (and here n channels 31 n epochs not a lot nfreq
     # idem en inter-ind
     # test substeps
     assert (int(now2.tm_sec) - int(now.tm_sec)) == ((int(now4.tm_sec) - int(now3.tm_sec))+(int(now3.tm_sec) - int(now2.tm_sec)))
+    # one second per step...
+    # test mne.time.frequencies.tfr_multitaper(all) = 1 second?
+    # test spectral con with mode = 'multitaper'? 
     # assess results: shape equivalence and values
     # assert coh.shape == coh_mne.shape
     # not same output: MNE pairs of electrode (n_connections=31*31, freq=1)
