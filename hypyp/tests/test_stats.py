@@ -84,7 +84,14 @@ def test_intraCSD():
     data = np.array([epo1, epo2])
     epoch_hyper = utils.merge(epo1, epo2)
     data_mne = epoch_hyper
-    sensors = analyses.indexes_connectivity_interbrains(epoch_hyper)
+    l = list(range(0,int(len(epoch_hyper.info['ch_names'])/2))) 
+    L = []
+    M = [] 
+    for i in range(0,len(l)):
+        for p in range(0,len(l)):
+            L.append(l[i])
+    M = len(l)*list(range(len(l),len(l)*2))
+    sensors = (np.array(L),np.array(M))
 
     # trace trunning ime
     now = time.time()
