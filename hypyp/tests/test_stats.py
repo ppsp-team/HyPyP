@@ -119,7 +119,7 @@ def test_intraCSD():
     assert((int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec)))
     # takes 2 versus 0 seconds (MNE) (and here n channels 31 n epochs not a lot nfreq 1
     # peut comprendre que trop de temps quand nous...
-    # idem en inter-ind
+    # PAS idem en inter-ind ?!
     # assess results: shape equivalence and values
     # assert(coh.shape == coh_mne.shape)
     # fmin and fmax excluded, here nfreq = 1, 12...for both
