@@ -100,7 +100,7 @@ def test_intraCSD():
     # takes 2 versus 0 seconds (MNE) (and here n channels 31 n epochs not a lot nfreq 1
     # peut comprendre que trop de temps quand nous...
     # OR inter no difference!
-    # assert(coh.shape == coh_mne.shape) OK
+    assert(coh.shape == coh_mne.shape)
     # fmin and fmax excluded, here nfreq = 1, 12...for both
     # assert(coh[0][1][1] == coh_mne.shape[1][1][0])
     # int not subscriptable
