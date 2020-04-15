@@ -77,8 +77,9 @@ def test_intraCSD():
     frequencies = [11, 12, 13]
     # data = np.array([epo1, epo1])
     data = np.array([epo1, epo2])
+    epoch_merge = utils.merge(epo1, epo2)
     now = time.time()
-    coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=data,
+    coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=epoch_merge,
                                                                                 method='plv',
                                                                                 mode='fourier',
                                                                                 indices=None,
@@ -103,3 +104,4 @@ def test_intraCSD():
     # fmin and fmax excluded, here nfreq = 1, 12...for both
     # assert(coh[0][1][1] == coh_mne.shape[1][1][0])
     # int not subscriptable
+    # test each sub script cf. multitaper step?
