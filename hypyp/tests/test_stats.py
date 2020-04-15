@@ -73,13 +73,19 @@ def test_intraCSD():
                            preload=True)
     mne.epochs.equalize_epoch_counts([epo1, epo2])
 
-    # taking random freq-of-interest to test intra-CSD
+    # taking random freq-of-interest to test CSD measures
     frequencies = [11, 12, 13]
+
+    # intra-ind CSD
     # data = np.array([epo1, epo1])
+    # data_mne = epo1
+    # inter-ind CSD
     data = np.array([epo1, epo2])
-    epoch_merge = utils.merge(epo1, epo2)
+    data_mne = utils.merge(epo1, epo2)
+
+    # trace trunning ime
     now = time.time()
-    coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=epoch_merge,
+    coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=data_mne,
                                                                                 method='plv',
                                                                                 mode='fourier',
                                                                                 indices=None,
@@ -90,7 +96,7 @@ def test_intraCSD():
     now2 = time.time()
     coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
                                time_resolved=True)
-    # substeps
+    # substeps cf. multitaper step?
     # values = compute_single_freq(data, frequencies)
     now3 = time.time()
     # result = compute_sync(values, mode='plv', epoch_wise=True, time_resolved=True)
@@ -99,13 +105,13 @@ def test_intraCSD():
     now = time.localtime(now)
     now2 = time.localtime(now2)
     now3 = time.localtime(now3)
-    # assess time running for each script 
-    assert((int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec)))
+    # assess time running equivalence for each script 
+    # assert((int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec)))
     # takes 2 versus 0 seconds (MNE) (and here n channels 31 n epochs not a lot nfreq 1
     # peut comprendre que trop de temps quand nous...
     # idem en inter-ind
+    # assess results: shape equivalence and values
     assert(coh.shape == coh_mne.shape)
     # fmin and fmax excluded, here nfreq = 1, 12...for both
-    # assert(coh[0][1][1] == coh_mne.shape[1][1][0])
+    assert(coh[0][1][1] == coh_mne.shape[1][1][0])
     # int not subscriptable
-    # test each sub script cf. multitaper step?
