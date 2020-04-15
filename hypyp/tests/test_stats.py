@@ -77,9 +77,6 @@ def test_intraCSD():
     frequencies = [11, 12, 13]
     data = np.array([epo1, epo1])
     now = time.time()
-    coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
-                               time_resolved=True)
-    now2 = time.time()
     coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=epo1,
                                                                                 method='plv',
                                                                                 mode='fourier',
@@ -88,12 +85,19 @@ def test_intraCSD():
                                                                                 fmin=11,
                                                                                 fmax=13,
                                                                                 faverage=True)
+    now2 = time.time()
+    coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
+                               time_resolved=True)
     now3 = time.time()
+    # convert time to pick seconds only in GTM ref
     now = time.localtime(now)
     now2 = time.localtime(now2)
     now3 = time.localtime(now3)
+    # assess time running for each script 
     assert((int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec)))
+    # takes 2 versus 0 seconds (MNE) OR even: 2 seconds ok...
     # inter seem to work, but test same time, same values. 
     # then test intra.
     # assert(coh.shape == coh_mne.shape) OK
     # fmin and fmax excluded, here nfreq = 1, 12...for both
+    assert(coh[0][1][1] == coh_mne.shape[1][1][0])
