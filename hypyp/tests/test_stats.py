@@ -90,7 +90,11 @@ def test_intraCSD():
     now2 = time.time()
     coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
                                time_resolved=True)
+    # substeps
+    # values = compute_single_freq(data, frequencies)
     now3 = time.time()
+    # result = compute_sync(values, mode='plv', epoch_wise=True, time_resolved=True)
+    # now4 = time.time()
     # convert time to pick seconds only in GTM ref
     now = time.localtime(now)
     now2 = time.localtime(now2)
@@ -99,7 +103,7 @@ def test_intraCSD():
     assert((int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec)))
     # takes 2 versus 0 seconds (MNE) (and here n channels 31 n epochs not a lot nfreq 1
     # peut comprendre que trop de temps quand nous...
-    # OR inter no difference!
+    # idem en inter-ind
     assert(coh.shape == coh_mne.shape)
     # fmin and fmax excluded, here nfreq = 1, 12...for both
     # assert(coh[0][1][1] == coh_mne.shape[1][1][0])
