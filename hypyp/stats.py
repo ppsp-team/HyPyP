@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # coding=utf-8
-# ==============================================================================
-# title           : prep.py
-# description     : data preprocessing functions
-# author          : Florence Brun, Guillaume Dumas
-# date            : 2020-03-18
-# version         : 1
-# python_version  : 3.7
-# ==============================================================================
+"""
+Data preprocessing functions
+
+| Option | Description |
+| ------ | ----------- |
+| title           | stats.py |
+| authors          | Florence Brun, Guillaume Dumas |
+| date            | 2020-03-18 |
+"""
+
 
 import numpy as np
 import matplotlib.pylab as plt
@@ -16,7 +18,7 @@ from mne.channels import find_ch_connectivity
 from mne.stats import permutation_cluster_test
 
 
-def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha):
+def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha: float) -> tuple:
     """
     Computes statistical t test on Power Spectral Density values for a condition.
 
@@ -35,37 +37,36 @@ def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha
 
     For vizualisation, use plot_significant_sensors function in the toolbox.
 
-    Parameters
-    -----
-    PSDs_task_normLog: array of subjects PSD Logratio (ndarray) for a condition
-                       (n_samples, n_tests : n_tests the different channels).
+    Parameters:
+        PSDs_task_normLog: array of subjects PSD Logratio (ndarray) for a condition
+                        (n_samples, n_tests : n_tests the different channels).
 
-    epochs: Epochs object for a condition from a random subject, only used to
-            get parameters from the info (sampling frequencies for example).
+        epochs: Epochs object for a condition from a random subject, only used to
+                get parameters from the info (sampling frequencies for example).
 
-    n_permutations: the number of permutations, int. Should be at least 2*n
-                    sample, can be set to 50000 for example.
+        n_permutations: the number of permutations, int. Should be at least 2*n
+                        sample, can be set to 50000 for example.
 
-    alpha_bonferroni: the threshold for bonferroni correction, int.
-                      Can be set to 0.05.
+        alpha_bonferroni: the threshold for bonferroni correction, int.
+                        Can be set to 0.05.
 
-    alpha: the threshold for ttest, int. Can be set to 0.05.
+        alpha: the threshold for ttest, int. Can be set to 0.05.
 
-    Returns
-    -----
-    T_obs: T-statistic observed for all variables, array of shape (n_tests).
+    Returns:
 
-    p_values: p-values for all the tests, array of shape (n_tests).
+        - T_obs: T-statistic observed for all variables, array of shape (n_tests).
 
-    H0: T-statistic obtained by permutations and t-max trick for multiple
-        comparison, array of shape (n_permutations).
+        - p_values: p-values for all the tests, array of shape (n_tests).
 
-    adj_p: adjusted p values from bonferroni correction, array of shape
-           (n_tests, n_tests), with boolean assessment for p values and
-           p values corrected.
+        - H0: T-statistic obtained by permutations and t-max trick for multiple
+            comparison, array of shape (n_permutations).
 
-    T_obs_plot : satistical values to plot, from sensors above alpha threshold,
-    array of shape (n_tests,).
+        - adj_p: adjusted p values from bonferroni correction, array of shape
+            (n_tests, n_tests), with boolean assessment for p values and
+            p values corrected.
+
+        - T_obs_plot : satistical values to plot, from sensors above alpha threshold,
+        array of shape (n_tests,).
     """
     # averaging across frequencies (compute stats only in ch space)
     power = np.mean(PSDs_task_normLog, axis=2)
