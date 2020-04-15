@@ -77,11 +77,13 @@ def test_intraCSD():
 
     # taking random freq-of-interest to test CSD measures
     frequencies = [11, 12, 13]
+    # Note: fmin and fmax excluded, here n_freq = 1 (for MNE and Phoebe functions)
 
     # intra-ind CSD
     # data = np.array([epo1, epo1])
     # data_mne = epo1
     # sensors = None
+
     # inter-ind CSD
     data = np.array([epo1, epo2])
     epoch_hyper = utils.merge(epo1, epo2)
@@ -95,16 +97,16 @@ def test_intraCSD():
     M = len(l)*list(range(len(l),len(l)*2))
     sensors = (np.array(L),np.array(M))
 
-    # trace trunning ime
+    # trace running time
     now = time.time()
+    # mode to transform signal to analytic signal on which synchrony is computed
     # mode = 'fourier'
     mode = 'multitaper'
-    # mode to transform signal to analytic signal on which synchrony is computed
 
     # Phoebe: multitaper with mne.time_frequency.tfr_array_multitaper
-    # BUT step = 1s while coh (icluding the step) < 1s... optimized in MNE
+    # BUT step = 1s, while coh (including the multitaper step) < 1s... optimized in MNE
     # how to optimize the mutitaper step in Phoebe script?
-    # and then the second step same question
+    # and then the second step: same question
 
     coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=data_mne,
                                                                                 method='plv',
@@ -131,18 +133,15 @@ def test_intraCSD():
 
     # assess time running equivalence for each script 
     # assert (int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec))
-    # takes 2 versus 0 seconds (MNE) (and here n channels 31 n epochs not a lot nfreq
+    # takes 2 versus 0 seconds (MNE) (and here n_channels 31, n_epochs not a lot, n_freq 1)
     # idem en inter-ind
 
     # test substeps
     assert (int(now2.tm_sec) - int(now.tm_sec)) == ((int(now4.tm_sec) - int(now3.tm_sec))+(int(now3.tm_sec) - int(now2.tm_sec)))
-    # one second per step...
+    # one second per step in Phoebe script...
     # test mne.time.frequencies.tfr_multitaper(all) = 1 second?
     # spectral con with mode = 'multitaper' < 1s...
 
     # assess results: shape equivalence and values
-    # assert coh.shape == coh_mne.shape
-    # not same output: MNE pairs of electrode (n_connections=31*31, freq=1)
-    # Phoebe (31, 31, 1)
-    # fmin and fmax excluded, here nfreq = 1, 12...for both
+    # not same output: MNE pairs of electrode (n_connections=31*31, freq=1), Phoebe (31, 31, 1)
     # assert coh[0][0][0] == coh_mne[0][0]
