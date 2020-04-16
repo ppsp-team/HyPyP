@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # coding=utf-8
-# ==============================================================================
-# title           : analyses.py
-# description     : inter-brain connectivity functions
-# author          : Florence Brun, Guillaume Dumas
-# date            : 2020-03-18
-# version         : 1
-# python_version  : 3.7
-# ==============================================================================
+
+"""
+Useful tools
+| Option | Description |
+| ------ | ----------- |
+| title           | utils.py |
+| authors         | Florence Brun, Guillaume Dumas |
+| date            | 2020-03-18 |
+"""
+
 
 import numpy as np
 import pandas as pd
@@ -29,8 +31,8 @@ def create_epochs(raw_S1, raw_S2, freq_bands):
           freq_bands: frequency bands-of-interest, list of tuple.
 
     Note:
-        Plots ower spectral density calculated with welch FFT for each epoch and
-        each subject, averaged in each frequency band-of-interest.
+        Plots ower spectral density calculated with welch FFT for each epoch
+        and each subject, averaged in each frequency band-of-interest.
         # TODO: option with verbose
 
     Returns:
@@ -41,14 +43,28 @@ def create_epochs(raw_S1, raw_S2, freq_bands):
 
     for raw1, raw2 in zip(raw_S1, raw_S2):
         # creating fixed events
-        fixed_events1 = mne.make_fixed_length_events(raw1, id=1, start=0, stop=None, duration=1.0, first_samp=True, overlap=0.0)
-        fixed_events2 = mne.make_fixed_length_events(raw2, id=1, start=0, stop=None, duration=1.0, first_samp=True, overlap=0.0)
+        fixed_events1 = mne.make_fixed_length_events(raw1,
+                                                     id=1,
+                                                     start=0,
+                                                     stop=None,
+                                                     duration=1.0,
+                                                     first_samp=True,
+                                                     overlap=0.0)
+        fixed_events2 = mne.make_fixed_length_events(raw2,
+                                                     id=1,
+                                                     start=0,
+                                                     stop=None,
+                                                     duration=1.0,
+                                                     first_samp=True,
+                                                     overlap=0.0)
 
         # epoching the events per time window
-        epoch1 = mne.Epochs(raw1, fixed_events1, event_id=1, tmin=0, tmax=1, baseline=None, preload=True, proj=True)  # reject=reject_criteria, no baseline correction
-
+        epoch1 = mne.Epochs(raw1, fixed_events1, event_id=1, tmin=0, tmax=1,
+                            baseline=None, preload=True, proj=True)
+        # reject=reject_criteria, no baseline correction
         # preload needed after
-        epoch2 = mne.Epochs(raw2, fixed_events2, event_id=1, tmin=0, tmax=1, baseline=None, preload=True, proj=True)
+        epoch2 = mne.Epochs(raw2, fixed_events2, event_id=1, tmin=0, tmax=1,
+                            baseline=None, preload=True, proj=True)
 
         # vizu topoplots of PSD for epochs
         # epoch1.plot()
@@ -71,27 +87,34 @@ def merge(epoch_S1, epoch_S2):
       correspond to a condition and can result from the concatenation of epochs
       from different occurences of the condition across experiments.
       Epochs are MNE objects (data are stored in an array of shape
-      (n_epochs, n_channels, n_times) and info is a disctionnary sampling parameters).
+      (n_epochs, n_channels, n_times) and info is a disctionnary sampling
+      parameters).
 
     Note:
         Bad channels info is removed.
-        Note that average on reference can not be done anymore. Similarly, montage
-        can not be set to the data and as a result topographies in MNE are not
-        possible anymore. Use toolbox vizualisations instead.
+        Note that average on reference can not be done anymore. Similarly,
+        montage can not be set to the data and as a result topographies in MNE
+        are not possible anymore. Use toolbox vizualisations instead.
 
     Returns:
-        ep_hyper: Epochs object for the dyad (with merged data of the 2 subjects).
-          The time alignement has been done at raw data creation.
+        ep_hyper: Epochs object for the dyad (with merged data of the two
+          subjects. The time alignement has been done at raw data creation.
     """
     # checking bad ch for epochs, interpolating
     # and removing them from 'bads' if needed
     if len(epoch_S1.info['bads']) > 0:
-        epoch_S1 = mne.Epochs.interpolate_bads(
-            epoch_S1, reset_bads=True, mode='accurate', origin='auto', verbose=None)
+        epoch_S1 = mne.Epochs.interpolate_bads(epoch_S1,
+                                               reset_bads=True,
+                                               mode='accurate',
+                                               origin='auto',
+                                               verbose=None)
         # head-digitization-based origin fit
     if len(epoch_S2.info['bads']) > 0:
-        epoch_S2 = mne.Epochs.interpolate_bads(
-            epoch_S2, reset_bads=True, mode='accurate', origin='auto', verbose=None)
+        epoch_S2 = mne.Epochs.interpolate_bads(epoch_S2,
+                                               reset_bads=True,
+                                               mode='accurate',
+                                               origin='auto',
+                                               verbose=None)
 
     sfreq = epoch_S1[0].info['sfreq']
     ch_names = epoch_S1[0].info['ch_names']
@@ -263,13 +286,13 @@ def normalizing(baseline, task, type):
     a baseline.
 
     Arguments:
-        baseline, task: PSD or CSD values for the condition 'task' and a baseline,
-          ndarray, shape (n_epochs, n_channels, n_frequencies).
+        baseline, task: PSD or CSD values for the condition 'task' and
+          a baseline, ndarray, shape (n_epochs, n_channels, n_frequencies).
         type: type of normalization, str 'Zscore' or 'Logratio'.
 
     Returns:
-        Normed_task: PSD or CSD values for the condition 'task' normed by values
-          in a baseline and average across epochs, ndarray, shape
+        Normed_task: PSD or CSD values for the condition 'task' normed by
+          values in a baseline and average across epochs, ndarray, shape
           (n_channels, n_frequencies).
     """
     m_baseline = np.mean(baseline, axis=0)
