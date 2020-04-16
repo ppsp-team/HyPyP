@@ -140,15 +140,24 @@ def test_ICA(epochs):
     icas = prep.ICA_fit(ep, n_components=15, method='fastica', random_state=97)
     # check that the number of componenents is similar between the two subjects
     for i in range(0, len(icas)-1):
-        assert len(icas[i]) == len(icas[i+1])
-    # check whether epochs.info['ch_names'] same length > ICA components same length
-
+        mne.preprocessing.ICA.get_components(icas[i]).shape == mne.preprocessing.ICA.get_components(icas[i+1]).shape
+    # check corrmap ok on the 2 subj
+    # check component choice good cf. compare with find eog or find ecg comp
     cleaned_epochs_ICA = prep.ICA_choice_comp(icas, ep)
+    # check signal better after than before
+    # check bad channels are not deleted
     assert epochs.epo1.info['ch_names'] == cleaned_epochs_ICA[0].info['ch_names']
     assert epochs.epo2.info['ch_names'] == cleaned_epochs_ICA[1].info['ch_names']
-    assert len(epochs.epo1) <= len(cleaned_epochs_ICA[0])
-    assert len(epochs.epo2) <= len(cleaned_epochs_ICA[1])
 
 
-# def test_AR_local():
-
+def test_AR_local(epochs):
+    """
+    Test AR local
+    """
+    # test on epochs, but usually applied on cleaned epochs with ICA
+    ep = [epochs.epo1, epochs.epo2]
+    cleaned_epochs_AR = prep.AR_local(ep, verbose=False)
+    assert len(epochs.epo1) <= len(cleaned_epochs_AR[0])
+    assert len(epochs.epo2) <= len(cleaned_epochs_AR[1])
+    assert len(cleaned_epochs_AR[0]) == len(cleaned_epochs_AR[1])
+    # modify parameters cf. Denis email and check if works
