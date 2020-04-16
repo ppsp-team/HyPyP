@@ -164,7 +164,9 @@ def ICA_fit(epochs, n_components, method, random_state):
         print('The rejection dictionary is %s' % reject)
 
         # fitting ICA on filt_raw after AR
-        ica = ICA(n_components=15, method='fastica', random_state=97)
+        ica = ICA(n_components=n_components,
+                  method=method,
+                  random_state=random_state)
         # take bad channels into account in ICA fit
         epoch_all_ch = mne.Epochs.copy(epoch)
         epoch_all_ch.info['bads'] = []
