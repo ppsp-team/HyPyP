@@ -20,7 +20,7 @@ from mne.time_frequency import psd_welch
 from mne.io.constants import FIFF
 
 
-def PSD(epochs, fmin, fmax, time_resolved):
+def PSD(epochs, fmin: float, fmax: float, time_resolved: bool):
     """
     Computes the Power Spectral Density (PSD) on Epochs for a condition.
 
