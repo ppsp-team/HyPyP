@@ -14,20 +14,11 @@ from conftest import epochs
 # TODO: include fixtures for epochs etc.
 # TODO: remove () on assert
 
-def test_metaconn():
+def test_metaconn(epochs):
     """
     Test that con indices are good
     """
-
-    # # Loading data files & extracting sensor infos
-    # epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"),
-    #                        preload=True)
-    # epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"),
-    #                        preload=True)
-    # mne.epochs.equalize_epoch_counts([epo1, epo2])
-    # epoch_merge = utils.merge(epo1, epo2)
-
-    epo1, epo2, epoch_merge = epochs()
+    #epo1, epo2, epoch_merge = epochs()
 
     # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
@@ -48,23 +39,23 @@ def test_metaconn():
     # checking for each pair in which ch_name is,
     # whether ch_name linked himself
     # (in neighbouring frequencies also)
-    assert(metaconn_freq[n+tot, p] == metaconn_freq[n, p])
-    assert(metaconn_freq[n-tot, p] == metaconn_freq[n, p])
-    assert(metaconn_freq[n+tot, p+tot] == metaconn_freq[n, p])
-    assert(metaconn_freq[n-tot, p-tot] == metaconn_freq[n, p])
-    assert(metaconn_freq[n, p+tot] == metaconn_freq[n, p])
-    assert(metaconn_freq[n, p-tot] == metaconn_freq[n, p])
+    assert metaconn_freq[n+tot, p] == metaconn_freq[n, p]
+    assert metaconn_freq[n-tot, p] == metaconn_freq[n, p]
+    assert metaconn_freq[n+tot, p+tot] == metaconn_freq[n, p]
+    assert metaconn_freq[n-tot, p-tot] == metaconn_freq[n, p]
+    assert metaconn_freq[n, p+tot] == metaconn_freq[n, p]
+    assert metaconn_freq[n, p-tot] == metaconn_freq[n, p]
     # and not in the other frequencies
     if metaconn_freq[n, p] == 1:
         for i in range(1, len(frequencies)):
-            assert(metaconn_freq[n+tot*(i+1), p] != metaconn_freq[n, p])
-            assert(metaconn_freq[n-tot*(i+1), p] != metaconn_freq[n, p])
-            assert(metaconn_freq[n+tot*(i+1), p+tot*(i+1)] != metaconn_freq[n, p])
-            assert(metaconn_freq[n-tot*(i+1), p-tot*(i+1)] != metaconn_freq[n, p])
-            assert(metaconn_freq[n, p+tot*(i+1)] != metaconn_freq[n, p])
-            assert(metaconn_freq[n, p-tot*(i+1)] != metaconn_freq[n, p])
+            assert metaconn_freq[n+tot*(i+1), p] != metaconn_freq[n, p]
+            assert metaconn_freq[n-tot*(i+1), p] != metaconn_freq[n, p]
+            assert metaconn_freq[n+tot*(i+1), p+tot*(i+1)] != metaconn_freq[n, p]
+            assert metaconn_freq[n-tot*(i+1), p-tot*(i+1)] != metaconn_freq[n, p]
+            assert metaconn_freq[n, p+tot*(i+1)] != metaconn_freq[n, p]
+            assert metaconn_freq[n, p-tot*(i+1)] != metaconn_freq[n, p]
             # check for each f if connects to the good other ch and not to more
-            assert(metaconn_freq[n+tot*i, p+tot*i] == ch_con_freq[n, p-tot])
+            assert metaconn_freq[n+tot*i, p+tot*i] == ch_con_freq[n, p-tot]
 
 # def test_intraCSD():
 #     """
