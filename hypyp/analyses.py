@@ -20,7 +20,7 @@ from mne.time_frequency import psd_welch
 from mne.io.constants import FIFF
 
 
-def PSD(epochs, fmin: float, fmax: float, time_resolved: bool):
+def PSD(epochs: mne.Epochs, fmin: float, fmax: float, time_resolved: bool):
     """
     Computes the Power Spectral Density (PSD) on Epochs for a condition.
 
@@ -44,9 +44,10 @@ def PSD(epochs, fmin: float, fmax: float, time_resolved: bool):
       vizualisation to check normality for statistics for example.
 
     Returns:
-        freqs_mean: list of frequencies in frequency-band-of-interest actually
-          used for power spectral density calculation.
-        PSD_welch: PSD value in epochs for each channel and each frequency,
+        freqs_mean, PSD_welch: 
+          - freqs_mean: list of frequencies in frequency-band-of-interest
+          actually used for power spectral density calculation.
+          - PSD_welch: PSD value in epochs for each channel and each frequency,
           ndarray (n_epochs, n_channels, n_frequencies).
           Note that if time_resolved == True, PSD values are averaged
           across epochs.
@@ -74,7 +75,7 @@ def PSD(epochs, fmin: float, fmax: float, time_resolved: bool):
                     PSD_welch=PSD_welch)
 
 
-def indexes_connectivity_intrabrain(epochs):
+def indexes_connectivity_intrabrain(epochs: mne.Epochs):
     """
     Computes indexes for connectivity analysis between all EEG
     sensors for one subject. Can be used instead of
@@ -109,7 +110,7 @@ def indexes_connectivity_intrabrain(epochs):
     return electrodes
 
 
-def indexes_connectivity_interbrains(epoch_hyper):
+def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs):
     """
     Computes indexes for interbrains connectivity analyses between all EEG
     sensors for 2 subjects (merge data).
@@ -144,7 +145,7 @@ def indexes_connectivity_interbrains(epoch_hyper):
     return electrodes
 
 
-def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
+def simple_corr(data: np.ndarray, frequencies: dict or list, mode: str, epoch_wise: bool=True, time_resolved: bool=True):
     """
     Computes frequency- and time-frequency-domain connectivity measures.
 
@@ -204,7 +205,7 @@ def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
     return result
 
 
-def compute_sync(complex_signal, mode, epoch_wise, time_resolved):
+def compute_sync(complex_signal: np.ndarray, mode: str, epoch_wise: bool, time_resolved: bool):
     """
     Computes synchrony from analytic signals.
 
@@ -341,7 +342,7 @@ def compute_sync(complex_signal, mode, epoch_wise, time_resolved):
     return result
 
 
-def compute_single_freq(data, freq_range):
+def compute_single_freq(data: np.ndarray, freq_range: list):
     """
     Computes analytic signal per frequency bin using a multitaper method
     implemented in MNE.
@@ -367,7 +368,7 @@ def compute_single_freq(data, freq_range):
     return complex_signal
 
 
-def compute_freq_bands(data, freq_bands):
+def compute_freq_bands(data: np.ndarray, freq_bands: dict):
     """
     Computes analytic signal per frequency band using filtering
     and hilbert transform
