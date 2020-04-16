@@ -5,14 +5,11 @@ import os
 import random
 import numpy as np
 import mne
-#from hypyp import prep
+from hypyp import prep
 from hypyp import stats
 from hypyp import utils
 from hypyp import analyses
 from conftest import epochs
-
-
-# TODO: remove () on assert
 
 
 def test_metaconn(epochs):
@@ -62,7 +59,7 @@ def test_intraCSD(epochs):
     """
     Test that con indices are good
     """
-    
+
     import time
 
     # taking random freq-of-interest to test CSD measures
@@ -137,14 +134,24 @@ def test_intraCSD(epochs):
     # assert coh[0][0][0] == coh_mne[0][0]
 
 
-def test_ICAfit(epochs):
+def test_ICA(epochs):
     """
-    Test ICA fit function
+    Test ICA fit function, ICA choice comp and ICA apply
     """
-    
+
     ep = [epochs.epo1, epochs.epo2]
     icas = prep.ICA_fit(ep, n_components=15, method='fastica', random_state=97)
     # check that the number of componenents is similar between the two subjects
     for i in range(0, len(icas)-1):
         assert len(icas[i]) == len(icas[i+1])
-    # check whether epochs.info same length > ICA components same length
+    # check whether epochs.info['ch_names'] same length > ICA components same length
+
+    cleaned_epochs_ICA = prep.ICA_choice_comp(icas, ep)
+    assert epochs.epo1.info['ch_names'] == cleaned_epochs_ICA[0].info['ch_names']
+    assert epochs.epo2.info['ch_names'] == cleaned_epochs_ICA[1].info['ch_names']
+    assert len(epochs.epo1) <= len(cleaned_epochs_ICA[0])
+    assert len(epochs.epo2) <= len(cleaned_epochs_ICA[1])
+
+
+# def test_AR_local():
+
