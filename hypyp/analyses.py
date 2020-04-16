@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # coding=utf-8
-# ==============================================================================
-# title           : analyses.py
-# description     : intra- and inter-brain measures functions
-# author          : Phoebe Chen, Florence Brun, Guillaume Dumas
-# date            : 2020-03-18
-# version         : 1
-# python_version  : 3.7
-# ==============================================================================
+"""
+PSD, intra- and inter-brain measures functions
+| Option | Description |
+| ------ | ----------- |
+| title           | analyses.py |
+| authors         | Phoebe Chen, Florence Brun, Guillaume Dumas |
+| date            | 2020-03-18 |
+"""
 
+
+from collections import namedtuple
 import copy
 import numpy as np
 import scipy.signal as signal
@@ -66,7 +68,10 @@ def PSD(epochs, fmin, fmax, time_resolved):
     else:
         PSD_welch = psds_welch
 
-    return freqs_mean, PSD_welch
+    PSDTuple = namedtuple('PSD', ['freqs_mean', 'PSD_welch'])
+
+    return PSDTuple(freqs_mean=freqs_mean,
+                    PSD_welch=PSD_welch)
 
 
 def indexes_connectivity_intrabrain(epochs):
@@ -112,7 +117,7 @@ def indexes_connectivity_interbrains(epoch_hyper):
     Arguments:
         epoch_hyper: one dyad Epochs object to get channels info, Epochs
           are MNE objects.
-    
+
     Note:
         Only interbrains connectivity will be computed.
 
@@ -169,13 +174,13 @@ def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
         time_resolved: boolean
           whether to collapse the time course, only effective when
           epoch_wise==True,
-          if False, synchrony won't be averaged over epochs, and the time course
-          is maintained.
+          if False, synchrony won't be averaged over epochs, and the time
+          course is maintained.
           if True, synchrony is averaged over epochs.
 
     Note:
-        Connectivity is computed for all possible electrode pairs between the dyad,
-    but doesn't include intrabrain synchrony.
+        Connectivity is computed for all possible electrode pairs between
+        the dyad, but doesn't include intrabrain synchrony.
 
     Returns:
         result: array
@@ -404,7 +409,7 @@ def compute_freq_bands(data, freq_bands):
 def _plv(X, Y):
     """
     Phase Locking Value
-    
+
     Takes two vectors (phase) and compute their plv
     """
     return np.abs(np.sum(np.exp(1j * (X - Y)))) / len(X)
@@ -424,7 +429,9 @@ def _coh(X, Y):
     A1: envelope of X
     A2: envelope of Y
     reference: Kida, Tetsuo, Emi Tanaka, and Ryusuke Kakigi.
-    “Multi-Dimensional Dynamics of Human Electromagnetic Brain Activity.” Frontiers in Human Neuroscience 9 (January 19, 2016). https://doi.org/10.3389/fnhum.2015.00713.
+    “Multi-Dimensional Dynamics of Human Electromagnetic Brain Activity.”
+    Frontiers in Human Neuroscience 9 (January 19, 2016).
+    https://doi.org/10.3389/fnhum.2015.00713.
     """
     X_phase = np.angle(X)
     Y_phase = np.angle(Y)
@@ -440,8 +447,9 @@ def _coh(X, Y):
 def _icoh(X, Y):
     """
     Coherence
-    
-    Instantaneous imaginary coherence computed from hilbert transformed signal, then averaged across time points
+
+    Instantaneous imaginary coherence computed from hilbert transformed signal,
+    then averaged across time points
 
             |A1·A2·sin(delta_phase)|
     iCoh = -----------------------------
