@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # coding=utf-8
-# ==============================================================================
-# title           : prep.py
-# description     : data preprocessing functions
-# author          : Anaël Ayrolles, Florence Brun, Guillaume Dumas,
-# date            : 2020-03-18
-# version         : 1
-# python_version  : 3.7
-# ==============================================================================
+
+"""
+Data preprocessing functions
+| Option | Description |
+| ------ | ----------- |
+| title           | prep.py |
+| authors         | Anaël Ayrolles, Florence Brun, Guillaume Dumas |
+| date            | 2020-03-18 |
+"""
+
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -42,13 +44,15 @@ def ICA_choice_comp(icas, epochs):
     Epochs.
 
     Arguments:
-        icas: list of independant components for each subject, IC are MNE objects.
+        icas: list of independant components for each subject, IC are MNE
+          objects.
         epochs: list of 2 Epochs objects (for each subject). Epochs_S1
           and Epochs_S2 correspond to a condition and can result from the
           concatenation of epochs from different occurences of the condition
           across experiments.
-          Epochs are MNE objects (data are stored in an array of shape(n_epochs,
-          n_channels, n_times) and info is a disctionnary sampling parameters).
+          Epochs are MNE objects (data are stored in an array of shape
+          (n_epochs, n_channels, n_times) and info is a disctionnary
+          sampling parameters).
 
     Returns:
         cleaned_epochs_ICA: list of 2 cleaned Epochs for each subject.
@@ -85,11 +89,15 @@ def ICA_apply(icas, subj_number, comp_number, epochs):
     """
 
     cleaned_epochs_ICA = []
-    # selecting which ICs corresponding to the template 
-    template_eog_component = icas[subj_number].get_components()[:,comp_number]
+    # selecting which ICs corresponding to the template
+    template_eog_component = icas[subj_number].get_components()[:, comp_number]
 
     # applying corrmap with at least 1 component detected for each subj
-    fig_template, fig_detected = corrmap(icas, template=template_eog_component, threshold=0.9, label='blink', ch_type='eeg')
+    fig_template, fig_detected = corrmap(icas,
+                                         template=template_eog_component,
+                                         threshold=0.9,
+                                         label='blink',
+                                         ch_type='eeg')
 
     # labeling the ICs that capture blink artifacts
     print([ica.labels_ for ica in icas])
@@ -144,8 +152,8 @@ def ICA_fit(epochs, n_components, method, random_state):
         (see MNE documentation).
 
     Returns:
-        icas: list of independant components for each subject. IC are MNE objects,
-          see MNE documentation for more details.
+        icas: list of independant components for each subject. IC are MNE
+          objects, see MNE documentation for more details.
     """
     icas = []
     for epoch in epochs:
@@ -253,4 +261,5 @@ def AR_local(cleaned_epochs_ICA, verbose=False):
             # Problème titre ne s'affiche pas pour le deuxieme axe !!!
             axes[1].set_title('After autoreject')
             plt.tight_layout()
+
     return cleaned_epochs_AR
