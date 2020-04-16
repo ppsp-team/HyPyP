@@ -18,7 +18,7 @@ from autoreject import get_rejection_threshold, AutoReject
 from mne.preprocessing import ICA, corrmap
 
 
-def filt(raw_S: list of Raw data):
+def filt(raw_S: list):
     """
     Filters list of raw data to remove slow drifts.
 
