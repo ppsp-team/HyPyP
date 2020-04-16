@@ -135,7 +135,7 @@ def test_metaconn(epochs):
 #     # not same output: MNE pairs of electrode (n_connections=31*31, freq=1), Phoebe (31, 31, 1)
 #     # assert coh[0][0][0] == coh_mne[0][0]
 
-def test_ICAfit():
+def test_ICAfit(epochs):
     """
     Test ICA fit function
     """
