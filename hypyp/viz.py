@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # coding=utf-8
-# ==============================================================================
-# title           : viz.py
-# description     : basic visualization functions
-# author          : Guillaume Dumas, Amir Djalovski
-# date            : 2020-03-18
-# version         : 1
-# python_version  : 3.7
-# ==============================================================================
+
+"""
+Basic visualization functions
+| Option | Description |
+| ------ | ----------- |
+| title           | viz.py |
+| authors    | Guillaume Dumas, Amir Djalovski, Anaël Ayrolles, Florence Brun |
+| date            | 2020-03-18 |
+"""
+
 
 import numpy as np
 import matplotlib
@@ -146,7 +148,7 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
           3d coordinates of the sensors
         lab1, lab2: lists of strings
           sensor labels
-    
+
     Returns:
         None: plot the sensors in 3D within the current axis.
     """
