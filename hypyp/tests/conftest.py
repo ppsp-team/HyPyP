@@ -16,4 +16,4 @@ def epochs():
     mne.epochs.equalize_epoch_counts([epo1, epo2])
     epoch_merge = utils.merge(epo1, epo2)
 
-    return epo1
+    return epo1, epo2, epoch_merge

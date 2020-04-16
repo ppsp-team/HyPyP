@@ -27,11 +27,13 @@ def test_metaconn():
     # mne.epochs.equalize_epoch_counts([epo1, epo2])
     # epoch_merge = utils.merge(epo1, epo2)
 
+    epo1, epo2, epoch_merge = epochs()
+
     # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
     # computing ch_con and sensors pairs for metaconn calculation
-    ch_con, ch_con_freq = stats.con_matrix(epochs.epo1, frequencies, draw=False)
-    sensor_pairs = analyses.indexes_connectivity_interbrains(epochs.epoch_merge)
+    ch_con, ch_con_freq = stats.con_matrix(epo1, frequencies, draw=False)
+    sensor_pairs = analyses.indexes_connectivity_interbrains(epoch_merge)
 
     # computing metaconn_freq and test it
     metaconn, metaconn_freq = stats.metaconn_matrix_2brains(
