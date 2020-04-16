@@ -1,5 +1,6 @@
 import pytest
 import os
+from collections import namedtuple
 import mne
 from hypyp import utils
 
@@ -16,4 +17,6 @@ def epochs():
     mne.epochs.equalize_epoch_counts([epo1, epo2])
     epoch_merge = utils.merge(epo1, epo2)
 
-    return epo1, epo2, epoch_merge
+    epochsTuple = namedtuple('epochs', ['epo1', 'epo2', 'epoch_merge'])
+
+    return epochsTuple(epo1=epo1, epo2=epo2, epoch_merge=epoch_merge)

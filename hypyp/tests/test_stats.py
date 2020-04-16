@@ -23,8 +23,8 @@ def test_metaconn(epochs):
     # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
     # computing ch_con and sensors pairs for metaconn calculation
-    ch_con, ch_con_freq = stats.con_matrix(epo1, frequencies, draw=False)
-    sensor_pairs = analyses.indexes_connectivity_interbrains(epoch_merge)
+    ch_con, ch_con_freq = stats.con_matrix(epochs.epo1, frequencies, draw=False)
+    sensor_pairs = analyses.indexes_connectivity_interbrains(epochs.epoch_merge)
 
     # computing metaconn_freq and test it
     metaconn, metaconn_freq = stats.metaconn_matrix_2brains(
@@ -63,12 +63,7 @@ def test_metaconn(epochs):
 #     """
 #     import time
 
-#     # Loading data files & extracting sensor infos
-#     epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"),
-#                            preload=True)
-#     epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"),
-#                            preload=True)
-#     mne.epochs.equalize_epoch_counts([epo1, epo2])
+#     epo1, epo2, epoch_merge = epochs()
 
 #     # taking random freq-of-interest to test CSD measures
 #     frequencies = [11, 12, 13]
@@ -145,14 +140,7 @@ def test_ICAfit():
     """
     Test ICA fit function
     """
-    # Loading data files & extracting sensor infos
-    epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"),
-                           preload=True)
-    epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"),
-                           preload=True)
-    mne.epochs.equalize_epoch_counts([epo1, epo2])
-    epochs = [epo1, epo2]
-
+    epo1, epo2, epoch_merge = epochs()
     icas = prep.ICA_fit(epochs, n_components=15, method='fastica', random_state=97)
     # check that the number of componenents is similar between the two subjects
     for i in range(0, len(icas)-1):
