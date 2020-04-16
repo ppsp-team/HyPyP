@@ -16,7 +16,6 @@ def test_metaconn(epochs):
     """
     Test that con indices are good
     """
-
     # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
     # computing ch_con and sensors pairs for metaconn calculation
@@ -59,7 +58,6 @@ def test_intraCSD(epochs):
     """
     Test that con indices are good
     """
-
     import time
 
     # taking random freq-of-interest to test CSD measures
@@ -138,7 +136,6 @@ def test_ICA(epochs):
     """
     Test ICA fit function, ICA choice comp and ICA apply
     """
-
     ep = [epochs.epo1, epochs.epo2]
     icas = prep.ICA_fit(ep, n_components=15, method='fastica', random_state=97)
     # check that the number of componenents is similar between the two subjects
