@@ -19,8 +19,8 @@ from mne.channels import find_ch_connectivity
 from mne.stats import permutation_cluster_test
 
 
-def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha: float) -> tuple:
-  """
+def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha):
+    """
     Computes statistical t test on Power Spectral Density values
     for a condition.
 
@@ -63,7 +63,7 @@ def statsCond(PSDs_task_normLog, epochs, n_permutations, alpha_bonferroni, alpha
     # averaging across frequencies (compute stats only in ch space)
     power = np.mean(PSDs_task_normLog, axis=2)
     T_obs, p_values, H0 = mne.stats.permutation_t_test(power, n_permutations,
-                                                       tail=0, n_jobs=1)
+                                                        tail=0, n_jobs=1)
     adj_p = mne.stats.bonferroni_correction(p_values, alpha=alpha_bonferroni)
 
     T_obs_plot = np.nan * np.ones_like(T_obs)
