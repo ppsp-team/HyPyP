@@ -1,7 +1,7 @@
 site_name: HyPyP Docs
 
 theme:
-  name: "material"
+  name: "readthedocs"
 
 extra_css:
   - custom.css
