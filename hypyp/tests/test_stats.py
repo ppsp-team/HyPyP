@@ -5,11 +5,12 @@ import os
 import random
 import numpy as np
 import mne
-import joblib
-from hypyp import prep
+#from hypyp import prep
 from hypyp import stats
 from hypyp import utils
 from hypyp import analyses
+from conftest import epochs
+from epochs import epo1, epo2, epoch_merge
 
 # TODO: include fixtures for epochs etc.
 # TODO: remove () on assert
@@ -19,13 +20,13 @@ def test_metaconn():
     Test that con indices are good
     """
 
-    # Loading data files & extracting sensor infos
-    epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"),
-                           preload=True)
-    epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"),
-                           preload=True)
-    mne.epochs.equalize_epoch_counts([epo1, epo2])
-    epoch_merge = utils.merge(epo1, epo2)
+    # # Loading data files & extracting sensor infos
+    # epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"),
+    #                        preload=True)
+    # epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"),
+    #                        preload=True)
+    # mne.epochs.equalize_epoch_counts([epo1, epo2])
+    # epoch_merge = utils.merge(epo1, epo2)
 
     # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
