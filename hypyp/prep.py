@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # coding=utf-8
-# ==============================================================================
-# title           : prep.py
-# description     : data preprocessing functions
-# author          : Anaël Ayrolles, Florence Brun, Guillaume Dumas,
-# date            : 2020-03-18
-# version         : 1
-# python_version  : 3.7
-# ==============================================================================
+
+"""
+Data preprocessing functions
+| Option | Description |
+| ------ | ----------- |
+| title           | prep.py |
+| authors         | Anaël Ayrolles, Florence Brun, Guillaume Dumas |
+| date            | 2020-03-18 |
+"""
+
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,16 +22,14 @@ def filt(raw_S):
     """
     Filters list of raw data to remove slow drifts.
 
-    Parameters
-    -----
-    raw_S : list of Raw data (as an example: different occurences of
-            a condition for a subject). Raws are MNE objects.
+    Arguments:
+        raw_S: list of Raw data (as an example: different occurences of
+          a condition for a subject). Raws are MNE objects.
 
-    Returns
-    -----
-    raws : list of high-pass filtered raws.
-
+    Returns:
+        raws: list of high-pass filtered raws.
     """
+    # TODO: l_freq and h_freq as param
     raws = []
     for raw in raw_S:
         raws.append(mne.io.Raw.filter(raw, l_freq=2., h_freq=None))
@@ -43,21 +43,19 @@ def ICA_choice_comp(icas, epochs):
     the relevant components for artefacts rejection and apply ICA on
     Epochs.
 
-    Parameters
-    -----
-    icas : list of independant components for each subject, IC are MNE objects.
+    Arguments:
+        icas: list of independant components for each subject, IC are MNE
+          objects.
+        epochs: list of 2 Epochs objects (for each subject). Epochs_S1
+          and Epochs_S2 correspond to a condition and can result from the
+          concatenation of epochs from different occurences of the condition
+          across experiments.
+          Epochs are MNE objects (data are stored in an array of shape
+          (n_epochs, n_channels, n_times) and info is a disctionnary
+          sampling parameters).
 
-    epochs : list of 2 Epochs objects (for each subject). Epochs_S1
-    and Epochs_S2 correspond to a condition and can result from the
-    concatenation of epochs from different occurences of the condition
-    across experiments.
-    Epochs are MNE objects (data are stored in an array of shape(n_epochs,
-    n_channels, n_times) and info is a disctionnary sampling parameters).
-
-    Returns
-    -----
-    cleaned_epochs_ICA : list of 2 cleaned Epochs for each subject.
-
+    Returns:
+        cleaned_epochs_ICA: list of 2 cleaned Epochs for each subject.
     """
     # plotting Independant Components for each subject
     for ica in icas:
@@ -91,11 +89,15 @@ def ICA_apply(icas, subj_number, comp_number, epochs):
     """
 
     cleaned_epochs_ICA = []
-    # selecting which ICs corresponding to the template 
-    template_eog_component = icas[subj_number].get_components()[:,comp_number]
+    # selecting which ICs corresponding to the template
+    template_eog_component = icas[subj_number].get_components()[:, comp_number]
 
     # applying corrmap with at least 1 component detected for each subj
-    fig_template, fig_detected = corrmap(icas, template=template_eog_component, threshold=0.9, label='blink', ch_type='eeg')
+    fig_template, fig_detected = corrmap(icas,
+                                         template=template_eog_component,
+                                         threshold=0.9,
+                                         label='blink',
+                                         ch_type='eeg')
 
     # labeling the ICs that capture blink artifacts
     print([ica.labels_ for ica in icas])
@@ -127,35 +129,31 @@ def ICA_fit(epochs, n_components, method, random_state):
     Pre requisite : install autoreject
     https://api.github.com/repos/autoreject/autoreject/zipball/master
 
-    Parameters
-    -----
-    epochs : list of 2 Epochs objects (for each subject).
-             Epochs_S1 and Epochs_S2 correspond to a condition and can result
-             from the concatenation of epochs from different occurences of the
-             condition across experiments.
-             Epochs are MNE objects (data are stored in an array of shape
-             (n_epochs, n_channels, n_times) and info is a dictionnary
-             sampling parameters).
+    Arguments:
+        epochs: list of 2 Epochs objects (for each subject).
+          Epochs_S1 and Epochs_S2 correspond to a condition and can result
+          from the concatenation of epochs from different occurences of the
+          condition across experiments.
+          Epochs are MNE objects (data are stored in an array of shape
+          (n_epochs, n_channels, n_times) and info is a dictionnary
+          sampling parameters).
+        n_components: the number of principal components that are passed to the
+          ICA algorithm during fitting, int. For a first estimation,
+          n_components can be set to 15.
+        method: the ICA method used, str 'fastica', 'infomax' or 'picard'.
+          Fastica' is the most frequently used.
+        random_state: the parameter used to compute random distributions
+          for ICA calulation, int or None. It can be useful to fix
+          random_state value to have reproducible results. For 15
+          components, random_state can be set to 97 for example.
 
-    n_components : the number of principal components that are passed to the
-                   ICA algorithm during fitting, int. For a first estimation,
-                   n_components can be set to 15.
+    Note:
+        If Autoreject and ICA take too much time, change the decim value
+        (see MNE documentation).
 
-    method : the ICA method used, str 'fastica', 'infomax' or 'picard'.
-             Fastica' is the most frequently used.
-
-    random_state : the parameter used to compute random distributions
-                   for ICA calulation, int or None. It can be useful to fix
-                   random_state value to have reproducible results. For 15
-                   components, random_state can be set to 97 for example.
-
-    Note that if Autoreject and ICA take too much time, change the decim value
-    (see MNE documentation).
-
-    Returns
-    -----
-    icas : list of independant components for each subject. IC are MNE objects,
-    see MNE documentation for more details.
+    Returns:
+        icas: list of independant components for each subject. IC are MNE
+          objects, see MNE documentation for more details.
     """
     icas = []
     for epoch in epochs:
@@ -166,7 +164,9 @@ def ICA_fit(epochs, n_components, method, random_state):
         print('The rejection dictionary is %s' % reject)
 
         # fitting ICA on filt_raw after AR
-        ica = ICA(n_components=15, method='fastica', random_state=97)
+        ica = ICA(n_components=n_components,
+                  method=method,
+                  random_state=random_state)
         # take bad channels into account in ICA fit
         epoch_all_ch = mne.Epochs.copy(epoch)
         epoch_all_ch.info['bads'] = []
@@ -179,16 +179,13 @@ def AR_local(cleaned_epochs_ICA, verbose=False):
     """
     Applies local Autoreject to correct or reject bad epochs.
 
-    Parameters
-    -----
-    clean_epochs_ICA : list of Epochs after global Autoreject and ICA
+    Arguments:
+        clean_epochs_ICA: list of Epochs after global Autoreject and ICA
+        verbose: to plot data before and after AR, boolean set to False
+          by default.
 
-    verbose : to plot data before and after AR, boolean set to False
-              by default.
-
-    Returns
-    -----
-    cleaned_epochs_AR : list of Epochs after local Autoreject.
+    Returns:
+        cleaned_epochs_AR: list of Epochs after local Autoreject.
     """
     bad_epochs_AR = []
 
@@ -266,4 +263,5 @@ def AR_local(cleaned_epochs_ICA, verbose=False):
             # Problème titre ne s'affiche pas pour le deuxieme axe !!!
             axes[1].set_title('After autoreject')
             plt.tight_layout()
+
     return cleaned_epochs_AR

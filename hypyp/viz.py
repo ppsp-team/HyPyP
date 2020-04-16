@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # coding=utf-8
-# ==============================================================================
-# title           : viz.py
-# description     : basic visualization functions
-# author          : Guillaume Dumas, Amir Djalovski
-# date            : 2020-03-18
-# version         : 1
-# python_version  : 3.7
-# ==============================================================================
+
+"""
+Basic visualization functions
+| Option | Description |
+| ------ | ----------- |
+| title           | viz.py |
+| authors    | Guillaume Dumas, Amir Djalovski, Anaël Ayrolles, Florence Brun |
+| date            | 2020-03-18 |
+"""
+
 
 import numpy as np
 import matplotlib
@@ -16,21 +18,20 @@ import mne
 
 
 def transform(locs, traY=0.25, rotZ=np.pi):
-    """Calculates new locations for the EEG locations.
+    """
+    Calculates new locations for the EEG locations.
 
-    Parameters
-    ----------
-    locs : array of shape (n_sensors, 3)
-           3d coordinates of the sensors
-    traY : float
-        Y translation to apply to the sensors
-    rotZ : float
-        Z rotation to apply to the sensors
+    Arguments:
+        locs: array of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        traY: float
+          Y translation to apply to the sensors
+        rotZ: float
+          Z rotation to apply to the sensors
 
-    Returns
-    -------
-    result : array (n_sensors, 3)
-        new 3d coordinates of the sensors
+    Returns:
+        result: array (n_sensors, 3)
+          new 3d coordinates of the sensors
     """
     newX = locs[:, 0] * np.cos(rotZ) - locs[:, 1] * np.sin(rotZ)
     newY = locs[:, 0] * np.sin(rotZ) + locs[:, 1] * np.cos(rotZ)
@@ -41,17 +42,17 @@ def transform(locs, traY=0.25, rotZ=np.pi):
 
 
 def plot_sensors_2d(loc1, loc2, lab1=[], lab2=[]):
-    """Plots sensors in 2D.
+    """
+    Plots sensors in 2D.
 
-    Parameters
-    ----------
-    loc1, loc2 : arrays of shape (n_sensors, 3)
-                 3d coordinates of the sensors
-    lab1, lab2 : lists of strings
-                 sensor labels
-    Returns
-    -------
-    None : plot the sensors in 2D within the current axis.
+    Arguments:
+        loc1, loc2: arrays of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        lab1, lab2: lists of strings
+          sensor labels
+
+    Returns:
+        None: plot the sensors in 2D within the current axis.
     """
     for idx1 in range(len(loc1)):
         x1, y1, z1 = loc1[idx1, :]
@@ -70,27 +71,26 @@ def plot_sensors_2d(loc1, loc2, lab1=[], lab2=[]):
 
 
 def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
-    """Plots hyper-conenctivity in 2D.
+    """
+    Plots hyper-conenctivity in 2D.
 
-    Parameters
-    ----------
-    loc1, loc2 : arrays of shape (n_sensors, 3)
-                 3d coordinates of the sensors
-    C : array, (len(loc1), len(loc2))
-        matrix with the values of hyper-connectivity
-    threshold : float
-                threshold for the links
-                only those above will be ploted
-    steps : int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-    weight : numpy.float
-         Connectivity weight to determine the thickness
-         of the link
+    Arguments:
+        loc1, loc2: arrays of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        C: array, (len(loc1), len(loc2))
+          matrix with the values of hyper-connectivity
+        threshold: float
+          threshold for the links
+          only those above will be ploted
+        steps: int
+          number of steps for the Bezier curves
+          if <3 equivalent to ploting straight lines
+        weight: numpy.float
+          Connectivity weight to determine the thickness
+          of the link
 
-    Returns
-    -------
-    None : plot the links in 2D within the current axis.
+    Returns:
+        None: plot the links in 2D within the current axis.
     """
     ctr1 = np.nanmean(loc1, 0)
     ctr2 = np.nanmean(loc2, 0)
@@ -139,18 +139,18 @@ def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
 
 
 def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
-    """Plots sensors in 3D.
+    """
+    Plots sensors in 3D.
 
-    Parameters
-    ----------
-    ax : Matplotlib axis created with projection='3d'
-    loc1, loc2 : arrays of shape (n_sensors, 3)
-                 3d coordinates of the sensors
-    lab1, lab2 : lists of strings
-                 sensor labels
-    Returns
-    -------
-    None : plot the sensors in 3D within the current axis.
+    Arguments:
+        ax: Matplotlib axis created with projection='3d'
+        loc1, loc2: arrays of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        lab1, lab2: lists of strings
+          sensor labels
+
+    Returns:
+        None: plot the sensors in 3D within the current axis.
     """
     for idx1 in range(len(loc1)):
             x1, y1, z1 = loc1[idx1, :]
@@ -170,28 +170,27 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
 
 
 def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
-    """Plots hyper-conenctivity in 3D.
+    """
+    Plots hyper-conenctivity in 3D.
 
-    Parameters
-    ----------
-    ax : Matplotlib axis created with projection='3d'
-    loc1, loc2 : arrays of shape (n_sensors, 3)
-                 3d coordinates of the sensors
-    C : array, (len(loc1), len(loc2))
-        matrix with the values of hyper-connectivity
-    threshold : float
-                threshold for the links
-                only those above will be ploted
-    steps : int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-    weight : numpy.float
-         Connectivity weight to determine the thickness
-         of the link
+    Arguments:
+        ax: Matplotlib axis created with projection='3d'
+        loc1, loc2: arrays of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        C: array, (len(loc1), len(loc2))
+          matrix with the values of hyper-connectivity
+        threshold: float
+          threshold for the links
+          only those above will be ploted
+        steps: int
+          number of steps for the Bezier curves
+          if <3 equivalent to ploting straight lines
+        weight: numpy.float
+          Connectivity weight to determine the thickness
+          of the link
 
-    Returns
-    -------
-    None : plot the links in 3D within the current axis.
+    Returns:
+        None: plot the links in 3D within the current axis.
     """
     ctr1 = np.nanmean(loc1, 0)
     ctr1[2] -= 0.2
@@ -259,20 +258,13 @@ def plot_significant_sensors(T_obs_plot, epochs):
     interbrains connectivity values on dyads (merge data), use the
     plot_links_3d function of the toolbox.
 
-    Parameters
-    -----
-    T_obs_plot : satistical values to plot, from sensors above alpha threshold,
-                 array of shape (n_tests,).
+    Arguments:
+        T_obs_plot: satistical values to plot, from sensors above alpha threshold,
+          array of shape (n_tests,).
+        epochs: one subject Epochs object to sample channels information in info.
 
-    epochs : one subject Epochs object to sample channels information in info.
-
-    Plot
-    -----
-    Topomap with the T or F statistics for significant sensors.
-
-    Returns
-    -----
-    None.
+    Returns:
+        None, plots topomap with the T or F statistics for significant sensors.
     """
 
     # getting sensors position
