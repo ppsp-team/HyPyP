@@ -18,7 +18,6 @@ def test_metaconn(epochs):
     """
     Test that con indices are good
     """
-    #epo1, epo2, epoch_merge = epochs()
 
     # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
@@ -33,9 +32,9 @@ def test_metaconn(epochs):
     random.seed(20)  # Init the random number generator for reproducibility
     # n = random.randrange(0, 63)
     # for our data taske into account EOG ch!!!
-    n = random.randrange(0, len(epo1.info['ch_names']))
-    tot = len(epo1.info['ch_names'])
-    p = random.randrange(len(epo1.info['ch_names']), len(epoch_merge.info['ch_names'])+1)
+    n = random.randrange(0, len(epochs.epo1.info['ch_names']))
+    tot = len(epochs.epo1.info['ch_names'])
+    p = random.randrange(len(epochs.epo1.info['ch_names']), len(epochs.epoch_merge.info['ch_names'])+1)
     # checking for each pair in which ch_name is,
     # whether ch_name linked himself
     # (in neighbouring frequencies also)
@@ -140,8 +139,8 @@ def test_ICAfit():
     """
     Test ICA fit function
     """
-    epo1, epo2, epoch_merge = epochs()
-    icas = prep.ICA_fit(epochs, n_components=15, method='fastica', random_state=97)
+    ep = [epochs.epo1, epochs.epo2]
+    icas = prep.ICA_fit(ep, n_components=15, method='fastica', random_state=97)
     # check that the number of componenents is similar between the two subjects
     for i in range(0, len(icas)-1):
         assert len(icas[i]) == len(icas[i+1])
