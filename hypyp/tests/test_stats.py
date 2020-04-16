@@ -11,8 +11,9 @@ from hypyp import utils
 from hypyp import analyses
 from conftest import epochs
 
-# TODO: include fixtures for epochs etc.
+
 # TODO: remove () on assert
+
 
 def test_metaconn(epochs):
     """
@@ -56,89 +57,91 @@ def test_metaconn(epochs):
             # check for each f if connects to the good other ch and not to more
             assert metaconn_freq[n+tot*i, p+tot*i] == ch_con_freq[n, p-tot]
 
-# def test_intraCSD():
-#     """
-#     Test that con indices are good
-#     """
-#     import time
 
-#     epo1, epo2, epoch_merge = epochs()
+def test_intraCSD(epochs):
+    """
+    Test that con indices are good
+    """
+    
+    import time
 
-#     # taking random freq-of-interest to test CSD measures
-#     frequencies = [11, 12, 13]
-#     # Note: fmin and fmax excluded, here n_freq = 1 (for MNE and Phoebe functions)
+    # taking random freq-of-interest to test CSD measures
+    frequencies = [11, 12, 13]
+    # Note: fmin and fmax excluded, here n_freq = 1 (for MNE and Phoebe functions)
 
-#     # intra-ind CSD
-#     # data = np.array([epo1, epo1])
-#     # data_mne = epo1
-#     # sensors = None
+    # intra-ind CSD
+    # data = np.array([epo1, epo1])
+    # data_mne = epo1
+    # sensors = None
 
-#     # inter-ind CSD
-#     data = np.array([epo1, epo2])
-#     epoch_hyper = utils.merge(epo1, epo2)
-#     data_mne = epoch_hyper
-#     l = list(range(0,int(len(epoch_hyper.info['ch_names'])/2)))
-#     L = []
-#     M = []
-#     for i in range(0,len(l)):
-#         for p in range(0,len(l)):
-#             L.append(l[i])
-#     M = len(l)*list(range(len(l),len(l)*2))
-#     sensors = (np.array(L),np.array(M))
+    # inter-ind CSD
+    data = np.array([epochs.epo1, epochs.epo2])
+    data_mne = epochs.epoch_merge
 
-#     # trace running time
-#     now = time.time()
-#     # mode to transform signal to analytic signal on which synchrony is computed
-#     # mode = 'fourier'
-#     mode = 'multitaper'
+    l = list(range(0,int(len(epochs.epoch_merge.info['ch_names'])/2)))
+    L = []
+    M = []
+    for i in range(0,len(l)):
+        for p in range(0,len(l)):
+            L.append(l[i])
+    M = len(l)*list(range(len(l),len(l)*2))
+    sensors = (np.array(L),np.array(M))
 
-#     # Phoebe: multitaper with mne.time_frequency.tfr_array_multitaper
-#     # BUT step = 1s, while coh (including the multitaper step) < 1s... optimized in MNE
-#     # how to optimize the mutitaper step in Phoebe script?
-#     # and then the second step: same question
+    # trace running time
+    now = time.time()
+    # mode to transform signal to analytic signal on which synchrony is computed
+    # mode = 'fourier'
+    mode = 'multitaper'
 
-#     coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=data_mne,
-#                                                                                 method='plv',
-#                                                                                 mode=mode,
-#                                                                                 indices=sensors,
-#                                                                                 sfreq=500,
-#                                                                                 fmin=11,
-#                                                                                 fmax=13,
-#                                                                                 faverage=True)
-#     now2 = time.time()
-#     # coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
-#     #                           time_resolved=True)
-#     # substeps cf. multitaper step too long?
-#     values = analyses.compute_single_freq(data, frequencies)
-#     now3 = time.time()
-#     result = analyses.compute_sync(values, mode='plv', epoch_wise=True,
-#                           time_resolved=True)
-#     now4 = time.time()
-#     # convert time to pick seconds only in GTM ref
-#     now = time.localtime(now)
-#     now2 = time.localtime(now2)
-#     now3 = time.localtime(now3)
-#     now4 = time.localtime(now4)
+    # Phoebe: multitaper with mne.time_frequency.tfr_array_multitaper
+    # BUT step = 1s, while coh (including the multitaper step) < 1s... optimized in MNE
+    # how to optimize the mutitaper step in Phoebe script?
+    # and then the second step: same question
 
-#     # assess time running equivalence for each script 
-#     # assert (int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec))
-#     # takes 2 versus 0 seconds (MNE) (and here n_channels 31, n_epochs not a lot, n_freq 1)
-#     # idem en inter-ind
+    coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=data_mne,
+                                                                                method='plv',
+                                                                                mode=mode,
+                                                                                indices=sensors,
+                                                                                sfreq=500,
+                                                                                fmin=11,
+                                                                                fmax=13,
+                                                                                faverage=True)
+    now2 = time.time()
+    # coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
+    #                           time_resolved=True)
+    # substeps cf. multitaper step too long?
+    values = analyses.compute_single_freq(data, frequencies)
+    now3 = time.time()
+    result = analyses.compute_sync(values, mode='plv', epoch_wise=True,
+                          time_resolved=True)
+    now4 = time.time()
+    # convert time to pick seconds only in GTM ref
+    now = time.localtime(now)
+    now2 = time.localtime(now2)
+    now3 = time.localtime(now3)
+    now4 = time.localtime(now4)
 
-#     # test substeps
-#     assert (int(now2.tm_sec) - int(now.tm_sec)) == ((int(now4.tm_sec) - int(now3.tm_sec))+(int(now3.tm_sec) - int(now2.tm_sec)))
-#     # one second per step in Phoebe script...
-#     # test mne.time.frequencies.tfr_multitaper(all) = 1 second?
-#     # spectral con with mode = 'multitaper' < 1s...
+    # assess time running equivalence for each script 
+    # assert (int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec))
+    # takes 2 versus 0 seconds (MNE) (and here n_channels 31, n_epochs not a lot, n_freq 1)
+    # idem en inter-ind
 
-#     # assess results: shape equivalence and values
-#     # not same output: MNE pairs of electrode (n_connections=31*31, freq=1), Phoebe (31, 31, 1)
-#     # assert coh[0][0][0] == coh_mne[0][0]
+    # test substeps
+    assert (int(now2.tm_sec) - int(now.tm_sec)) == ((int(now4.tm_sec) - int(now3.tm_sec))+(int(now3.tm_sec) - int(now2.tm_sec)))
+    # one second per step in Phoebe script...
+    # test mne.time.frequencies.tfr_multitaper(all) = 1 second?
+    # spectral con with mode = 'multitaper' < 1s...
+
+    # assess results: shape equivalence and values
+    # not same output: MNE pairs of electrode (n_connections=31*31, freq=1), Phoebe (31, 31, 1)
+    # assert coh[0][0][0] == coh_mne[0][0]
+
 
 def test_ICAfit(epochs):
     """
     Test ICA fit function
     """
+    
     ep = [epochs.epo1, epochs.epo2]
     icas = prep.ICA_fit(ep, n_components=15, method='fastica', random_state=97)
     # check that the number of componenents is similar between the two subjects
