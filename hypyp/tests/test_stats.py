@@ -123,9 +123,8 @@ def test_simple_corr(epochs):
 
     # test substeps
     assert (int(now2.tm_sec) - int(now.tm_sec)) == ((int(now4.tm_sec) - int(now3.tm_sec))+(int(now3.tm_sec) - int(now2.tm_sec)))
-    # one second per step in Phoebe script...
-    # test mne.time.frequencies.tfr_multitaper(all) = 1 second?
-    # spectral con with mode = 'multitaper' < 1s...
+    # second step in Phoebe script that takes 2 seconds
+    # (first step less than 1 as for the MNE function)
 
     # assess results: shape equivalence and values
     # not same output: MNE pairs of electrode (n_connections=31*31, freq=1), Phoebe (31, 31, 1)
@@ -185,7 +184,7 @@ def test_PSD(epochs):
     freqs_mean, PSD_welch = analyses.PSD(epochs.epo1,
                                          fmin, fmax,
                                          time_resolved=False)
-    assert PSD_welch.shape == (len(epochs.epo1.info['ch_names']), len(freqs_mean))
+    assert PSD_welch.shape == (len(epochs.epo1), len(epochs.epo1.info['ch_names']), len(freqs_mean))
 
 
 def test_indexes_connectivity(epochs):
@@ -194,7 +193,11 @@ def test_indexes_connectivity(epochs):
     """
     electrodes = analyses.indexes_connectivity_intrabrain(epochs.epo1)
     length = len(epochs.epo1.info['ch_names'])
-    assert len(electrodes) == length*(length-1)
+    L = []
+    for i in range(1, length):
+        L.append(length-i)
+    tot = sum(L)
+    assert len(electrodes) == tot
     electrodes_hyper = analyses.indexes_connectivity_interbrains(epochs.epoch_merge)
     assert len(electrodes_hyper) == length*length
     # check output type: list of tuples
