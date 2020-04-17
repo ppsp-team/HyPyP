@@ -125,14 +125,15 @@ def test_simple_corr(epochs):
 
     # assess time running equivalence for each script
     # assert (int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec))
-    # takes 2 versus 1 second with MNE function
+    # takes 2 versus 0 second with MNE function
     # (and here n_channels 31, n_epochs not a lot, n_freq 1)
     # idem en inter-ind
 
     # test substeps
     assert (int(now2.tm_sec) - int(now.tm_sec)) == ((int(now4.tm_sec) - int(now3.tm_sec))+(int(now3.tm_sec) - int(now2.tm_sec)))
-    # second step in Phoebe script that takes 2 seconds
-    # (first step less than 1 as for the MNE function)
+    # each of the two steps in Phoebe script takes 1 second
+    # (while first step less than 1s for the MNE function cf. multitaper
+    # calculation... = ?)
 
     # assess results: shape equivalence and values
     # not same output: MNE pairs of electrode (n_connections=31*31, freq=1),
@@ -248,7 +249,7 @@ def test_stats(epochs):
     assert statscondClusterTuple.F_obs.shape[0] == len(epochs.epo1.info['ch_names'])
     for i in range(0, len(statscondClusterTuple.clusters)):
         assert len(statscondClusterTuple.clusters[i]) < len(epochs.epo1.info['ch_names'])
-    assert statscondClusterTuple.cluster_p_values.shape == len(statscondClusterTuple.clusters)
+    assert statscondClusterTuple.cluster_p_values.shape[0] == len(statscondClusterTuple.clusters)
     # test F_obs_plot (ntests,) with viz function
 
 
@@ -257,7 +258,7 @@ def test_utils(epochs):
     Test merge and split
     """
     ep_hyper = utils.merge(epochs.epo1, epochs.epo2)
-    assert type(ep_hyper) == mne.epochs.Epochs
+    assert type(ep_hyper) == mne.epochs.EpochsArray
     # check channels number
     assert len(ep_hyper.info['ch_names']) == 2*len(epochs.epo1.info['ch_names'])
     # check EOG channels number
@@ -278,5 +279,9 @@ def test_utils(epochs):
     assert ep_hyper_data[ne][ch_index2][:] == epo2_data[ne][nch][:]
 
     # split test
+    # but done on raws... to preprocess subjects indep...
+    # to be adapted for epochs?
+    # raw_1020_S1, raw_1020_S2 = utils.merge(raw_merge)
+    # check that raw1 = epo1 directly?
 
 # test viz
