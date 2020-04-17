@@ -12,9 +12,9 @@ from hypyp import analyses
 from conftest import epochs
 
 
-def test_metaconn(epochs):
+def test_metaconn_matrix_2brains(epochs):
     """
-    Test that con indices are good
+    Test metaconn_matrix_2brains
     """
     # taking random freq-of-interest to test metaconn_freq
     frequencies = [11, 12, 13]
@@ -54,9 +54,9 @@ def test_metaconn(epochs):
             assert metaconn_freq[n+tot*i, p+tot*i] == ch_con_freq[n, p-tot]
 
 
-def test_intraCSD(epochs):
+def test_simple_corr(epochs):
     """
-    Test that con indices are good
+    Test simple_corr timing
     """
     import time
 
@@ -134,7 +134,7 @@ def test_intraCSD(epochs):
 
 def test_ICA(epochs):
     """
-    Test ICA fit function, ICA choice comp and ICA apply
+    Test ICA fit, ICA choice comp and ICA apply
     """
     ep = [epochs.epo1, epochs.epo2]
     icas = prep.ICA_fit(ep, n_components=15, method='fastica', random_state=97)
@@ -162,3 +162,44 @@ def test_AR_local(epochs):
     assert len(epochs.epo2) >= len(cleaned_epochs_AR[1])
     assert len(cleaned_epochs_AR[0]) == len(cleaned_epochs_AR[1])
     # modify parameters cf. Denis email and check if works
+
+
+# def test_filt():
+#     check that output is always Raw (list of raws)
+#     and cf. PSD: lfreq and hfreq OK
+#     can not test it cf. do not have raws,
+#     but only epochs for examples.
+
+
+def test_PSD(epochs):
+    """
+    Test PSD
+    """
+    fmin = 10
+    fmax = 13
+    freqs_mean, PSD_welch = analyses.PSD(epochs.epo1,
+                                         fmin, fmax,
+                                         time_resolved=True)
+    assert type(PSD_welch) == np.ndarray
+    assert PSD_welch.shape == (len(epochs.epo1.info['ch_names']), len(freqs_mean))
+    freqs_mean, PSD_welch = analyses.PSD(epochs.epo1,
+                                         fmin, fmax,
+                                         time_resolved=False)
+    assert PSD_welch.shape == (len(epochs.epo1.info['ch_names']), len(freqs_mean))
+
+
+def test_indexes_connectivity(epochs):
+    """
+    Test index intra- and inter-brains
+    """
+    electrodes = analyses.indexes_connectivity_intrabrain(epochs.epo1)
+    length = len(epochs.epo1.info['ch_names'])
+    assert len(electrodes) == length*(length-1)
+    electrodes_hyper = analyses.indexes_connectivity_interbrains(epochs.epoch_merge)
+    assert len(electrodes_hyper) == length*length
+    # check output type: list of tuples
+    # format that do not work for mne.spectral_connectivity #TODO: change that
+    # cf. do not needed for Phoebe simple_corr function!
+
+
+# test stats, utils and viz
