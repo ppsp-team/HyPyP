@@ -265,8 +265,11 @@ def test_utils(epochs):
     nch = random.randrange(0, len(epochs.epo1.info['ch_names']))
     ne = random.randrange(0, len(epochs.epo1))
     ch_name = epochs.epo1.info['ch_names'][nch]
-    ep_hyper.get_data[ne][str(ch_name + '_S1'] == epo1.get_data[ne][nch]
-    ep_hyper.get_data[ne][str(ch_name + '_S2'] == epo2.get_data[ne][nch]
+    liste = ep_hyper.info['ch_names']
+    ch_index1 = liste.index(ch_name + '_S1')
+    ch_index2 = liste.index(ch_name + '_S2')
+    ep_hyper.get_data[ne][str(ch_index1][:] == epo1.get_data[ne][nch][:]
+    ep_hyper.get_data[ne][str(ch_index2][:] == epo2.get_data[ne][nch][:]
 
     # split test
 
