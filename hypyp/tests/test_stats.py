@@ -135,6 +135,8 @@ def test_simple_corr(epochs):
     # (while first step less than 1s for the MNE function cf. multitaper
     # calculation... = ?)
 
+    # PB: test not stable, time changes!!
+
     # assess results: shape equivalence and values
     # not same output: MNE pairs of electrode (n_connections=31*31, freq=1),
     # Phoebe (31, 31, 1)
@@ -275,8 +277,9 @@ def test_utils(epochs):
     ep_hyper_data = ep_hyper.get_data()
     epo1_data = epochs.epo1.get_data()
     epo2_data = epochs.epo2.get_data()
-    assert ep_hyper_data[ne][ch_index1][:] == epo1_data[ne][nch][:]
-    assert ep_hyper_data[ne][ch_index2][:] == epo2_data[ne][nch][:]
+    for i in range(O, len(ep_hyper_data[ne][ch_index1])):
+        assert ep_hyper_data[ne][ch_index1][i] == epo1_data[ne][nch][i]
+        assert ep_hyper_data[ne][ch_index2][i] == epo2_data[ne][nch][i]
 
     # split test
     # but done on raws... to preprocess subjects indep...
