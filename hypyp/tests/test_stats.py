@@ -4,6 +4,7 @@
 import os
 import random
 import numpy as np
+import scipy
 import mne
 from hypyp import prep
 from hypyp import stats
@@ -124,7 +125,7 @@ def test_simple_corr(epochs):
 
     # assess time running equivalence for each script
     # assert (int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec))
-    # takes 2 versus 0 seconds (MNE)
+    # takes 2 versus 1 second with MNE function
     # (and here n_channels 31, n_epochs not a lot, n_freq 1)
     # idem en inter-ind
 
@@ -240,7 +241,7 @@ def test_stats(epochs):
     con_matrixTuple = stats.con_matrix(epochs.epo1, freqs_mean, draw=False)
     statscondClusterTuple = stats.statscondCluster(data,
                                                    freqs_mean,
-                                                   con_matrixTuple.ch_con_freq,
+                                                   scipy.sparse.bsr_matrix(con_matrixTuple.ch_con_freq),
                                                    tail=0,
                                                    n_permutations=3000,
                                                    alpha=0.05)
@@ -256,7 +257,7 @@ def test_utils(epochs):
     Test merge and split
     """
     ep_hyper = utils.merge(epochs.epo1, epochs.epo2)
-    assert type(ep_hyper) == mne.Epochs
+    assert type(ep_hyper) == mne.epochs.Epochs
     # check channels number
     assert len(ep_hyper.info['ch_names']) == 2*len(epochs.epo1.info['ch_names'])
     # check EOG channels number
