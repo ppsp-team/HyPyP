@@ -224,7 +224,7 @@ def test_stats(epochs):
                                          time_resolved=False)
 
     statsCondTuple = stats.statsCond(PSD_welch, epochs.epo1, 3000, 0.05, 0.05)
-    assert statsCondTuple.T_obs.shape == len(epochs.epo1.info['ch_names'])
+    assert statsCondTuple.T_obs.shape[0] == len(epochs.epo1.info['ch_names'])
     # TODO: add an assert in the function to be sure PSD with epochs
     # len(shape) = 3
     # and retest with time_resolved=True
@@ -244,7 +244,7 @@ def test_stats(epochs):
                                                    tail=0,
                                                    n_permutations=3000,
                                                    alpha=0.05)
-    assert statscondClusterTuple.F_obs.shape == len(epochs.epo1.info['ch_names'])
+    assert statscondClusterTuple.F_obs.shape[0] == len(epochs.epo1.info['ch_names'])
     for i in range(0, len(statscondClusterTuple.clusters)):
         assert len(statscondClusterTuple.clusters[i]) < len(epochs.epo1.info['ch_names'])
     assert statscondClusterTuple.cluster_p_values.shape == len(statscondClusterTuple.clusters)
