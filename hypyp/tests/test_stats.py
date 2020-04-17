@@ -230,8 +230,8 @@ def test_stats(epochs):
     # and retest with time_resolved=True
     for i in range(0, len(statsCondTuple.p_values)):
         assert statsCondTuple.p_values[i] <= statsCondTuple.adj_p[1][i]
-    assert statsCondTuple.T_obs_plot.shape == len(epochs.epo1.info['ch_names'])
-    # test T_obs with viz function
+    assert statsCondTuple.T_obs_plot.shape[0] == len(epochs.epo1.info['ch_names'])
+    # test T_obs_plot with viz function
 
     _, PSD_welch2 = analyses.PSD(epochs.epo2,
                                  fmin, fmax,
@@ -248,6 +248,26 @@ def test_stats(epochs):
     for i in range(0, len(statscondClusterTuple.clusters)):
         assert len(statscondClusterTuple.clusters[i]) < len(epochs.epo1.info['ch_names'])
     assert statscondClusterTuple.cluster_p_values.shape == len(statscondClusterTuple.clusters)
-    # test F_obs with viz function
+    # test F_obs_plot (ntests,) with viz function
 
-# test utils and viz
+
+def test_utils(epochs):
+    """
+    Test merge and split
+    """
+    ep_hyper = utils.merge(epochs.epo1, epochs.epo2)
+    assert type(ep_hyper) == mne.Epochs
+    assert len(ep_hyper.info['ch_names']) == 2*len(epochs.epo1.info['ch_names'])
+    # check EOG channels number
+    # check data for S2 or 1 correspond in the ep_hyper, on channel n and
+    # epoch n, randomnly assigned
+    random.seed(10)
+    nch = random.randrange(0, len(epochs.epo1.info['ch_names']))
+    ne = random.randrange(0, len(epochs.epo1))
+    ch_name = epochs.epo1.info['ch_names'][nch]
+    ep_hyper.get_data[ne][str(ch_name + '_S1'] == epo1.get_data[ne][nch]
+    ep_hyper.get_data[ne][str(ch_name + '_S2'] == epo2.get_data[ne][nch]
+
+    # split test
+
+# test viz
