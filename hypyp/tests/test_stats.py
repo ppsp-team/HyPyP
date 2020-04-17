@@ -277,7 +277,7 @@ def test_utils(epochs):
     ep_hyper_data = ep_hyper.get_data()
     epo1_data = epochs.epo1.get_data()
     epo2_data = epochs.epo2.get_data()
-    for i in range(O, len(ep_hyper_data[ne][ch_index1])):
+    for i in range(0, len(ep_hyper_data[ne][ch_index1])):
         assert ep_hyper_data[ne][ch_index1][i] == epo1_data[ne][nch][i]
         assert ep_hyper_data[ne][ch_index2][i] == epo2_data[ne][nch][i]
 
