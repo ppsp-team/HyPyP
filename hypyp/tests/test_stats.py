@@ -257,8 +257,10 @@ def test_utils(epochs):
     """
     ep_hyper = utils.merge(epochs.epo1, epochs.epo2)
     assert type(ep_hyper) == mne.Epochs
+    # check channels number
     assert len(ep_hyper.info['ch_names']) == 2*len(epochs.epo1.info['ch_names'])
     # check EOG channels number
+
     # check data for S2 or 1 correspond in the ep_hyper, on channel n and
     # epoch n, randomnly assigned
     random.seed(10)
@@ -268,8 +270,11 @@ def test_utils(epochs):
     liste = ep_hyper.info['ch_names']
     ch_index1 = liste.index(ch_name + '_S1')
     ch_index2 = liste.index(ch_name + '_S2')
-    ep_hyper.get_data[ne][str(ch_index1][:] == epo1.get_data[ne][nch][:]
-    ep_hyper.get_data[ne][str(ch_index2][:] == epo2.get_data[ne][nch][:]
+    ep_hyper_data = ep_hyper.get_data()
+    epo1_data = epochs.epo1.get_data()
+    epo2_data = epochs.epo2.get_data()
+    assert ep_hyper_data[ne][ch_index1][:] == epo1_data[ne][nch][:]
+    assert ep_hyper_data[ne][ch_index2][:] == epo2_data[ne][nch][:]
 
     # split test
 
