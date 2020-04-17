@@ -9,22 +9,22 @@ from hypyp import prep
 from hypyp import stats
 from hypyp import utils
 from hypyp import analyses
-from conftest import epochs
 
 
 def test_metaconn_matrix_2brains(epochs):
     """
     Test metaconn_matrix_2brains
     """
+    # TODO: test metaconn_matrix and con_matrix
     # taking random freq-of-interest to test metaconn_freq
-    frequencies = [11, 12, 13]
+    freq = [11, 12, 13]
     # computing ch_con and sensors pairs for metaconn calculation
-    ch_con, ch_con_freq = stats.con_matrix(epochs.epo1, frequencies, draw=False)
+    ch_con, ch_con_freq = stats.con_matrix(epochs.epo1, freq, draw=False)
     sensor_pairs = analyses.indexes_connectivity_interbrains(epochs.epoch_merge)
 
     # computing metaconn_freq and test it
-    metaconn, metaconn_freq = stats.metaconn_matrix_2brains(
-        sensor_pairs, ch_con, frequencies)
+    _, metaconn_freq = stats.metaconn_matrix_2brains(sensor_pairs,
+                                                     ch_con, freq)
     # take a random ch_name:
     random.seed(20)  # Init the random number generator for reproducibility
     # n = random.randrange(0, 63)
@@ -43,7 +43,7 @@ def test_metaconn_matrix_2brains(epochs):
     assert metaconn_freq[n, p-tot] == metaconn_freq[n, p]
     # and not in the other frequencies
     if metaconn_freq[n, p] == 1:
-        for i in range(1, len(frequencies)):
+        for i in range(1, len(freq)):
             assert metaconn_freq[n+tot*(i+1), p] != metaconn_freq[n, p]
             assert metaconn_freq[n-tot*(i+1), p] != metaconn_freq[n, p]
             assert metaconn_freq[n+tot*(i+1), p+tot*(i+1)] != metaconn_freq[n, p]
@@ -62,7 +62,8 @@ def test_simple_corr(epochs):
 
     # taking random freq-of-interest to test CSD measures
     frequencies = [11, 12, 13]
-    # Note: fmin and fmax excluded, here n_freq = 1 (for MNE and Phoebe functions)
+    # Note: fmin and fmax excluded, here n_freq = 1
+    # (for MNE and Phoebe functions)
 
     # intra-ind CSD
     # data = np.array([epo1, epo1])
@@ -73,42 +74,47 @@ def test_simple_corr(epochs):
     data = np.array([epochs.epo1, epochs.epo2])
     data_mne = epochs.epoch_merge
 
-    l = list(range(0,int(len(epochs.epoch_merge.info['ch_names'])/2)))
+    l = list(range(0,
+                   int(len(epochs.epoch_merge.info['ch_names'])/2)))
     L = []
     M = []
-    for i in range(0,len(l)):
-        for p in range(0,len(l)):
+    for i in range(0, len(l)):
+        for p in range(0, len(l)):
             L.append(l[i])
-    M = len(l)*list(range(len(l),len(l)*2))
-    sensors = (np.array(L),np.array(M))
+    M = len(l)*list(range(len(l), len(l)*2))
+    sensors = (np.array(L), np.array(M))
 
     # trace running time
     now = time.time()
-    # mode to transform signal to analytic signal on which synchrony is computed
+    # mode to transform signal to analytic signal on which
+    # synchrony is computed
     # mode = 'fourier'
     mode = 'multitaper'
 
-    # Phoebe: multitaper with mne.time_frequency.tfr_array_multitaper
-    # BUT step = 1s, while coh (including the multitaper step) < 1s... optimized in MNE
+    # Phoebe: multitaper: mne.time_frequency.tfr_array_multitaper
+    # BUT step = 1s, while coh (including the multitaper step) < 1s...
+    # optimized in MNE
     # how to optimize the mutitaper step in Phoebe script?
     # and then the second step: same question
 
-    coh_mne, freqs, tim, epoch, taper = mne.connectivity.spectral_connectivity(data=data_mne,
-                                                                                method='plv',
-                                                                                mode=mode,
-                                                                                indices=sensors,
-                                                                                sfreq=500,
-                                                                                fmin=11,
-                                                                                fmax=13,
-                                                                                faverage=True)
+    coh_mne,_,_,_,_ = mne.connectivity.spectral_connectivity(data=data_mne,
+                                                             method='plv',
+                                                             mode=mode,
+                                                             indices=sensors,
+                                                             sfreq=500,
+                                                             fmin=11,
+                                                             fmax=13,
+                                                             faverage=True)
     now2 = time.time()
-    # coh = analyses.simple_corr(data, frequencies, mode='plv', epoch_wise=True,
-    #                           time_resolved=True)
+    # coh = analyses.simple_corr(data, frequencies, mode='plv',
+    #                            epoch_wise=True,
+    #                            time_resolved=True)
     # substeps cf. multitaper step too long?
     values = analyses.compute_single_freq(data, frequencies)
     now3 = time.time()
-    result = analyses.compute_sync(values, mode='plv', epoch_wise=True,
-                          time_resolved=True)
+    result = analyses.compute_sync(values, mode='plv',
+                                   epoch_wise=True,
+                                   time_resolved=True)
     now4 = time.time()
     # convert time to pick seconds only in GTM ref
     now = time.localtime(now)
@@ -116,9 +122,10 @@ def test_simple_corr(epochs):
     now3 = time.localtime(now3)
     now4 = time.localtime(now4)
 
-    # assess time running equivalence for each script 
+    # assess time running equivalence for each script
     # assert (int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec))
-    # takes 2 versus 0 seconds (MNE) (and here n_channels 31, n_epochs not a lot, n_freq 1)
+    # takes 2 versus 0 seconds (MNE)
+    # (and here n_channels 31, n_epochs not a lot, n_freq 1)
     # idem en inter-ind
 
     # test substeps
@@ -127,7 +134,8 @@ def test_simple_corr(epochs):
     # (first step less than 1 as for the MNE function)
 
     # assess results: shape equivalence and values
-    # not same output: MNE pairs of electrode (n_connections=31*31, freq=1), Phoebe (31, 31, 1)
+    # not same output: MNE pairs of electrode (n_connections=31*31, freq=1),
+    # Phoebe (31, 31, 1)
     # assert coh[0][0][0] == coh_mne[0][0]
 
 
@@ -205,7 +213,6 @@ def test_indexes_connectivity(epochs):
     # cf. do not needed for Phoebe simple_corr function!
 
 
-# test stats, utils and viz
 def test_stats(epochs):
     """
     Test stats
@@ -214,13 +221,33 @@ def test_stats(epochs):
     fmax = 13
     freqs_mean, PSD_welch = analyses.PSD(epochs.epo1,
                                          fmin, fmax,
-                                         time_resolved=True)
+                                         time_resolved=False)
 
     statsCondTuple = stats.statsCond(PSD_welch, epochs.epo1, 3000, 0.05, 0.05)
     assert statsCondTuple.T_obs.shape == len(epochs.epo1.info['ch_names'])
+    # TODO: add an assert in the function to be sure PSD with epochs
+    # len(shape) = 3
+    # and retest with time_resolved=True
     for i in range(0, len(statsCondTuple.p_values)):
         assert statsCondTuple.p_values[i] <= statsCondTuple.adj_p[1][i]
     assert statsCondTuple.T_obs_plot.shape == len(epochs.epo1.info['ch_names'])
     # test T_obs with viz function
 
-    # stats.statscondCluster
+    _, PSD_welch2 = analyses.PSD(epochs.epo2,
+                                 fmin, fmax,
+                                 time_resolved=False)
+    data = [PSD_welch, PSD_welch2]
+    con_matrixTuple = stats.con_matrix(epochs.epo1, freqs_mean, draw=False)
+    statscondClusterTuple = stats.statscondCluster(data,
+                                                   freqs_mean,
+                                                   con_matrixTuple.ch_con_freq,
+                                                   tail=0,
+                                                   n_permutations=3000,
+                                                   alpha=0.05)
+    assert statscondClusterTuple.F_obs.shape == len(epochs.epo1.info['ch_names'])
+    for i in range(0, len(statscondClusterTuple.clusters)):
+        assert len(statscondClusterTuple.clusters[i]) < len(epochs.epo1.info['ch_names'])
+    assert statscondClusterTuple.cluster_p_values.shape == len(statscondClusterTuple.clusters)
+    # test F_obs with viz function
+
+# test utils and viz
