@@ -206,3 +206,21 @@ def test_indexes_connectivity(epochs):
 
 
 # test stats, utils and viz
+def test_stats(epochs):
+    """
+    Test stats
+    """
+    fmin = 10
+    fmax = 13
+    freqs_mean, PSD_welch = analyses.PSD(epochs.epo1,
+                                         fmin, fmax,
+                                         time_resolved=True)
+
+    statsCondTuple = stats.statsCond(PSD_welch, epochs.epo1, 3000, 0.05, 0.05)
+    assert statsCondTuple.T_obs.shape == len(epochs.epo1.info['ch_names'])
+    for i in range(0, len(statsCondTuple.p_values)):
+        assert statsCondTuple.p_values[i] <= statsCondTuple.adj_p[1][i]
+    assert statsCondTuple.T_obs_plot.shape == len(epochs.epo1.info['ch_names'])
+    # test T_obs with viz function
+
+    # stats.statscondCluster
