@@ -203,7 +203,7 @@ def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
 
     return result
 
-def compute_sync_new(complex_signal, mode):
+def compute_sync(complex_signal, mode):
     """
       (improved) Computes synchrony from analytic signals.
 
