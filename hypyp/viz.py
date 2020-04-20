@@ -335,17 +335,15 @@ def get_3d_heads():
 def plot_3d_heads(ax, vertices, faces):
     """Plot heads models in 3D.
     
-    Parameters
-    ----------
-    ax : Matplotlib axis created with projection='3d'
-    vertices : arrays of shape (V, 3)
-               3d coordinates of the vertices
-    faces : arrays of shape (F, 4)
+    Arguments:
+        ax : Matplotlib axis created with projection='3d'
+        vertices : arrays of shape (V, 3)
+            3d coordinates of the vertices
+        faces : arrays of shape (F, 4)
             vertices number of face
 
-    Returns
-    -------
-    None : plot the head faces in 3D within the current axis.
+    Returns:
+        None : plot the head faces in 3D within the current axis.
     """
 
     x_V = vertices[:,2]
