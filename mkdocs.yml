@@ -1,0 +1,18 @@
+site_name: HyPyP Docs
+
+theme:
+  name: "readthedocs"
+
+extra_css:
+  - custom.css
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: false
+      watch:
+        - hypyp

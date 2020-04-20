@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import mne
 
 
-def transform(locs, traY=0.25, rotZ=np.pi):
+def transform(locs: np.ndarray, traY: float=0.25, rotZ: float=np.pi):
     """
     Calculates new locations for the EEG locations.
 
@@ -41,14 +41,18 @@ def transform(locs, traY=0.25, rotZ=np.pi):
     return locs
 
 
-def plot_sensors_2d(loc1, loc2, lab1=[], lab2=[]):
+def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
     """
     Plots sensors in 2D.
 
     Arguments:
-        loc1, loc2: arrays of shape (n_sensors, 3)
+        loc1: arrays of shape (n_sensors, 3)
           3d coordinates of the sensors
-        lab1, lab2: lists of strings
+        loc2: arrays of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        lab1: lists of strings
+          sensor labels
+        lab2: lists of strings
           sensor labels
 
     Returns:
@@ -70,12 +74,14 @@ def plot_sensors_2d(loc1, loc2, lab1=[], lab2=[]):
                      verticalalignment='center')
 
 
-def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
+def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: float=0.95, steps: int=10):
     """
     Plots hyper-conenctivity in 2D.
 
     Arguments:
-        loc1, loc2: arrays of shape (n_sensors, 3)
+        loc1: arrays of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        loc2: arrays of shape (n_sensors, 3)
           3d coordinates of the sensors
         C: array, (len(loc1), len(loc2))
           matrix with the values of hyper-connectivity
@@ -138,15 +144,19 @@ def plot_links_2d(loc1, loc2, C, threshold=0.95, steps=10):
                                  '-', color=color, linewidth=weight)
 
 
-def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
+def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
     """
     Plots sensors in 3D.
 
     Arguments:
         ax: Matplotlib axis created with projection='3d'
-        loc1, loc2: arrays of shape (n_sensors, 3)
+        loc1: arrays of shape (n_sensors, 3)
           3d coordinates of the sensors
-        lab1, lab2: lists of strings
+        loc2: arrays of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        lab1: lists of strings
+          sensor labels
+        lab2: lists of strings
           sensor labels
 
     Returns:
@@ -169,13 +179,15 @@ def plot_sensors_3d(ax, loc1, loc2, lab1=[], lab2=[]):
                     verticalalignment='center')
 
 
-def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
+def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: float=0.95, steps: int=10):
     """
     Plots hyper-conenctivity in 3D.
 
     Arguments:
         ax: Matplotlib axis created with projection='3d'
-        loc1, loc2: arrays of shape (n_sensors, 3)
+        loc1: arrays of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        loc2: arrays of shape (n_sensors, 3)
           3d coordinates of the sensors
         C: array, (len(loc1), len(loc2))
           matrix with the values of hyper-connectivity
@@ -273,7 +285,7 @@ def plot_links_3d(ax, loc1, loc2, C, threshold=0.95, steps=10):
                                  '-', color=color, linewidth=weight)
 
 
-def plot_significant_sensors(T_obs_plot, epochs):
+def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
     """
     Plots the significant sensors from a statistical test (simple t test or
     clusters corrected t test) computed between groups or conditions, on power

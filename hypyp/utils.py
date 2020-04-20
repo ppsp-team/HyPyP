@@ -17,18 +17,19 @@ import mne
 from mne.io.constants import FIFF
 
 
-def create_epochs(raw_S1, raw_S2, freq_bands):
+def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list):
     """
     Computes Epochs from Raws and vizualize PSD on average Epochs.
 
     Arguments:
-        raw_S1, raw_S2: list of Raws for each subject (with the different
+        raw_S1: list of Raws for subject 1 (with the different
           occurences of a condition, for example the baseline,
           across different experiments. The length can be 1).
+        raw_S2: list of Raws for subject 2.  
           Raws are MNE objects (data are ndarray with shape
           (n_channels, n_times) and info is a disctionnary sampling
           parameters).
-          freq_bands: frequency bands-of-interest, list of tuple.
+        freq_bands: frequency bands-of-interest, list of tuple.
 
     Note:
         Plots ower spectral density calculated with welch FFT for each epoch
@@ -77,18 +78,20 @@ def create_epochs(raw_S1, raw_S2, freq_bands):
     return epoch_S1, epoch_S2
 
 
-def merge(epoch_S1, epoch_S2):
+def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs):
     """
     Merges Epochs from 2 subjects after interpolation of bad channels for each
     subject.
 
     Arguments:
-    epoch_S1, epoch_S2: Epochs objects for each subject. epoch_S1 and epoch_S2
-      correspond to a condition and can result from the concatenation of epochs
-      from different occurences of the condition across experiments.
-      Epochs are MNE objects (data are stored in an array of shape
-      (n_epochs, n_channels, n_times) and info is a disctionnary sampling
-      parameters).
+        epoch_S1: Epochs objects for subject 1.
+        epoch_S2: Epochs objects for subject 2.  
+          epoch_S1 and epoch_S2 correspond to a condition and can result
+          from the concatenation of epochs from different occurences
+          of the condition across experiments.  
+          Epochs are MNE objects (data are stored in an array of shape
+          (n_epochs, n_channels, n_times) and info is a disctionnary sampling
+          parameters).
 
     Note:
         Bad channels info is removed.
@@ -179,7 +182,7 @@ def merge(epoch_S1, epoch_S2):
     return ep_hyper
 
 
-def split(raw_merge):
+def split(raw_merge: mne.io.Raw):
     """
     Splits merged Raw data into 2 subjects Raw data.
 
@@ -257,14 +260,15 @@ def split(raw_merge):
     return raw_1020_S1, raw_1020_S2
 
 
-def concatenate_epochs(epoch_S1, epoch_S2):
+def concatenate_epochs(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs):
     """
     Concatenates a list of Epochs in one Epochs object.
 
     Arguments:
-        epoch_S1, epoch_S2: list of Epochs for each subject (for example the
+        epoch_S1: list of Epochs for subject 1 (for example the
           list samples the different occurences of the baseline condition
           across experiments).
+        epoch_S2: list of Epochs for subject 2.  
           Epochs are MNE objects (data are stored in an array of shape
           (n_epochs, n_channels, n_times) and info is a dictionnary sampling
           parameters).
@@ -280,14 +284,15 @@ def concatenate_epochs(epoch_S1, epoch_S2):
     return epoch_S1_concat, epoch_S2_concat
 
 
-def normalizing(baseline, task, type):
+def normalizing(baseline: np.ndarray, task: np.ndarray, type: str):
     """
     Computes Zscore or Logratio of a value between a 'task' condition and
     a baseline.
 
     Arguments:
-        baseline, task: PSD or CSD values for the condition 'task' and
-          a baseline, ndarray, shape (n_epochs, n_channels, n_frequencies).
+        baseline: PSD or CSD values for the 'baseline' and...
+        task: ...the 'task' conditions, ndarray, shape
+          (n_epochs, n_channels, n_frequencies).
         type: type of normalization, str 'Zscore' or 'Logratio'.
 
     Returns:
