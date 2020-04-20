@@ -144,7 +144,7 @@ def indexes_connectivity_interbrains(epoch_hyper):
     return electrodes
 
 
-def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
+def simple_corr(data, frequencies, mode):
     """
     Computes frequency- and time-frequency-domain connectivity measures.
 
@@ -166,17 +166,6 @@ def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
           'coh': coherence
           'imagcoh': imaginary coherence
           'proj': projected power correlation
-        epoch_wise: boolean
-          whether to compute epoch-to-epoch synchrony. default is True.
-          if False, complex values from epochs will be concatenated before
-          computing synchrony
-          if True, synchrony is computed from matched epochs
-        time_resolved: boolean
-          whether to collapse the time course, only effective when
-          epoch_wise==True,
-          if False, synchrony won't be averaged over epochs, and the time
-          course is maintained.
-          if True, synchrony is averaged over epochs.
 
     Note:
         Connectivity is computed for all possible electrode pairs between
@@ -199,7 +188,7 @@ def simple_corr(data, frequencies, mode, epoch_wise=True, time_resolved=True):
     elif type(frequencies) == dict:
         values = compute_freq_bands(data, frequencies)
 
-    result = compute_sync(values, mode, epoch_wise, time_resolved)
+    result = compute_sync(values, mode)
 
     return result
 
