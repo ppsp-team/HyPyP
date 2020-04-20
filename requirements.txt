@@ -1,1 +1,8 @@
 mne>=0.19.2
+joblib
+scikit-learn
+autoreject>=0.2.1
+matplotlib>=3.0.2
+pandas>=0.24
+numpy>=1.16.0
+astropy>=4.0.1
