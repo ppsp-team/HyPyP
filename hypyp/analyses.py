@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # coding=utf-8
+
 """
 PSD, intra- and inter-brain measures functions
+
 | Option | Description |
 | ------ | ----------- |
 | title           | analyses.py |
@@ -20,7 +22,7 @@ from mne.time_frequency import psd_welch
 from mne.io.constants import FIFF
 
 
-def PSD(epochs: mne.Epochs, fmin: float, fmax: float, time_resolved: bool):
+def PSD(epochs: mne.Epochs, fmin: float, fmax: float, time_resolved: bool)-> tuple:
     """
     Computes the Power Spectral Density (PSD) on Epochs for a condition.
 
@@ -44,7 +46,8 @@ def PSD(epochs: mne.Epochs, fmin: float, fmax: float, time_resolved: bool):
       vizualisation to check normality for statistics for example.
 
     Returns:
-        freqs_mean, PSD_welch: 
+        freqs_mean, PSD_welch:
+
           - freqs_mean: list of frequencies in frequency-band-of-interest
           actually used for power spectral density calculation.
           - PSD_welch: PSD value in epochs for each channel and each frequency,
@@ -75,7 +78,7 @@ def PSD(epochs: mne.Epochs, fmin: float, fmax: float, time_resolved: bool):
                     PSD_welch=PSD_welch)
 
 
-def indexes_connectivity_intrabrain(epochs: mne.Epochs):
+def indexes_connectivity_intrabrain(epochs: mne.Epochs) -> list:
     """
     Computes indexes for connectivity analysis between all EEG
     sensors for one subject. Can be used instead of
@@ -92,8 +95,8 @@ def indexes_connectivity_intrabrain(epochs: mne.Epochs):
     """
     names = copy.deepcopy(epochs.info['ch_names'])
     for ch in epochs.info['chs']:
-            if ch['kind'] == FIFF.FIFFV_EOG_CH:
-                names.remove(ch['ch_name'])
+        if ch['kind'] == FIFF.FIFFV_EOG_CH:
+            names.remove(ch['ch_name'])
 
     n = len(names)
     # n = 64
@@ -110,7 +113,7 @@ def indexes_connectivity_intrabrain(epochs: mne.Epochs):
     return electrodes
 
 
-def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs):
+def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
     """
     Computes indexes for interbrains connectivity analyses between all EEG
     sensors for 2 subjects (merge data).
@@ -129,8 +132,8 @@ def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs):
     electrodes = []
     names = copy.deepcopy(epoch_hyper.info['ch_names'])
     for ch in epoch_hyper.info['chs']:
-            if ch['kind'] == FIFF.FIFFV_EOG_CH:
-                names.remove(ch['ch_name'])
+        if ch['kind'] == FIFF.FIFFV_EOG_CH:
+            names.remove(ch['ch_name'])
 
     l = list(range(0, int(len(names)/2)))
     # l = list(range(0,62))
@@ -145,7 +148,7 @@ def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs):
     return electrodes
 
 
-def simple_corr(data, frequencies, mode):
+def simple_corr(data, frequencies, mode) -> np.ndarray:
     """
     Computes frequency- and time-frequency-domain connectivity measures.
 
@@ -192,6 +195,7 @@ def simple_corr(data, frequencies, mode):
     result = compute_sync(values, mode)
 
     return result
+
 
 def compute_sync(complex_signal, mode):
     """
@@ -271,7 +275,8 @@ def compute_sync(complex_signal, mode):
 
     return con
 
-def compute_single_freq(data: np.ndarray, freq_range: list):
+
+def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
     """
     Computes analytic signal per frequency bin using a multitaper method
     implemented in MNE.
@@ -289,7 +294,8 @@ def compute_single_freq(data: np.ndarray, freq_range: list):
     n_samp = data[0].shape[2]
 
     complex_signal = np.array([mne.time_frequency.tfr_array_multitaper(data[subject], sfreq=n_samp,
-                                                                       freqs=np.arange(freq_range[0], freq_range[1], 1),
+                                                                       freqs=np.arange(
+                                                                           freq_range[0], freq_range[1], 1),
                                                                        n_cycles=4,
                                                                        zero_mean=False, use_fft=True, decim=1, output='complex')
                                for subject in range(2)])
@@ -297,7 +303,7 @@ def compute_single_freq(data: np.ndarray, freq_range: list):
     return complex_signal
 
 
-def compute_freq_bands(data: np.ndarray, freq_bands: dict):
+def compute_freq_bands(data: np.ndarray, freq_bands: dict) -> np.ndarray:
     """
     Computes analytic signal per frequency band using filtering
     and hilbert transform
@@ -397,17 +403,15 @@ def _icoh(X, Y, axis):
     icoh = np.abs(iSxy/(np.sqrt(Sxx*Syy)))
     return np.nanmean(icoh, axis)
 
-
-
-def _corr2_coeff_rowwise2(A,B):
+def _corr2_coeff_rowwise2(A, B):
     """
     compute row-wise correlation for 2D arrays
     """
-    A_mA = A - A.mean(1)[:,None]
-    B_mB = B - B.mean(1)[:,None]
-    ssA = np.einsum('ij,ij->i',A_mA,A_mA)
-    ssB = np.einsum('ij,ij->i',B_mB,B_mB)
-    return np.einsum('ij,ij->i',A_mA,B_mB)/np.sqrt(ssA*ssB)
+    A_mA = A - A.mean(1)[:, None]
+    B_mB = B - B.mean(1)[:, None]
+    ssA = np.einsum('ij,ij->i', A_mA, A_mA)
+    ssB = np.einsum('ij,ij->i', B_mB, B_mB)
+    return np.einsum('ij,ij->i', A_mA, B_mB)/np.sqrt(ssA*ssB)
 
 
 # this function is modified from astropy in order to support 2D array operation
@@ -456,9 +460,11 @@ def _circcorrcoef(alpha, beta, axis=None):
 
     sin_a = np.sin(alpha - mu_a[:, None])
     sin_b = np.sin(beta - mu_b[:, None])
-    rho = np.sum(sin_a*sin_b, axis)/np.sqrt(np.sum(sin_a*sin_a, axis)*np.sum(sin_b*sin_b, axis))
+    rho = np.sum(sin_a*sin_b, axis) / \
+        np.sqrt(np.sum(sin_a*sin_a, axis)*np.sum(sin_b*sin_b, axis))
 
     return rho
+
 
 def _proj_power_corr(X, Y, axis):
     # compute power proj corr using two complex signals
@@ -469,19 +475,23 @@ def _proj_power_corr(X, Y, axis):
     X_unit = X / X_abs
     Y_unit = Y / Y_abs
 
-    X_abs_norm = (X_abs - np.nanmean(X_abs, axis)[:,None]) / np.nanstd(X_abs, axis)[:,None]
-    Y_abs_norm = (Y_abs - np.nanmean(Y_abs, axis)[:,None]) / np.nanstd(Y_abs, axis)[:,None]
+    X_abs_norm = (X_abs - np.nanmean(X_abs, axis)
+                  [:, None]) / np.nanstd(X_abs, axis)[:, None]
+    Y_abs_norm = (Y_abs - np.nanmean(Y_abs, axis)
+                  [:, None]) / np.nanstd(Y_abs, axis)[:, None]
 
-    X_ = X_abs / np.nanstd(X_abs, axis)[:,None]
-    Y_ = Y_abs / np.nanstd(Y_abs, axis)[:,None]
+    X_ = X_abs / np.nanstd(X_abs, axis)[:, None]
+    Y_ = Y_abs / np.nanstd(Y_abs, axis)[:, None]
 
     X_z = X_ * X_unit
     Y_z = Y_ * Y_unit
     projX = np.imag(X_z * np.conjugate(Y_unit))
     projY = np.imag(Y_z * np.conjugate(X_unit))
 
-    projX_norm = (projX - np.nanmean(projX, axis)[:,None]) / np.nanstd(projX, axis)[:,None]
-    projY_norm = (projY - np.nanmean(projY, axis)[:,None]) / np.nanstd(projY, axis)[:,None]
+    projX_norm = (projX - np.nanmean(projX, axis)
+                  [:, None]) / np.nanstd(projX, axis)[:, None]
+    projY_norm = (projY - np.nanmean(projY, axis)
+                  [:, None]) / np.nanstd(projY, axis)[:, None]
 
     proj_corr = (np.nanmean(projX_norm * Y_abs_norm, axis) +
                  np.nanmean(projY_norm * X_abs_norm, axis)) / 2

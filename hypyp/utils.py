@@ -3,6 +3,7 @@
 
 """
 Useful tools
+
 | Option | Description |
 | ------ | ----------- |
 | title           | utils.py |
@@ -17,7 +18,7 @@ import mne
 from mne.io.constants import FIFF
 
 
-def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list):
+def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> list:
     """
     Computes Epochs from Raws and vizualize PSD on average Epochs.
 
@@ -78,7 +79,7 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list):
     return epoch_S1, epoch_S2
 
 
-def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs):
+def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
     """
     Merges Epochs from 2 subjects after interpolation of bad channels for each
     subject.
@@ -133,7 +134,8 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs):
     merges = []
 
     # checking wether data have the same size
-    assert(len(epoch_S1) == len(epoch_S2)), "Epochs from S1 and S2 should have the same size!"
+    assert(len(epoch_S1) == len(epoch_S2)
+           ), "Epochs from S1 and S2 should have the same size!"
 
     # picking data per epoch
     for l in range(0, len(epoch_S1)):
@@ -182,7 +184,7 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs):
     return ep_hyper
 
 
-def split(raw_merge: mne.io.Raw):
+def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
     """
     Splits merged Raw data into 2 subjects Raw data.
 
@@ -260,7 +262,7 @@ def split(raw_merge: mne.io.Raw):
     return raw_1020_S1, raw_1020_S2
 
 
-def concatenate_epochs(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs):
+def concatenate_epochs(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
     """
     Concatenates a list of Epochs in one Epochs object.
 
@@ -284,7 +286,7 @@ def concatenate_epochs(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs):
     return epoch_S1_concat, epoch_S2_concat
 
 
-def normalizing(baseline: np.ndarray, task: np.ndarray, type: str):
+def normalizing(baseline: np.ndarray, task: np.ndarray, type: str) -> np.ndarray:
     """
     Computes Zscore or Logratio of a value between a 'task' condition and
     a baseline.
@@ -312,4 +314,3 @@ def normalizing(baseline: np.ndarray, task: np.ndarray, type: str):
         Normed_task = np.log10(d)
 
     return Normed_task
-

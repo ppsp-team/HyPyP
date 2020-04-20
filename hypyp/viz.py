@@ -3,6 +3,7 @@
 
 """
 Basic visualization functions
+
 | Option | Description |
 | ------ | ----------- |
 | title           | viz.py |
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 import mne
 
 
-def transform(locs: np.ndarray, traY: float=0.25, rotZ: float=np.pi):
+def transform(locs: np.ndarray, traY: float=0.25, rotZ: float=np.pi) -> np.ndarray:
     """
     Calculates new locations for the EEG locations.
 
@@ -203,29 +204,12 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
 
     Returns:
         None: plot the links in 3D within the current axis.
-        Plot hyper-conenctivity in 3D.  """
-    
-    Parameters
-    ----------
-    ax : Matplotlib axis created with projection='3d'
-    loc1, loc2 : arrays of shape (n_sensors, 3)
-                 3d coordinates of the sensors
-    C : array, (len(loc1), len(loc2))
-        matrix with the values of hyper-connectivity
-    threshold : float
-                threshold for the links
-                only those above will be ploted
-    steps : int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-    homologous: str
+        Plot hyper-conenctivity in 3D.
+    Note:
+      homologous: str
                 draw only homologous connections
-                yes / no. default no. 
+                yes / no. default no.
 
-    Returns
-    -------
-    None : plot the links in 3D within the current axis.
-      
     """
     ctr1 = np.nanmean(loc1, 0)
     ctr1[2] -= 0.2

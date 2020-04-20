@@ -3,6 +3,7 @@
 
 """
 Data preprocessing functions
+
 | Option | Description |
 | ------ | ----------- |
 | title           | prep.py |
@@ -18,7 +19,7 @@ from autoreject import get_rejection_threshold, AutoReject
 from mne.preprocessing import ICA, corrmap
 
 
-def filt(raw_S: list):
+def filt(raw_S: list) -> list:
     """
     Filters list of raw data to remove slow drifts.
 
@@ -37,7 +38,7 @@ def filt(raw_S: list):
     return raws
 
 
-def ICA_choice_comp(icas: list, epochs: list):
+def ICA_choice_comp(icas: list, epochs: list) -> list:
     """
     Plots Independant Components for each subject, let the user choose
     the relevant components for artefacts rejection and apply ICA on
@@ -83,7 +84,7 @@ def ICA_choice_comp(icas: list, epochs: list):
     return cleaned_epochs_ICA
 
 
-def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list):
+def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> list:
     """
     Applies ICA with template model from 1 subject in the dyad.
     """
@@ -121,7 +122,7 @@ def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list):
     return cleaned_epochs_ICA
 
 
-def ICA_fit(epochs: list, n_components: int, method: str, random_state: int):
+def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> list:
     """
     Computes global Autorejection to fit Independant Components Analysis
     on Epochs, for each subject.
@@ -175,7 +176,7 @@ def ICA_fit(epochs: list, n_components: int, method: str, random_state: int):
     return icas
 
 
-def AR_local(cleaned_epochs_ICA: list, verbose: bool = False):
+def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
     """
     Applies local Autoreject to correct or reject bad epochs.
 
