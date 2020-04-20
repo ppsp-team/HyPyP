@@ -283,7 +283,7 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
         epochs: one subject Epochs object to sample channels information in info.
 
     Returns:
-        None, plots topomap with the T or F statistics for significant sensors.
+        None: plot topomap with the T or F statistics for significant sensors.
     """
 
     # getting sensors position
