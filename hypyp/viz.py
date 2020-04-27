@@ -12,12 +12,14 @@ Basic visualization functions
 """
 
 
+from copy import copy
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import mne
+import meshio
 
-
+  
 def transform(locs: np.ndarray, traY: float=0.25, rotZ: float=np.pi) -> np.ndarray:
     """
     Calculates new locations for the EEG locations.
@@ -37,8 +39,10 @@ def transform(locs: np.ndarray, traY: float=0.25, rotZ: float=np.pi) -> np.ndarr
     newX = locs[:, 0] * np.cos(rotZ) - locs[:, 1] * np.sin(rotZ)
     newY = locs[:, 0] * np.sin(rotZ) + locs[:, 1] * np.cos(rotZ)
     locs[:, 0] = newX
+    locs[:, 0] = locs[:, 0] + traX
     locs[:, 1] = newY
     locs[:, 1] = locs[:, 1] + traY
+    locs[:, 2] = locs[:, 2] + traZ
     return locs
 
 
@@ -63,14 +67,14 @@ def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: lis
         x1, y1, z1 = loc1[idx1, :]
         plt.plot(x1, y1, marker='o', color='blue')
         if lab1:
-            plt.text(x1, y1, lab1[idx1],
+            plt.text(x1+0.012, y1+0.012, lab1[idx1],
                      horizontalalignment='center',
                      verticalalignment='center')
     for idx2 in range(len(loc2)):
         x2, y2, z2 = loc2[idx2, :]
         plt.plot(x2, y2, marker='o', color='red')
         if lab2:
-            plt.text(x2, y2, lab2[idx2],
+            plt.text(x2+0.012, y2+0.012, lab2[idx2],
                      horizontalalignment='center',
                      verticalalignment='center')
 
@@ -167,7 +171,7 @@ def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], 
             x1, y1, z1 = loc1[idx1, :]
             ax.scatter(x1, y1, z1, marker='o', color='blue')
             if lab1:
-                ax.text(x1, y1 ,z1, lab1[idx1],
+                ax.text(x1+0.012, y1+0.012 ,z1, lab1[idx1],
                         horizontalalignment='center',
                         verticalalignment='center')
 
@@ -175,7 +179,7 @@ def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], 
         x2, y2, z2 = loc2[idx2, :]
         ax.scatter(x2, y2, z2, marker='o', color='red')
         if lab2:
-            ax.text(x2, y2, z2, lab2[idx2],
+            ax.text(x2+0.012, y2+0.012, z2, lab2[idx2],
                     horizontalalignment='center',
                     verticalalignment='center')
 
@@ -304,3 +308,76 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
                              sensors=True)
 
     return None
+
+def get_3d_heads():
+    """
+    Returns Vertices and Faces of a 3D OBJ representing two facing heads.
+    """
+
+    # Extract vertices and faces for the first head
+    mesh = meshio.read("data/Basehead.obj")
+    zoom = 0.08
+    interval = 0.3
+
+    head1_v = mesh.points*zoom
+    head1_f = mesh.cells[0].data
+
+    # Copy the first head to create a second head
+    head2_v = copy(mesh.points*zoom)
+    # Move the vertices by Y rotation and Z translation
+    rotY = np.pi
+    newX = head2_v[:, 0] * np.cos(rotY) - head2_v[:, 2] * np.sin(rotY)
+    newZ = head2_v[:, 0] * np.sin(rotY) + head2_v[:, 2] * np.cos(rotY)
+    head2_v[:, 0] = newX
+    head2_v[:, 2] = newZ
+
+    head1_v[:, 2] = head1_v[:, 2] - interval/2
+    head2_v[:, 2] = head2_v[:, 2] + interval/2
+
+    # Use the same faces
+    head2_f = copy(mesh.cells[0].data)
+
+    # Concatenate the vertices
+    vertices = np.concatenate((head1_v, head2_v))
+    # Concatenate the faces, shift vertices indexes for second head
+    faces = np.concatenate((head1_f, head2_f + len(head1_v)))
+    return vertices, faces
+
+def plot_3d_heads(ax, vertices, faces):
+    """Plot heads models in 3D.
+    
+    Arguments:
+        ax : Matplotlib axis created with projection='3d'
+        vertices : arrays of shape (V, 3)
+            3d coordinates of the vertices
+        faces : arrays of shape (F, 4)
+            vertices number of face
+
+    Returns:
+        None : plot the head faces in 3D within the current axis.
+    """
+
+    x_V = vertices[:,2]
+    y_V = vertices[:,0]
+    z_V = vertices[:,1]
+    for F in range(len(faces)):
+        V0 = faces[F,0]
+        V1 = faces[F,1]
+        V2 = faces[F,2]
+        V3 = faces[F,3]
+        ax.plot([x_V[V0],x_V[V1]],
+                [y_V[V0],y_V[V1]],
+                [z_V[V0],z_V[V1]],
+                '-', color= 'grey', linewidth=0.3)
+        ax.plot([x_V[V1],x_V[V2]],
+                [y_V[V1],y_V[V2]],
+                [z_V[V1],z_V[V2]],
+                '-', color= 'grey', linewidth=0.3)
+        ax.plot([x_V[V2],x_V[V3]],
+                [y_V[V2],y_V[V3]],
+                [z_V[V2],z_V[V3]],
+                '-', color= 'grey', linewidth=0.3)
+        ax.plot([x_V[V3],x_V[V1]],
+                [y_V[V3],y_V[V1]],
+                [z_V[V3],z_V[V1]],
+                '-', color= 'grey', linewidth=0.3)
