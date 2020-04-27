@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import mne
 import meshio
 
-  
+
 def transform(locs: np.ndarray, traY: float=0.25, rotZ: float=np.pi) -> np.ndarray:
     """
     Calculates new locations for the EEG locations.
