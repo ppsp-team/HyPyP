@@ -73,6 +73,20 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> l
         # epoch1.plot_psd_topomap(bands=freq_bands)  # welch FFT
         # epoch1.plot_psd_topomap(bands=freq_bands)  # welch FFT
 
+        # interpolating bad channels and removing the label
+        if len(epoch1.info['bads']) > 0:
+            epoch1 = mne.Epochs.interpolate_bads(epoch1,
+                                                 reset_bads=True,
+                                                 mode='accurate',
+                                                 origin='auto',
+                                                 verbose=None)
+        if len(epoch2.info['bads']) > 0:
+            epoch2 = mne.Epochs.interpolate_bads(epoch2,
+                                                 reset_bads=True,
+                                                 mode='accurate',
+                                                 origin='auto',
+                                                 verbose=None)
+
         epoch_S1.append(epoch1)
         epoch_S2.append(epoch2)
 
