@@ -205,6 +205,7 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
     Returns:
         None: plot the links in 3D within the current axis.
         Plot hyper-conenctivity in 3D.
+
     Note:
       homologous: str
                 draw only homologous connections
