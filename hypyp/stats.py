@@ -28,7 +28,8 @@ def statsCond(PSDs_task_normLog: np.ndarray, epochs: mne.Epochs, n_permutations:
 
     Arguments:
         PSDs_task_normLog: array of subjects PSD Logratio (ndarray) for
-          a condition (n_samples, n_tests : n_tests the different channels).
+          a condition (n_samples, n_tests, nfreq: n_tests the channels).
+          PSD values will be averaged on nfreq for statistics.
         epochs: Epochs object for a condition from a random subject, only
           used to get parameters from the info (sampling frequencies for example).
         n_permutations: the number of permutations, int. Should be at least 2*n
@@ -68,6 +69,9 @@ def statsCond(PSDs_task_normLog: np.ndarray, epochs: mne.Epochs, n_permutations:
         - T_obs_plot: satistical values to plot, from sensors above alpha threshold,
           array of shape (n_tests,).
     """
+    # checking wether data have the same size
+    assert(PSDs_task_normLog.shape == 3), "PSD has not the appropriate shape!"
+
     # averaging across frequencies (compute stats only in ch space)
     power = np.mean(PSDs_task_normLog, axis=2)
     T_obs, p_values, H0 = mne.stats.permutation_t_test(power, n_permutations,
@@ -252,7 +256,7 @@ def metaconn_matrix(electrodes: list, ch_con: scipy.sparse.csr_matrix, freqs_mea
 
     Returns:
         metaconn, metaconn_freq:
-        
+
         - metaconn: a priori connectivity based on sensors location, between
           pairs of sensors for which connectivity indices have been calculated,
           matrix of shape (len(electrodes), len(electrodes)).
@@ -326,7 +330,7 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
         - clusters: list where each sublist contains the indices of locations
           that together form a cluster, list.
 
-        - cluster_pv: p-value for each cluster, array.
+        - cluster_p_values: p-value for each cluster, array.
 
         - H0: max cluster level stats observed under permutation, array of
           shape (n_permutations,).
