@@ -227,7 +227,7 @@ def test_stats(epochs):
 
     statsCondTuple = stats.statsCond(PSD_welch, epochs.epo1, 3000, 0.05, 0.05)
     assert statsCondTuple.T_obs.shape[0] == len(epochs.epo1.info['ch_names'])
-    
+
     PSDTuple = analyses.PSD(epochs.epo1,
                             fmin, fmax,
                             time_resolved=True)
