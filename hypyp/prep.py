@@ -138,6 +138,8 @@ def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> 
           Epochs are MNE objects (data are stored in an array of shape
           (n_epochs, n_channels, n_times) and info is a dictionnary
           sampling parameters).
+          For ICA fit, Epochs have to be filtered between 2 and 30 Hz
+          (mne.Epochs.filter(epoch, 2, 30, method='fir')).
         n_components: the number of principal components that are passed to the
           ICA algorithm during fitting, int. For a first estimation,
           n_components can be set to 15.
@@ -146,7 +148,8 @@ def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> 
         random_state: the parameter used to compute random distributions
           for ICA calulation, int or None. It can be useful to fix
           random_state value to have reproducible results. For 15
-          components, random_state can be set to 97 for example.
+          components, random_state can be set to 97, for 20 components to 0
+          for example.
 
     Note:
         If Autoreject and ICA take too much time, change the decim value
@@ -167,7 +170,7 @@ def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> 
         # fitting ICA on filt_raw after AR
         ica = ICA(n_components=n_components,
                   method=method,
-                  random_state=random_state)
+                  random_state=random_state).fit(epoch)
         # take bad channels into account in ICA fit
         epoch_all_ch = mne.Epochs.copy(epoch)
         epoch_all_ch.info['bads'] = []
