@@ -70,7 +70,7 @@ def statsCond(PSDs_task_normLog: np.ndarray, epochs: mne.Epochs, n_permutations:
           array of shape (n_tests,).
     """
     # checking wether data have the same size
-    assert(len(PSDs_task_normLog.shape == 3)), "PSD has not the appropriate shape!"
+    assert(len(PSDs_task_normLog.shape) == 3), "PSD has not the appropriate shape!"
 
     # averaging across frequencies (compute stats only in ch space)
     power = np.mean(PSDs_task_normLog, axis=2)
