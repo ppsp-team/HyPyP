@@ -225,13 +225,13 @@ def test_stats(epochs):
                             time_resolved=False)
     PSD_welch = PSDTuple.PSD_welch
 
+    statsCondTuple = stats.statsCond(PSD_welch, epochs.epo1, 3000, 0.05, 0.05)
+    assert statsCondTuple.T_obs.shape[0] == len(epochs.epo1.info['ch_names'])
+    
     PSDTuple = analyses.PSD(epochs.epo1,
                             fmin, fmax,
                             time_resolved=True)
     PSD_welch2 = PSDTuple.PSD_welch
-
-    statsCondTuple = stats.statsCond(PSD_welch, epochs.epo1, 3000, 0.05, 0.05)
-    assert statsCondTuple.T_obs.shape[0] == len(epochs.epo1.info['ch_names'])
     statsCondTuple = stats.statsCond(PSD_welch2, epochs.epo1, 3000, 0.05, 0.05)
 
     for i in range(0, len(statsCondTuple.p_values)):
