@@ -227,9 +227,13 @@ def test_stats(epochs):
 
     statsCondTuple = stats.statsCond(PSD_welch, epochs.epo1, 3000, 0.05, 0.05)
     assert statsCondTuple.T_obs.shape[0] == len(epochs.epo1.info['ch_names'])
-    # TODO: add an assert in the function to be sure PSD with epochs
-    # len(shape) = 3
-    # and retest with time_resolved=True
+    # test shape assertion in the function
+    # PSDTuple = analyses.PSD(epochs.epo1,
+    #                         fmin, fmax,
+    #                         time_resolved=True)
+    # PSD_welch2 = PSDTuple.PSD_welch
+    # statsCondTuple = stats.statsCond(PSD_welch2, epochs.epo1, 3000, 0.05, 0.05)
+
     for i in range(0, len(statsCondTuple.p_values)):
         assert statsCondTuple.p_values[i] <= statsCondTuple.adj_p[1][i]
     assert statsCondTuple.T_obs_plot.shape[0] == len(
