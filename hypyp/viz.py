@@ -20,15 +20,19 @@ import mne
 import meshio
 
 
-def transform(locs: np.ndarray, traY: float=0.25, rotZ: float=np.pi) -> np.ndarray:
+def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.1, rotZ: float=(np.pi)/2) -> np.ndarray:
     """
     Calculates new locations for the EEG locations.
 
     Arguments:
         locs: array of shape (n_sensors, 3)
           3d coordinates of the sensors
+        traX: float
+          X translation to apply to the sensors
         traY: float
           Y translation to apply to the sensors
+        traZ: float
+          Z translation to apply to the sensors
         rotZ: float
           Z rotation to apply to the sensors
 
@@ -316,8 +320,8 @@ def get_3d_heads():
 
     # Extract vertices and faces for the first head
     mesh = meshio.read("data/Basehead.obj")
-    zoom = 0.08
-    interval = 0.3
+    zoom = 0.064
+    interval = 0.32
 
     head1_v = mesh.points*zoom
     head1_f = mesh.cells[0].data

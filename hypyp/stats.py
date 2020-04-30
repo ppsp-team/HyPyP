@@ -82,7 +82,7 @@ def statsCond(PSDs_task_normLog: np.ndarray, epochs: mne.Epochs, n_permutations:
     for c in adj_p[1]:
         if c <= alpha:
             i = np.where(adj_p[1] == c)
-    T_obs_plot[i] = T_obs[i]
+            T_obs_plot[i] = T_obs[i]
     T_obs_plot = np.nan_to_num(T_obs_plot)
 
     # getting sensors position
