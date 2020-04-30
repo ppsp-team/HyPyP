@@ -84,9 +84,7 @@ complex_signal = compute_freq_bands(data, freq_bands)
 
 # Compute frequency- and time-frequency-domain connectivity measures.
 result = compute_sync(complex_signal,
-                      mode='plv',
-                      epoch_wise=True,
-                      time_resolved=True)
+                      mode='plv')
 
 theta, alpha_low, alpha_high, beta, gamma = result
 
