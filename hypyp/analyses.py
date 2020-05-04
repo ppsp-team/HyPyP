@@ -24,32 +24,33 @@ from mne.io.constants import FIFF
 
 def PSD(epochs: mne.Epochs, fmin: float, fmax: float, time_resolved: bool)-> tuple:
     """
-    Computes the Power Spectral Density (PSD) on Epochs for a condition.
+    Computes the Power Spectral Density (PSD) on Epochs.
 
     Arguments:
-        epochs: Epochs for a condition, for a subject (can result from the
-          concatenation of epochs from different occurences of the condition
-          across experiments).
-                Epochs are MNE objects (data are stored in arrays of shape
-          (n_epochs, n_channels, n_times) and info are into a dictionnary.
-        fmin, fmax: minimum and maximum frequencies-of-interest for power
-          spectral density calculation, floats in Hz.
-        time_resolved: whether to collapse the time course, boolean.
-          If False, PSD won't be averaged over epochs the time
-          course is maintained.
+        epochs: A subject's Epochs object, for a condition (can result from the
+          concatenation of Epochs from different experimental realisations
+          of the condition).
+                Epochs are MNE objects: data are stored in arrays of shape
+          (n_epochs, n_channels, n_times) and parameters information are stored
+          in a dictionnary.
+        fmin, fmax: minimum and maximum frequencies-of-interest for PSD calculation,
+          floats in Hz.
+        time_resolved: option to collapse the time course or not, boolean.
+          If False, PSD won't be averaged over epochs (the time
+          course is maintained).
           If True, PSD values are averaged over epochs.
 
     Note:
-        The function can be iterated on the group and/or on conditions:
-      for epochs in epochs['epochs_%s_%s_%s' % (subj, group, cond_name)], you
-      can then visualize PSD distribution on the group with the toolbox
-      vizualisation to check normality for statistics for example.
+        The function can be iterated on the group and/or on conditions
+      (for epochs in epochs['epochs_%s_%s_%s' % (subj, group, cond_name)]).
+      You can visualize PSD distribution on the group to check normality
+      for statistics.
 
     Returns:
         freqs_mean, PSD_welch:
 
           - freqs_mean: list of frequencies in frequency-band-of-interest
-          actually used for power spectral density calculation.
+          actually used for PSD calculation.
           - PSD_welch: PSD value in epochs for each channel and each frequency,
           ndarray (n_epochs, n_channels, n_frequencies).
           Note that if time_resolved == True, PSD values are averaged
@@ -82,12 +83,12 @@ def indexes_connectivity_intrabrain(epochs: mne.Epochs) -> list:
     """
     Computes indexes for connectivity analysis between all EEG
     sensors for one subject. Can be used instead of
-    (n_channels, n_channels) that takes into account intra electrode
+    (n_channels, n_channels) that takes into account intra electrodes
     connectivity.
 
     Arguments:
-        epochs: one subject Epochs object to get channels info, Epochs
-          are MNE objects.
+        epochs: one subject Epochs object to get channels information
+          (Epochs are MNE objects).
 
     Returns:
         electrodes: electrodes pairs for which connectivity indices will be
@@ -119,8 +120,8 @@ def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
     sensors for 2 subjects (merge data).
 
     Arguments:
-        epoch_hyper: one dyad Epochs object to get channels info, Epochs
-          are MNE objects.
+        epoch_hyper: one dyad Epochs object to get channels information (Epochs
+          are MNE objects).
 
     Note:
         Only interbrains connectivity will be computed.

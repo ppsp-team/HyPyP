@@ -20,21 +20,23 @@ from mne.io.constants import FIFF
 
 def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> list:
     """
-    Computes Epochs from Raws and vizualize PSD on average Epochs.
+    Creates Epochs from Raws and vizualize Power Spectral Density (PSD)
+    on average Epochs (option).
 
     Arguments:
         raw_S1: list of Raws for subject 1 (with the different
-          occurences of a condition, for example the baseline,
-          across different experiments. The length can be 1).
+          experimental realizations of a condition - for example
+          the baseline. The length can be 1).
         raw_S2: list of Raws for subject 2.  
-          Raws are MNE objects (data are ndarray with shape
-          (n_channels, n_times) and info is a disctionnary sampling
-          parameters).
+          Raws are MNE objects: data are ndarray with shape
+          (n_channels, n_times) and information is a dictionnary
+          sampling parameters.
         freq_bands: frequency bands-of-interest, list of tuple.
 
     Note:
-        Plots ower spectral density calculated with welch FFT for each epoch
-        and each subject, averaged in each frequency band-of-interest.
+        Plots topomaps of PSD values calculated with welch FFT
+        for each epoch and each subject, averaged in each
+        frequency band-of-interest.
         # TODO: option with verbose
 
     Returns:
@@ -95,28 +97,27 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> l
 
 def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
     """
-    Merges Epochs from 2 subjects after interpolation of bad channels for each
-    subject.
+    Merges Epochs from 2 subjects after interpolation of bad channels.
 
     Arguments:
-        epoch_S1: Epochs objects for subject 1.
-        epoch_S2: Epochs objects for subject 2.  
+        epoch_S1: Epochs object for subject 1.
+        epoch_S2: Epochs object for subject 2.  
           epoch_S1 and epoch_S2 correspond to a condition and can result
-          from the concatenation of epochs from different occurences
-          of the condition across experiments.  
-          Epochs are MNE objects (data are stored in an array of shape
-          (n_epochs, n_channels, n_times) and info is a disctionnary sampling
-          parameters).
+          from the concatenation of epochs from different experimental
+          realizations of a condition.  
+          Epochs are MNE objects: data are stored in an array of shape
+          (n_epochs, n_channels, n_times) and parameters information
+          is stored in a disctionnary.
 
     Note:
-        Bad channels info is removed.
+        Bad channels labelling is removed.
         Note that average on reference can not be done anymore. Similarly,
         montage can not be set to the data and as a result topographies in MNE
         are not possible anymore. Use toolbox vizualisations instead.
 
     Returns:
         ep_hyper: Epochs object for the dyad (with merged data of the two
-          subjects. The time alignement has been done at raw data creation.
+          subjects). The time alignement has been done at raw data creation.
     """
     # checking bad ch for epochs, interpolating
     # and removing them from 'bads' if needed
@@ -205,7 +206,7 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
     Arguments:
         raw_merge: Raw data for the dyad with data from subject 1
           and data from subject 2 (channels name are defined with
-          the suffix S1 or S2 respectively).
+          the suffix S1 and S2 respectively).
 
     Note:
         Subject's Raw data is set to the standard montage 1020
@@ -214,9 +215,7 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
 
     Returns:
         raw_1020_S1, raw_1020_S2: Raw data for each subject separately.
-          Raws are MNE objects (data are ndarray
-          with shape (n_channels, n_times) and info
-          is a dictionnary sampling parameters).
+          Raws are MNE objects.
     """
     ch_S1 = []
     ch_S2 = []
@@ -282,17 +281,15 @@ def concatenate_epochs(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs
 
     Arguments:
         epoch_S1: list of Epochs for subject 1 (for example the
-          list samples the different occurences of the baseline condition
-          across experiments).
+          list samples different experimental realizations
+          of the baseline condition).
         epoch_S2: list of Epochs for subject 2.  
-          Epochs are MNE objects (data are stored in an array of shape
-          (n_epochs, n_channels, n_times) and info is a dictionnary sampling
-          parameters).
+          Epochs are MNE objects.
 
     Returns:
         epoch_S1_concat, epoch_S2_concat: list of concatenate Epochs
-          (for example one epoch with all the occurences of the baseline
-          condition across experiments) for each subject.
+          (for example one epoch with all the experimental realizations
+          of the baseline condition) for each subject.
     """
     epoch_S1_concat = mne.concatenate_epochs(epoch_S1)
     epoch_S2_concat = mne.concatenate_epochs(epoch_S2)
@@ -303,13 +300,14 @@ def concatenate_epochs(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs
 def normalizing(baseline: np.ndarray, task: np.ndarray, type: str) -> np.ndarray:
     """
     Computes Zscore or Logratio of a value between a 'task' condition and
-    a baseline.
+    a baseline for example.
 
     Arguments:
-        baseline: PSD or CSD values for the 'baseline' and...
-        task: ...the 'task' conditions, ndarray, shape
-          (n_epochs, n_channels, n_frequencies).
-        type: type of normalization, str 'Zscore' or 'Logratio'.
+        baseline: PSD or CSD values for the 'baseline',
+          ndarray, shape (n_epochs, n_channels, n_frequencies).
+        task: PSD or CSD values for the 'task' conditions,
+          ndarray, shape (n_epochs, n_channels, n_frequencies).
+        type: normalization choice, str 'Zscore' or 'Logratio'.
 
     Returns:
         Normed_task: PSD or CSD values for the condition 'task' normed by

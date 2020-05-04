@@ -40,23 +40,24 @@ def filt(raw_S: list) -> list:
 
 def ICA_choice_comp(icas: list, epochs: list) -> list:
     """
-    Plots Independant Components for each subject, let the user choose
-    the relevant components for artefacts rejection and apply ICA on
-    Epochs.
+    Plots Independant Components for each subject (calculated from Epochs),
+    let the user choose the relevant components for artefacts rejection
+    and apply ICA on Epochs.
 
     Arguments:
-        icas: list of independant components for each subject, IC are MNE
-          objects.
+        icas: list of Independant Components for each subject (IC are MNE
+          objects).
         epochs: list of 2 Epochs objects (for each subject). Epochs_S1
           and Epochs_S2 correspond to a condition and can result from the
-          concatenation of epochs from different occurences of the condition
-          across experiments.
-          Epochs are MNE objects (data are stored in an array of shape
-          (n_epochs, n_channels, n_times) and info is a disctionnary
-          sampling parameters).
+          concatenation of Epochs from different experimental realisations
+          of the condition.
+          Epochs are MNE objects: data are stored in an array of shape
+          (n_epochs, n_channels, n_times) and parameters information is
+          stored in a disctionnary.
 
     Returns:
-        cleaned_epochs_ICA: list of 2 cleaned Epochs for each subject.
+        cleaned_epochs_ICA: list of 2 cleaned Epochs for each subject
+          (the chosen IC have been removed from the signal).
     """
     # plotting Independant Components for each subject
     for ica in icas:
@@ -87,6 +88,7 @@ def ICA_choice_comp(icas: list, epochs: list) -> list:
 def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> list:
     """
     Applies ICA with template model from 1 subject in the dyad.
+    See ICA_choice_comp for a detailed description of the parameters and output.
     """
 
     cleaned_epochs_ICA = []
@@ -133,18 +135,13 @@ def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> 
     Arguments:
         epochs: list of 2 Epochs objects (for each subject).
           Epochs_S1 and Epochs_S2 correspond to a condition and can result
-          from the concatenation of epochs from different occurences of the
-          condition across experiments.
-          Epochs are MNE objects (data are stored in an array of shape
-          (n_epochs, n_channels, n_times) and info is a dictionnary
-          sampling parameters).
-          For ICA fit, Epochs have to be filtered between 2 and 30 Hz
-          (mne.Epochs.filter(epoch, 2, 30, method='fir')).
+          from the concatenation of Epochs from different experimental
+          realisations of the condition (Epochs are MNE objects).
         n_components: the number of principal components that are passed to the
           ICA algorithm during fitting, int. For a first estimation,
           n_components can be set to 15.
         method: the ICA method used, str 'fastica', 'infomax' or 'picard'.
-          Fastica' is the most frequently used.
+          'Fastica' is the most frequently used.
         random_state: the parameter used to compute random distributions
           for ICA calulation, int or None. It can be useful to fix
           random_state value to have reproducible results. For 15
@@ -154,10 +151,12 @@ def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> 
     Note:
         If Autoreject and ICA take too much time, change the decim value
         (see MNE documentation).
+        Please filter the Epochs between 2 and 30 Hz before ICA fit
+        (mne.Epochs.filter(epoch, 2, 30, method='fir')).
 
     Returns:
-        icas: list of independant components for each subject. IC are MNE
-          objects, see MNE documentation for more details.
+        icas: list of Independant Components for each subject (IC are MNE
+          objects, see MNE documentation for more details).
     """
     icas = []
     for epoch in epochs:
@@ -181,12 +180,16 @@ def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> 
 
 def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
     """
-    Applies local Autoreject to correct or reject bad epochs.
+    Applies local Autoreject to repair or reject bad epochs.
 
     Arguments:
-        clean_epochs_ICA: list of Epochs after global Autoreject and ICA
-        verbose: to plot data before and after AR, boolean set to False
-          by default.
+        clean_epochs_ICA: list of Epochs after global Autoreject and ICA.
+        verbose: option to plot data before and after AR, boolean, set to
+          False by default.
+
+    Note:
+        To reject or repair epochs, parameters are more or less conservative,
+        see http://autoreject.github.io/generated/autoreject.AutoReject.  
 
     Returns:
         cleaned_epochs_AR: list of Epochs after local Autoreject.

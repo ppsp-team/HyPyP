@@ -212,13 +212,7 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
 
     Returns:
         None: plot the links in 3D within the current axis.
-        Plot hyper-conenctivity in 3D.
-
-    Note:
-      homologous: str
-                draw only homologous connections
-                yes / no. default no.
-
+          Plot hyper-conenctivity in 3D.
     """
     ctr1 = np.nanmean(loc1, 0)
     ctr1[2] -= 0.2
@@ -284,7 +278,7 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
     clusters corrected t test) computed between groups or conditions, on power
     or connectivity values, across simple subjects. For satistics with
     interbrains connectivity values on dyads (merge data), use the
-    plot_links_3d function of the toolbox.
+    plot_links_3d function.
 
     Arguments:
         T_obs_plot: satistical values to plot, from sensors above alpha threshold,
@@ -299,7 +293,7 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
     pos = np.array([[0, 0]])
     for i in range(0, len(epochs.info['ch_names'])):
         cor = np.array([epochs.info['chs'][i]['loc'][0:2]])
-        pos = np.concatenate((pos, cor), axis = 0)
+        pos = np.concatenate((pos, cor), axis=0)
     pos = pos[1:]
     # topoplot of significant sensors
     if np.max(np.abs(T_obs_plot)) != 0:
@@ -349,7 +343,7 @@ def get_3d_heads():
 
 def plot_3d_heads(ax, vertices, faces):
     """Plot heads models in 3D.
-    
+
     Arguments:
         ax : Matplotlib axis created with projection='3d'
         vertices : arrays of shape (V, 3)
@@ -360,7 +354,6 @@ def plot_3d_heads(ax, vertices, faces):
     Returns:
         None : plot the head faces in 3D within the current axis.
     """
-
     x_V = vertices[:,2]
     y_V = vertices[:,0]
     z_V = vertices[:,1]
