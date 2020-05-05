@@ -22,7 +22,7 @@ from mne.time_frequency import psd_welch
 from mne.io.constants import FIFF
 
 
-def PSD(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int = 256, time_resolved: bool)-> tuple:
+def PSD(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int, time_resolved: bool)-> tuple:
     """
     Computes the Power Spectral Density (PSD) on Epochs.
 
@@ -39,6 +39,9 @@ def PSD(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int = 256, time_res
           The segments will be zero-padded if ``n_fft > n_per_seg``.
           If n_per_seg is None, n_fft must be <= number of time points
           in the data.
+        n_per_seg : int | None
+          Length of each Welch segment (windowed with a Hamming window). Defaults
+          to None, which sets n_per_seg equal to n_fft.
         time_resolved: option to collapse the time course or not, boolean.
           If False, PSD won't be averaged over epochs (the time
           course is maintained).
@@ -67,7 +70,7 @@ def PSD(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int = 256, time_res
 
     # computing power spectral density on epochs signal
     # average in the 1second window around event (mean but can choose 'median')
-    kwargs = dict(fmin=fmin, fmax=fmax, n_fft=n_fft, n_jobs=1)
+    kwargs = dict(fmin=fmin, fmax=fmax, n_fft=n_fft, n_per_seg=n_per_seg, n_jobs=1)
     psds_welch, freqs_mean = psd_welch(
         epochs, **kwargs, average='mean', picks='all')  # or median
 
