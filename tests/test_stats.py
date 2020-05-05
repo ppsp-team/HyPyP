@@ -64,7 +64,7 @@ def test_simple_corr(epochs):
     """
     Test simple_corr timing
     """
-    import time
+    from time import time
 
     # taking random freq-of-interest to test CSD measures
     frequencies = [11, 12, 13]
@@ -90,18 +90,19 @@ def test_simple_corr(epochs):
     M = len(l)*list(range(len(l), len(l)*2))
     sensors = (np.array(L), np.array(M))
 
-    # trace running time
-    now = time.time()
     # mode to transform signal to analytic signal
     # on which synchrony is computed
     # mode = 'fourier'
     mode = 'multitaper'
 
+    # trace running time
+    start = time()
+
     # Phoebe: multitaper: mne.time_frequency.tfr_array_multitaper
     # BUT step = 1s, while coh (including the multitaper step) < 1s...
     # optimized in MNE
 
-    coh_mne, _, _, _, _ = mne.connectivity.spectral_connectivity(data=data_mne,
+    plv_mne, _, _, _, _ = mne.connectivity.spectral_connectivity(data=data_mne,
                                                                  method='plv',
                                                                  mode=mode,
                                                                  indices=sensors,
@@ -109,30 +110,19 @@ def test_simple_corr(epochs):
                                                                  fmin=11,
                                                                  fmax=13,
                                                                  faverage=True)
-    now2 = time.time()
+    plv_mne_time = time()
+    print(f"plv_mne computed in {plv_mne_time-start} seconds")
+
     # coh = analyses.simple_corr(data, frequencies, mode='plv')
-    values = analyses.compute_single_freq(data, frequencies)
-    now3 = time.time()
-    result = analyses.compute_sync(values, mode='plv')
-    now4 = time.time()
-    # convert time to pick seconds only in GTM ref
-    now = time.localtime(now)
-    now2 = time.localtime(now2)
-    now3 = time.localtime(now3)
-    now4 = time.localtime(now4)
-
-    # assess time running equivalence for each script
-    # assert (int(now2.tm_sec) - int(now.tm_sec)) == (int(now3.tm_sec) - int(now2.tm_sec))
-    # takes 2 versus 0 second with MNE function
-    # (and here n_channels 31, n_epochs not a lot, n_freq 1)
-    # idem en inter-ind
-
-    # test substeps
-    assert (int(now2.tm_sec) - int(now.tm_sec)) == ((int(now4.tm_sec) -
-                                                     int(now3.tm_sec))+(int(now3.tm_sec) - int(now2.tm_sec)))
-    # each of the two steps in Phoebe script takes 1 second
-    # (while first step less than 1s for the MNE function cf. multitaper
-    # calculation... = ?)
+    analytical_signal = analyses.compute_single_freq(data, frequencies)
+    analytical_signal_time = time()
+    print(f"analytical_signal computed in {analytical_signal_time-plv_mne_time} seconds")
+    plv_phoebe = analyses.compute_sync(analytical_signal, mode='plv')
+    plv_phoebe_time = time()
+    print(f"plv_phoebe computed in {plv_phoebe_time-analytical_signal_time} seconds")
+    
+    assert (plv_phoebe_time - plv_mne_time) == ((plv_phoebe_time - analytical_signal_time)
+                                               +(analytical_signal_time - plv_mne))
 
 
 def test_ICA(epochs):
