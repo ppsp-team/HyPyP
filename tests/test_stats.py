@@ -121,7 +121,7 @@ def test_simple_corr(epochs):
     plv_phoebe_time = time()
     print("plv_phoebe computed in {0} seconds".format(plv_phoebe_time-analytical_signal_time))
     
-    assert.deepEqual(plv_mne.shape, plv_phoebe.shape)
+    np.testing.assert_array_equal(plv_mne.shape, plv_phoebe.shape)
 
 
 def test_ICA(epochs):
