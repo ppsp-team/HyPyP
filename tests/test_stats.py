@@ -182,6 +182,7 @@ def test_PSD(epochs):
     fmax = 13
     PSDTuple = analyses.PSD(epochs.epo1,
                             fmin, fmax,
+                            n_fft=256,
                             time_resolved=True)
     PSD_welch = PSDTuple.PSD_welch
     freqs_mean = PSDTuple.freqs_mean
@@ -190,6 +191,7 @@ def test_PSD(epochs):
         len(epochs.epo1.info['ch_names']), len(freqs_mean))
     PSDTuple = analyses.PSD(epochs.epo1,
                             fmin, fmax,
+                            n_fft=256,
                             time_resolved=False)
     PSD_welch = PSDTuple.PSD_welch
     assert PSD_welch.shape == (len(epochs.epo1), len(
@@ -222,6 +224,7 @@ def test_stats(epochs):
     fmax = 13
     PSDTuple = analyses.PSD(epochs.epo1,
                             fmin, fmax,
+                            n_fft=256,
                             time_resolved=False)
     PSD_welch = PSDTuple.PSD_welch
 
@@ -242,6 +245,7 @@ def test_stats(epochs):
 
     PSDTuple2 = analyses.PSD(epochs.epo2,
                              fmin, fmax,
+                             n_fft=256,
                              time_resolved=False)
     PSD_welch2 = PSDTuple2.PSD_welch
     freqs_mean = PSDTuple2.freqs_mean
