@@ -194,6 +194,8 @@ def simple_corr(data, frequencies, mode) -> np.ndarray:
         values = compute_freq_bands(data, frequencies)
 
     result = compute_sync(values, mode)
+    # reshaping result to have n_freq dimension first
+    result = result.transpose()
 
     return result
 
