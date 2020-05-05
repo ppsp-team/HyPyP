@@ -193,6 +193,7 @@ def test_PSD(epochs):
     PSDTuple = analyses.PSD(epochs.epo1,
                             fmin, fmax,
                             n_fft=256,
+                            n_per_seg=None,
                             time_resolved=False)
     PSD_welch = PSDTuple.PSD_welch
     assert PSD_welch.shape == (len(epochs.epo1), len(
