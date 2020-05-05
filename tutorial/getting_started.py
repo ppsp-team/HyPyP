@@ -68,7 +68,7 @@ cleaned_epochs_ICA = ICA_choice_comp(icas, epochs)  # no ICA_component selected
 plt.close('all')
 
 # applying local AR on subj epochs and rejecting epochs if bad for S1 or S2
-cleaned_epochs_AR = AR_local(cleaned_epochs_ICA, verbose)
+cleaned_epochs_AR = AR_local(cleaned_epochs_ICA, verbose=True)
 input("Press ENTER to continue")
 plt.close('all')
 
