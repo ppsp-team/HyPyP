@@ -111,18 +111,18 @@ def test_simple_corr(epochs):
                                                                  fmax=13,
                                                                  faverage=True)
     plv_mne_time = time()
-    print(f"plv_mne computed in {plv_mne_time-start} seconds")
+    print("plv_mne computed in {0} seconds".format(plv_mne_time-start))
 
     # coh = analyses.simple_corr(data, frequencies, mode='plv')
     analytical_signal = analyses.compute_single_freq(data, frequencies)
     analytical_signal_time = time()
-    print(f"analytical_signal computed in {analytical_signal_time-plv_mne_time} seconds")
+    print("analytical_signal computed in {0} seconds".format(analytical_signal_time-plv_mne_time))
     plv_phoebe = analyses.compute_sync(analytical_signal, mode='plv')
     plv_phoebe_time = time()
-    print(f"plv_phoebe computed in {plv_phoebe_time-analytical_signal_time} seconds")
+    print("plv_phoebe computed in {0} seconds".format(plv_phoebe_time-analytical_signal_time))
     
-    assert (plv_phoebe_time - plv_mne_time) == ((plv_phoebe_time - analytical_signal_time)
-                                               +(analytical_signal_time - plv_mne))
+    assert int(plv_phoebe_time - plv_mne_time) == (int(plv_phoebe_time - analytical_signal_time)
+                                                   + int(analytical_signal_time - plv_mne))
 
 
 def test_ICA(epochs):
