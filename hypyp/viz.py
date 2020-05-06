@@ -49,6 +49,32 @@ def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.1,
     locs[:, 2] = locs[:, 2] + traZ
     return locs
 
+def adjust_loc(locs: np.ndarray, traZ: float=0.1) -> np.ndarray:
+    """
+    Calculates new locations for the EEG locations.
+
+    Arguments:
+        locs: array of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        traZ: float
+          Z translation to apply to the sensors
+
+    Returns:
+        result: array (n_sensors, 3)
+          new 3d coordinates of the sensors
+    """
+    locs[0, 2] = locs[0, 2] + traZ
+    locs[1, 2] = locs[1, 2] + traZ
+    locs[2, 2] = locs[2, 2] + traZ
+    locs[3, 2] = locs[3, 2] + traZ
+    locs[13, 2] = locs[13, 2] + traZ
+    locs[17, 2] = locs[17, 2] + traZ
+    locs[24, 2] = locs[24, 2] + traZ
+    locs[28, 2] = locs[28, 2] + traZ
+    locs[29, 2] = locs[29, 2] + traZ
+    locs[30, 2] = locs[30, 2] + traZ
+
+    return locs
 
 def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
     """
@@ -69,14 +95,14 @@ def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: lis
     """
     for idx1 in range(len(loc1)):
         x1, y1, z1 = loc1[idx1, :]
-        plt.plot(x1, y1, marker='o', color='blue')
+        plt.plot(x1, y1, marker='o', color='black')
         if lab1:
             plt.text(x1+0.012, y1+0.012, lab1[idx1],
                      horizontalalignment='center',
                      verticalalignment='center')
     for idx2 in range(len(loc2)):
         x2, y2, z2 = loc2[idx2, :]
-        plt.plot(x2, y2, marker='o', color='red')
+        plt.plot(x2, y2, marker='o', color='black')
         if lab2:
             plt.text(x2+0.012, y2+0.012, lab2[idx2],
                      horizontalalignment='center',
@@ -173,7 +199,7 @@ def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], 
     """
     for idx1 in range(len(loc1)):
             x1, y1, z1 = loc1[idx1, :]
-            ax.scatter(x1, y1, z1, marker='o', color='blue')
+            ax.scatter(x1, y1, z1, marker='o', color='black')
             if lab1:
                 ax.text(x1+0.012, y1+0.012 ,z1, lab1[idx1],
                         horizontalalignment='center',
@@ -181,7 +207,7 @@ def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], 
 
     for idx2 in range(len(loc2)):
         x2, y2, z2 = loc2[idx2, :]
-        ax.scatter(x2, y2, z2, marker='o', color='red')
+        ax.scatter(x2, y2, z2, marker='o', color='black')
         if lab2:
             ax.text(x2+0.012, y2+0.012, z2, lab2[idx2],
                     horizontalalignment='center',

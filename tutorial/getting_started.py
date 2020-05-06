@@ -44,11 +44,13 @@ epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
 loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
 lab1 = [ch for ch in epo1.ch_names]
 loc1 = transform(loc1,traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
+loc1 = adjust_loc(loc1, traZ=+0.01)
 
 epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
 loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
 lab2 = [ch + "_2" for ch in epo2.ch_names]
 loc2 = transform(loc2,traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
+loc2 = adjust_loc(loc2, traZ=+0.01)
 
 # Equalize epochs size
 mne.epochs.equalize_epoch_counts([epo1, epo2])

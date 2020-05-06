@@ -64,11 +64,11 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> l
 
         # epoching the events per time window
         epoch1 = mne.Epochs(raw1, fixed_events1, event_id=1, tmin=0, tmax=1,
-                            baseline=None, preload=True, proj=True)
+                            baseline=None, preload=True, reject=None, proj=True)
         # reject=reject_criteria, no baseline correction
         # preload needed after
         epoch2 = mne.Epochs(raw2, fixed_events2, event_id=1, tmin=0, tmax=1,
-                            baseline=None, preload=True, proj=True)
+                            baseline=None, preload=True, reject=None, proj=True)
 
         # vizu topoplots of PSD for epochs
         # epoch1.plot()
