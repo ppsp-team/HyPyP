@@ -197,12 +197,12 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
     bad_epochs_AR = []
 
     # defaults values for n_interpolates and consensus_percs
-    n_interpolates = np.array([1, 4, 32])
-    consensus_percs = np.linspace(0, 1.0, 11)
+    # n_interpolates = np.array([1, 4, 32])
+    # consensus_percs = np.linspace(0, 1.0, 11)
     # more generous values
     # n_interpolates = np.array([16, 32, 64])
-    # n_interpolates = np.array([1, 4, 16, 32, 64])
-    # consensus_percs = np.linspace(0.5, 1.0, 11)
+    n_interpolates = np.array([1, 4, 8, 16, 32, 64])
+    consensus_percs = np.linspace(0.5, 1.0, 11)
 
     for clean_epochs in cleaned_epochs_ICA:  # per subj
 
