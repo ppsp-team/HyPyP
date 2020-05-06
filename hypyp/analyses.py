@@ -413,6 +413,7 @@ def _icoh(X, Y, axis):
     icoh = np.abs(iSxy/(np.sqrt(Sxx*Syy)))
     return np.nanmean(icoh, axis)
 
+
 def _corr2_coeff_rowwise2(A, B):
     """
     compute row-wise correlation for 2D arrays
