@@ -195,14 +195,15 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
         cleaned_epochs_AR: list of Epochs after local Autoreject.
     """
     bad_epochs_AR = []
+    AR = []
 
     # defaults values for n_interpolates and consensus_percs
-    # n_interpolates = np.array([1, 4, 32])
-    # consensus_percs = np.linspace(0, 1.0, 11)
+    n_interpolates = np.array([1, 4, 32])
+    consensus_percs = np.linspace(0, 1.0, 11)
     # more generous values
     # n_interpolates = np.array([16, 32, 64])
-    n_interpolates = np.array([1, 4, 8, 16, 32, 64])
-    consensus_percs = np.linspace(0.5, 1.0, 11)
+    # n_interpolates = np.array([1, 4, 8, 16, 32, 64])
+    # consensus_percs = np.linspace(0.5, 1.0, 11)
 
     for clean_epochs in cleaned_epochs_ICA:  # per subj
 
@@ -222,6 +223,7 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
         ar = AutoReject(n_interpolates, consensus_percs, picks=picks,
                         thresh_method='random_search', random_state=42,
                         verbose=ar_verbose)
+        AR.append(ar)
 
         # fitting AR to get bad epochs
         ar.fit(clean_epochs)
@@ -244,6 +246,7 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
     for clean_epochs in cleaned_epochs_ICA:  # per subj
         clean_epochs_ep = clean_epochs.drop(indices=bad)
         # interpolating bads or removing epochs
+        ar = AR[cleaned_epochs_ICA.index(clean_epochs)]
         clean_epochs_AR = ar.transform(clean_epochs_ep)
         cleaned_epochs_AR.append(clean_epochs_AR)
     # equalizing epochs length between two subjects
