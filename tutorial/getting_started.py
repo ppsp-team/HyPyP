@@ -48,7 +48,7 @@ loc1 = adjust_loc(loc1, traZ=+0.01)
 
 epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
 loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-lab2 = [ch + "_2" for ch in epo2.ch_names]
+lab2 = [ch for ch in epo2.ch_names]
 loc2 = transform(loc2,traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
 loc2 = adjust_loc(loc2, traZ=+0.01)
 
@@ -92,6 +92,10 @@ theta, alpha_low, alpha_high, beta, gamma = result
 
 C = (alpha_low - np.mean(alpha_low[:])) / np.std(alpha_low[:])
 
+# Defined bad channel for viz test
+epo1.info['bads']=['F8','Fp2','Cz','O2']
+epo2.info['bads']=['F7','O1']
+
 # Visualization of inter-brain connectivity in 2D
 fig, ax = plt.subplots(1,1)
 ax.axis("off")
@@ -103,7 +107,7 @@ camera.connect(ax, mesh.update)
 
 plt.gca().set_aspect('equal', 'box')
 plt.axis('off')
-plot_sensors_2d(loc1, loc2, lab1, lab2)
+plot_sensors_xbad_2d(loc1, loc2, lab1, lab2)
 plot_links_2d(loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
@@ -117,7 +121,7 @@ fig = plt.figure()
 ax = fig.gca(projection='3d')
 ax.axis("off")
 plot_3d_heads(ax, vertices,faces)
-plot_sensors_3d(ax, loc1, loc2, lab1, lab2)
+plot_sensors_xbad_3d(ax, loc1, loc2, lab1, lab2)
 plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
