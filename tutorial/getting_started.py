@@ -23,9 +23,9 @@ from mpl3d.mesh import Mesh
 from mpl3d.camera import Camera
 
 from hypyp.viz import transform
-from hypyp.viz import plot_sensors_2d, plot_links_2d
+from hypyp.viz import plot_sensors_xbad_2d, plot_links_2d
 from hypyp.viz import get_3d_heads
-from hypyp.viz import plot_sensors_3d, plot_links_3d, plot_3d_heads
+from hypyp.viz import plot_sensors_xbad_3d, plot_links_3d, plot_3d_heads
 from hypyp.prep import ICA_fit, ICA_choice_comp, AR_local
 from hypyp.analyses import compute_freq_bands, compute_sync
 
