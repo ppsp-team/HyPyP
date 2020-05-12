@@ -22,7 +22,7 @@ from mpl3d import glm
 from mpl3d.mesh import Mesh
 from mpl3d.camera import Camera
 
-from hypyp.viz import transform
+from hypyp.viz import transform, adjust_loc
 from hypyp.viz import plot_sensors_xbad_2d, plot_links_2d
 from hypyp.viz import get_3d_heads
 from hypyp.viz import plot_sensors_xbad_3d, plot_links_3d, plot_3d_heads
