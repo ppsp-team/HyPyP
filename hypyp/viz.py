@@ -76,39 +76,7 @@ def adjust_loc(locs: np.ndarray, traZ: float=0.1) -> np.ndarray:
 
     return locs
 
-def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
-    """
-    Plots sensors in 2D.
-
-    Arguments:
-        loc1: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        loc2: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        lab1: lists of strings
-          sensor labels
-        lab2: lists of strings
-          sensor labels
-
-    Returns:
-        None: plot the sensors in 2D within the current axis.
-    """
-    for idx1 in range(len(loc1)):
-        x1, y1, z1 = loc1[idx1, :]
-        plt.plot(x1, y1, marker='o', color='black')
-        if lab1:
-            plt.text(x1+0.012, y1+0.012, lab1[idx1],
-                     horizontalalignment='center',
-                     verticalalignment='center')
-    for idx2 in range(len(loc2)):
-        x2, y2, z2 = loc2[idx2, :]
-        plt.plot(x2, y2, marker='o', color='black')
-        if lab2:
-            plt.text(x2+0.012, y2+0.012, lab2[idx2],
-                     horizontalalignment='center',
-                     verticalalignment='center')
-
- def plot_sensors_xbad_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
+ def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
     """
     Plots sensors in 2D with x representation for bad sensors.
 
@@ -193,9 +161,10 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
     ctr1 = np.nanmean(loc1, 0)
     ctr2 = np.nanmean(loc2, 0)
 
-    cmap = matplotlib.cm.get_cmap('Reds')
-    norm = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
-
+    cmap_p = matplotlib.cm.get_cmap('Reds')
+    norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
+    cmap_n = matplotlib.cm.get_cmap('Blues')    
+    norm_n = matplotlib.colors.Normalize(vmax=-threshold, vmin=np.min(C[:]))
 
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
@@ -203,13 +172,14 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
         for e2 in range(len(loc2)):
             x2 = loc2[e2, 0]
             y2 = loc2[e2, 1]
-            color = cmap(norm(C[e1, e2]))  
+            color_p = cmap_p(norm_p(C[e1, e2]))
+            color_n = cmap_n(norm_n(C[e1, e2]))  
             if C[e1, e2] >= threshold:
                 if steps <= 2:
                     weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
                     plt.plot([loc1[e1, 0], loc2[e2, 0]],
                              [loc1[e1, 1], loc2[e2, 1]],
-                             '-', color=color, linewidth=weight)
+                             '-', color=color_p, linewidth=weight)
                 else:
                     alphas = np.linspace(0, 1, steps)
                     weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
@@ -233,45 +203,40 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
                                3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
                                b**3 * y2)
                         plt.plot([xn, xnn], [yn, ynn],
-                                 '-', color=color, linewidth=weight)
+                                 '-', color=color_p, linewidth=weight)  
+            if C[e1, e2] <= -threshold:
+                if steps <= 2:
+                    weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
+                    plt.plot([loc1[e1, 0], loc2[e2, 0]],
+                             [loc1[e1, 1], loc2[e2, 1]],
+                             '-', color=color_n, linewidth=weight)
+                else:
+                    alphas = np.linspace(0, 1, steps)
+                    weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
+                    for idx in range(len(alphas)-1):
+                        a = alphas[idx]
+                        b = alphas[idx+1]
+                        xn = ((1-a)**3 * x1 +
+                              3 * (1-a)**2 * a * (2 * x1 - ctr1[0]) +
+                              3 * (1-a) * a**2 * (2 * x2 - ctr2[0]) +
+                              a**3 * x2)
+                        xnn = ((1-b)**3 * x1 +
+                               3 * (1-b)**2 * b * (2 * x1 - ctr1[0]) +
+                               3 * (1-b) * b**2 * (2 * x2 - ctr2[0]) +
+                               b**3 * x2)
+                        yn = ((1-a)**3 * y1 +
+                              3 * (1-a)**2 * a * (2 * y1 - ctr1[1]) +
+                              3 * (1-a) * a**2 * (2 * y2 - ctr2[1]) +
+                              a**3 * y2)
+                        ynn = ((1-b)**3 * y1 +
+                               3 * (1-b)**2 * b * (2 * y1 - ctr1[1]) +
+                               3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
+                               b**3 * y2)
+                        plt.plot([xn, xnn], [yn, ynn],
+                                 '-', color=color_n, linewidth=weight)
 
 
 def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
-    """
-    Plots sensors in 3D.
-
-    Arguments:
-        ax: Matplotlib axis created with projection='3d'
-        loc1: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        loc2: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        lab1: lists of strings
-          sensor labels
-        lab2: lists of strings
-          sensor labels
-
-    Returns:
-        None: plot the sensors in 3D within the current axis.
-    """
-    for idx1 in range(len(loc1)):
-            x1, y1, z1 = loc1[idx1, :]
-            ax.scatter(x1, y1, z1, marker='o', color='black')
-            if lab1:
-                ax.text(x1+0.012, y1+0.012 ,z1, lab1[idx1],
-                        horizontalalignment='center',
-                        verticalalignment='center')
-
-    for idx2 in range(len(loc2)):
-        x2, y2, z2 = loc2[idx2, :]
-        ax.scatter(x2, y2, z2, marker='o', color='black')
-        if lab2:
-            ax.text(x2+0.012, y2+0.012, z2, lab2[idx2],
-                    horizontalalignment='center',
-                    verticalalignment='center')
-
-
-def plot_sensors_xbad_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
     """
     Plots sensors in 3D with x representation for bad sensors.
 
