@@ -163,8 +163,8 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
 
     cmap_p = matplotlib.cm.get_cmap('Reds')
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
-    cmap_n = matplotlib.cm.get_cmap('Blues')    
-    norm_n = matplotlib.colors.Normalize(vmax=-threshold, vmin=np.min(C[:]))
+    cmap_n = matplotlib.cm.get_cmap('Blues')
+    norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
 
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
@@ -328,8 +328,11 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
     ctr2 = np.nanmean(loc2, 0)
     ctr2[2] -= 0.2
 
-    cmap = matplotlib.cm.get_cmap('Reds')
-    norm = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
+    cmap_p = matplotlib.cm.get_cmap('Reds')
+    norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
+    cmap_n = matplotlib.cm.get_cmap('Blues')    
+    norm_n = matplotlib.colors.Normalize(vmin=np.max(C[:]), vmax=-threshold)
+
 
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
@@ -339,14 +342,15 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
             x2 = loc2[e2, 0]
             y2 = loc2[e2, 1]
             z2 = loc2[e2, 2]
-            color = cmap(norm(C[e1, e2])) 
+            color_p = cmap_p(norm_p(C[e1, e2]))
+            color_n = cmap_n(norm_n(C[e1, e2])) 
             if C[e1, e2] >= threshold:
                 if steps <= 2:
                     weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
                     ax.plot([loc1[e1, 0], loc2[e2, 0]],
                              [loc1[e1, 1], loc2[e2, 1]],
                              [loc1[e1, 2], loc2[e2, 2]],
-                             '-', color=color, linewidth=weight)
+                             '-', color=color_p, linewidth=weight)
                 else:
                     alphas = np.linspace(0, 1, steps)
                     weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
@@ -378,7 +382,46 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
                                3 * (1-b) * b**2 * (2 * z2 - ctr2[2]) +
                                b**3 * z2)
                         ax.plot([xn, xnn], [yn, ynn], [zn, znn],
-                                 '-', color=color, linewidth=weight)
+                                 '-', color=color_p, linewidth=weight)
+            if C[e1, e2] <= -threshold:
+                if steps <= 2:
+                    weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
+                    ax.plot([loc1[e1, 0], loc2[e2, 0]],
+                             [loc1[e1, 1], loc2[e2, 1]],
+                             [loc1[e1, 2], loc2[e2, 2]],
+                             '-', color=color_n, linewidth=weight)
+                else:
+                    alphas = np.linspace(0, 1, steps)
+                    weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
+                    for idx in range(len(alphas)-1):
+                        a = alphas[idx]
+                        b = alphas[idx+1]
+                        xn = ((1-a)**3 * x1 +
+                              3 * (1-a)**2 * a * (2 * x1 - ctr1[0]) +
+                              3 * (1-a) * a**2 * (2 * x2 - ctr2[0]) +
+                              a**3 * x2)
+                        xnn = ((1-b)**3 * x1 +
+                               3 * (1-b)**2 * b * (2 * x1 - ctr1[0]) +
+                               3 * (1-b) * b**2 * (2 * x2 - ctr2[0]) +
+                               b**3 * x2)
+                        yn = ((1-a)**3 * y1 +
+                              3 * (1-a)**2 * a * (2 * y1 - ctr1[1]) +
+                              3 * (1-a) * a**2 * (2 * y2 - ctr2[1]) +
+                              a**3 * y2)
+                        ynn = ((1-b)**3 * y1 +
+                               3 * (1-b)**2 * b * (2 * y1 - ctr1[1]) +
+                               3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
+                               b**3 * y2)
+                        zn = ((1-a)**3 * z1 +
+                              3 * (1-a)**2 * a * (2 * z1 - ctr1[2]) +
+                              3 * (1-a) * a**2 * (2 * z2 - ctr2[2]) +
+                              a**3 * z2)
+                        znn = ((1-b)**3 * z1 +
+                               3 * (1-b)**2 * b * (2 * z1 - ctr1[2]) +
+                               3 * (1-b) * b**2 * (2 * z2 - ctr2[2]) +
+                               b**3 * z2)
+                        ax.plot([xn, xnn], [yn, ynn], [zn, znn],
+                                 '-', color=color_n, linewidth=weight)
 
 
 def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
