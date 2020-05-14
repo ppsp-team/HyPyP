@@ -163,7 +163,7 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
 
     cmap_p = matplotlib.cm.get_cmap('Reds')
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
-    cmap_n = matplotlib.cm.get_cmap('Blues')
+    cmap_n = matplotlib.cm.get_cmap('Blues_r')
     norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
 
     for e1 in range(len(loc1)):
@@ -330,8 +330,8 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
 
     cmap_p = matplotlib.cm.get_cmap('Reds')
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
-    cmap_n = matplotlib.cm.get_cmap('Blues')    
-    norm_n = matplotlib.colors.Normalize(vmin=np.max(C[:]), vmax=-threshold)
+    cmap_n = matplotlib.cm.get_cmap('Blues_r')    
+    norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
 
 
     for e1 in range(len(loc1)):
