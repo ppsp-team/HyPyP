@@ -2,7 +2,7 @@
 # coding=utf-8
 # ==============================================================================
 # title           : getting_started.py
-# description     : Demonstration of PyPyP basics.
+# description     : Demonstration of HyPyP basics.
 # author          : Guillaume Dumas, Anaël Ayrolles
 # date            : 2020-03-18
 # version         : 1
@@ -121,7 +121,7 @@ fig = plt.figure()
 ax = fig.gca(projection='3d')
 ax.axis("off")
 plot_3d_heads(ax, vertices,faces)
-plot_sensors_3d(ax, loc1, loc2, lab1, lab2)
+plot_sensors_3d(ax, loc1, loc2)
 plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
