@@ -2,7 +2,7 @@
 # coding=utf-8
 # ==============================================================================
 # title           : getting_started.py
-# description     : Demonstration of PyPyP basics.
+# description     : Demonstration of HyPyP basics.
 # author          : Guillaume Dumas, Anaël Ayrolles
 # date            : 2020-03-18
 # version         : 1
