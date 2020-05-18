@@ -1,5 +1,10 @@
 site_name: HyPyP Docs
 
+markdown_extensions:
+  - admonition
+  - codehilite
+  - markdown_include.include
+
 theme:
   name: "material"
 

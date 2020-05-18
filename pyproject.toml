@@ -23,6 +23,7 @@ mkdocstrings = "^0.10.3"
 mkdocs-material = "^5.1.1"
 pylint = "^2.4.4"
 black = "^19.10b0"
+markdown-include = "^0.5.1"
 
 [build-system]
 requires = ["poetry>=0.12"]
