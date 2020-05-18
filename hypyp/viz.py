@@ -76,7 +76,7 @@ def adjust_loc(locs: np.ndarray, traZ: float=0.1) -> np.ndarray:
 
     return locs
 
- def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
+def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
     """
     Plots sensors in 2D with x representation for bad sensors.
 
@@ -173,7 +173,7 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
             x2 = loc2[e2, 0]
             y2 = loc2[e2, 1]
             color_p = cmap_p(norm_p(C[e1, e2]))
-            color_n = cmap_n(norm_n(C[e1, e2]))  
+            color_n = cmap_n(norm_n(C[e1, e2]))
             if C[e1, e2] >= threshold:
                 if steps <= 2:
                     weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
@@ -203,7 +203,7 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
                                3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
                                b**3 * y2)
                         plt.plot([xn, xnn], [yn, ynn],
-                                 '-', color=color_p, linewidth=weight)  
+                                 '-', color=color_p, linewidth=weight)
             if C[e1, e2] <= -threshold:
                 if steps <= 2:
                     weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
@@ -330,7 +330,7 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
 
     cmap_p = matplotlib.cm.get_cmap('Reds')
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.max(C[:]))
-    cmap_n = matplotlib.cm.get_cmap('Blues_r')    
+    cmap_n = matplotlib.cm.get_cmap('Blues_r')
     norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
 
 
@@ -343,7 +343,7 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
             y2 = loc2[e2, 1]
             z2 = loc2[e2, 2]
             color_p = cmap_p(norm_p(C[e1, e2]))
-            color_n = cmap_n(norm_n(C[e1, e2])) 
+            color_n = cmap_n(norm_n(C[e1, e2]))
             if C[e1, e2] >= threshold:
                 if steps <= 2:
                     weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.max(C[:]-threshold)))
