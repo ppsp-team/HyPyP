@@ -20,7 +20,7 @@ from astropy.stats import circmean
 import mne
 from mne.time_frequency import psd_welch
 from mne.io.constants import FIFF
-
+from typing import Union
 
 def PSD(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int, time_resolved: bool)-> tuple:
     """
@@ -156,44 +156,42 @@ def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
     return electrodes
 
 
-def simple_corr(data, frequencies, mode, time_resolved) -> np.ndarray:
+def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], mode: str, time_resolved: bool=True) -> np.ndarray:
     """
-    Computes frequency- and time-frequency-domain connectivity measures.
+    Computes frequency- or time-frequency-domain connectivity measures.
 
     Arguments:
-        data: array-like, shape is (2, n_epochs, n_channels, n_times)
-          The data from which to compute connectivity between two subjects
-        frequencies : dict | list
+        data:
+          shape = (2, n_epochs, n_channels, n_times). data for computing connectivity between two subjects
+        frequencies :
           frequencies of interest to compute connectivity with.
           If a dict, different frequency bands are used.
           e.g. {'alpha':[8,12],'beta':[12,20]}
           If a list, every integer frequency within the range is used.
-          e.g. [5,30]
-        mode: string
-          Connectivity measure to compute.
+          e.g. [5,30] means every integer frequency bin between 5 Hz and 30 Hz
+        mode:
+          Connectivity measure.
           'envelope': envelope correlation
-          'power': power correlation
+          'powerCorr': power correlation
           'plv': phase locking value
-          'ccorr': circular correlation coefficient
+          'CCorr': circular correlation coefficient
           'coh': coherence
           'imagcoh': imaginary coherence
-          'proj': projected power correlation
-        time_resolved: boolean
-          whether to collapse the time course.
-          if False, synchrony won't be averaged over epochs, and the time
+        time_resolved:
+          whether to collapse the time dimension. Default is True.
+          if False, connectivity won't be averaged over epochs, and the time
           course is maintained.
-          if True, synchrony is averaged over epochs.
+          if True, connectivity is averaged over epochs.
 
     Note:
         Connectivity is computed for all possible electrode pairs between
-        the dyad, but doesn't include intrabrain synchrony.
+        the dyad, including inter- and intra-brain connectivities.
 
     Returns:
-        result: array
-          Computed connectivity measure(s). The shape of each array is either
-          (n_freq, n_epochs, n_channels, n_channels) if epoch_wise is True
-          and time_resolved is False, or (n_freq, n_channels, n_channels)
-          in other conditions.
+        result:
+          Computed connectivities. The shape is either
+          (n_freq, n_epochs, n_channels, n_channels) if time_resolved is False,
+          or (n_freq, n_channels, n_channels) if time_resolved is True.
     """
     # Data consists of two lists of np.array (n_epochs, n_channels, epoch_size)
     assert data[0].shape[0] == data[1].shape[0], "Two streams much have the same lengths."
@@ -213,7 +211,19 @@ def simple_corr(data, frequencies, mode, time_resolved) -> np.ndarray:
 
 
 # helper function
-def _multiply_conjugate(real, imag, transpose_axes):
+def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
+    """
+    Helper function to compute the product of a complex array and its conjugate.
+    It is designed specifically to dissolve the last dimension of a four dimensional array.
+
+    Arguments:
+        real: the real part of the array.
+        imag: the imaginary part of the array.
+        transpose_axes: axes to transpose for matrix multiplication.
+
+    Returns:
+        product: the product of the array and its complex conjugate.
+    """
     formula = 'jilm,jimk->jilk'
     product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
            np.einsum(formula, imag, imag.transpose(transpose_axes)) + 1j * \
@@ -223,11 +233,36 @@ def _multiply_conjugate(real, imag, transpose_axes):
     return product
 
 
-def compute_sync(complex_signal, mode, time_resolved=True):
+def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool=True) -> np.ndarray:
     """
-      (improved) Computes synchrony from analytic signals.
+    Computes frequency- or time-frequency-domain connectivity measures from analytic signals.
 
+    Arguments:
+        complex_signal:
+          shape = (2, n_epochs, n_channels, n_freq_bins, n_times).
+          Analytic signals for computing connectivity between two subjects.
+
+        mode:
+          Connectivity measure.
+          'envelope': envelope correlation
+          'powerCorr': power correlation
+          'plv': phase locking value
+          'CCorr': circular correlation coefficient
+          'coh': coherence
+          'imagcoh': imaginary coherence
+        time_resolved:
+          whether to collapse the time dimension. Default is True.
+          if False, connectivity won't be averaged over epochs, and the time
+          course is maintained.
+          if True, connectivity is averaged over epochs.
+
+    Returns:
+        con:
+          Computed connectivities. The shape is either
+          (n_freq, n_epochs, n_channels, n_channels) if time_resolved is False,
+          or (n_freq, n_channels, n_channels) if time_resolved is True.
     """
+
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
         complex_signal.shape[3], complex_signal.shape[4]
 
@@ -283,7 +318,7 @@ def compute_sync(complex_signal, mode, time_resolved=True):
     else:
         ValueError('Metric type not supported.')
 
-    con = con.swapaxes(0, 1)  # n_freq x n_epoch x n_ch x n_ch
+    con = con.swapaxes(0, 1)  # n_freq x n_epoch x 2*n_ch x 2*n_ch
     if time_resolved:
         con = np.nanmean(con, axis=1)
 
@@ -292,18 +327,18 @@ def compute_sync(complex_signal, mode, time_resolved=True):
 
 def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
     """
-    Computes analytic signal per frequency bin using a multitaper method
-    implemented in MNE.
+    Computes analytic signal per frequency bin using the multitaper method.
 
     Arguments:
-        data: array-like, shape is (2, n_epochs, n_channels, n_times)
+        data:
+          shape is (2, n_epochs, n_channels, n_times)
           real-valued data to compute analytic signal from.
-        freq_range: list
-          a list of two specifying the frequency range
-
+        freq_range:
+          a list of two specifying the frequency range.
+          e.g. [5,30] means every integer frequency bin between 5 Hz and 30 Hz.
     Returns:
-        complex_signal: array, shape is
-          (2, n_epochs, n_channels, n_frequencies, n_times)
+        complex_signal:
+          shape is (2, n_epochs, n_channels, n_frequencies, n_times)
     """
     n_samp = data[0].shape[2]
 
@@ -319,20 +354,21 @@ def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
 
 def compute_freq_bands(data: np.ndarray, freq_bands: dict) -> np.ndarray:
     """
-    Computes analytic signal per frequency band using filtering
-    and hilbert transform
+    Computes analytic signal per frequency band using FIR filtering
+    and hilbert transform.
 
     Arguments:
-        data: array-like, shape is (2, n_epochs, n_channels, n_times)
+        data:
+          shape is (2, n_epochs, n_channels, n_times)
           real-valued data to compute analytic signal from.
-        freq_bands: dict
+        freq_bands:
           a dict specifying names and corresponding frequency ranges
-
+          e.g. {'alpha':[8,12],'beta':[12,20]} means computing for two frequency bands: 8-12 Hz for the alpha band and 12-20 Hz for beta band.
     Returns:
         complex_signal: array, shape is
           (2, n_epochs, n_channels, n_freq_bands, n_times)
     """
-    assert data[0].shape[0] == data[1].shape[0]
+    assert data[0].shape[0] == data[1].shape[0], "Two data streams should have the same number of trials."
     n_epoch = data[0].shape[0]
     n_ch = data[0].shape[1]
     n_samp = data[0].shape[2]
