@@ -204,11 +204,10 @@ def simple_corr(data, frequencies, mode, time_resolved) -> np.ndarray:
     # generate a list of per-epoch end values
     elif type(frequencies) == dict:
         values = compute_freq_bands(data, frequencies)
+    else:
+        TypeError("Please use a list or a dictionary for specifying frequencies.")
 
     result = compute_sync(values, mode, time_resolved)
-    # reshaping result to have n_freq dimension first
-    if not time_resolved:
-        result = result.swapaxes(0, 1)
 
     return result
 
@@ -284,8 +283,9 @@ def compute_sync(complex_signal, mode, time_resolved=True):
     else:
         ValueError('Metric type not supported.')
 
+    con = con.swapaxes(0, 1)  # n_freq x n_epoch x n_ch x n_ch
     if time_resolved:
-        con = np.nanmean(con, axis=0)
+        con = np.nanmean(con, axis=1)
 
     return con
 
