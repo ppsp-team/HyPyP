@@ -5,7 +5,7 @@ The **Hy**perscanning **Py**thon **P**ipeline
 [![PyPI version shields.io](https://img.shields.io/pypi/v/hypyp.svg)](https://pypi.org/project/HyPyP/) <a href="https://travis-ci.org/GHFC/HyPyP"><img src="https://travis-ci.org/GHFC/HyPyP.svg?branch=master"></a> [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Gitter](https://badges.gitter.im/GHFC/HyPyP.svg)](https://gitter.im/GHFC/HyPyP)
 
 ## Contributors
-Florence BRUN, Anaël AYROLLLES, Phoebe CHEN, Amir DJALOVSKI, Suzanne DIKKER, Guillaume DUMAS
+Florence BRUN, Anaël AYROLLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS
 
 ## Roadmap
 
@@ -19,9 +19,9 @@ Florence BRUN, Anaël AYROLLLES, Phoebe CHEN, Amir DJALOVSKI, Suzanne DIKKER, Gu
 
 📈 [stats.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/stats.py) — Statistics (permutations & cluster statistics) (Florence, Guillaume)
 
-🧠 [viz.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/viz.py) — Inter-brain visualization (Amir, Anaël, Florence, Guillaume)
+🧠 [viz.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/viz.py) — Inter-brain visualization (Anaël, Amir, Florence, Guillaume)
 
-🎓 [Tutorials](https://github.com/GHFC/HyPyP/tree/master/tutorial) — HPC & Multithreading (Guillaume)
+🎓 [Tutorials](https://github.com/GHFC/HyPyP/tree/master/tutorial) - Examples & documentation (Anaël, Florence, Yann, Guillaume)
 
 
 ## Installation
