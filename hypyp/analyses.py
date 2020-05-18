@@ -166,17 +166,17 @@ def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], m
         frequencies :
           frequencies of interest to compute connectivity with.
           If a dict, different frequency bands are used.
-          e.g. {'alpha':[8,12],'beta':[12,20]}
+          - e.g. {'alpha':[8,12],'beta':[12,20]}
           If a list, every integer frequency within the range is used.
-          e.g. [5,30] means every integer frequency bin between 5 Hz and 30 Hz
+          - e.g. [5,30] means every integer frequency bin between 5 Hz and 30 Hz
         mode:
-          Connectivity measure.
-          'envelope': envelope correlation
-          'powerCorr': power correlation
-          'plv': phase locking value
-          'CCorr': circular correlation coefficient
-          'coh': coherence
-          'imagcoh': imaginary coherence
+          Connectivity measure. Options are as follows.
+          - 'envelope': envelope correlation
+          - 'powerCorr': power correlation
+          - 'plv': phase locking value
+          - 'CCorr': circular correlation coefficient
+          - 'coh': coherence
+          - 'imagcoh': imaginary coherence
         time_resolved:
           whether to collapse the time dimension. Default is True.
           if False, connectivity won't be averaged over epochs, and the time
@@ -189,9 +189,12 @@ def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], m
 
     Returns:
         result:
-          Computed connectivities. The shape is either
-          (n_freq, n_epochs, n_channels, n_channels) if time_resolved is False,
-          or (n_freq, n_channels, n_channels) if time_resolved is True.
+          Connectivity matrix. The shape is either
+          (n_freq, n_epochs, 2*n_channels, 2*n_channels) if time_resolved is False,
+          or (n_freq, 2*n_channels, 2*n_channels) if time_resolved is True.
+
+          To extract inter-brain connectivities, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
+
     """
     # Data consists of two lists of np.array (n_epochs, n_channels, epoch_size)
     assert data[0].shape[0] == data[1].shape[0], "Two streams much have the same lengths."
@@ -258,9 +261,11 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool=True
 
     Returns:
         con:
-          Computed connectivities. The shape is either
-          (n_freq, n_epochs, n_channels, n_channels) if time_resolved is False,
-          or (n_freq, n_channels, n_channels) if time_resolved is True.
+          Connectivity matrix. The shape is either
+          (n_freq, n_epochs, 2*n_channels, 2*n_channels) if time_resolved is False,
+          or (n_freq, 2*n_channels, 2*n_channels) if time_resolved is True.
+
+          To extract inter-brain connectivities, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
     """
 
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
