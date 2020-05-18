@@ -156,7 +156,7 @@ def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
     return electrodes
 
 
-def simple_corr(data, frequencies, mode) -> np.ndarray:
+def simple_corr(data, frequencies, mode, time_resolved) -> np.ndarray:
     """
     Computes frequency- and time-frequency-domain connectivity measures.
 
@@ -178,6 +178,11 @@ def simple_corr(data, frequencies, mode) -> np.ndarray:
           'coh': coherence
           'imagcoh': imaginary coherence
           'proj': projected power correlation
+        time_resolved: boolean
+          whether to collapse the time course.
+          if False, synchrony won't be averaged over epochs, and the time
+          course is maintained.
+          if True, synchrony is averaged over epochs.
 
     Note:
         Connectivity is computed for all possible electrode pairs between
@@ -200,88 +205,87 @@ def simple_corr(data, frequencies, mode) -> np.ndarray:
     elif type(frequencies) == dict:
         values = compute_freq_bands(data, frequencies)
 
-    result = compute_sync(values, mode)
+    result = compute_sync(values, mode, time_resolved)
     # reshaping result to have n_freq dimension first
-    result = result.transpose()
+    if not time_resolved:
+        result = result.swapaxes(0, 1)
 
     return result
 
 
-def compute_sync(complex_signal, mode):
+# helper function
+def _multiply_conjugate(real, imag, transpose_axes):
+    formula = 'jilm,jimk->jilk'
+    product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
+           np.einsum(formula, imag, imag.transpose(transpose_axes)) + 1j * \
+           (np.einsum(formula, real, imag.transpose(transpose_axes)) - \
+            np.einsum(formula, imag, real.transpose(transpose_axes)))
+
+    return product
+
+
+def compute_sync(complex_signal, mode, time_resolved=True):
     """
       (improved) Computes synchrony from analytic signals.
 
     """
-    from tqdm import trange
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
         complex_signal.shape[3], complex_signal.shape[4]
 
-    # creating indices
-    idx1 = np.repeat(np.arange(0, n_ch, 1), n_ch)
-    idx2 = np.tile(np.arange(0, n_ch, 1), n_ch)
+    # calculate all epochs at once, the only downside is that the disk may not have enough space
+    complex_signal = complex_signal.transpose((1, 3, 0, 2, 4)).reshape(n_epoch, n_freq, 2 * n_ch, n_samp)
+    transpose_axes = (0, 1, 3, 2)
+    if mode.lower() is 'plv':
+        phase = complex_signal / np.abs(complex_signal)
+        c = np.real(phase)
+        s = np.imag(phase)
+        dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
+        con = abs(dphi) / n_samp
 
-    con = np.zeros((len(idx1), n_freq))
-    con_idx = con.shape[0]
+    elif mode.lower() is 'envelope':
+        env = np.abs(complex_signal)
+        mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
+        env = env - mu_env
+        con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
+               np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
 
-    if mode is 'envelope':
-        values = np.abs(complex_signal)
-        for this_epoch in trange(n_epoch):
-            this_con = np.array([_corr2_coeff_rowwise2(values[0][this_epoch, idx1[i], :, :],
-                                                       values[1][this_epoch, idx2[i], :, :])
-                                 if idx1[i] <= idx2[i] else np.zeros((n_freq,)) for i in range(con_idx)])
-            con += this_con
+    elif mode.lower() is 'powercorr':
+        env = np.abs(complex_signal)**2
+        mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
+        env = env - mu_env
+        con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
+               np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
 
-    elif mode is 'power':
-        values = np.abs(complex_signal) ** 2
-        for this_epoch in trange(n_epoch):
-            this_con = np.array([_corr2_coeff_rowwise2(values[0][this_epoch, idx1[i], :, :],
-                                                       values[1][this_epoch, idx2[i], :, :])
-                                 if idx1[i] <= idx2[i] else np.zeros((n_freq,)) for i in range(con_idx)])
-            con += this_con
+    elif mode.lower() is 'coh':
+        c = np.real(complex_signal)
+        s = np.imag(complex_signal)
+        amp = np.abs(complex_signal) ** 2
+        dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
+        con = np.abs(dphi) / np.sqrt(np.einsum('nil,nik->nilk', np.nansum(amp, axis=3),
+                                                    np.nansum(amp, axis=3)))
 
-    elif mode is 'plv':
-        values = complex_signal / np.abs(complex_signal)
-        for this_epoch in trange(n_epoch):
-            this_con = np.array([_plv(values[0][this_epoch, idx1[i], :, :],
-                                      values[1][this_epoch, idx2[i], :, :], axis=1)
-                                 if idx1[i] <= idx2[i] else np.zeros((n_freq,)) for i in range(con_idx)])
-            con += this_con
+    elif mode.lower() is 'imagcoh':
+        c = np.real(complex_signal)
+        s = np.imag(complex_signal)
+        amp = np.abs(complex_signal) ** 2
+        dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
+        con = np.abs(np.imag(dphi)) / np.sqrt(np.einsum('nil,nik->nilk', np.nansum(amp, axis=3),
+                                                    np.nansum(amp, axis=3)))
 
-    elif mode is 'ccorr':
-        values = np.angle(complex_signal)
-        for this_epoch in trange(n_epoch):
-            this_con = np.array([_circcorrcoef(values[0][this_epoch, idx1[i], :, :],
-                                               values[1][this_epoch, idx2[i], :, :], axis=1)
-                                 if idx1[i] <= idx2[i] else np.zeros((n_freq,)) for i in range(con_idx)])
-            con += this_con
+    elif mode.lower() is 'ccorr':
+        angle = np.angle(complex_signal)
+        mu_angle = circmean(angle, axis=3).reshape(n_epoch, n_freq, 2*n_ch, 1)
+        angle = np.sin(angle - mu_angle)
 
-    elif mode is 'proj':
-        values = complex_signal
-        for this_epoch in trange(n_epoch):
-            this_con = np.array([_proj_power_corr(values[0][this_epoch, idx1[i], :, :],
-                                                  values[1][this_epoch, idx2[i], :, :], axis=1)
-                                 if idx1[i] <= idx2[i] else np.zeros((n_freq,)) for i in range(con_idx)])
-            con += this_con
+        formula = 'nilm,nimk->nilk'
+        con = np.einsum(formula, angle, angle.transpose(transpose_axes)) / \
+                np.sqrt(np.einsum('nil,nik->nilk', np.sum(angle ** 2, axis=3), np.sum(angle ** 2, axis=3)))
 
-    elif mode is 'imagcoh':
-        values = complex_signal
-        for this_epoch in trange(n_epoch):
-            this_con = np.array([_icoh(values[0][this_epoch, idx1[i], :, :],
-                                       values[1][this_epoch, idx2[i], :, :], axis=1)
-                                 if idx1[i] <= idx2[i] else np.zeros((n_freq,)) for i in range(con_idx)])
-            con += this_con
-    elif mode is 'coh':
-        values = complex_signal
-        for this_epoch in trange(n_epoch):
-            this_con = np.array([_coh(values[0][this_epoch, idx1[i], :, :],
-                                      values[1][this_epoch, idx2[i], :, :], axis=1)
-                                 if idx1[i] <= idx2[i] else np.zeros((n_freq,)) for i in range(con_idx)])
-            con += this_con
+    else:
+        ValueError('Metric type not supported.')
 
-    # transform con to a matrix, and fill in the symmetrical values
-    con = con.reshape((n_ch, n_ch, -1))
-    i_lower = np.tril_indices(n_ch, -1)
-    con[i_lower] = con.transpose((1, 0, 2))[i_lower]
+    if time_resolved:
+        con = np.nanmean(con, axis=0)
 
     return con
 
@@ -347,164 +351,3 @@ def compute_freq_bands(data: np.ndarray, freq_bands: dict) -> np.ndarray:
     assert complex_signal.shape == (2, n_epoch, n_ch, len(freq_bands), n_samp)
 
     return complex_signal
-
-
-#  Synchrony metrics
-
-
-def _plv(X, Y, axis):
-    """
-    Phase Locking Value
-
-    Takes two vectors (phase) and compute their plv
-
-    adapted for 2D arrays
-    """
-    return np.abs(np.sum(np.exp(1j * (X - Y)), axis)) / X.shape[axis]
-
-
-def _coh(X, Y, axis):
-    """
-    Coherence
-
-    Instantaneous coherence computed from hilbert transformed signal,
-    then averaged across time points
-
-            |A1·A2·e^(i*delta_phase)|
-    Coh = -----------------------------
-               sqrt(A1^2 * A2^2)
-
-    A1: envelope of X
-    A2: envelope of Y
-    reference: Kida, Tetsuo, Emi Tanaka, and Ryusuke Kakigi.
-    “Multi-Dimensional Dynamics of Human Electromagnetic Brain Activity.”
-    Frontiers in Human Neuroscience 9 (January 19, 2016).
-    https://doi.org/10.3389/fnhum.2015.00713.
-    """
-    X_phase = np.angle(X)
-    Y_phase = np.angle(Y)
-
-    Sxy = np.abs(X) * np.abs(Y) * np.exp(1j * (X_phase - Y_phase))
-    Sxx = np.abs(X)**2
-    Syy = np.abs(Y)**2
-
-    coh = np.abs(Sxy/(np.sqrt(Sxx*Syy)))
-    return np.nanmean(coh, axis)
-
-
-def _icoh(X, Y, axis):
-    """
-    Coherence
-
-    Instantaneous imaginary coherence computed from hilbert transformed signal,
-    then averaged across time points
-
-            |A1·A2·sin(delta_phase)|
-    iCoh = -----------------------------
-               sqrt(A1^2 * A2^2)
-    """
-    X_phase = np.angle(X)
-    Y_phase = np.angle(Y)
-
-    iSxy = np.abs(X) * np.abs(Y) * np.sin(X_phase - Y_phase)
-    Sxx = np.abs(X)**2
-    Syy = np.abs(Y)**2
-
-    icoh = np.abs(iSxy/(np.sqrt(Sxx*Syy)))
-    return np.nanmean(icoh, axis)
-
-
-def _corr2_coeff_rowwise2(A, B):
-    """
-    compute row-wise correlation for 2D arrays
-    """
-    A_mA = A - A.mean(1)[:, None]
-    B_mB = B - B.mean(1)[:, None]
-    ssA = np.einsum('ij,ij->i', A_mA, A_mA)
-    ssB = np.einsum('ij,ij->i', B_mB, B_mB)
-    return np.einsum('ij,ij->i', A_mA, B_mB)/np.sqrt(ssA*ssB)
-
-
-# this function is modified from astropy in order to support 2D array operation
-def _circcorrcoef(alpha, beta, axis=None):
-    """ Computes the circular correlation coefficient between two array of
-    circular data.
-
-    Parameters
-    ----------
-    alpha : numpy.ndarray or Quantity
-        Array of circular (directional) data, which is assumed to be in
-        radians whenever ``data`` is ``numpy.ndarray``.
-    beta : numpy.ndarray or Quantity
-        Array of circular (directional) data, which is assumed to be in
-        radians whenever ``data`` is ``numpy.ndarray``.
-    axis : int, optional
-        Axis along which circular correlation coefficients are computed.
-        The default is the compute the circular correlation coefficient of the
-        flattened array.
-    weights_alpha : numpy.ndarray, optional
-        In case of grouped data, the i-th element of ``weights_alpha``
-        represents a weighting factor for each group such that
-        ``sum(weights_alpha, axis)`` equals the number of observations.
-        See [1]_, remark 1.4, page 22, for detailed explanation.
-    weights_beta : numpy.ndarray, optional
-        See description of ``weights_alpha``.
-
-    Returns
-    -------
-    rho : numpy.ndarray or dimensionless Quantity
-        Circular correlation coefficient.
-
-    References
-    ----------
-    .. [1] S. R. Jammalamadaka, A. SenGupta. "Topics in Circular Statistics".
-       Series on Multivariate Analysis, Vol. 5, 2001.
-    .. [2] C. Agostinelli, U. Lund. "Circular Statistics from 'Topics in
-       Circular Statistics (2001)'". 2015.
-       <https://cran.r-project.org/web/packages/CircStats/CircStats.pdf>
-    """
-    if(np.size(alpha, axis) != np.size(beta, axis)):
-        raise ValueError("alpha and beta must be arrays of the same size")
-
-    mu_a = circmean(alpha, axis)
-    mu_b = circmean(beta, axis)
-
-    sin_a = np.sin(alpha - mu_a[:, None])
-    sin_b = np.sin(beta - mu_b[:, None])
-    rho = np.sum(sin_a*sin_b, axis) / \
-        np.sqrt(np.sum(sin_a*sin_a, axis)*np.sum(sin_b*sin_b, axis))
-
-    return rho
-
-
-def _proj_power_corr(X, Y, axis):
-    # compute power proj corr using two complex signals
-    # adapted from Georgios Michalareas' MATLAB script
-    X_abs = np.abs(X)
-    Y_abs = np.abs(Y)
-
-    X_unit = X / X_abs
-    Y_unit = Y / Y_abs
-
-    X_abs_norm = (X_abs - np.nanmean(X_abs, axis)
-                  [:, None]) / np.nanstd(X_abs, axis)[:, None]
-    Y_abs_norm = (Y_abs - np.nanmean(Y_abs, axis)
-                  [:, None]) / np.nanstd(Y_abs, axis)[:, None]
-
-    X_ = X_abs / np.nanstd(X_abs, axis)[:, None]
-    Y_ = Y_abs / np.nanstd(Y_abs, axis)[:, None]
-
-    X_z = X_ * X_unit
-    Y_z = Y_ * Y_unit
-    projX = np.imag(X_z * np.conjugate(Y_unit))
-    projY = np.imag(Y_z * np.conjugate(X_unit))
-
-    projX_norm = (projX - np.nanmean(projX, axis)
-                  [:, None]) / np.nanstd(projX, axis)[:, None]
-    projY_norm = (projY - np.nanmean(projY, axis)
-                  [:, None]) / np.nanstd(projY, axis)[:, None]
-
-    proj_corr = (np.nanmean(projX_norm * Y_abs_norm, axis) +
-                 np.nanmean(projY_norm * X_abs_norm, axis)) / 2
-
-    return proj_corr
