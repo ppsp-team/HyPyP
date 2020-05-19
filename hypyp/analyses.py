@@ -11,18 +11,19 @@ PSD, intra- and inter-brain measures functions
 | date            | 2020-03-18 |
 """
 
-
-from collections import namedtuple
 import copy
+from collections import namedtuple
+from typing import Union
+
+import mne
 import numpy as np
 import scipy.signal as signal
 from astropy.stats import circmean
-import mne
-from mne.time_frequency import psd_welch
 from mne.io.constants import FIFF
-from typing import Union
+from mne.time_frequency import psd_welch
 
-def PSD(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int, time_resolved: bool)-> tuple:
+
+def PSD(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int, time_resolved: bool) -> tuple:
     """
     Computes the Power Spectral Density (PSD) on Epochs.
 
@@ -143,10 +144,10 @@ def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
         if ch['kind'] == FIFF.FIFFV_EOG_CH:
             names.remove(ch['ch_name'])
 
-    l = list(range(0, int(len(names)/2)))
+    l = list(range(0, int(len(names) / 2)))
     # l = list(range(0,62))
     L = []
-    M = len(l)*list(range(len(l), len(l)*2))
+    M = len(l) * list(range(len(l), len(l) * 2))
     for i in range(0, len(l)):
         for p in range(0, len(l)):
             L.append(l[i])
@@ -156,7 +157,8 @@ def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
     return electrodes
 
 
-def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], mode: str, time_resolved: bool=True) -> np.ndarray:
+def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], mode: str,
+                time_resolved: bool = True) -> np.ndarray:
     """
     Computes frequency- or time-frequency-domain connectivity measures.
 
@@ -165,18 +167,16 @@ def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], m
           shape = (2, n_epochs, n_channels, n_times). data for computing connectivity between two subjects
         frequencies :
           frequencies of interest to compute connectivity with.
+
           If a dict, different frequency bands are used.
-          - e.g. {'alpha':[8,12],'beta':[12,20]}
+          e.g. {'alpha':[8,12],'beta':[12,20]}
+
           If a list, every integer frequency within the range is used.
-          - e.g. [5,30] means every integer frequency bin between 5 Hz and 30 Hz
+          e.g. [5,30] means every integer frequency bin between 5 Hz and 30 Hz
+
         mode:
-          Connectivity measure. Options are as follows.
-          - 'envelope': envelope correlation
-          - 'powerCorr': power correlation
-          - 'plv': phase locking value
-          - 'CCorr': circular correlation coefficient
-          - 'coh': coherence
-          - 'imagcoh': imaginary coherence
+          Connectivity measure. Options are in notes.
+
         time_resolved:
           whether to collapse the time dimension. Default is True.
           if False, connectivity won't be averaged over epochs, and the time
@@ -186,6 +186,13 @@ def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], m
     Note:
         Connectivity is computed for all possible electrode pairs between
         the dyad, including inter- and intra-brain connectivities.
+        **Supported connectivity measures**:
+        - 'envelope': envelope correlation
+        - 'powerCorr': power correlation
+        - 'plv': phase locking value
+        - 'CCorr': circular correlation coefficient
+        - 'coh': coherence
+        - 'imagcoh': imaginary coherence
 
     Returns:
         result:
@@ -229,14 +236,14 @@ def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tupl
     """
     formula = 'jilm,jimk->jilk'
     product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
-           np.einsum(formula, imag, imag.transpose(transpose_axes)) + 1j * \
-           (np.einsum(formula, real, imag.transpose(transpose_axes)) - \
-            np.einsum(formula, imag, real.transpose(transpose_axes)))
+              np.einsum(formula, imag, imag.transpose(transpose_axes)) + 1j * \
+              (np.einsum(formula, real, imag.transpose(transpose_axes)) - \
+               np.einsum(formula, imag, real.transpose(transpose_axes)))
 
     return product
 
 
-def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool=True) -> np.ndarray:
+def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool = True) -> np.ndarray:
     """
     Computes frequency- or time-frequency-domain connectivity measures from analytic signals.
 
@@ -269,7 +276,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool=True
     """
 
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
-        complex_signal.shape[3], complex_signal.shape[4]
+                                    complex_signal.shape[3], complex_signal.shape[4]
 
     # calculate all epochs at once, the only downside is that the disk may not have enough space
     complex_signal = complex_signal.transpose((1, 3, 0, 2, 4)).reshape(n_epoch, n_freq, 2 * n_ch, n_samp)
@@ -286,14 +293,14 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool=True
         mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
         env = env - mu_env
         con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
-               np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
+              np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
 
     elif mode.lower() is 'powercorr':
-        env = np.abs(complex_signal)**2
+        env = np.abs(complex_signal) ** 2
         mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
         env = env - mu_env
         con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
-               np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
+              np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
 
     elif mode.lower() is 'coh':
         c = np.real(complex_signal)
@@ -301,7 +308,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool=True
         amp = np.abs(complex_signal) ** 2
         dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
         con = np.abs(dphi) / np.sqrt(np.einsum('nil,nik->nilk', np.nansum(amp, axis=3),
-                                                    np.nansum(amp, axis=3)))
+                                               np.nansum(amp, axis=3)))
 
     elif mode.lower() is 'imagcoh':
         c = np.real(complex_signal)
@@ -309,16 +316,16 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool=True
         amp = np.abs(complex_signal) ** 2
         dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
         con = np.abs(np.imag(dphi)) / np.sqrt(np.einsum('nil,nik->nilk', np.nansum(amp, axis=3),
-                                                    np.nansum(amp, axis=3)))
+                                                        np.nansum(amp, axis=3)))
 
     elif mode.lower() is 'ccorr':
         angle = np.angle(complex_signal)
-        mu_angle = circmean(angle, axis=3).reshape(n_epoch, n_freq, 2*n_ch, 1)
+        mu_angle = circmean(angle, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
         angle = np.sin(angle - mu_angle)
 
         formula = 'nilm,nimk->nilk'
         con = np.einsum(formula, angle, angle.transpose(transpose_axes)) / \
-                np.sqrt(np.einsum('nil,nik->nilk', np.sum(angle ** 2, axis=3), np.sum(angle ** 2, axis=3)))
+              np.sqrt(np.einsum('nil,nik->nilk', np.sum(angle ** 2, axis=3), np.sum(angle ** 2, axis=3)))
 
     else:
         ValueError('Metric type not supported.')
@@ -350,8 +357,9 @@ def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
     complex_signal = np.array([mne.time_frequency.tfr_array_multitaper(data[subject], sfreq=n_samp,
                                                                        freqs=np.arange(
                                                                            freq_range[0], freq_range[1], 1),
-                                                                       n_cycles=4,
-                                                                       zero_mean=False, use_fft=True, decim=1, output='complex')
+                                                                       n_cycles=4,zero_mean=False, use_fft=True,
+                                                                       decim=1,
+                                                                       output='complex')
                                for subject in range(2)])
 
     return complex_signal
