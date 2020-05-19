@@ -15,7 +15,6 @@ def test_metaconn_matrix_2brains(epochs):
     """
     Test metaconn_matrix_2brains
     """
-    # TODO: test metaconn_matrix and con_matrix
     # taking random freq-of-interest to test metaconn_freq
     freq = [11, 12, 13]
     # computing ch_con and sensors pairs for metaconn calculation
@@ -60,71 +59,6 @@ def test_metaconn_matrix_2brains(epochs):
             assert metaconn_freq[n+tot*i, p+tot*i] == ch_con_freq[n, p-tot]
 
 
-def test_simple_corr(epochs):
-    """
-    Test simple_corr timing
-    """
-    from time import time
-
-    # taking random freq-of-interest to test CSD measures
-    frequencies = [11, 12, 13]
-    # Note: fmin and fmax excluded, here n_freq = 1
-    # (for MNE and Phoebe functions)
-
-    # intra-ind CSD
-    # data = np.array([epo1, epo1])
-    # data_mne = epo1
-    # sensors = None
-
-    # inter-ind CSD
-    data = np.array([epochs.epo1, epochs.epo2])
-    data_mne = epochs.epoch_merge
-
-    l = list(range(0,
-                   int(len(epochs.epoch_merge.info['ch_names'])/2)))
-    L = []
-    M = []
-    for i in range(0, len(l)):
-        for p in range(0, len(l)):
-            L.append(l[i])
-    M = len(l)*list(range(len(l), len(l)*2))
-    sensors = (np.array(L), np.array(M))
-
-    # mode to transform signal to analytic signal
-    # on which synchrony is computed
-    # mode = 'fourier'
-    mode = 'multitaper'
-
-    # trace running time
-    start = time()
-
-    # Phoebe: multitaper: mne.time_frequency.tfr_array_multitaper
-    # BUT step = 1s, while coh (including the multitaper step) < 1s...
-    # optimized in MNE
-
-    plv_mne, _, _, _, _ = mne.connectivity.spectral_connectivity(data=data_mne,
-                                                                 method='plv',
-                                                                 mode=mode,
-                                                                 indices=sensors,
-                                                                 sfreq=500,
-                                                                 fmin=11,
-                                                                 fmax=13,
-                                                                 faverage=True)
-    plv_mne_time = time()
-    print("plv_mne computed in {0} seconds".format(plv_mne_time-start))
-
-    # coh = analyses.simple_corr(data, frequencies, mode='plv')
-    analytical_signal = analyses.compute_single_freq(data, frequencies)
-    analytical_signal_time = time()
-    print("analytical_signal computed in {0} seconds".format(analytical_signal_time-plv_mne_time))
-    plv_phoebe = analyses.compute_sync(analytical_signal, mode='plv')
-    plv_phoebe_time = time()
-    print("plv_phoebe computed in {0} seconds".format(plv_phoebe_time-analytical_signal_time))
-
-    assert plv_mne.shape[0] == plv_phoebe.shape[0] * plv_phoebe.shape[1]
-    assert plv_mne.shape[1] == plv_phoebe.shape[2]
-
-
 def test_ICA(epochs):
     """
     Test ICA fit, ICA choice comp and ICA apply
@@ -135,8 +69,6 @@ def test_ICA(epochs):
     for i in range(0, len(icas)-1):
         mne.preprocessing.ICA.get_components(
             icas[i]).shape == mne.preprocessing.ICA.get_components(icas[i+1]).shape
-    # check corrmap ok on the 2 subj
-    # check component choice good cf. compare with find eog or find ecg comp
     # cleaned_epochs_ICA = prep.ICA_choice_comp(icas, ep) # pb interactive window
     # check signal better after than before
     # check bad channels are not deleted
@@ -154,14 +86,6 @@ def test_AR_local(epochs):
     assert len(epochs.epo1) >= len(cleaned_epochs_AR[0])
     assert len(epochs.epo2) >= len(cleaned_epochs_AR[1])
     assert len(cleaned_epochs_AR[0]) == len(cleaned_epochs_AR[1])
-    # modify parameters cf. Denis email and check if works
-
-
-# def test_filt():
-#     check that output is always Raw (list of raws)
-#     and cf. PSD: lfreq and hfreq OK
-#     can not test it cf. do not have raws,
-#     but only epochs for examples.
 
 
 def test_PSD(epochs):
@@ -204,8 +128,7 @@ def test_indexes_connectivity(epochs):
     electrodes_hyper = analyses.indexes_connectivity_interbrains(
         epochs.epoch_merge)
     assert len(electrodes_hyper) == length*length
-    # format that do not work for mne.spectral_connectivity #TODO: change that
-    # cf. do not needed for Phoebe simple_corr function!
+    # format that do not work for mne.spectral_connectivity
 
 
 def test_stats(epochs):
@@ -289,11 +212,3 @@ def test_utils(epochs):
     for i in range(0, len(ep_hyper_data[ne][ch_index1])):
         assert ep_hyper_data[ne][ch_index1][i] == epo1_data[ne][nch][i]
         assert ep_hyper_data[ne][ch_index2][i] == epo2_data[ne][nch][i]
-
-    # split test
-    # but done on raws... to preprocess subjects indep...
-    # to be adapted for epochs?
-    # raw_1020_S1, raw_1020_S2 = utils.merge(raw_merge)
-    # check that raw1 = epo1 directly?
-
-# test viz
