@@ -52,6 +52,8 @@ lab2 = [ch for ch in epo2.ch_names]
 loc2 = transform(loc2,traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
 loc2 = adjust_loc(loc2, traZ=+0.01)
 
+n_ch = len(epo1.ch_names)
+
 # Equalize epochs size
 mne.epochs.equalize_epoch_counts([epo1, epo2])
 
@@ -88,7 +90,8 @@ complex_signal = compute_freq_bands(data, freq_bands)
 result = compute_sync(complex_signal,
                       mode='plv')
 
-theta, alpha_low, alpha_high, beta, gamma = result
+# slicing to get the inter-brain part of the matrix
+theta, alpha_low, alpha_high, beta, gamma = result[:, 0:n_ch, n_ch:2*n_ch]
 
 C = (alpha_low - np.mean(alpha_low[:])) / np.std(alpha_low[:])
 
