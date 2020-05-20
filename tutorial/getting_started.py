@@ -85,11 +85,14 @@ complex_signal = compute_freq_bands(data, freq_bands)
 
 # Compute frequency- and time-frequency-domain connectivity measures.
 result = compute_sync(complex_signal,
-                      mode='plv')
+                      mode='ccorr')
 
 theta, alpha_low, alpha_high, beta, gamma = result
 
-C = (alpha_low - np.mean(alpha_low[:])) / np.std(alpha_low[:])
+values = alpha_low
+values -= np.diag(np.diag(values))
+
+C = (values - np.mean(values[:])) / np.std(values[:])
 
 # Defined bad channel for viz test
 epo1.info['bads'] = ['F8', 'Fp2', 'Cz', 'O2']
