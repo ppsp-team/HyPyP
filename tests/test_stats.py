@@ -137,14 +137,14 @@ def test_stats(epochs):
     """
     fmin = 10
     fmax = 13
-    PSDTuple = analyses.PSD(epochs.epo1,
+    psd_tuple = analyses.pow(epochs.epo1,
                             fmin, fmax,
                             n_fft=256,
                             n_per_seg=None,
                             time_resolved=False)
-    PSD_welch = PSDTuple.PSD_welch
+    psd = psd_tuple.psd
 
-    statsCondTuple = stats.statsCond(PSD_welch, epochs.epo1, 3000, 0.05, 0.05)
+    statsCondTuple = stats.statsCond(psd, epochs.epo1, 3000, 0.05, 0.05)
     assert statsCondTuple.T_obs.shape[0] == len(epochs.epo1.info['ch_names'])
     # test shape assertion in the function
     # PSDTuple = analyses.PSD(epochs.epo1,
@@ -159,15 +159,15 @@ def test_stats(epochs):
         epochs.epo1.info['ch_names'])
     # test T_obs_plot with viz function
 
-    PSDTuple2 = analyses.PSD(epochs.epo2,
+    psd_tuple2 = analyses.pow(epochs.epo2,
                              fmin, fmax,
                              n_fft=256,
                              n_per_seg=None,
                              time_resolved=False)
-    PSD_welch2 = PSDTuple2.PSD_welch
-    freqs_mean = PSDTuple2.freqs_mean
+    psd2 = psd_tuple2.psd
+    freqs_mean = psd_tuple2.freqs_mean
 
-    data = [PSD_welch, PSD_welch2]
+    data = [psd, psd2]
     con_matrixTuple = stats.con_matrix(epochs.epo1, freqs_mean, draw=False)
     statscondClusterTuple = stats.statscondCluster(data,
                                                    freqs_mean,
