@@ -102,7 +102,7 @@ def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: lis
       if ch in bads_epo1:
         index_ch = epo1.ch_names.index(ch)
         x1, y1, z1 = loc1[index_ch, :]
-        plt.plot(x1, y1, marker='x', color='black')
+        plt.plot(x1, y1, marker='x', color='dimgrey')
         if lab1:
           plt.text(x1+0.012, y1+0.012, lab1[index_ch],
                    horizontalalignment='center',
@@ -110,7 +110,7 @@ def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: lis
       else:
         index_ch = epo1.ch_names.index(ch)
         x1, y1, z1 = loc1[index_ch, :]
-        plt.plot(x1, y1, marker='o', color='black')
+        plt.plot(x1, y1, marker='o', color='dimgrey')
         if lab1:
           plt.text(x1+0.012, y1+0.012, lab1[index_ch],
                    horizontalalignment='center',
@@ -120,7 +120,7 @@ def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: lis
       if ch in bads_epo2:
         index_ch = epo2.ch_names.index(ch)
         x2, y2, z2 = loc2[index_ch, :]
-        plt.plot(x2, y2, marker='x', color='black')
+        plt.plot(x2, y2, marker='x', color='dimgrey')
         if lab2:
           plt.text(x2+0.012, y2+0.012, lab2[index_ch],
                    horizontalalignment='center',
@@ -128,7 +128,7 @@ def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: lis
       else:
         index_ch = epo2.ch_names.index(ch)
         x2, y2, z2 = loc2[index_ch, :]
-        plt.plot(x2, y2, marker='o', color='black')
+        plt.plot(x2, y2, marker='o', color='dimgrey')
         if lab2:
           plt.text(x2+0.012, y2+0.012, lab2[index_ch],
                    horizontalalignment='center',
@@ -263,7 +263,7 @@ def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], 
       if ch in bads_epo1:
         index_ch = epo1.ch_names.index(ch)
         x1, y1, z1 = loc1[index_ch, :]
-        ax.scatter(x1, y1, z1, marker='x', color='black')
+        ax.scatter(x1, y1, z1, marker='x', color='dimgrey')
         if lab1:
             if lab1:
                 ax.text(x1+0.012, y1+0.012 ,z1, lab1[index_ch],
@@ -272,7 +272,7 @@ def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], 
       else:
         index_ch = epo1.ch_names.index(ch)
         x1, y1, z1 = loc1[index_ch, :]
-        ax.scatter(x1, y1, z1, marker='o', color='black')
+        ax.scatter(x1, y1, z1, marker='o', color='dimgrey')
         if lab1:
                 ax.text(x1+0.012, y1+0.012 ,z1, lab1[index_ch],
                         horizontalalignment='center',
@@ -282,7 +282,7 @@ def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], 
       if ch in bads_epo2:
         index_ch = epo2.ch_names.index(ch)
         x2, y2, z2 = loc2[index_ch, :]
-        ax.scatter(x2, y2, z2, marker='x', color='black')
+        ax.scatter(x2, y2, z2, marker='x', color='dimgrey')
         if lab2:
             if lab2:
                 ax.text(x2+0.012, y2+0.012 ,z2, lab2[index_ch],
@@ -291,7 +291,7 @@ def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], 
       else:
         index_ch = epo2.ch_names.index(ch)
         x2, y2, z2 = loc2[index_ch, :]
-        ax.scatter(x2, y2, z2, marker='o', color='black')
+        ax.scatter(x2, y2, z2, marker='o', color='dimgrey')
         if lab2:
                 ax.text(x2+0.012, y2+0.012 ,z2, lab2[index_ch],
                         horizontalalignment='center',
