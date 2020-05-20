@@ -281,28 +281,28 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool = Tr
     # calculate all epochs at once, the only downside is that the disk may not have enough space
     complex_signal = complex_signal.transpose((1, 3, 0, 2, 4)).reshape(n_epoch, n_freq, 2 * n_ch, n_samp)
     transpose_axes = (0, 1, 3, 2)
-    if mode.lower() is 'plv':
+    if mode.lower() == 'plv':
         phase = complex_signal / np.abs(complex_signal)
         c = np.real(phase)
         s = np.imag(phase)
         dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
         con = abs(dphi) / n_samp
 
-    elif mode.lower() is 'envelope':
+    elif mode.lower() == 'envelope':
         env = np.abs(complex_signal)
         mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
         env = env - mu_env
         con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
               np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
 
-    elif mode.lower() is 'powercorr':
+    elif mode.lower() == 'powercorr':
         env = np.abs(complex_signal) ** 2
         mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
         env = env - mu_env
         con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
               np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
 
-    elif mode.lower() is 'coh':
+    elif mode.lower() == 'coh':
         c = np.real(complex_signal)
         s = np.imag(complex_signal)
         amp = np.abs(complex_signal) ** 2
@@ -310,7 +310,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool = Tr
         con = np.abs(dphi) / np.sqrt(np.einsum('nil,nik->nilk', np.nansum(amp, axis=3),
                                                np.nansum(amp, axis=3)))
 
-    elif mode.lower() is 'imagcoh':
+    elif mode.lower() == 'imagcoh':
         c = np.real(complex_signal)
         s = np.imag(complex_signal)
         amp = np.abs(complex_signal) ** 2
@@ -318,7 +318,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool = Tr
         con = np.abs(np.imag(dphi)) / np.sqrt(np.einsum('nil,nik->nilk', np.nansum(amp, axis=3),
                                                         np.nansum(amp, axis=3)))
 
-    elif mode.lower() is 'ccorr':
+    elif mode.lower() == 'ccorr':
         angle = np.angle(complex_signal)
         mu_angle = circmean(angle, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
         angle = np.sin(angle - mu_angle)
