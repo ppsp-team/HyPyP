@@ -176,9 +176,8 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
         for e2 in range(len(loc2)):
             x2 = loc2[e2, 0]
             y2 = loc2[e2, 1]
-            color_p = cmap_p(norm_p(C[e1, e2]))
-            color_n = cmap_n(norm_n(C[e1, e2]))
             if C[e1, e2] >= threshold:
+                color_p = cmap_p(norm_p(C[e1, e2]))
                 if steps <= 2:
                     weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
                     plt.plot([loc1[e1, 0], loc2[e2, 0]],
@@ -209,6 +208,7 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
                         plt.plot([xn, xnn], [yn, ynn],
                                  '-', color=color_p, linewidth=weight)
             if C[e1, e2] <= -threshold:
+                color_n = cmap_n(norm_n(C[e1, e2]))
                 if steps <= 2:
                     weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
                     plt.plot([loc1[e1, 0], loc2[e2, 0]],
@@ -341,7 +341,6 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
     cmap_n = matplotlib.cm.get_cmap('Blues_r')
     norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
 
-
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
         y1 = loc1[e1, 1]
@@ -350,9 +349,8 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
             x2 = loc2[e2, 0]
             y2 = loc2[e2, 1]
             z2 = loc2[e2, 2]
-            color_p = cmap_p(norm_p(C[e1, e2]))
-            color_n = cmap_n(norm_n(C[e1, e2]))
             if C[e1, e2] >= threshold:
+                color_p = cmap_p(norm_p(C[e1, e2]))
                 if steps <= 2:
                     weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
                     ax.plot([loc1[e1, 0], loc2[e2, 0]],
@@ -392,6 +390,7 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
                         ax.plot([xn, xnn], [yn, ynn], [zn, znn],
                                  '-', color=color_p, linewidth=weight)
             if C[e1, e2] <= -threshold:
+                color_n = cmap_n(norm_n(C[e1, e2]))
                 if steps <= 2:
                     weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
                     ax.plot([loc1[e1, 0], loc2[e2, 0]],
