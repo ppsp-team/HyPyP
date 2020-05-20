@@ -58,4 +58,4 @@ wrapt==1.11.2
 zipp==3.1.0; python_version < "3.8"
 meshio==4.0.13
 markdown-include==0.5.1
-hypyp==0.1.1
+hypyp==0.1.2

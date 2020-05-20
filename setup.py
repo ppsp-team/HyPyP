@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="HyPyP",
-    version="0.1.1",
+    version="0.1.2",
     author="Anaël AYROLLLES, Florence BRUN, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS",
     author_email="anael.ayrollles@pasteur.fr, florence.brun@pasteur.fr, phoebe.chen1117@gmail.com, amir.djv@gmail.com, dev@yannbeauxis.net, suzanne.dikker@nyu.edu, guillaume.dumas@pasteur.fr",
     maintainer="Guillaume DUMAS",
