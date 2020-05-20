@@ -76,11 +76,15 @@ def adjust_loc(locs: np.ndarray, traZ: float=0.1) -> np.ndarray:
 
     return locs
 
-def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
+def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
     """
     Plots sensors in 2D with x representation for bad sensors.
 
     Arguments:
+        epo1: mne.Epochs
+          Epochs object to get channels information
+        epo2: mne.Epochs
+          Epochs object to get channels information
         loc1: arrays of shape (n_sensors, 3)
           3d coordinates of the sensors
         loc2: arrays of shape (n_sensors, 3)
@@ -93,9 +97,9 @@ def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: lis
     Returns:
         None: plot the sensors in 2D within the current axis.
     """
-    bads_epo1 =[]
+    bads_epo1 = []
     bads_epo1 = epo1.info['bads']
-    bads_epo2 =[]
+    bads_epo2 = []
     bads_epo2 = epo2.info['bads']
 
     for ch in epo1.ch_names:
@@ -172,9 +176,8 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
         for e2 in range(len(loc2)):
             x2 = loc2[e2, 0]
             y2 = loc2[e2, 1]
-            color_p = cmap_p(norm_p(C[e1, e2]))
-            color_n = cmap_n(norm_n(C[e1, e2]))
             if C[e1, e2] >= threshold:
+                color_p = cmap_p(norm_p(C[e1, e2]))
                 if steps <= 2:
                     weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
                     plt.plot([loc1[e1, 0], loc2[e2, 0]],
@@ -205,6 +208,7 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
                         plt.plot([xn, xnn], [yn, ynn],
                                  '-', color=color_p, linewidth=weight)
             if C[e1, e2] <= -threshold:
+                color_n = cmap_n(norm_n(C[e1, e2]))
                 if steps <= 2:
                     weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
                     plt.plot([loc1[e1, 0], loc2[e2, 0]],
@@ -236,12 +240,16 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
                                  '-', color=color_n, linewidth=weight)
 
 
-def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
+def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
     """
     Plots sensors in 3D with x representation for bad sensors.
 
     Arguments:
         ax: Matplotlib axis created with projection='3d'
+        epo1: mne.Epochs
+          Epochs object to get channels information
+        epo2: mne.Epochs
+          Epochs object to get channels information
         loc1: arrays of shape (n_sensors, 3)
           3d coordinates of the sensors
         loc2: arrays of shape (n_sensors, 3)
@@ -333,7 +341,6 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
     cmap_n = matplotlib.cm.get_cmap('Blues_r')
     norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
 
-
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
         y1 = loc1[e1, 1]
@@ -342,9 +349,8 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
             x2 = loc2[e2, 0]
             y2 = loc2[e2, 1]
             z2 = loc2[e2, 2]
-            color_p = cmap_p(norm_p(C[e1, e2]))
-            color_n = cmap_n(norm_n(C[e1, e2]))
             if C[e1, e2] >= threshold:
+                color_p = cmap_p(norm_p(C[e1, e2]))
                 if steps <= 2:
                     weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
                     ax.plot([loc1[e1, 0], loc2[e2, 0]],
@@ -384,6 +390,7 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
                         ax.plot([xn, xnn], [yn, ynn], [zn, znn],
                                  '-', color=color_p, linewidth=weight)
             if C[e1, e2] <= -threshold:
+                color_n = cmap_n(norm_n(C[e1, e2]))
                 if steps <= 2:
                     weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
                     ax.plot([loc1[e1, 0], loc2[e2, 0]],
@@ -506,27 +513,27 @@ def plot_3d_heads(ax, vertices, faces):
     Returns:
         None : plot the head faces in 3D within the current axis.
     """
-    x_V = vertices[:,2]
-    y_V = vertices[:,0]
-    z_V = vertices[:,1]
+    x_V = vertices[:, 2]
+    y_V = vertices[:, 0]
+    z_V = vertices[:, 1]
     for F in range(len(faces)):
-        V0 = faces[F,0]
-        V1 = faces[F,1]
-        V2 = faces[F,2]
-        V3 = faces[F,3]
-        ax.plot([x_V[V0],x_V[V1]],
-                [y_V[V0],y_V[V1]],
-                [z_V[V0],z_V[V1]],
+        V0 = faces[F, 0]
+        V1 = faces[F, 1]
+        V2 = faces[F, 2]
+        V3 = faces[F, 3]
+        ax.plot([x_V[V0], x_V[V1]],
+                [y_V[V0], y_V[V1]],
+                [z_V[V0], z_V[V1]],
                 '-', color= 'grey', linewidth=0.3)
-        ax.plot([x_V[V1],x_V[V2]],
-                [y_V[V1],y_V[V2]],
-                [z_V[V1],z_V[V2]],
+        ax.plot([x_V[V1], x_V[V2]],
+                [y_V[V1], y_V[V2]],
+                [z_V[V1], z_V[V2]],
                 '-', color= 'grey', linewidth=0.3)
-        ax.plot([x_V[V2],x_V[V3]],
-                [y_V[V2],y_V[V3]],
-                [z_V[V2],z_V[V3]],
+        ax.plot([x_V[V2], x_V[V3]],
+                [y_V[V2], y_V[V3]],
+                [z_V[V2], z_V[V3]],
                 '-', color= 'grey', linewidth=0.3)
-        ax.plot([x_V[V3],x_V[V1]],
-                [y_V[V3],y_V[V1]],
-                [z_V[V3],z_V[V1]],
+        ax.plot([x_V[V3], x_V[V1]],
+                [y_V[V3], y_V[V1]],
+                [z_V[V3], z_V[V1]],
                 '-', color= 'grey', linewidth=0.3)

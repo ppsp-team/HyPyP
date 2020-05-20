@@ -94,24 +94,24 @@ def test_PSD(epochs):
     """
     fmin = 10
     fmax = 13
-    PSDTuple = analyses.PSD(epochs.epo1,
+    psd_tuple = analyses.pow(epochs.epo1,
                             fmin, fmax,
                             n_fft=256,
                             n_per_seg=None,
-                            time_resolved=True)
-    PSD_welch = PSDTuple.PSD_welch
-    freqs_mean = PSDTuple.freqs_mean
-    assert type(PSD_welch) == np.ndarray
-    assert PSD_welch.shape == (
-        len(epochs.epo1.info['ch_names']), len(freqs_mean))
-    PSDTuple = analyses.PSD(epochs.epo1,
+                            epochs_average=True)
+    psd = psd_tuple.psd
+    freq_list = psd_tuple.freq_list
+    assert type(psd) == np.ndarray
+    assert psd.shape == (
+        len(epochs.epo1.info['ch_names']), len(freq_list))
+    psd_tuple = analyses.pow(epochs.epo1,
                             fmin, fmax,
                             n_fft=256,
                             n_per_seg=None,
-                            time_resolved=False)
-    PSD_welch = PSDTuple.PSD_welch
-    assert PSD_welch.shape == (len(epochs.epo1), len(
-        epochs.epo1.info['ch_names']), len(freqs_mean))
+                            epochs_average=False)
+    psd = psd_tuple.psd
+    assert psd.shape == (len(epochs.epo1), len(
+        epochs.epo1.info['ch_names']), len(freq_list))
 
 
 def test_indexes_connectivity(epochs):
@@ -137,40 +137,33 @@ def test_stats(epochs):
     """
     fmin = 10
     fmax = 13
-    PSDTuple = analyses.PSD(epochs.epo1,
-                            fmin, fmax,
-                            n_fft=256,
-                            n_per_seg=None,
-                            time_resolved=False)
-    PSD_welch = PSDTuple.PSD_welch
+    psd_tuple = analyses.pow(epochs.epo1,
+                             fmin, fmax,
+                             n_fft=256,
+                             n_per_seg=None,
+                             epochs_average=False)
+    psd = psd_tuple.psd
 
-    statsCondTuple = stats.statsCond(PSD_welch, epochs.epo1, 3000, 0.05, 0.05)
+    statsCondTuple = stats.statsCond(psd, epochs.epo1, 3000, 0.05, 0.05)
     assert statsCondTuple.T_obs.shape[0] == len(epochs.epo1.info['ch_names'])
-    # test shape assertion in the function
-    # PSDTuple = analyses.PSD(epochs.epo1,
-    #                         fmin, fmax,
-    #                         time_resolved=True)
-    # PSD_welch2 = PSDTuple.PSD_welch
-    # statsCondTuple = stats.statsCond(PSD_welch2, epochs.epo1, 3000, 0.05, 0.05)
 
     for i in range(0, len(statsCondTuple.p_values)):
         assert statsCondTuple.p_values[i] <= statsCondTuple.adj_p[1][i]
     assert statsCondTuple.T_obs_plot.shape[0] == len(
         epochs.epo1.info['ch_names'])
-    # test T_obs_plot with viz function
 
-    PSDTuple2 = analyses.PSD(epochs.epo2,
-                             fmin, fmax,
-                             n_fft=256,
-                             n_per_seg=None,
-                             time_resolved=False)
-    PSD_welch2 = PSDTuple2.PSD_welch
-    freqs_mean = PSDTuple2.freqs_mean
+    psd_tuple2 = analyses.pow(epochs.epo2,
+                              fmin, fmax,
+                              n_fft=256,
+                              n_per_seg=None,
+                              epochs_average=False)
+    psd2 = psd_tuple2.psd
+    freq_list = psd_tuple2.freq_list
 
-    data = [PSD_welch, PSD_welch2]
-    con_matrixTuple = stats.con_matrix(epochs.epo1, freqs_mean, draw=False)
+    data = [psd, psd2]
+    con_matrixTuple = stats.con_matrix(epochs.epo1, freq_list, draw=False)
     statscondClusterTuple = stats.statscondCluster(data,
-                                                   freqs_mean,
+                                                   freq_list,
                                                    scipy.sparse.bsr_matrix(
                                                        con_matrixTuple.ch_con_freq),
                                                    tail=0,
