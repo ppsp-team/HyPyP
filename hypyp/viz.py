@@ -93,9 +93,9 @@ def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: lis
     Returns:
         None: plot the sensors in 2D within the current axis.
     """
-    bads_epo1 =[]
+    bads_epo1 = []
     bads_epo1 = epo1.info['bads']
-    bads_epo2 =[]
+    bads_epo2 = []
     bads_epo2 = epo2.info['bads']
 
     for ch in epo1.ch_names:
@@ -506,27 +506,27 @@ def plot_3d_heads(ax, vertices, faces):
     Returns:
         None : plot the head faces in 3D within the current axis.
     """
-    x_V = vertices[:,2]
-    y_V = vertices[:,0]
-    z_V = vertices[:,1]
+    x_V = vertices[:, 2]
+    y_V = vertices[:, 0]
+    z_V = vertices[:, 1]
     for F in range(len(faces)):
-        V0 = faces[F,0]
-        V1 = faces[F,1]
-        V2 = faces[F,2]
-        V3 = faces[F,3]
-        ax.plot([x_V[V0],x_V[V1]],
-                [y_V[V0],y_V[V1]],
-                [z_V[V0],z_V[V1]],
+        V0 = faces[F, 0]
+        V1 = faces[F, 1]
+        V2 = faces[F, 2]
+        V3 = faces[F, 3]
+        ax.plot([x_V[V0], x_V[V1]],
+                [y_V[V0], y_V[V1]],
+                [z_V[V0], z_V[V1]],
                 '-', color= 'grey', linewidth=0.3)
-        ax.plot([x_V[V1],x_V[V2]],
-                [y_V[V1],y_V[V2]],
-                [z_V[V1],z_V[V2]],
+        ax.plot([x_V[V1], x_V[V2]],
+                [y_V[V1], y_V[V2]],
+                [z_V[V1], z_V[V2]],
                 '-', color= 'grey', linewidth=0.3)
-        ax.plot([x_V[V2],x_V[V3]],
-                [y_V[V2],y_V[V3]],
-                [z_V[V2],z_V[V3]],
+        ax.plot([x_V[V2], x_V[V3]],
+                [y_V[V2], y_V[V3]],
+                [z_V[V2], z_V[V3]],
                 '-', color= 'grey', linewidth=0.3)
-        ax.plot([x_V[V3],x_V[V1]],
-                [y_V[V3],y_V[V1]],
-                [z_V[V3],z_V[V1]],
+        ax.plot([x_V[V3], x_V[V1]],
+                [y_V[V3], y_V[V1]],
+                [z_V[V3], z_V[V1]],
                 '-', color= 'grey', linewidth=0.3)

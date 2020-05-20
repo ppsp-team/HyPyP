@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import mne
-import meshio
 
 import mpl3d
 from mpl3d import glm
@@ -42,15 +41,15 @@ freq_bands = OrderedDict(freq_bands)  # Force to keep order
 # Loading data files & extracting sensor infos
 epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
 loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-lab1 = [ch for ch in epo1.ch_names]
-loc1 = transform(loc1,traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
+loc1 = transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
 loc1 = adjust_loc(loc1, traZ=+0.01)
+lab1 = [ch for ch in epo1.ch_names]
 
 epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
 loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-lab2 = [ch for ch in epo2.ch_names]
-loc2 = transform(loc2,traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
+loc2 = transform(loc2, traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
 loc2 = adjust_loc(loc2, traZ=+0.01)
+lab2 = [ch for ch in epo2.ch_names]
 
 # Equalize epochs size
 mne.epochs.equalize_epoch_counts([epo1, epo2])
@@ -93,8 +92,8 @@ theta, alpha_low, alpha_high, beta, gamma = result
 C = (alpha_low - np.mean(alpha_low[:])) / np.std(alpha_low[:])
 
 # Defined bad channel for viz test
-epo1.info['bads']=['F8','Fp2','Cz','O2']
-epo2.info['bads']=['F7','O1']
+epo1.info['bads'] = ['F8', 'Fp2', 'Cz', 'O2']
+epo2.info['bads'] = ['F7', 'O1']
 
 # Visualization of inter-brain connectivity in 2D
 fig, ax = plt.subplots(1,1)
@@ -120,10 +119,8 @@ vertices, faces = get_3d_heads()
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 ax.axis("off")
-plot_3d_heads(ax, vertices,faces)
+plot_3d_heads(ax, vertices, faces)
 plot_sensors_3d(ax, loc1, loc2)
 plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
-
-
