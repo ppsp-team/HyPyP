@@ -23,27 +23,31 @@ from mne.io.constants import FIFF
 from mne.time_frequency import psd_welch
 
 
-def PSD(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int, time_resolved: bool) -> tuple:
+def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int, epochs_average: bool) -> tuple:
     """
     Computes the Power Spectral Density (PSD) on Epochs.
 
     Arguments:
+
         epochs: A subject's Epochs object, for a condition (can result from the
-          concatenation of Epochs from different experimental realisations
-          of the condition).
+          concatenation of Epochs from different files with the same condition).
                 Epochs are MNE objects: data are stored in arrays of shape
           (n_epochs, n_channels, n_times) and parameters information are stored
-          in a dictionnary.
-        fmin, fmax: minimum and maximum frequencies-of-interest for PSD calculation,
+          in a dictionary.
+
+        fmin, fmax: minimum and maximum frequencies of interest for PSD calculation,
           floats in Hz.
+
         n_fft: The length of FFT used, must be ``>= n_per_seg`` (default: 256).
           The segments will be zero-padded if ``n_fft > n_per_seg``.
           If n_per_seg is None, n_fft must be <= number of time points
           in the data.
+
         n_per_seg : int | None
           Length of each Welch segment (windowed with a Hamming window). Defaults
           to None, which sets n_per_seg equal to n_fft.
-        time_resolved: option to collapse the time course or not, boolean.
+
+        epochs_average: option to collapse the time course or not, boolean.
           If False, PSD won't be averaged over epochs (the time
           course is maintained).
           If True, PSD values are averaged over epochs.
@@ -51,19 +55,20 @@ def PSD(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
     Note:
         The function can be iterated on the group and/or on conditions
       (for epochs in epochs['epochs_%s_%s_%s' % (subj, group, cond_name)]).
-      You can visualize PSD distribution on the group to check normality
+     The PSD distribution on the group can be visualized to check normality
       for statistics.
 
     Returns:
-        freqs_mean, PSD_welch:
+        freq_list, psd:
 
-          - freqs_mean: list of frequencies in frequency-band-of-interest
-          actually used for PSD calculation.
-          - PSD_welch: PSD value in epochs for each channel and each frequency,
-          ndarray (n_epochs, n_channels, n_frequencies).
-          Note that if time_resolved == True, PSD values are averaged
-          across epochs.
+      - freq_list: list of frequencies in the frequency band of interest
+        (frequency bin)actually used for PSD calculation.
+      - psd: PSD value for each epoch for each channel and each frequency,
+      ndarray (n_epochs, n_channels, n_frequencies).
+      Note that if time_resolved == True, PSD values are averaged
+      across epochs.
     """
+
     # dropping EOG channels (incompatible with connectivity map model in stats)
     for ch in epochs.info['chs']:
         if ch['kind'] == 202:  # FIFFV_EOG_CH
@@ -72,19 +77,19 @@ def PSD(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
     # computing power spectral density on epochs signal
     # average in the 1second window around event (mean but can choose 'median')
     kwargs = dict(fmin=fmin, fmax=fmax, n_fft=n_fft, n_per_seg=n_per_seg, n_jobs=1)
-    psds_welch, freqs_mean = psd_welch(
+    psds, freq_list = psd_welch(
         epochs, **kwargs, average='mean', picks='all')  # or median
 
-    if time_resolved is True:
+    if epochs_average is True:
         # averaging power across epochs for each ch and each f
-        PSD_welch = np.mean(psds_welch, axis=0)
+        psd = np.mean(psds, axis=0)
     else:
-        PSD_welch = psds_welch
+        psd = psds
 
-    PSDTuple = namedtuple('PSD', ['freqs_mean', 'PSD_welch'])
+    psd_tuple = namedtuple('PSD', ['freq_list', 'psd'])
 
-    return PSDTuple(freqs_mean=freqs_mean,
-                    PSD_welch=PSD_welch)
+    return psd_tuple(freq_list=freq_list,
+                     psd=psd)
 
 
 def indexes_connectivity_intrabrain(epochs: mne.Epochs) -> list:
@@ -157,42 +162,33 @@ def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
     return electrodes
 
 
-def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], mode: str,
-                time_resolved: bool = True) -> np.ndarray:
+def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, list], mode: str,
+                      epochs_average: bool = True) -> np.ndarray:
     """
-    Computes frequency- or time-frequency-domain connectivity measures.
+    Computes frequency- or time-frequency-domain connectivity measures from preprocessed EEG data.
+    This function aggregates compute_single_freq/compute_freq_bands and compute_sync.
 
     Arguments:
+
         data:
           shape = (2, n_epochs, n_channels, n_times). data for computing connectivity between two subjects
+
         frequencies :
           frequencies of interest to compute connectivity with.
-
-          If a dict, different frequency bands are used.
-          e.g. {'alpha':[8,12],'beta':[12,20]}
-
+          If a dictionary, different frequency bands are used.
+          - e.g. {'alpha':[8,12],'beta':[12,20]}
           If a list, every integer frequency within the range is used.
-          e.g. [5,30] means every integer frequency bin between 5 Hz and 30 Hz
+          - e.g. [5,30] means every integer in the frequency bin between 5 Hz and 30 Hz
 
         mode:
-          Connectivity measure. Options are in notes.
+          connectivity measure. Options are in the notes.
 
-        time_resolved:
-          whether to collapse the time dimension. Default is True.
-          if False, connectivity won't be averaged over epochs, and the time
-          course is maintained.
-          if True, connectivity is averaged over epochs.
+        epochs_average:
+          option to collapse the time course or not, boolean.
+          If False, PSD won't be averaged over epochs (the time
+          course is maintained).
+          If True, PSD values are averaged over epochs.
 
-    Note:
-        Connectivity is computed for all possible electrode pairs between
-        the dyad, including inter- and intra-brain connectivities.
-        **Supported connectivity measures**:
-        - 'envelope': envelope correlation
-        - 'powerCorr': power correlation
-        - 'plv': phase locking value
-        - 'CCorr': circular correlation coefficient
-        - 'coh': coherence
-        - 'imagcoh': imaginary coherence
 
     Returns:
         result:
@@ -200,9 +196,22 @@ def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], m
           (n_freq, n_epochs, 2*n_channels, 2*n_channels) if time_resolved is False,
           or (n_freq, 2*n_channels, 2*n_channels) if time_resolved is True.
 
-          To extract inter-brain connectivities, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
+          To extract inter-brain connectivity values, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
 
+
+    Note:
+        Connectivity is computed for all possible electrode pairs between
+        the dyad, including inter- and intra-brain connectivities.
+
+      **supported connectivity measures**
+          - 'envelope_corr': envelope correlation
+          - 'pow_corr': power correlation
+          - 'plv': phase locking value
+          - 'ccorr': circular correlation coefficient
+          - 'coh': coherence
+          - 'imaginary_coh': imaginary coherence
     """
+
     # Data consists of two lists of np.array (n_epochs, n_channels, epoch_size)
     assert data[0].shape[0] == data[1].shape[0], "Two streams much have the same lengths."
 
@@ -215,7 +224,7 @@ def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], m
     else:
         TypeError("Please use a list or a dictionary for specifying frequencies.")
 
-    result = compute_sync(values, mode, time_resolved)
+    result = compute_sync(values, mode, epochs_average)
 
     return result
 
@@ -224,7 +233,7 @@ def simple_corr(data: Union[list, np.ndarray], frequencies: Union[dict, list], m
 def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
     """
     Helper function to compute the product of a complex array and its conjugate.
-    It is designed specifically to dissolve the last dimension of a four dimensional array.
+    It is designed specifically to collapse the last dimension of a four-dimensional array.
 
     Arguments:
         real: the real part of the array.
@@ -243,28 +252,25 @@ def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tupl
     return product
 
 
-def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool = True) -> np.ndarray:
+def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = True) -> np.ndarray:
     """
     Computes frequency- or time-frequency-domain connectivity measures from analytic signals.
 
     Arguments:
+
         complex_signal:
-          shape = (2, n_epochs, n_channels, n_freq_bins, n_times).
-          Analytic signals for computing connectivity between two subjects.
+            shape = (2, n_epochs, n_channels, n_freq_bins, n_times).
+            Analytic signals for computing connectivity between two subjects.
 
         mode:
-          Connectivity measure.
-          'envelope': envelope correlation
-          'powerCorr': power correlation
-          'plv': phase locking value
-          'CCorr': circular correlation coefficient
-          'coh': coherence
-          'imagcoh': imaginary coherence
-        time_resolved:
-          whether to collapse the time dimension. Default is True.
-          if False, connectivity won't be averaged over epochs, and the time
-          course is maintained.
-          if True, connectivity is averaged over epochs.
+            Connectivity measure. Options in the notes.
+
+        epochs_average:
+          option to collapse the time course or not, boolean.
+          If False, PSD won't be averaged over epochs (the time
+          course is maintained).
+          If True, PSD values are averaged over epochs.
+
 
     Returns:
         con:
@@ -273,6 +279,16 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool = Tr
           or (n_freq, 2*n_channels, 2*n_channels) if time_resolved is True.
 
           To extract inter-brain connectivities, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
+
+    Note:
+        **supported connectivity measures**
+          - 'envelope_corr': envelope correlation
+          - 'pow_corr': power correlation
+          - 'plv': phase locking value
+          - 'ccorr': circular correlation coefficient
+          - 'coh': coherence
+          - 'imaginary_coh': imaginary coherence
+
     """
 
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
@@ -288,14 +304,14 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool = Tr
         dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
         con = abs(dphi) / n_samp
 
-    elif mode.lower() == 'envelope':
+    elif mode.lower() == 'envelope_corr':
         env = np.abs(complex_signal)
         mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
         env = env - mu_env
         con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
               np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
 
-    elif mode.lower() == 'powercorr':
+    elif mode.lower() == 'pow_corr':
         env = np.abs(complex_signal) ** 2
         mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
         env = env - mu_env
@@ -310,7 +326,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool = Tr
         con = np.abs(dphi) / np.sqrt(np.einsum('nil,nik->nilk', np.nansum(amp, axis=3),
                                                np.nansum(amp, axis=3)))
 
-    elif mode.lower() == 'imagcoh':
+    elif mode.lower() == 'imaginary_coh':
         c = np.real(complex_signal)
         s = np.imag(complex_signal)
         amp = np.abs(complex_signal) ** 2
@@ -331,7 +347,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, time_resolved: bool = Tr
         ValueError('Metric type not supported.')
 
     con = con.swapaxes(0, 1)  # n_freq x n_epoch x 2*n_ch x 2*n_ch
-    if time_resolved:
+    if epochs_average:
         con = np.nanmean(con, axis=1)
 
     return con
@@ -357,7 +373,7 @@ def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
     complex_signal = np.array([mne.time_frequency.tfr_array_multitaper(data[subject], sfreq=n_samp,
                                                                        freqs=np.arange(
                                                                            freq_range[0], freq_range[1], 1),
-                                                                       n_cycles=4,zero_mean=False, use_fft=True,
+                                                                       n_cycles=4, zero_mean=False, use_fft=True,
                                                                        decim=1,
                                                                        output='complex')
                                for subject in range(2)])
