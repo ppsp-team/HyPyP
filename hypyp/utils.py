@@ -194,8 +194,6 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
     # info about task
     ep_hyper.info['description'] = epoch_S1[0].info['description']
 
-    # ep_hyper.plot()
-
     return ep_hyper
 
 

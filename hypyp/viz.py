@@ -76,11 +76,15 @@ def adjust_loc(locs: np.ndarray, traZ: float=0.1) -> np.ndarray:
 
     return locs
 
-def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[], epo1: mne.Epochs, epo2: mne.Epochs):
+def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
     """
     Plots sensors in 2D with x representation for bad sensors.
 
     Arguments:
+        epo1: mne.Epochs
+          Epochs object to get channels information
+        epo2: mne.Epochs
+          Epochs object to get channels information
         loc1: arrays of shape (n_sensors, 3)
           3d coordinates of the sensors
         loc2: arrays of shape (n_sensors, 3)
@@ -89,10 +93,6 @@ def plot_sensors_2d(loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: lis
           sensor labels
         lab2: lists of strings
           sensor labels
-        epo1: mne.Epochs
-          Epochs object to get channels information
-        epo2: mne.Epochs
-          Epochs object to get channels information
 
     Returns:
         None: plot the sensors in 2D within the current axis.
@@ -240,12 +240,16 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
                                  '-', color=color_n, linewidth=weight)
 
 
-def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[], epo1: mne.Epochs, epo2: mne.Epochs):
+def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
     """
     Plots sensors in 3D with x representation for bad sensors.
 
     Arguments:
         ax: Matplotlib axis created with projection='3d'
+        epo1: mne.Epochs
+          Epochs object to get channels information
+        epo2: mne.Epochs
+          Epochs object to get channels information
         loc1: arrays of shape (n_sensors, 3)
           3d coordinates of the sensors
         loc2: arrays of shape (n_sensors, 3)
@@ -254,10 +258,6 @@ def plot_sensors_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], 
           sensor labels
         lab2: lists of strings
           sensor labels
-        epo1: mne.Epochs
-          Epochs object to get channels information
-        epo2: mne.Epochs
-          Epochs object to get channels information
 
     Returns:
         None: plot the sensors in 3D within the current axis.
@@ -473,7 +473,7 @@ def get_3d_heads():
     """
 
     # Extract vertices and faces for the first head
-    mesh = meshio.read("/Users/ayrolles/DEV/HyPyP/data/Basehead.obj")
+    mesh = meshio.read("data/Basehead.obj")
     zoom = 0.064
     interval = 0.32
 
