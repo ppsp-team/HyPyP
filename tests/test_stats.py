@@ -20,7 +20,7 @@ def test_metaconn_matrix_2brains(epochs):
     # computing ch_con and sensors pairs for metaconn calculation
     con_matrixTuple = stats.con_matrix(epochs.epo1, freq, draw=False)
     ch_con_freq = con_matrixTuple.ch_con_freq
-    sensor_pairs = analyses.indexes_connectivity_interbrains(
+    sensor_pairs = analyses.indices_connectivity_interbrain(
         epochs.epoch_merge)
 
     # computing metaconn_freq and test it
