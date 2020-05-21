@@ -92,11 +92,11 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
                      psd=psd)
 
 
-def indexes_connectivity_intrabrain(epochs: mne.Epochs) -> list:
+def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:
     """
-    Computes indexes for connectivity analysis between all EEG
-    sensors for one subject. Can be used instead of
-    (n_channels, n_channels) that takes into account intra electrodes
+    Computes indices for connectivity analysis between all EEG
+    channels for one subject. Can be used instead of
+    (n_channels, n_channels) that takes into account intrabrain channel
     connectivity.
 
     Arguments:
@@ -104,8 +104,8 @@ def indexes_connectivity_intrabrain(epochs: mne.Epochs) -> list:
           (Epochs are MNE objects).
 
     Returns:
-        electrodes: electrodes pairs for which connectivity indices will be
-          computed, list of tuples with channels indexes.
+        channels: channel pairs for which connectivity indices will be
+          computed, a list of tuples with channels indices.
     """
     names = copy.deepcopy(epochs.info['ch_names'])
     for ch in epochs.info['chs']:
@@ -113,23 +113,22 @@ def indexes_connectivity_intrabrain(epochs: mne.Epochs) -> list:
             names.remove(ch['ch_name'])
 
     n = len(names)
-    # n = 64
     bin = 0
     idx = []
-    electrodes = []
+    channels = []
     for e1 in range(n):
         for e2 in range(n):
             if e2 > e1:
                 idx.append(bin)
-                electrodes.append((e1, e2))
+                channels.append((e1, e2))
             bin = bin + 1
 
-    return electrodes
+    return channels
 
 
-def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
+def indices_connectivity_interbrain(epoch_hyper: mne.Epochs) -> list:
     """
-    Computes indexes for interbrains connectivity analyses between all EEG
+    Computes indices for interbrain connectivity analyses between all EEG
     sensors for 2 subjects (merge data).
 
     Arguments:
@@ -140,10 +139,10 @@ def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
         Only interbrains connectivity will be computed.
 
     Returns:
-        electrodes: electrodes pairs for which connectivity indices will be
-          computed, list of tuples with channels indexes.
+        channels: channel pairs for which connectivity indices will be
+          computed, a list of tuples with channels indices.
     """
-    electrodes = []
+    channels = []
     names = copy.deepcopy(epoch_hyper.info['ch_names'])
     for ch in epoch_hyper.info['chs']:
         if ch['kind'] == FIFF.FIFFV_EOG_CH:
@@ -157,9 +156,9 @@ def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
         for p in range(0, len(l)):
             L.append(l[i])
     for i in range(0, len(L)):
-        electrodes.append((L[i], M[i]))
+        channels.append((L[i], M[i]))
 
-    return electrodes
+    return channels
 
 
 def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, list], mode: str,
@@ -215,15 +214,15 @@ def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, li
     # Data consists of two lists of np.array (n_epochs, n_channels, epoch_size)
     assert data[0].shape[0] == data[1].shape[0], "Two streams much have the same lengths."
 
-    # compute correlation coefficient for all symmetrical channel pairs
+    # compute instantaneous analytic signal from EEG data
     if type(frequencies) == list:
         values = compute_single_freq(data, frequencies)
-    # generate a list of per-epoch end values
     elif type(frequencies) == dict:
         values = compute_freq_bands(data, frequencies)
     else:
         TypeError("Please use a list or a dictionary for specifying frequencies.")
 
+    # compute connectivity values
     result = compute_sync(values, mode, epochs_average)
 
     return result
@@ -384,7 +383,7 @@ def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
 def compute_freq_bands(data: np.ndarray, freq_bands: dict) -> np.ndarray:
     """
     Computes analytic signal per frequency band using FIR filtering
-    and hilbert transform.
+    and Hilbert transform.
 
     Arguments:
         data:
