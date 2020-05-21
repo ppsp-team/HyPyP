@@ -7,6 +7,12 @@ The **Hy**perscanning **Py**thon **P**ipeline
 ## Contributors
 Florence BRUN, Anaël AYROLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS
 
+## Installation
+
+```
+pip install HyPyP
+```
+
 ## Documentation
 
 HyPyP documentation of all the API functions is available online at [hypyp.readthedocs.io](https://hypyp.readthedocs.io/)
@@ -26,10 +32,3 @@ HyPyP documentation of all the API functions is available online at [hypyp.readt
 🧠 [viz.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/viz.py) — Inter-brain visualization (Anaël, Amir, Florence, Guillaume)
 
 🎓 [Tutorials](https://github.com/GHFC/HyPyP/tree/master/tutorial) - Examples & documentation (Anaël, Florence, Yann, Guillaume)
-
-
-## Installation
-
-```
-pip install HyPyP
-```
