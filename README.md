@@ -7,6 +7,10 @@ The **Hy**perscanning **Py**thon **P**ipeline
 ## Contributors
 Florence BRUN, Anaël AYROLLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS
 
+## Documentation
+
+HyPyP documentation of all the API functions is available online at [hypyp.readthedocs.io](https://hypyp.readthedocs.io/)
+
 ## Roadmap
 
 🛠 [io.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/io.py) — Loaders (Florence, Anaël, Guillaume)
