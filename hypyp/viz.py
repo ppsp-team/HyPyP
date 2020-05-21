@@ -140,7 +140,7 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarray, loc2: 
 
 def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: float=0.95, steps: int=10):
     """
-    Plots hyper-conenctivity in 2D.
+    Plots hyper-connectivity in 2D.
 
     Arguments:
         loc1: arrays of shape (n_sensors, 3)
@@ -150,8 +150,8 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
         C: array, (len(loc1), len(loc2))
           matrix with the values of hyper-connectivity
         threshold: float
-          threshold for the links
-          only those above will be ploted
+          threshold for the inter-brain links;
+          only those above the set value will be plotted
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
@@ -247,9 +247,9 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarra
     Arguments:
         ax: Matplotlib axis created with projection='3d'
         epo1: mne.Epochs
-          Epochs object to get channels information
+          Epochs object to get channel information
         epo2: mne.Epochs
-          Epochs object to get channels information
+          Epochs object to get channel information
         loc1: arrays of shape (n_sensors, 3)
           3d coordinates of the sensors
         loc2: arrays of shape (n_sensors, 3)
@@ -318,8 +318,8 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
         C: array, (len(loc1), len(loc2))
           matrix with the values of hyper-connectivity
         threshold: float
-          threshold for the links
-          only those above will be ploted
+          threshold for the inter-brain links;
+          only those above the set value will be plotted
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
@@ -329,7 +329,7 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
 
     Returns:
         None: plot the links in 3D within the current axis.
-          Plot hyper-conenctivity in 3D.
+          Plot hyper-connectivity in 3D.
     """
     ctr1 = np.nanmean(loc1, 0)
     ctr1[2] -= 0.2
@@ -434,15 +434,15 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
 def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
     """
     Plots the significant sensors from a statistical test (simple t test or
-    clusters corrected t test) computed between groups or conditions, on power
-    or connectivity values, across simple subjects. For satistics with
-    interbrains connectivity values on dyads (merge data), use the
+    clusters corrected t test), computed between groups or conditions on power
+    or connectivity values, across simple subjects. For statistics with
+    inter-brain connectivity values on subject pairs (merge data), use the
     plot_links_3d function.
 
     Arguments:
-        T_obs_plot: satistical values to plot, from sensors above alpha threshold,
+        T_obs_plot: statistical values to plot, from sensors above alpha threshold,
           array of shape (n_tests,).
-        epochs: one subject Epochs object to sample channels information in info.
+        epochs: one subject Epochs object to sample channel information in info.
 
     Returns:
         None: plot topomap with the T or F statistics for significant sensors.
