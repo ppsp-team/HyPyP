@@ -94,15 +94,18 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
 
 def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:
     """
-    Retrieves indices of channels to be used for inter-brain connectivity analyses within a subject pair (all-to-all approach, merge data).
+    Computes indices for connectivity analysis between all EEG
+    channels for one subject. Can be used instead of
+    (n_channels, n_channels) that takes into account intrabrain channel
+    connectivity.
 
     Arguments:
         epochs: one subject's Epochs object, to retrieve channel information.
           (Epochs are MNE objects).
 
     Returns:
-        electrodes: channel pairs for which connectivity metrics will be
-          computed (all-to-all approach), list of tuples with channels indexes.
+        channels: channel pairs for which connectivity indices will be
+          computed, a list of tuples with channels indices.
     """
     names = copy.deepcopy(epochs.info['ch_names'])
     for ch in epochs.info['chs']:
@@ -110,33 +113,33 @@ def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:
             names.remove(ch['ch_name'])
 
     n = len(names)
-    # n = 64
     bin = 0
     idx = []
-    electrodes = []
+    channels = []
     for e1 in range(n):
         for e2 in range(n):
             if e2 > e1:
                 idx.append(bin)
-                electrodes.append((e1, e2))
+                channels.append((e1, e2))
             bin = bin + 1
 
-    return electrodes
+    return channels
 
 
 def indices_connectivity_interbrain(epoch_hyper: mne.Epochs) -> list:
     """
-    Retrieves indices of channels to be used for inter-brain connectivity analyses within a subject pair (all-to-all approach, merge data).
+    Computes indices for interbrain connectivity analyses between all EEG
+    sensors for 2 subjects (merge data).
 
     Arguments:
         epoch_hyper: a pair's Epochs object; contains channel information (Epochs
           are MNE objects).
 
     Returns:
-        electrodes: electrode pairs for which connectivity metrics will be
-          computed (all-to-all approach), list of tuples with channels indices.
+        channels: channel pairs for which connectivity indices will be
+          computed, a list of tuples with channels indices.
     """
-    electrodes = []
+    channels = []
     names = copy.deepcopy(epoch_hyper.info['ch_names'])
     for ch in epoch_hyper.info['chs']:
         if ch['kind'] == FIFF.FIFFV_EOG_CH:
@@ -150,9 +153,9 @@ def indices_connectivity_interbrain(epoch_hyper: mne.Epochs) -> list:
         for p in range(0, len(l)):
             L.append(l[i])
     for i in range(0, len(L)):
-        electrodes.append((L[i], M[i]))
+        channels.append((L[i], M[i]))
 
-    return electrodes
+    return channels
 
 
 def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, list], mode: str,
@@ -208,15 +211,15 @@ def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, li
     # Data consists of two lists of np.array (n_epochs, n_channels, epoch_size)
     assert data[0].shape[0] == data[1].shape[0], "Two streams much have the same lengths."
 
-    # compute correlation coefficient for all symmetrical channel pairs
+    # compute instantaneous analytic signal from EEG data
     if type(frequencies) == list:
         values = compute_single_freq(data, frequencies)
-    # generate a list of per-epoch end values
     elif type(frequencies) == dict:
         values = compute_freq_bands(data, frequencies)
     else:
         TypeError("Please use a list or a dictionary to specify frequencies.")
 
+    # compute connectivity values
     result = compute_sync(values, mode, epochs_average)
 
     return result
@@ -376,7 +379,7 @@ def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
 def compute_freq_bands(data: np.ndarray, freq_bands: dict) -> np.ndarray:
     """
     Computes analytic signal per frequency band using FIR filtering
-    and hilbert transform.
+    and Hilbert transform.
 
     Arguments:
         data:

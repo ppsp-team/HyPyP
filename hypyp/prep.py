@@ -40,12 +40,12 @@ def filt(raw_S: list) -> list:
 
 def ICA_choice_comp(icas: list, epochs: list) -> list:
     """
-    Plots Independant Components for each subject (calculated from Epochs),
-    let the user choose the relevant components for artefacts rejection
+    Plots Independent Components for each subject (calculated from Epochs),
+    let the user choose the relevant components for artifact rejection
     and apply ICA on Epochs.
 
     Arguments:
-        icas: list of Independant Components for each subject (IC are MNE
+        icas: list of Independent Components for each subject (IC are MNE
           objects).
         epochs: list of 2 Epochs objects (for each subject). Epochs_S1
           and Epochs_S2 correspond to a condition and can result from the
@@ -66,7 +66,7 @@ def ICA_choice_comp(icas: list, epochs: list) -> list:
     # choosing subject and its component as a template for the other subject
     # if do not want to apply ICA on the data, do not fill the answer
     subj_numb = input("Which subject ICA do you want"
-                      " to use as a template for artifacts rejection?"
+                      " to use as a template for artifact rejection?"
                       " Index begins at zero. If you do not want to apply"
                       " ICA on your data, enter nothing.")
     comp_number = input("Which IC do you want to use as a template?"
@@ -126,7 +126,7 @@ def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> li
 
 def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> list:
     """
-    Computes global Autorejection to fit Independant Components Analysis
+    Computes global Autorejection to fit Independent Components Analysis
     on Epochs, for each subject.
 
     Pre requisite : install autoreject

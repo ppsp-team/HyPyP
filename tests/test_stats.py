@@ -20,7 +20,7 @@ def test_metaconn_matrix_2brains(epochs):
     # computing ch_con and sensors pairs for metaconn calculation
     con_matrixTuple = stats.con_matrix(epochs.epo1, freq, draw=False)
     ch_con_freq = con_matrixTuple.ch_con_freq
-    sensor_pairs = analyses.indexes_connectivity_interbrains(
+    sensor_pairs = analyses.indices_connectivity_interbrain(
         epochs.epoch_merge)
 
     # computing metaconn_freq and test it
@@ -118,14 +118,14 @@ def test_indexes_connectivity(epochs):
     """
     Test index intra- and inter-brains
     """
-    electrodes = analyses.indexes_connectivity_intrabrain(epochs.epo1)
+    electrodes = analyses.indices_connectivity_intrabrain(epochs.epo1)
     length = len(epochs.epo1.info['ch_names'])
     L = []
     for i in range(1, length):
         L.append(length-i)
     tot = sum(L)
     assert len(electrodes) == tot
-    electrodes_hyper = analyses.indexes_connectivity_interbrains(
+    electrodes_hyper = analyses.indices_connectivity_interbrain(
         epochs.epoch_merge)
     assert len(electrodes_hyper) == length*length
     # format that do not work for mne.spectral_connectivity
