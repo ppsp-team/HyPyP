@@ -118,14 +118,14 @@ def test_indexes_connectivity(epochs):
     """
     Test index intra- and inter-brains
     """
-    electrodes = analyses.indexes_connectivity_intrabrain(epochs.epo1)
+    electrodes = analyses.indices_connectivity_intrabrain(epochs.epo1)
     length = len(epochs.epo1.info['ch_names'])
     L = []
     for i in range(1, length):
         L.append(length-i)
     tot = sum(L)
     assert len(electrodes) == tot
-    electrodes_hyper = analyses.indexes_connectivity_interbrains(
+    electrodes_hyper = analyses.indices_connectivity_interbrain(
         epochs.epoch_merge)
     assert len(electrodes_hyper) == length*length
     # format that do not work for mne.spectral_connectivity
