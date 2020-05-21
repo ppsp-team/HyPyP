@@ -307,7 +307,7 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarra
 
 def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: float=0.95, steps: int=10):
     """
-    Plots hyper-conenctivity in 3D.
+    Plots hyper-connectivity in 3D.
 
     Arguments:
         ax: Matplotlib axis created with projection='3d'
