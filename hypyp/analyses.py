@@ -32,7 +32,7 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
         epochs: A subject's Epochs object, for a condition (can result from the
           concatenation of Epochs from different files with the same condition).
                 Epochs are MNE objects: data are stored in arrays of shape
-          (n_epochs, n_channels, n_times) and parameters information are stored
+          (n_epochs, n_channels, n_times) and parameter information is stored
           in a dictionary.
 
         fmin, fmax: minimum and maximum frequencies of interest for PSD calculation,
@@ -61,9 +61,9 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
     Returns:
         freq_list, psd:
 
-      - freq_list: list of frequencies in the frequency band of interest
-        (frequency bin)actually used for PSD calculation.
-      - psd: PSD value for each epoch for each channel and each frequency,
+      - freq_list: list of frequencies in the actual frequency band of interest
+        (frequency bin) used for PSD calculation.
+      - psd: PSD value for each epoch, each channel, and each frequency,
       ndarray (n_epochs, n_channels, n_frequencies).
       Note that if time_resolved == True, PSD values are averaged
       across epochs.
@@ -75,13 +75,13 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
             epochs.drop_channels([ch['ch_name']])
 
     # computing power spectral density on epochs signal
-    # average in the 1second window around event (mean but can choose 'median')
+    # average in the 1-second window around event (mean, but can choose 'median')
     kwargs = dict(fmin=fmin, fmax=fmax, n_fft=n_fft, n_per_seg=n_per_seg, n_jobs=1)
     psds, freq_list = psd_welch(
         epochs, **kwargs, average='mean', picks='all')  # or median
 
     if epochs_average is True:
-        # averaging power across epochs for each ch and each f
+        # averaging power across epochs for each channel ch and each frequency f
         psd = np.mean(psds, axis=0)
     else:
         psd = psds
@@ -92,20 +92,17 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
                      psd=psd)
 
 
-def indexes_connectivity_intrabrain(epochs: mne.Epochs) -> list:
+def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:
     """
-    Computes indexes for connectivity analysis between all EEG
-    sensors for one subject. Can be used instead of
-    (n_channels, n_channels) that takes into account intra electrodes
-    connectivity.
+    Retrieves indices of channels to be used for inter-brain connectivity analyses within a subject pair (all-to-all approach, merge data).
 
     Arguments:
-        epochs: one subject Epochs object to get channels information
+        epochs: one subject's Epochs object, to retrieve channel information.
           (Epochs are MNE objects).
 
     Returns:
-        electrodes: electrodes pairs for which connectivity indices will be
-          computed, list of tuples with channels indexes.
+        electrodes: channel pairs for which connectivity metrics will be
+          computed (all-to-all approach), list of tuples with channels indexes.
     """
     names = copy.deepcopy(epochs.info['ch_names'])
     for ch in epochs.info['chs']:
@@ -127,21 +124,17 @@ def indexes_connectivity_intrabrain(epochs: mne.Epochs) -> list:
     return electrodes
 
 
-def indexes_connectivity_interbrains(epoch_hyper: mne.Epochs) -> list:
+def indices_connectivity_interbrain(epoch_hyper: mne.Epochs) -> list:
     """
-    Computes indexes for interbrains connectivity analyses between all EEG
-    sensors for 2 subjects (merge data).
+    Retrieves indices of channels to be used for inter-brain connectivity analyses within a subject pair (all-to-all approach, merge data).
 
     Arguments:
-        epoch_hyper: one dyad Epochs object to get channels information (Epochs
+        epoch_hyper: a pair's Epochs object; contains channel information (Epochs
           are MNE objects).
 
-    Note:
-        Only interbrains connectivity will be computed.
-
     Returns:
-        electrodes: electrodes pairs for which connectivity indices will be
-          computed, list of tuples with channels indexes.
+        electrodes: electrode pairs for which connectivity metrics will be
+          computed (all-to-all approach), list of tuples with channels indices.
     """
     electrodes = []
     names = copy.deepcopy(epoch_hyper.info['ch_names'])
@@ -171,20 +164,20 @@ def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, li
     Arguments:
 
         data:
-          shape = (2, n_epochs, n_channels, n_times). data for computing connectivity between two subjects
+          shape = (2, n_epochs, n_channels, n_times). data input for computing connectivity between two subjects
 
         frequencies :
-          frequencies of interest to compute connectivity with.
+          frequencies of interest for which connectivity will be computed.
           If a dictionary, different frequency bands are used.
           - e.g. {'alpha':[8,12],'beta':[12,20]}
           If a list, every integer frequency within the range is used.
-          - e.g. [5,30] means every integer in the frequency bin between 5 Hz and 30 Hz
+          - e.g. [5,30] dictates that connectivity will be computed over every integer in the frequency bin between 5 Hz and 30 Hz.
 
         mode:
           connectivity measure. Options are in the notes.
 
         epochs_average:
-          option to collapse the time course or not, boolean.
+          option to either return the average connectivity across epochs (collapse across time) or preserve epoch-by-epoch connectivity, boolean.
           If False, PSD won't be averaged over epochs (the time
           course is maintained).
           If True, PSD values are averaged over epochs.
@@ -222,7 +215,7 @@ def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, li
     elif type(frequencies) == dict:
         values = compute_freq_bands(data, frequencies)
     else:
-        TypeError("Please use a list or a dictionary for specifying frequencies.")
+        TypeError("Please use a list or a dictionary to specify frequencies.")
 
     result = compute_sync(values, mode, epochs_average)
 
@@ -266,9 +259,8 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
             Connectivity measure. Options in the notes.
 
         epochs_average:
-          option to collapse the time course or not, boolean.
-          If False, PSD won't be averaged over epochs (the time
-          course is maintained).
+          option to either return the average connectivity across epochs (collapse across time) or preserve epoch-by-epoch connectivity, boolean.
+          If False, PSD won't be averaged over epochs (the time course is maintained).
           If True, PSD values are averaged over epochs.
 
 
@@ -278,7 +270,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
           (n_freq, n_epochs, 2*n_channels, 2*n_channels) if time_resolved is False,
           or (n_freq, 2*n_channels, 2*n_channels) if time_resolved is True.
 
-          To extract inter-brain connectivities, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
+          To extract inter-brain connectivity values, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
 
     Note:
         **supported connectivity measures**
@@ -360,10 +352,10 @@ def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
     Arguments:
         data:
           shape is (2, n_epochs, n_channels, n_times)
-          real-valued data to compute analytic signal from.
+          real-valued data used to compute analytic signal.
         freq_range:
           a list of two specifying the frequency range.
-          e.g. [5,30] means every integer frequency bin between 5 Hz and 30 Hz.
+          e.g. [5,30] refers to every integer in the frequency bin from 5 Hz to 30 Hz.
     Returns:
         complex_signal:
           shape is (2, n_epochs, n_channels, n_frequencies, n_times)
@@ -391,8 +383,8 @@ def compute_freq_bands(data: np.ndarray, freq_bands: dict) -> np.ndarray:
           shape is (2, n_epochs, n_channels, n_times)
           real-valued data to compute analytic signal from.
         freq_bands:
-          a dict specifying names and corresponding frequency ranges
-          e.g. {'alpha':[8,12],'beta':[12,20]} means computing for two frequency bands: 8-12 Hz for the alpha band and 12-20 Hz for beta band.
+          a dictionary specifying frequency band labels and corresponding frequency ranges
+          e.g. {'alpha':[8,12],'beta':[12,20]} indicates that computations are performed over two frequency bands: 8-12 Hz for the alpha band and 12-20 Hz for the beta band.
     Returns:
         complex_signal: array, shape is
           (2, n_epochs, n_channels, n_freq_bands, n_times)
