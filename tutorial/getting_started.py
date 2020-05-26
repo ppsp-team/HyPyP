@@ -130,3 +130,20 @@ plot_sensors_3d(ax, epo1, epo2, loc1, loc2)
 plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
+
+
+# Compare connectivity values to random signal
+# parametric t test
+T_obs, p_values, H0 = mne.stats.permutation_t_test(data=result, n_permutation=5000,
+                                                   tail=0, n_jobs=1)
+# non-parametric cluster-based permutations
+con_matrixTuple = stats.con_matrix(epochs_subj_ex, freqs_mean)
+ch_con_freq = con_matrixTuple.ch_con_freq
+statscondCluster = stats.statscondCluster(data=result,
+                                          freqs_mean=[4, 7],
+                                          bsr_matrix(ch_con_freq),
+                                          tail=0,
+                                          n_permutations=5000,
+                                          alpha=0.05)
+
+# can visualize statitical values replacing C by T_obs or statscondCluster.F_obs_plot in the precedent functions
