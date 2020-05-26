@@ -24,10 +24,7 @@ from mpl3d.camera import Camera
 from hypyp import prep
 from hypyp import analyses
 from hypyp import stats
-from hypyp.viz import transform, adjust_loc
-from hypyp.viz import plot_sensors_2d, plot_links_2d
-from hypyp.viz import get_3d_heads
-from hypyp.viz import plot_sensors_3d, plot_links_3d, plot_3d_heads
+from hypyp import viz
 
 plt.ion()
 
@@ -42,8 +39,8 @@ freq_bands = OrderedDict(freq_bands)  # Force to keep order
 # Loading data files & extracting sensor infos
 epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
 loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-loc1 = transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
-loc1 = adjust_loc(loc1, traZ=+0.01)
+loc1 = viz.transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
+loc1 = viz.adjust_loc(loc1, traZ=+0.01)
 lab1 = [ch for ch in epo1.ch_names]
 
 epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
@@ -113,32 +110,35 @@ camera.connect(ax, mesh.update)
 
 plt.gca().set_aspect('equal', 'box')
 plt.axis('off')
-plot_sensors_2d(epo1, epo2, loc1, loc2, lab1, lab2)
-plot_links_2d(loc1, loc2, C=C, threshold=2, steps=10)
+viz.plot_sensors_2d(epo1, epo2, loc1, loc2, lab1, lab2)
+viz.plot_links_2d(loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
 
 
 # Visualization of inter-brain connectivity in 3D with get_3D_heads
 
-vertices, faces = get_3d_heads()
+vertices, faces = viz.get_3d_heads()
 
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 ax.axis("off")
-plot_3d_heads(ax, vertices, faces)
-plot_sensors_3d(ax, epo1, epo2, loc1, loc2)
-plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
+viz.plot_3d_heads(ax, vertices, faces)
+viz.plot_sensors_3d(ax, epo1, epo2, loc1, loc2)
+viz.plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
 
 
 # Compare connectivity values to random signal
 # parametric t test
-T_obs, p_values, H0 = mne.stats.permutation_t_test(data=result, n_permutation=5000,
+T_obs, p_values, H0 = mne.stats.permutation_t_test(data=result, n_permutations=5000,
                                                    tail=0, n_jobs=1)
 # non-parametric cluster-based permutations
-con_matrixTuple = stats.con_matrix(epochs_subj_ex, freqs_mean)
+# creating matrix of a priori connectivity between channels
+# across space and frequencies based on their position,
+# in theta band for example
+con_matrixTuple = stats.con_matrix(epo1, freqs_mean=[4, 7])
 ch_con_freq = con_matrixTuple.ch_con_freq
 statscondCluster = stats.statscondCluster(data=result,
                                           freqs_mean=[4, 7],
@@ -147,5 +147,6 @@ statscondCluster = stats.statscondCluster(data=result,
                                           n_permutations=5000,
                                           alpha=0.05)
 
-# can visualize statitical values replacing C by T_obs or statscondCluster.F_obs_plot in the precedent functions
+# Visualize statistical values replacing C by T_obs or statscondCluster.F_obs_plot
+# in the precedent functions
 
