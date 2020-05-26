@@ -21,13 +21,13 @@ from mne.channels import find_ch_connectivity
 from mne.stats import permutation_cluster_test
 
 
-def statsCond(PSDs_task_normLog: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha_bonferroni: float, alpha: float) -> tuple:
+def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha_bonferroni: float, alpha: float) -> tuple:
     """
     Computes statistical t test on Power Spectral Density values
     (PSD) for a condition.
 
     Arguments:
-        PSDs_task_normLog: array of subjects PSD Logratio (ndarray) for
+        data: array of subjects PSD Logratio (ndarray) for
           a condition (n_samples, n_tests, nfreq: n_tests the channels).
           PSD values will be averaged on nfreq for statistics.
         epochs: Epochs object for a condition from a random subject, only
@@ -68,10 +68,10 @@ def statsCond(PSDs_task_normLog: np.ndarray, epochs: mne.Epochs, n_permutations:
           array of shape (n_tests,).
     """
     # checking whether data have the same size
-    assert(len(PSDs_task_normLog.shape) == 3), "PSD does not have the appropriate shape!"
+    assert(len(data.shape) == 3), "PSD does not have the appropriate shape!"
 
     # averaging across frequencies (compute stats only in ch space)
-    power = np.mean(PSDs_task_normLog, axis=2)
+    power = np.mean(data, axis=2)
     T_obs, p_values, H0 = mne.stats.permutation_t_test(power, n_permutations,
                                                        tail=0, n_jobs=1)
     adj_p = mne.stats.bonferroni_correction(p_values, alpha=alpha_bonferroni)
