@@ -37,16 +37,18 @@ freq_bands = {'Theta': [4, 7],
 freq_bands = OrderedDict(freq_bands)  # Force to keep order
 
 # Loading data files & extracting sensor infos
-epo1 = mne.read_epochs(os.path.join("data", "subject1-epo.fif"), preload=True)
+epo1 = mne.read_epochs(os.path.join(os.path.dirname(__file__),
+       os.pardir,'data',"subject1-epo.fif"), preload=True)
 loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
 loc1 = viz.transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
 loc1 = viz.adjust_loc(loc1, traZ=+0.01)
 lab1 = [ch for ch in epo1.ch_names]
 
-epo2 = mne.read_epochs(os.path.join("data", "subject2-epo.fif"), preload=True)
+epo2 = mne.read_epochs(os.path.join(os.path.dirname(__file__),
+       os.pardir,'data',"subject2-epo.fif"), preload=True)
 loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-loc2 = transform(loc2, traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
-loc2 = adjust_loc(loc2, traZ=+0.01)
+loc2 = viz.transform(loc2, traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
+loc2 = viz.adjust_loc(loc2, traZ=+0.01)
 lab2 = [ch for ch in epo2.ch_names]
 
 n_ch = len(epo1.ch_names)
@@ -102,7 +104,7 @@ epo2.info['bads'] = ['F7', 'O1']
 # Visualization of inter-brain connectivity in 2D
 fig, ax = plt.subplots(1,1)
 ax.axis("off")
-vertices, faces = get_3d_heads()
+vertices, faces = viz.get_3d_heads()
 camera = Camera("ortho", theta=90, phi=180, scale=1)
 mesh = Mesh(ax, camera.transform @ glm.yrotate(90), vertices, faces,
             facecolors='white',  edgecolors='black', linewidths=.25)

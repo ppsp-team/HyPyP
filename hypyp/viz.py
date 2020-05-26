@@ -13,6 +13,7 @@ Basic visualization functions
 
 
 from copy import copy
+import os
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -472,7 +473,8 @@ def get_3d_heads():
     """
 
     # Extract vertices and faces for the first head
-    mesh = meshio.read("data/Basehead.obj")
+    mesh = meshio.read(os.path.join(os.path.dirname(__file__),
+           os.pardir,'data',"Basehead.obj"))
     zoom = 0.064
     interval = 0.32
 
