@@ -21,12 +21,13 @@ from mpl3d import glm
 from mpl3d.mesh import Mesh
 from mpl3d.camera import Camera
 
+from hypyp import prep
+from hypyp import analyses
+from hypyp import stats
 from hypyp.viz import transform, adjust_loc
 from hypyp.viz import plot_sensors_2d, plot_links_2d
 from hypyp.viz import get_3d_heads
 from hypyp.viz import plot_sensors_3d, plot_links_3d, plot_3d_heads
-from hypyp.prep import ICA_fit, ICA_choice_comp, AR_local
-from hypyp.analyses import compute_freq_bands, compute_sync
 
 plt.ion()
 
@@ -61,17 +62,17 @@ epochs = [epo1, epo2]
 
 # Preproc
 # computing global AR and ICA on epochs,
-icas = ICA_fit(epochs,
+icas = prep.ICA_fit(epochs,
                n_components=15,
                method='fastica',
                random_state=42)
 
 # selecting components semi auto and fitting them
-cleaned_epochs_ICA = ICA_choice_comp(icas, epochs)  # no ICA_component selected
+cleaned_epochs_ICA = prep.ICA_choice_comp(icas, epochs)  # no ICA_component selected
 plt.close('all')
 
 # applying local AR on subj epochs and rejecting epochs if bad for S1 or S2
-cleaned_epochs_AR = AR_local(cleaned_epochs_ICA, verbose=True)
+cleaned_epochs_AR = prep.AR_local(cleaned_epochs_ICA, verbose=True)
 input("Press ENTER to continue")
 plt.close('all')
 
@@ -83,10 +84,10 @@ preproc_S2 = cleaned_epochs_AR[1]
 data = np.array([preproc_S1, preproc_S2])
 
 # Compute analytic signal per frequency band
-complex_signal = compute_freq_bands(data, freq_bands)
+complex_signal = analyses.compute_freq_bands(data, freq_bands)
 
 # Compute frequency- and time-frequency-domain connectivity measures.
-result = compute_sync(complex_signal,
+result = analyses.compute_sync(complex_signal,
                       mode='ccorr')
 
 # slicing to get the inter-brain part of the matrix
@@ -147,3 +148,4 @@ statscondCluster = stats.statscondCluster(data=result,
                                           alpha=0.05)
 
 # can visualize statitical values replacing C by T_obs or statscondCluster.F_obs_plot in the precedent functions
+
