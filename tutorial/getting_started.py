@@ -78,12 +78,67 @@ plt.close('all')
 preproc_S1 = cleaned_epochs_AR[0]
 preproc_S2 = cleaned_epochs_AR[1]
 
+# Power spectral density
+# Computing power spectral density with welch method, between 4 and 7 Hz for example
+psd1 = analyses.pow(preproc_S1, fmin=4, fmax=7, n_fft=1000, n_per_seg=1000, time_resolved=False)
+psd2 = analyses.pow(preproc_S2, fmin=4, fmax=7, n_fft=1000, n_per_seg=1000, time_resolved=False)
+data_psd = np.array([psd1.psd, psd2.psd])
+
+# Comparing power spectral of the epochs to random signal
+# 1/ simple parametric t test
+T_obs, p_values, H0 = mne.stats.permutation_t_test(data=data_psd, n_permutations=5000,
+                                                   tail=0, n_jobs=1)
+
+# 2/ parametric t test with bonferrroni correction
+statsCondTuple = stats.statsCond(data=data_psd, epochs=preproc_S1, n_permutations=5000,
+                                 alpha_bonferroni=0.05, alpha=0.05)
+
+# 3/ non-parametric cluster-based permutations
+# creating matrix of a priori connectivity between channels across space and frequencies
+# based on their position, in theta band for example
+con_matrixTuple = stats.con_matrix(preproc_S1, freqs_mean=[4, 7])
+ch_con_freq = con_matrixTuple.ch_con_freq
+statscondCluster = stats.statscondCluster(data=data_psd,
+                                          freqs_mean=[4, 7],
+                                          bsr_matrix(ch_con_freq),
+                                          tail=0,
+                                          n_permutations=5000,
+                                          alpha=0.05)
+
+# Vizualise T values for sensors
+# (T_obs_plot = T_obs for 1/ or statsCondTuple.T_obs for 2/ or statscondCluster.F_obs_plot for 3/)
+viz.plot_significant_sensors(T_obs_plot=statsCondTuple.T_obs, epochs=preproc_S1)
+# Vizualise T values for significant sensors only
+viz.plot_significant_sensors(T_obs_plot=statsCondTuple.T_obs_plot, epochs=preproc_S1)
+
+
 # Connectivity
+# Intra-brain
 # Create array
-data = np.array([preproc_S1, preproc_S2])
+data_intra1 = np.array([preproc_S1, preproc_S1])
+data_intra2 = np.array([preproc_S2, preproc_S2])
+result_intra = []
+# for each subject
+for data in [data_intra1, data_intra2]:
+  # Compute analytic signal per frequency band
+  complex_signal = analyses.compute_freq_bands(data_inter, freq_bands)
+
+  # Compute frequency- and time-frequency-domain connectivity measures.
+  result_intra.append(analyses.compute_sync(complex_signal,
+                      mode='ccorr'))
+  
+# Compare connectivity values to random signal
+# with 1/ simple parametric t test for example
+T_obs, p_values, H0 = mne.stats.permutation_t_test(data=result_intra, n_permutations=5000,
+                                                   tail=0, n_jobs=1)
+# can vizualise or do other tests as decribed above
+
+# Connectivity
+# Inter brain
+data_inter = np.array([preproc_S1, preproc_S2])
 
 # Compute analytic signal per frequency band
-complex_signal = analyses.compute_freq_bands(data, freq_bands)
+complex_signal = analyses.compute_freq_bands(data_inter, freq_bands)
 
 # Compute frequency- and time-frequency-domain connectivity measures.
 result = analyses.compute_sync(complex_signal,
@@ -91,6 +146,8 @@ result = analyses.compute_sync(complex_signal,
 
 # slicing to get the inter-brain part of the matrix
 theta, alpha_low, alpha_high, beta, gamma = result[:, 0:n_ch, n_ch:2*n_ch]
+
+# with more than two subjects (one pair), can do statitistics
 
 values = alpha_low
 values -= np.diag(np.diag(values))
@@ -131,24 +188,4 @@ viz.plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
 
-
-# Compare connectivity values to random signal
-# parametric t test
-T_obs, p_values, H0 = mne.stats.permutation_t_test(data=result, n_permutations=5000,
-                                                   tail=0, n_jobs=1)
-# non-parametric cluster-based permutations
-# creating matrix of a priori connectivity between channels
-# across space and frequencies based on their position,
-# in theta band for example
-con_matrixTuple = stats.con_matrix(epo1, freqs_mean=[4, 7])
-ch_con_freq = con_matrixTuple.ch_con_freq
-statscondCluster = stats.statscondCluster(data=result,
-                                          freqs_mean=[4, 7],
-                                          bsr_matrix(ch_con_freq),
-                                          tail=0,
-                                          n_permutations=5000,
-                                          alpha=0.05)
-
-# Visualize statistical values replacing C by T_obs or statscondCluster.F_obs_plot
-# in the precedent functions
 
