@@ -17,7 +17,7 @@ pip install HyPyP
 
 HyPyP documentation of all the API functions is available online at [hypyp.readthedocs.io](https://hypyp.readthedocs.io/)
 
-## Roadmap
+## API
 
 🛠 [io.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/io.py) — Loaders (Florence, Anaël, Guillaume)
 
@@ -32,3 +32,25 @@ HyPyP documentation of all the API functions is available online at [hypyp.readt
 🧠 [viz.py](https://github.com/GHFC/HyPyP/blob/master/hypyp/viz.py) — Inter-brain visualization (Anaël, Amir, Florence, Guillaume)
 
 🎓 [Tutorials](https://github.com/GHFC/HyPyP/tree/master/tutorial) - Examples & documentation (Anaël, Florence, Yann, Guillaume)
+
+## Roadmap
+
+### Alpha [Spring 2020]
+
+First public version with a basic demonstration of the pipeline.
+
+Availabel functionalities:
+
+[TABLE]
+
+### Beta [Summer 2020]
+
+Updated version with those functionalities:
+
+[TABLE]
+
+### Release [Fall/Winter 2020]
+
+Full stable version, including functionalities:
+
+[TABLE]
