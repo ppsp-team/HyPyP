@@ -77,7 +77,7 @@ def adjust_loc(locs: np.ndarray, traZ: float=0.1) -> np.ndarray:
 
     return locs
 
-def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs):
+def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = True):
     """
     Plots sensors in 2D with x representation for bad sensors.
 
@@ -86,6 +86,8 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs):
           Epochs object to get channels information
         epo2: mne.Epochs
           Epochs object to get channels information
+        lab: option to plot channel names
+          True by default.
 
     Returns:
         None: plot the sensors in 2D within the current axis.
@@ -111,7 +113,7 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs):
         index_ch = epo1.ch_names.index(ch)
         x1, y1, z1 = loc1[index_ch, :]
         plt.plot(x1, y1, marker='x', color='dimgrey')
-        if lab1:
+        if lab:
           plt.text(x1+0.012, y1+0.012, lab1[index_ch],
                    horizontalalignment='center',
                    verticalalignment='center')
@@ -119,7 +121,7 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs):
         index_ch = epo1.ch_names.index(ch)
         x1, y1, z1 = loc1[index_ch, :]
         plt.plot(x1, y1, marker='o', color='dimgrey')
-        if lab1:
+        if lab:
           plt.text(x1+0.012, y1+0.012, lab1[index_ch],
                    horizontalalignment='center',
                    verticalalignment='center')
@@ -129,7 +131,7 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs):
         index_ch = epo2.ch_names.index(ch)
         x2, y2, z2 = loc2[index_ch, :]
         plt.plot(x2, y2, marker='x', color='dimgrey')
-        if lab2:
+        if lab:
           plt.text(x2+0.012, y2+0.012, lab2[index_ch],
                    horizontalalignment='center',
                    verticalalignment='center')
@@ -137,7 +139,7 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs):
         index_ch = epo2.ch_names.index(ch)
         x2, y2, z2 = loc2[index_ch, :]
         plt.plot(x2, y2, marker='o', color='dimgrey')
-        if lab2:
+        if lab:
           plt.text(x2+0.012, y2+0.012, lab2[index_ch],
                    horizontalalignment='center',
                    verticalalignment='center')
@@ -171,12 +173,10 @@ def plot_links_2d(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
     loc1 = transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
     loc1 = adjust_loc(loc1, traZ=+0.01)
-    lab1 = [ch for ch in epo1.ch_names]
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
     loc2 = transform(loc2, traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
     loc2 = adjust_loc(loc2, traZ=+0.01)
-    lab2 = [ch for ch in epo2.ch_names]
 
 
     ctr1 = np.nanmean(loc1, 0)
@@ -257,7 +257,7 @@ def plot_links_2d(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
                                  '-', color=color_n, linewidth=weight)
 
 
-def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs):
+def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False):
     """
     Plots sensors in 3D with x representation for bad sensors.
 
@@ -267,14 +267,8 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs):
           Epochs object to get channel information
         epo2: mne.Epochs
           Epochs object to get channel information
-        loc1: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        loc2: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        lab1: lists of strings
-          sensor labels
-        lab2: lists of strings
-          sensor labels
+        lab: option to plot channel names
+          False by default.
 
     Returns:
         None: plot the sensors in 3D within the current axis.
@@ -301,8 +295,7 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs):
         index_ch = epo1.ch_names.index(ch)
         x1, y1, z1 = loc1[index_ch, :]
         ax.scatter(x1, y1, z1, marker='x', color='dimgrey')
-        if lab1:
-            if lab1:
+        if lab:
                 ax.text(x1+0.012, y1+0.012 ,z1, lab1[index_ch],
                         horizontalalignment='center',
                         verticalalignment='center')
@@ -310,7 +303,7 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs):
         index_ch = epo1.ch_names.index(ch)
         x1, y1, z1 = loc1[index_ch, :]
         ax.scatter(x1, y1, z1, marker='o', color='dimgrey')
-        if lab1:
+        if lab:
                 ax.text(x1+0.012, y1+0.012 ,z1, lab1[index_ch],
                         horizontalalignment='center',
                         verticalalignment='center')
@@ -320,8 +313,7 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs):
         index_ch = epo2.ch_names.index(ch)
         x2, y2, z2 = loc2[index_ch, :]
         ax.scatter(x2, y2, z2, marker='x', color='dimgrey')
-        if lab2:
-            if lab2:
+        if lab:
                 ax.text(x2+0.012, y2+0.012 ,z2, lab2[index_ch],
                         horizontalalignment='center',
                         verticalalignment='center')
@@ -329,7 +321,7 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs):
         index_ch = epo2.ch_names.index(ch)
         x2, y2, z2 = loc2[index_ch, :]
         ax.scatter(x2, y2, z2, marker='o', color='dimgrey')
-        if lab2:
+        if lab:
                 ax.text(x2+0.012, y2+0.012 ,z2, lab2[index_ch],
                         horizontalalignment='center',
                         verticalalignment='center')
@@ -365,12 +357,10 @@ def plot_links_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, th
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
     loc1 = transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
     loc1 = adjust_loc(loc1, traZ=+0.01)
-    lab1 = [ch for ch in epo1.ch_names]
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
     loc2 = transform(loc2, traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
     loc2 = adjust_loc(loc2, traZ=+0.01)
-    lab2 = [ch for ch in epo2.ch_names]
 
     ctr1 = np.nanmean(loc1, 0)
     ctr1[2] -= 0.2
