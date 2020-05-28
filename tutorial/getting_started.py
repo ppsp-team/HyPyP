@@ -3,7 +3,7 @@
 # ==============================================================================
 # title           : getting_started.py
 # description     : Demonstration of HyPyP basics.
-# author          : Guillaume Dumas, Anaël Ayrolles
+# author          : Guillaume Dumas, Anaël Ayrolles, Florence Brun
 # date            : 2020-03-18
 # version         : 1
 # python_version  : 3.7
@@ -164,7 +164,7 @@ values -= np.diag(np.diag(values))
 
 C = (values - np.mean(values[:])) / np.std(values[:])
 
-# Defined bad channel for viz test
+# Define manually bad channel for viz test
 epo1.info['bads'] = ['F8', 'Fp2', 'Cz', 'O2']
 epo2.info['bads'] = ['F7', 'O1']
 
@@ -186,7 +186,6 @@ plt.show()
 
 
 # Visualization of inter-brain connectivity in 3D with get_3D_heads
-
 vertices, faces = viz.get_3d_heads()
 
 fig = plt.figure()
