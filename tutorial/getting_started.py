@@ -116,8 +116,8 @@ for i in [0, 1]:
   values = alpha_low
   values -= np.diag(np.diag(values))
   # computing Cohens'D for further analyses for example
-  C = (values - np.mean(values[:])) / np.std(values[:])
-  result_intra.append(C)
+  C_intra = (values - np.mean(values[:])) / np.std(values[:])
+  result_intra.append(C_intra)
 
 
 ## Statistical anlyses
