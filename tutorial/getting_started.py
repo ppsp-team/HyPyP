@@ -37,20 +37,14 @@ freq_bands = {'Theta': [4, 7],
               'Gamma': [30, 48]}
 freq_bands = OrderedDict(freq_bands)  # Force to keep order
 
-# Loading data files & extracting sensor infos
+# Loading data files
 epo1 = mne.read_epochs(os.path.join(os.path.dirname(__file__),
        os.pardir,'data',"subject1-epo.fif"), preload=True)
-loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-loc1 = viz.transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
-loc1 = viz.adjust_loc(loc1, traZ=+0.01)
-lab1 = [ch for ch in epo1.ch_names]
+
 
 epo2 = mne.read_epochs(os.path.join(os.path.dirname(__file__),
        os.pardir,'data',"subject2-epo.fif"), preload=True)
-loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-loc2 = viz.transform(loc2, traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
-loc2 = viz.adjust_loc(loc2, traZ=+0.01)
-lab2 = [ch for ch in epo2.ch_names]
+
 
 n_ch = len(epo1.ch_names)
 
@@ -185,8 +179,8 @@ camera.connect(ax, mesh.update)
 
 plt.gca().set_aspect('equal', 'box')
 plt.axis('off')
-viz.plot_sensors_2d(epo1, epo2, loc1, loc2, lab1, lab2)
-viz.plot_links_2d(loc1, loc2, C=C, threshold=2, steps=10)
+viz.plot_sensors_2d(epo1, epo2)
+viz.plot_links_2d(epo1, epo2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()
 
@@ -199,7 +193,7 @@ fig = plt.figure()
 ax = fig.gca(projection='3d')
 ax.axis("off")
 viz.plot_3d_heads(ax, vertices, faces)
-viz.plot_sensors_3d(ax, epo1, epo2, loc1, loc2)
-viz.plot_links_3d(ax, loc1, loc2, C=C, threshold=2, steps=10)
+viz.plot_sensors_3d(ax, epo1, epo2)
+viz.plot_links_3d(ax, epo1, epo2, C=C, threshold=2, steps=10)
 plt.tight_layout()
 plt.show()

@@ -77,7 +77,7 @@ def adjust_loc(locs: np.ndarray, traZ: float=0.1) -> np.ndarray:
 
     return locs
 
-def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
+def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs):
     """
     Plots sensors in 2D with x representation for bad sensors.
 
@@ -86,14 +86,6 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarray, loc2: 
           Epochs object to get channels information
         epo2: mne.Epochs
           Epochs object to get channels information
-        loc1: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        loc2: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        lab1: lists of strings
-          sensor labels
-        lab2: lists of strings
-          sensor labels
 
     Returns:
         None: plot the sensors in 2D within the current axis.
@@ -102,6 +94,17 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarray, loc2: 
     bads_epo1 = epo1.info['bads']
     bads_epo2 = []
     bads_epo2 = epo2.info['bads']
+
+    # extract sensor infos
+    loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
+    loc1 = transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
+    loc1 = adjust_loc(loc1, traZ=+0.01)
+    lab1 = [ch for ch in epo1.ch_names]
+
+    loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
+    loc2 = transform(loc2, traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
+    loc2 = adjust_loc(loc2, traZ=+0.01)
+    lab2 = [ch for ch in epo2.ch_names]
 
     for ch in epo1.ch_names:
       if ch in bads_epo1:
@@ -139,15 +142,15 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarray, loc2: 
                    horizontalalignment='center',
                    verticalalignment='center')
 
-def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: float=0.95, steps: int=10):
+def plot_links_2d(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
     """
     Plots hyper-connectivity in 2D.
 
     Arguments:
-        loc1: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        loc2: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
+        epo1: mne.Epochs
+          Epochs object to get channels information
+        epo2: mne.Epochs
+          Epochs object to get channels information
         C: array, (len(loc1), len(loc2))
           matrix with the values of hyper-connectivity
         threshold: float
@@ -163,6 +166,19 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
     Returns:
         None: plot the links in 2D within the current axis.
     """
+
+    # extract sensor infos
+    loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
+    loc1 = transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
+    loc1 = adjust_loc(loc1, traZ=+0.01)
+    lab1 = [ch for ch in epo1.ch_names]
+
+    loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
+    loc2 = transform(loc2, traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
+    loc2 = adjust_loc(loc2, traZ=+0.01)
+    lab2 = [ch for ch in epo2.ch_names]
+
+
     ctr1 = np.nanmean(loc1, 0)
     ctr2 = np.nanmean(loc2, 0)
 
@@ -241,7 +257,7 @@ def plot_links_2d(loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: 
                                  '-', color=color_n, linewidth=weight)
 
 
-def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarray, loc2: np.ndarray, lab1: list=[], lab2: list=[]):
+def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs):
     """
     Plots sensors in 3D with x representation for bad sensors.
 
@@ -263,6 +279,18 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarra
     Returns:
         None: plot the sensors in 3D within the current axis.
     """
+
+    # extract sensor infos
+    loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
+    loc1 = transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
+    loc1 = adjust_loc(loc1, traZ=+0.01)
+    lab1 = [ch for ch in epo1.ch_names]
+
+    loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
+    loc2 = transform(loc2, traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
+    loc2 = adjust_loc(loc2, traZ=+0.01)
+    lab2 = [ch for ch in epo2.ch_names]
+
     bads_epo1 =[]
     bads_epo1 = epo1.info['bads']
     bads_epo2 =[]
@@ -306,7 +334,7 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, loc1: np.ndarra
                         horizontalalignment='center',
                         verticalalignment='center')
 
-def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, threshold: float=0.95, steps: int=10):
+def plot_links_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
     """
     Plots hyper-connectivity in 3D.
 
@@ -332,6 +360,18 @@ def plot_links_3d(ax: str, loc1: np.ndarray, loc2: np.ndarray, C: np.ndarray, th
         None: plot the links in 3D within the current axis.
           Plot hyper-connectivity in 3D.
     """
+    
+    # extract sensor infos
+    loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
+    loc1 = transform(loc1, traX=-0.155, traY=0, traZ=+0.01, rotZ=(-np.pi/2))
+    loc1 = adjust_loc(loc1, traZ=+0.01)
+    lab1 = [ch for ch in epo1.ch_names]
+
+    loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
+    loc2 = transform(loc2, traX=+0.155, traY=0, traZ=+0.01, rotZ=np.pi/2)
+    loc2 = adjust_loc(loc2, traZ=+0.01)
+    lab2 = [ch for ch in epo2.ch_names]
+
     ctr1 = np.nanmean(loc1, 0)
     ctr1[2] -= 0.2
     ctr2 = np.nanmean(loc2, 0)
