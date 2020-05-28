@@ -160,8 +160,8 @@ statscondCluster = stats.statscondCluster(data=data_group,
 # With 3/ non-parametric cluster-based permutations
 # creating matrix of a priori connectivity between channels
 # across space and frequencies based on their position
-# in Alpha_Low band for example (position 1 in freq_bands)
-Alpha_Low = np.array([result_intra[0][1], result_intra[1][1]])
+# in Alpha_Low band for example (see above)
+Alpha_Low = np.array([result_intra[0], result_intra[1]])
 con_matrixTuple = stats.con_matrix(preproc_S1, freqs_mean=[7.5, 11])
 ch_con_freq = con_matrixTuple.ch_con_freq
 statscondCluster = stats.statscondCluster(data=Alpha_Low,
