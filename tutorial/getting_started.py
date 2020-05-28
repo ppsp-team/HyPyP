@@ -102,6 +102,7 @@ complex_signal = analyses.compute_freq_bands(data_inter, freq_bands)
 result = analyses.compute_sync(complex_signal, mode='ccorr')
 
 # slicing results to get the Inter-brain part of the matrix
+n_ch = len(epo1.info['ch_names'])
 theta, alpha_low, alpha_high, beta, gamma = result[:, 0:n_ch, n_ch:2*n_ch]
 # choosing Alpha_Low for futher analyses for example
 values = alpha_low
