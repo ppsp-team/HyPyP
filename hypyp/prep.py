@@ -25,7 +25,7 @@ def filt(raw_S: list) -> list:
 
     Arguments:
         raw_S: list of Raw data (as an example: different occurences of
-          a condition for a subject). Raws are MNE objects.
+          a condition for a participant). Raws are MNE objects.
 
     Returns:
         raws: list of high-pass filtered raws.
@@ -40,14 +40,14 @@ def filt(raw_S: list) -> list:
 
 def ICA_choice_comp(icas: list, epochs: list) -> list:
     """
-    Plots Independent Components for each subject (calculated from Epochs),
+    Plots Independent Components for each participant (calculated from Epochs),
     let the user choose the relevant components for artifact rejection
     and apply ICA on Epochs.
 
     Arguments:
-        icas: list of Independent Components for each subject (IC are MNE
+        icas: list of Independent Components for each participant (IC are MNE
           objects).
-        epochs: list of 2 Epochs objects (for each subject). Epochs_S1
+        epochs: list of 2 Epochs objects (for each participant). Epochs_S1
           and Epochs_S2 correspond to a condition and can result from the
           concatenation of Epochs from different experimental realisations
           of the condition.
@@ -56,16 +56,16 @@ def ICA_choice_comp(icas: list, epochs: list) -> list:
           stored in a disctionnary.
 
     Returns:
-        cleaned_epochs_ICA: list of 2 cleaned Epochs for each subject
+        cleaned_epochs_ICA: list of 2 cleaned Epochs for each participant
           (the chosen IC have been removed from the signal).
     """
-    # plotting Independant Components for each subject
+    # plotting Independant Components for each participant
     for ica in icas:
         ica.plot_components()
 
-    # choosing subject and its component as a template for the other subject
+    # choosing participant and its component as a template for the other participant
     # if do not want to apply ICA on the data, do not fill the answer
-    subj_numb = input("Which subject ICA do you want"
+    subj_numb = input("Which participant ICA do you want"
                       " to use as a template for artifact rejection?"
                       " Index begins at zero. If you do not want to apply"
                       " ICA on your data, enter nothing.")
@@ -87,7 +87,7 @@ def ICA_choice_comp(icas: list, epochs: list) -> list:
 
 def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> list:
     """
-    Applies ICA with template model from 1 subject in the dyad.
+    Applies ICA with template model from 1 participant in the dyad.
     See ICA_choice_comp for a detailed description of the parameters and output.
     """
 
@@ -111,7 +111,7 @@ def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> li
 
     epoch_all_ch = []
     # applying ica on clean_epochs
-    # for each subject
+    # for each participant
     for i, j in zip(range(0, len(epochs)), icas):
         # taking all channels to apply ICA
         bads = epochs[i].info['bads']
@@ -127,13 +127,13 @@ def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> li
 def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> list:
     """
     Computes global Autorejection to fit Independent Components Analysis
-    on Epochs, for each subject.
+    on Epochs, for each participant.
 
     Pre requisite : install autoreject
     https://api.github.com/repos/autoreject/autoreject/zipball/master
 
     Arguments:
-        epochs: list of 2 Epochs objects (for each subject).
+        epochs: list of 2 Epochs objects (for each participant).
           Epochs_S1 and Epochs_S2 correspond to a condition and can result
           from the concatenation of Epochs from different experimental
           realisations of the condition (Epochs are MNE objects).
@@ -155,7 +155,7 @@ def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> 
         (mne.Epochs.filter(epoch, 2, 30, method='fir')).
 
     Returns:
-        icas: list of Independant Components for each subject (IC are MNE
+        icas: list of Independant Components for each participant (IC are MNE
           objects, see MNE documentation for more details).
     """
     icas = []
@@ -249,7 +249,7 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
         ar = AR[cleaned_epochs_ICA.index(clean_epochs)]
         clean_epochs_AR = ar.transform(clean_epochs_ep)
         cleaned_epochs_AR.append(clean_epochs_AR)
-    # equalizing epochs length between two subjects
+    # equalizing epochs length between two participants
     mne.epochs.equalize_epoch_counts(cleaned_epochs_AR)
 
     # Vizualisation before after AR

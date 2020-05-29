@@ -65,7 +65,7 @@ def test_ICA(epochs):
     """
     ep = [epochs.epo1, epochs.epo2]
     icas = prep.ICA_fit(ep, n_components=15, method='fastica', random_state=97)
-    # check that the number of componenents is similar between the two subjects
+    # check that the number of componenents is similar between the two participants
     for i in range(0, len(icas)-1):
         mne.preprocessing.ICA.get_components(
             icas[i]).shape == mne.preprocessing.ICA.get_components(icas[i+1]).shape

@@ -27,10 +27,10 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha_b
     (PSD) for a condition.
 
     Arguments:
-        data: array of subjects PSD Logratio (ndarray) for
+        data: array of participants PSD Logratio (ndarray) for
           a condition (n_samples, n_tests, nfreq: n_tests the channels).
           PSD values will be averaged on nfreq for statistics.
-        epochs: Epochs object for a condition from a random subject, only
+        epochs: Epochs object for a condition from a random participant, only
           used to get parameters from the info (sampling frequencies for example).
         n_permutations: the number of permutations, int. Should be at least 2*n
           sample, can be set to 50000 for example.
@@ -106,7 +106,7 @@ def con_matrix(epochs: mne.Epochs, freqs_mean: list, draw: bool = False) -> tupl
     Computes a priori channel connectivity across space and frequencies.
 
     Arguments:
-        epochs: one subject Epochs object; contains channel information.
+        epochs: one participant Epochs object; contains channel information.
         freqs_mean: list of frequencies in frequency-band-of-interest used
           by MNE for power or coherence spectral density calculation.
         draw: option to plot the connectivity matrices, boolean.
@@ -178,7 +178,7 @@ def metaconn_matrix_2brains(electrodes: list, ch_con: scipy.sparse.csr_matrix, f
 
     Note:
         It is assumed that there was no a priori connectivity
-        between channels from the two subjects.
+        between channels from the two participants.
 
     Returns:
         metaconn, metaconn_freq:

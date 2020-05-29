@@ -24,10 +24,10 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> l
     on average Epochs (option).
 
     Arguments:
-        raw_S1: list of Raws for subject 1 (with the different
+        raw_S1: list of Raws for participant 1 (with the different
           experimental realizations of a condition - for example
           the baseline. The length can be 1).
-        raw_S2: list of Raws for subject 2.  
+        raw_S2: list of Raws for participant 2.  
           Raws are MNE objects: data are ndarray with shape
           (n_channels, n_times) and information is a dictionnary
           sampling parameters.
@@ -35,12 +35,12 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> l
 
     Note:
         Plots topomaps of PSD values calculated with welch FFT
-        for each epoch and each subject, averaged in each
+        for each epoch and each participant, averaged in each
         frequency band-of-interest.
         # TODO: option with verbose
 
     Returns:
-        epoch_S1, epoch_S2: list of Epochs for each subject.
+        epoch_S1, epoch_S2: list of Epochs for each participant.
     """
     epoch_S1 = []
     epoch_S2 = []
@@ -97,11 +97,11 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> l
 
 def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
     """
-    Merges Epochs from 2 subjects after interpolation of bad channels.
+    Merges Epochs from 2 participants after interpolation of bad channels.
 
     Arguments:
-        epoch_S1: Epochs object for subject 1.
-        epoch_S2: Epochs object for subject 2.  
+        epoch_S1: Epochs object for participant 1.
+        epoch_S2: Epochs object for participant 2.  
           epoch_S1 and epoch_S2 correspond to a condition and can result
           from the concatenation of epochs from different experimental
           realizations of a condition.  
@@ -117,7 +117,7 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
 
     Returns:
         ep_hyper: Epochs object for the dyad (with merged data of the two
-          subjects). The time alignement has been done at raw data creation.
+          participants). The time alignement has been done at raw data creation.
     """
     # checking bad ch for epochs, interpolating
     # and removing them from 'bads' if needed
@@ -138,7 +138,7 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
     sfreq = epoch_S1[0].info['sfreq']
     ch_names = epoch_S1[0].info['ch_names']
 
-    # creating channels label for each subject
+    # creating channels label for each participant
     ch_names1 = []
     for i in ch_names:
         ch_names1.append(i+'_S1')
@@ -199,20 +199,20 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
 
 def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
     """
-    Splits merged Raw data into 2 subjects Raw data.
+    Splits merged Raw data into 2 participants Raw data.
 
     Arguments:
-        raw_merge: Raw data for the dyad with data from subject 1
-          and data from subject 2 (channels name are defined with
+        raw_merge: Raw data for the dyad with data from participant 1
+          and data from participant 2 (channels name are defined with
           the suffix S1 and S2 respectively).
 
     Note:
-        Subject's Raw data is set to the standard montage 1020
+        Participant's Raw data is set to the standard montage 1020
         available in MNE. An average is computed to avoid reference bias
         (see MNE documentation about set_eeg_reference).
 
     Returns:
-        raw_1020_S1, raw_1020_S2: Raw data for each subject separately.
+        raw_1020_S1, raw_1020_S2: Raw data for each participant separately.
           Raws are MNE objects.
     """
     ch_S1 = []
@@ -225,7 +225,7 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
         elif name.endswith('S2'):
             ch_S2.append(name)
 
-    # picking individual subject data
+    # picking individual participant data
     data_S1 = raw_merge.get_data(picks=ch_S1)
     data_S2 = raw_merge.get_data(picks=ch_S2)
 
@@ -278,16 +278,16 @@ def concatenate_epochs(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs
     Concatenates a list of Epochs in one Epochs object.
 
     Arguments:
-        epoch_S1: list of Epochs for subject 1 (for example the
+        epoch_S1: list of Epochs for participant 1 (for example the
           list samples different experimental realizations
           of the baseline condition).
-        epoch_S2: list of Epochs for subject 2.  
+        epoch_S2: list of Epochs for participant 2.  
           Epochs are MNE objects.
 
     Returns:
         epoch_S1_concat, epoch_S2_concat: list of concatenate Epochs
           (for example one epoch with all the experimental realizations
-          of the baseline condition) for each subject.
+          of the baseline condition) for each participant.
     """
     epoch_S1_concat = mne.concatenate_epochs(epoch_S1)
     epoch_S2_concat = mne.concatenate_epochs(epoch_S2)

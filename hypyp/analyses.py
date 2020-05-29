@@ -29,7 +29,7 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
 
     Arguments:
 
-        epochs: A subject's Epochs object, for a condition (can result from the
+        epochs: A participant's Epochs object, for a condition (can result from the
           concatenation of Epochs from different files with the same condition).
                 Epochs are MNE objects: data are stored in arrays of shape
           (n_epochs, n_channels, n_times) and parameter information is stored
@@ -95,12 +95,12 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
 def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:
     """
     Computes indices for connectivity analysis between all EEG
-    channels for one subject. Can be used instead of
+    channels for one participant. Can be used instead of
     (n_channels, n_channels) that takes into account intrabrain channel
     connectivity.
 
     Arguments:
-        epochs: one subject's Epochs object, to retrieve channel information.
+        epochs: one participant's Epochs object, to retrieve channel information.
           (Epochs are MNE objects).
 
     Returns:
@@ -129,7 +129,7 @@ def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:
 def indices_connectivity_interbrain(epoch_hyper: mne.Epochs) -> list:
     """
     Computes indices for interbrain connectivity analyses between all EEG
-    sensors for 2 subjects (merge data).
+    sensors for 2 participants (merge data).
 
     Arguments:
         epoch_hyper: a pair's Epochs object; contains channel information (Epochs
@@ -167,7 +167,7 @@ def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, li
     Arguments:
 
         data:
-          shape = (2, n_epochs, n_channels, n_times). data input for computing connectivity between two subjects
+          shape = (2, n_epochs, n_channels, n_times). data input for computing connectivity between two participants
 
         frequencies :
           frequencies of interest for which connectivity will be computed.
@@ -256,7 +256,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
 
         complex_signal:
             shape = (2, n_epochs, n_channels, n_freq_bins, n_times).
-            Analytic signals for computing connectivity between two subjects.
+            Analytic signals for computing connectivity between two participants.
 
         mode:
             Connectivity measure. Options in the notes.
@@ -365,13 +365,13 @@ def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
     """
     n_samp = data[0].shape[2]
 
-    complex_signal = np.array([mne.time_frequency.tfr_array_multitaper(data[subject], sfreq=n_samp,
+    complex_signal = np.array([mne.time_frequency.tfr_array_multitaper(data[participant], sfreq=n_samp,
                                                                        freqs=np.arange(
                                                                            freq_range[0], freq_range[1], 1),
                                                                        n_cycles=4, zero_mean=False, use_fft=True,
                                                                        decim=1,
                                                                        output='complex')
-                               for subject in range(2)])
+                               for participant in range(2)])
 
     return complex_signal
 
@@ -401,8 +401,8 @@ def compute_freq_bands(data: np.ndarray, freq_bands: dict) -> np.ndarray:
     # filtering and hilbert transform
     complex_signal = []
     for freq_band in freq_bands.values():
-        filtered = np.array([mne.filter.filter_data(data[subject], n_samp, freq_band[0], freq_band[1], verbose=False)
-                             for subject in range(2)  # for each subject
+        filtered = np.array([mne.filter.filter_data(data[participant], n_samp, freq_band[0], freq_band[1], verbose=False)
+                             for participant in range(2)  # for each participant
                              ])
         hilb = signal.hilbert(filtered)
         complex_signal.append(hilb)

@@ -466,14 +466,14 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
     """
     Plots the significant sensors from a statistical test (simple t test or
     clusters corrected t test), computed between groups or conditions on power
-    or connectivity values, across simple subjects. For statistics with
-    inter-brain connectivity values on subject pairs (merge data), use the
+    or connectivity values, across simple participants. For statistics with
+    inter-brain connectivity values on participant pairs (merge data), use the
     plot_links_3d function.
 
     Arguments:
         T_obs_plot: statistical values to plot, from sensors above alpha threshold,
           array of shape (n_tests,).
-        epochs: one subject Epochs object to sample channel information in info.
+        epochs: one participant Epochs object to sample channel information in info.
 
     Returns:
         None: plot topomap with the T or F statistics for significant sensors.
