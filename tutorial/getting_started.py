@@ -195,13 +195,13 @@ ch_con = con_matrixTuple.ch_con
 Alpha_Low = [np.array([result_intra[0], result_intra[0]]),
              np.array([result_intra[1], result_intra[1]])]
 
-statscondCluster = stats.statscondCluster(data=Alpha_Low,
-                                          freqs_mean=np.arange(7.5, 11),
-                                          ch_con_freq=scipy.sparse.bsr_matrix(
-                                              ch_con),
-                                          tail=0,
-                                          n_permutations=5000,
-                                          alpha=0.05)
+statscondCluster_intra = stats.statscondCluster(data=Alpha_Low,
+                                                freqs_mean=np.arange(7.5, 11),
+                                                ch_con_freq=scipy.sparse.bsr_matrix(
+                                                    ch_con),
+                                                tail=0,
+                                                n_permutations=5000,
+                                                alpha=0.05)
 
 # Comparing Inter-brain connectivity values to random signal
 
@@ -235,7 +235,9 @@ viz.plot_significant_sensors(
 
 # Vizulisation of inter-brain links projected
 # on either 2D or 3D head models
-# can be applied to Cohen’s D or statistical values
+
+# can be applied to Cohen’s D (C as done here) or
+# statistical values (statscondCluster.F_obs or F_obs_plot)
 # of inter-individual brain connectivity
 
 # defining manually bad channel for viz test
