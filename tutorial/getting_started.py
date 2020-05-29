@@ -46,41 +46,41 @@ freq_bands = OrderedDict(freq_bands)  # Force to keep order
 # In our example, we load Epochs directly from EEG dataset in
 # the fiff format
 epo1 = mne.read_epochs(os.path.join(os.path.dirname(__file__),
-                                    os.pardir, 'data', "subject1-epo.fif"), preload=True)
+                                    os.pardir, 'data', "participant1-epo.fif"), preload=True)
 
 epo2 = mne.read_epochs(os.path.join(os.path.dirname(__file__),
-                                    os.pardir, 'data', "subject2-epo.fif"), preload=True)
+                                    os.pardir, 'data', "participant2-epo.fif"), preload=True)
 
 # In our example, since the dataset was not initially
 # dedicate to hyperscanning, we need to equalize
-# the number of epochs between our two subjects
+# the number of epochs between our two participants
 mne.epochs.equalize_epoch_counts([epo1, epo2])
 
 
 # Preprocessing epochs
 
 # Computing global AutoReject and Independant Components Analysis
-# for each subject
+# for each participant
 icas = prep.ICA_fit([epo1, epo2],
                     n_components=15,
                     method='fastica',
                     random_state=42)
 
 # Selecting relevant Independant Components for artefact rejection
-# on one subject, that will be transpose to the other subject
+# on one participant, that will be transpose to the other participant
 # and fitting the ICA
 cleaned_epochs_ICA = prep.ICA_choice_comp(icas, [epo1, epo2])
 plt.close('all')
 
-# Applying local AutoReject for each subject
+# Applying local AutoReject for each participant
 # rejecting bad epochs, rejecting or interpolating partially bad channels
-# removing the same bad channels and epochs across subjects
+# removing the same bad channels and epochs across participants
 # plotting signal before and after (verbose=True)
 cleaned_epochs_AR = prep.AR_local(cleaned_epochs_ICA, verbose=True)
 input("Press ENTER to continue")
 plt.close('all')
 
-# Picking the preprocessed epochs for each subject
+# Picking the preprocessed epochs for each participant
 preproc_S1 = cleaned_epochs_AR[0]
 preproc_S2 = cleaned_epochs_AR[1]
 
@@ -160,7 +160,7 @@ statsCondTuple = stats.statsCond(data=data_psd,
 # in the Alpha_Low band for example
 con_matrixTuple = stats.con_matrix(preproc_S1, freqs_mean=psd1.freq_list)
 ch_con_freq = con_matrixTuple.ch_con_freq
-# consitute two artificial groups with 2 'subject1' and 2 'subject1'
+# consitute two artificial groups with 2 'participant1' and 2 'participant1'
 data_group = [np.array([psd1.psd, psd1.psd]), np.array([psd2.psd, psd2.psd])]
 statscondCluster = stats.statscondCluster(data=data_group,
                                           freqs_mean=psd1.freq_list,
@@ -171,7 +171,7 @@ statscondCluster = stats.statscondCluster(data=data_group,
                                           alpha=0.05)
 
 
-# Comparing Intra-brain connectivity values between subjects
+# Comparing Intra-brain connectivity values between participants
 
 # With 3/ non-parametric cluster-based permutations
 # creating matrix of a priori connectivity between channels
@@ -190,7 +190,7 @@ con_matrixTuple = stats.con_matrix(
 # to correct clusters
 ch_con = con_matrixTuple.ch_con
 
-# consitute two artificial groups with 2 'subject1' and 2 'subject2'
+# consitute two artificial groups with 2 'participant1' and 2 'participant2'
 # in Alpha_Low band for example (see above)
 Alpha_Low = [np.array([result_intra[0], result_intra[0]]),
              np.array([result_intra[1], result_intra[1]])]
@@ -206,9 +206,9 @@ statscondCluster_intra = stats.statscondCluster(data=Alpha_Low,
 # Comparing Inter-brain connectivity values to random signal
 
 # No a priori connectivity between channels is considered
-# between the two subjects
+# between the two participants
 # in Alpha_Low band for example (see above)
-# consitute two artificial groups with 2 'subject1' and 2 'subject2'
+# consitute two artificial groups with 2 'participant1' and 2 'participant2'
 data = [np.array([values, values]), np.array(
     [result_intra[0], result_intra[0]])]
 
