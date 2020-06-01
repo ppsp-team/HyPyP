@@ -37,6 +37,8 @@ For getting started with HyPyP, we have designed a little walkthrough: [getting_
 
 ## Roadmap
 
+:warning: This is an alpha version and thus should be used with caution. While we have done our best to test all the functionalities, there is no guarantee that the pipeline is entirely bug-free. See Roadmap below for functionalities that will be implemented in the futur.
+
 ### Alpha [Spring 2020]
 
 First public version with a basic demonstration of the pipeline.
