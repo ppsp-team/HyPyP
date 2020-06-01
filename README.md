@@ -17,7 +17,7 @@ pip install HyPyP
 
 HyPyP documentation of all the API functions is available online at [hypyp.readthedocs.io](https://hypyp.readthedocs.io/)
 
-For getting started with HyPyP, we have designed a little walkthrough: [getting_started.py](https://github.com/GHFC/HyPyP/blob/master/tutorial/getting_started.py)
+For getting started with HyPyP, we have designed a little walkthrough: [getting_started.ipynb](https://github.com/GHFC/HyPyP/blob/master/tutorial/getting_started.ipynb)
 
 ## API
 
