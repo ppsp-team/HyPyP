@@ -220,20 +220,20 @@ statscondCluster = stats.statscondCluster(data=data,
                                           alpha=0.05)
 
 
-# Vizualisation
+# Visualization
 
-# Vizualisation of T values for sensors
+# Visualization of T values for sensors
 # (T_obs_plot = T_obs for 1/ or
 # statsCondTuple.T_obs for 2/ or
 # statscondCluster.F_obs_plot for 3/)
 viz.plot_significant_sensors(
     T_obs_plot=statsCondTuple.T_obs, epochs=preproc_S1)
 
-# Vizualise T values for significant sensors only
+# Visualize T values for significant sensors only
 viz.plot_significant_sensors(
     T_obs_plot=statsCondTuple.T_obs_plot, epochs=preproc_S1)
 
-# Vizulisation of inter-brain links projected
+# Visulization of inter-brain links projected
 # on either 2D or 3D head models
 
 # can be applied to Cohen’s D (C as done here) or
