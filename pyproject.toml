@@ -1,8 +1,26 @@
 [tool.poetry]
 name = "hypyp"
 version = "0.2.0-alpha"
-description = ""
-authors = ["Guillaume DUMAS <guillaume.dumas@centraliens.net>"]
+description = "The Hyperscanning Python Pipeline."
+readme = "README.md"
+authors = [
+    "Anaël AYROLLLES <anael.ayrollles@pasteur.fr>",
+    "Florence BRUN <florence.brun@pasteur.fr>",
+    "Phoebe CHEN <phoebe.chen1117@gmail.com>",
+    "Amir DJALOVSKI <amir.djv@gmail.com>",
+    "Yann BEAUXIS <dev@yannbeauxis.net>",
+    "Suzanne DIKKER <suzanne.dikker@nyu.edu>",
+    "Guillaume DUMAS <guillaume.dumas@centraliens.net>"]
+license = "BSD-3-Clause"
+homepage = "https://github.com/GHFC/HyPyP"
+repository = "https://github.com/GHFC/HyPyP"
+documentation = "https://hypyp.readthedocs.io"
+classifiers=[
+    "Development Status :: 3 - Alpha",
+    "Topic :: Scientific/Engineering",
+    "License :: OSI Approved :: BSD License",
+]
+keywords=["hyperscanning", "EEG", "MEG", "pipeline", "statistics", "visualization"]
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
@@ -15,6 +33,7 @@ pandas = "^1.0.3"
 numpy = "^1.18.3"
 astropy = "^4.0.1"
 meshio = "^4.0.13"
+tqdm = "^4.46.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"

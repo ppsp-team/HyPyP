@@ -19,9 +19,11 @@ lazy-object-proxy==1.4.3
 livereload==2.6.1
 lunr==0.5.6
 markdown==3.2.1
+markdown-include==0.5.1
 markupsafe==1.1.1
 matplotlib==3.2.1
 mccabe==0.6.1
+meshio==4.0.13
 mkdocs==1.1
 mkdocs-material==5.1.1
 mkdocs-material-extensions==1.0b2
@@ -51,11 +53,9 @@ six==1.14.0
 soupsieve==1.9.5
 toml==0.10.0
 tornado==6.0.4
-tqdm==4.45.0
+tqdm==4.46.0
 typed-ast==1.4.1
 wcwidth==0.1.9
 wrapt==1.11.2
 zipp==3.1.0; python_version < "3.8"
-meshio==4.0.13
-markdown-include==0.5.1
-hypyp==0.2.0a0
+hypyp==0.2.0-alpha
