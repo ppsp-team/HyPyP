@@ -38,6 +38,7 @@ freq_bands = {'Theta': [4, 7],
               'Beta': [13.5, 29.5],
               'Gamma': [30, 48]}
 freq_bands = OrderedDict(freq_bands)  # Force to keep order
+sampling_rate = 500  #Hz
 
 
 # Loading datasets (see MNE functions mne.io.read_raw_format),
@@ -105,7 +106,7 @@ data_psd = np.array([psd1.psd, psd2.psd])
 data_inter = np.array([preproc_S1, preproc_S2])
 result_intra = []
 # computing analytic signal per frequency band
-complex_signal = analyses.compute_freq_bands(data_inter, freq_bands)
+complex_signal = analyses.compute_freq_bands(data_inter, sampling_rate, freq_bands)
 # computing frequency- and time-frequency-domain connectivity,
 # 'ccorr' for example
 result = analyses.compute_sync(complex_signal, mode='ccorr')
