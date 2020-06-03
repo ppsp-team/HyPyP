@@ -402,8 +402,11 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict) -
     # filtering and hilbert transform
     complex_signal = []
     for freq_band in freq_bands.values():
-        filtered = np.array([mne.filter.filter_data(data[participant], sampling_rate, freq_band[0], freq_band[1], verbose=False)
-                             for participant in range(2)  # for each participant
+        filtered = np.array([mne.filter.filter_data(data[participant], 
+                             sampling_rate, freq_band[0], freq_band[1],
+                             verbose=False)
+                             for participant in range(2)  
+                             # for each participant
                              ])
         hilb = signal.hilbert(filtered)
         complex_signal.append(hilb)

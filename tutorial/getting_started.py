@@ -38,6 +38,8 @@ freq_bands = {'Theta': [4, 7],
               'Beta': [13.5, 29.5],
               'Gamma': [30, 48]}
 freq_bands = OrderedDict(freq_bands)  # Force to keep order
+
+# Specify sampling frequency
 sampling_rate = 500  #Hz
 
 
