@@ -63,7 +63,8 @@ mne.epochs.equalize_epoch_counts([epo1, epo2])
 # for each participant
 icas = prep.ICA_fit([epo1, epo2],
                     n_components=15,
-                    method='fastica',
+                    method='infomax',
+                    fit_params=dict(extended=True),
                     random_state=42)
 
 # Selecting relevant Independant Components for artefact rejection

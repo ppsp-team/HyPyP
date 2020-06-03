@@ -124,7 +124,7 @@ def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> li
     return cleaned_epochs_ICA
 
 
-def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> list:
+def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, random_state: int) -> list:
     """
     Computes global Autorejection to fit Independent Components Analysis
     on Epochs, for each participant.
@@ -141,7 +141,12 @@ def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> 
           ICA algorithm during fitting, int. For a first estimation,
           n_components can be set to 15.
         method: the ICA method used, str 'fastica', 'infomax' or 'picard'.
-          'Fastica' is the most frequently used.
+          'Fastica' is the most frequently used. Use the fit_params argument to set
+           additional parameters. Specifically, if you want Extended Infomax, set
+           method=’infomax’ and fit_params=dict(extended=True) (this also works
+           for method=’picard’). 
+        fit_params: Additional parameters passed to the ICA estimator
+           as specified by method. None by default.
         random_state: the parameter used to compute random distributions
           for ICA calulation, int or None. It can be useful to fix
           random_state value to have reproducible results. For 15
@@ -169,6 +174,7 @@ def ICA_fit(epochs: list, n_components: int, method: str, random_state: int) -> 
         # fitting ICA on filt_raw after AR
         ica = ICA(n_components=n_components,
                   method=method,
+                  fit_params= fit_params,
                   random_state=random_state).fit(epoch)
         # take bad channels into account in ICA fit
         epoch_all_ch = mne.Epochs.copy(epoch)
