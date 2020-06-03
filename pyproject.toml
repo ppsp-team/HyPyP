@@ -20,7 +20,7 @@ classifiers=[
     "Topic :: Scientific/Engineering",
     "License :: OSI Approved :: BSD License",
 ]
-keywords=["hyperscanning", "EEG", "MEG", "pipeline", "statistics", "visualization"]
+keywords=["hyperscanning", "neuroscience", "pipeline", "statistics", "visualization"]
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
