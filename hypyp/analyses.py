@@ -158,7 +158,7 @@ def indices_connectivity_interbrain(epoch_hyper: mne.Epochs) -> list:
     return channels
 
 
-def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, list], mode: str,
+def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int, frequencies: Union[dict, list], mode: str,
                       epochs_average: bool = True) -> np.ndarray:
     """
     Computes frequency- or time-frequency-domain connectivity measures from preprocessed EEG data.
@@ -168,7 +168,8 @@ def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, li
 
         data:
           shape = (2, n_epochs, n_channels, n_times). data input for computing connectivity between two participants
-
+        sampling_rate:
+          sampling rate.
         frequencies :
           frequencies of interest for which connectivity will be computed.
           If a dictionary, different frequency bands are used.
@@ -213,9 +214,9 @@ def pair_connectivity(data: Union[list, np.ndarray], frequencies: Union[dict, li
 
     # compute instantaneous analytic signal from EEG data
     if type(frequencies) == list:
-        values = compute_single_freq(data, frequencies)
+        values = compute_single_freq(data, sampling_rate, frequencies)
     elif type(frequencies) == dict:
-        values = compute_freq_bands(data, frequencies)
+        values = compute_freq_bands(data, sampling_rate, frequencies)
     else:
         TypeError("Please use a list or a dictionary to specify frequencies.")
 
@@ -348,7 +349,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
     return con
 
 
-def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
+def compute_single_freq(data: np.ndarray, sampling_rate: int, freq_range: list) -> np.ndarray:
     """
     Computes analytic signal per frequency bin using the multitaper method.
 
@@ -356,6 +357,8 @@ def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
         data:
           shape is (2, n_epochs, n_channels, n_times)
           real-valued data used to compute analytic signal.
+        sampling_rate:
+          sampling rate.
         freq_range:
           a list of two specifying the frequency range.
           e.g. [5,30] refers to every integer in the frequency bin from 5 Hz to 30 Hz.
@@ -363,9 +366,8 @@ def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
         complex_signal:
           shape is (2, n_epochs, n_channels, n_frequencies, n_times)
     """
-    n_samp = data[0].shape[2]
 
-    complex_signal = np.array([mne.time_frequency.tfr_array_multitaper(data[participant], sfreq=n_samp,
+    complex_signal = np.array([mne.time_frequency.tfr_array_multitaper(data[participant], sfreq=sampling_rate,
                                                                        freqs=np.arange(
                                                                            freq_range[0], freq_range[1], 1),
                                                                        n_cycles=4, zero_mean=False, use_fft=True,
@@ -376,7 +378,7 @@ def compute_single_freq(data: np.ndarray, freq_range: list) -> np.ndarray:
     return complex_signal
 
 
-def compute_freq_bands(data: np.ndarray, freq_bands: dict) -> np.ndarray:
+def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict) -> np.ndarray:
     """
     Computes analytic signal per frequency band using FIR filtering
     and Hilbert transform.
@@ -385,6 +387,8 @@ def compute_freq_bands(data: np.ndarray, freq_bands: dict) -> np.ndarray:
         data:
           shape is (2, n_epochs, n_channels, n_times)
           real-valued data to compute analytic signal from.
+        sampling_rate:
+          sampling rate.
         freq_bands:
           a dictionary specifying frequency band labels and corresponding frequency ranges
           e.g. {'alpha':[8,12],'beta':[12,20]} indicates that computations are performed over two frequency bands: 8-12 Hz for the alpha band and 12-20 Hz for the beta band.
@@ -393,21 +397,17 @@ def compute_freq_bands(data: np.ndarray, freq_bands: dict) -> np.ndarray:
           (2, n_epochs, n_channels, n_freq_bands, n_times)
     """
     assert data[0].shape[0] == data[1].shape[0], "Two data streams should have the same number of trials."
-    n_epoch = data[0].shape[0]
-    n_ch = data[0].shape[1]
-    n_samp = data[0].shape[2]
     data = np.array(data)
 
     # filtering and hilbert transform
     complex_signal = []
     for freq_band in freq_bands.values():
-        filtered = np.array([mne.filter.filter_data(data[participant], n_samp, freq_band[0], freq_band[1], verbose=False)
+        filtered = np.array([mne.filter.filter_data(data[participant], sampling_rate, freq_band[0], freq_band[1], verbose=False)
                              for participant in range(2)  # for each participant
                              ])
         hilb = signal.hilbert(filtered)
         complex_signal.append(hilb)
 
     complex_signal = np.moveaxis(np.array(complex_signal), [0], [3])
-    assert complex_signal.shape == (2, n_epoch, n_ch, len(freq_bands), n_samp)
 
     return complex_signal
