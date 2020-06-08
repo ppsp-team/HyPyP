@@ -21,7 +21,7 @@ import mne
 import meshio
 
 
-def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.1, rotZ: float=(np.pi)/2) -> np.ndarray:
+def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, rotZ: float=(np.pi)/2) -> np.ndarray:
     """
     Calculates new locations for the EEG locations.
 
@@ -43,14 +43,35 @@ def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.1,
     """
     newX = locs[:, 0] * np.cos(rotZ) - locs[:, 1] * np.sin(rotZ)
     newY = locs[:, 0] * np.sin(rotZ) + locs[:, 1] * np.cos(rotZ)
-    newZ = locs[:, 0] * np.cos(rotZ) + locs[:, 1] * np.cos(rotZ) + locs[:, 2] * np.cos(rotZ/2)
     locs[:, 0] = newX
     locs[:, 0] = locs[:, 0] + traX
     locs[:, 1] = newY
     locs[:, 1] = locs[:, 1] + traY
+    return locs
+
+
+def reduce(locs: np.ndarray,traZ: float=0.1, rotZ: float=(np.pi)/2) -> np.ndarray:
+    """
+    Calculates new locations for the EEG locations to reduce the size of the eeg headsets.
+
+    Arguments:
+        locs: array of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        traZ: float
+          Z translation to apply to the sensors
+        rotZ: float
+          Z rotation to apply to the sensors
+
+    Returns:
+        result: array (n_sensors, 3)
+          new 3d coordinates of the sensors
+    """
+
+    newZ = locs[:, 0] * np.cos(rotZ) + locs[:, 1] * np.cos(rotZ) + locs[:, 2] * np.cos(rotZ/2)
     locs[:, 2] = newZ
     locs[:, 2] = locs[:, 2] + traZ
     return locs
+
 
 
 def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = True):
@@ -75,11 +96,13 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = True):
 
     # extract sensor infos and transform loc to fit with headmodel
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-    loc1 = transform(loc1, traX=-0.157, traY=0, traZ=+0.032, rotZ=(-np.pi/2))
+    loc1 = transform(loc1, traX=-0.157, traY=0, rotZ=(-np.pi/2))
+    loc1 = reduce(loc1, traZ = 0.032,  rotZ=(-np.pi/2))
     lab1 = [ch for ch in epo1.ch_names]
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-    loc2 = transform(loc2, traX=+0.157, traY=0, traZ=+0.032, rotZ=np.pi/2)
+    loc2 = transform(loc2, traX=+0.157, traY=0, rotZ=np.pi/2)
+    loc2 = reduce(loc2, traZ = 0.032,  rotZ=(-np.pi/2))
     lab2 = [ch for ch in epo2.ch_names]
 
     for ch in epo1.ch_names:
@@ -145,10 +168,12 @@ def plot_links_2d(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
 
     # extract sensor infos and transform loc to fit with headmodel
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-    loc1 = transform(loc1, traX=-0.157, traY=0, traZ=+0.032, rotZ=(-np.pi/2))
+    loc1 = transform(loc1, traX=-0.157, traY=0, rotZ=(-np.pi/2))
+    loc1 = reduce(loc1, traZ = 0.032,  rotZ=(-np.pi/2))
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-    loc2 = transform(loc2, traX=+0.157, traY=0, traZ=+0.032, rotZ=np.pi/2)
+    loc2 = transform(loc2, traX=+0.157, traY=0, rotZ=np.pi/2)
+    loc2 = reduce(loc2, traZ = 0.032,  rotZ=(-np.pi/2))
 
 
 
@@ -249,11 +274,13 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = Fal
 
     # extract sensor infos and transform loc to fit with headmodel 
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-    loc1 = transform(loc1, traX=-0.157, traY=0, traZ=+0.032, rotZ=(-np.pi/2))
+    loc1 = transform(loc1, traX=-0.157, traY=0, rotZ=(-np.pi/2))
+    loc1 = reduce(loc1, traZ = 0.032,  rotZ=(-np.pi/2))
     lab1 = [ch for ch in epo1.ch_names]
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-    loc2 = transform(loc2, traX=+0.157, traY=0, traZ=+0.032, rotZ=np.pi/2)
+    loc2 = transform(loc2, traX=+0.157, traY=0, rotZ=np.pi/2)
+    loc2 = reduce(loc2, traZ = 0.032,  rotZ=(-np.pi/2))
     lab2 = [ch for ch in epo2.ch_names]
 
     bads_epo1 =[]
@@ -326,11 +353,13 @@ def plot_links_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, th
     
     # extract sensor infos and transform loc to fit with headmodel 
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-    loc1 = transform(loc1, traX=-0.157, traY=0, traZ=+0.032, rotZ=(-np.pi/2))
+    loc1 = transform(loc1, traX=-0.157, traY=0, rotZ=(-np.pi/2))
+    loc1 = reduce(loc1, traZ = 0.032,  rotZ=(-np.pi/2))
   
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-    loc2 = transform(loc2, traX=+0.157, traY=0, traZ=+0.032, rotZ=np.pi/2)
+    loc2 = transform(loc2, traX=+0.157, traY=0, rotZ=np.pi/2)
+    loc2 = reduce(loc2, traZ = 0.032,  rotZ=(-np.pi/2))
    
 
     ctr1 = np.nanmean(loc1, 0)
