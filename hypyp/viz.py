@@ -50,7 +50,7 @@ def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, rotZ: float=(np.
     return locs
 
 
-def reduce(locs: np.ndarray,traZ: float=0.1, rotZ: float=(np.pi)/2) -> np.ndarray:
+def reduce(locs: np.ndarray, traZ: float=0.1, rotZ: float=(np.pi)/2) -> np.ndarray:
     """
     Calculates new locations for the EEG locations to reduce the size of the eeg headsets.
 
@@ -71,7 +71,36 @@ def reduce(locs: np.ndarray,traZ: float=0.1, rotZ: float=(np.pi)/2) -> np.ndarra
     locs[:, 2] = newZ
     locs[:, 2] = locs[:, 2] + traZ
     return locs
+    
+def rotate(locs: np.ndarray,  traX: float=0.5, traZ: float=0.5, rotY: float=(np.pi)/2) -> np.ndarray:
+    """
+    Calculates new locations for the EEG locations.
 
+    Arguments:
+        locs: array of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        traX: float
+          X translation to apply to the sensors
+        traY: float
+          Y translation to apply to the sensors
+        traZ: float
+          Z translation to apply to the sensors
+        rotZ: float
+          Z rotation to apply to the sensors
+
+    Returns:
+        result: array (n_sensors, 3)
+          new 3d coordinates of the sensors
+    """
+    newX = locs[:, 0] * np.cos(rotY) + locs[:, 2] * np.sin(rotY)
+    newZ = - locs[:, 0] * np.sin(rotY) + locs[:, 2] * np.cos(rotY)
+    locs[:, 0] = newX
+    locs[:, 2] = newZ
+    locs[:, 2] = locs[:, 2] + traZ
+    locs[:, 0] = locs[:, 0] + traX
+ 
+    
+    return locs
 
 
 def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = True):
@@ -98,6 +127,7 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = True):
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
     loc1 = transform(loc1, traX=-0.157, traY=0, rotZ=(-np.pi/2))
     loc1 = reduce(loc1, traZ = 0.032,  rotZ=(-np.pi/2))
+    loc1 = rotate(loc1,rotZ=(np.pi/8))
     lab1 = [ch for ch in epo1.ch_names]
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
@@ -276,6 +306,7 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = Fal
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
     loc1 = transform(loc1, traX=-0.157, traY=0, rotZ=(-np.pi/2))
     loc1 = reduce(loc1, traZ = 0.032,  rotZ=(-np.pi/2))
+    loc1 = rotate(loc1, traX=-0.005, traZ=0.045 , rotY=(-np.pi/12))
     lab1 = [ch for ch in epo1.ch_names]
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
