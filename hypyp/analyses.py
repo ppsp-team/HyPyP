@@ -378,7 +378,7 @@ def compute_single_freq(data: np.ndarray, sampling_rate: int, freq_range: list) 
     return complex_signal
 
 
-def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict) -> np.ndarray:
+def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict, **filter_options) -> np.ndarray:
     """
     Computes analytic signal per frequency band using FIR filtering
     and Hilbert transform.
@@ -392,6 +392,8 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict) -
         freq_bands:
           a dictionary specifying frequency band labels and corresponding frequency ranges
           e.g. {'alpha':[8,12],'beta':[12,20]} indicates that computations are performed over two frequency bands: 8-12 Hz for the alpha band and 12-20 Hz for the beta band.
+        **filter_options:
+          additional arguments for mne.filter.filter_data, such as filter_length, l_trans_bandwidth, h_trans_bandwidth
     Returns:
         complex_signal: array, shape is
           (2, n_epochs, n_channels, n_freq_bands, n_times)
@@ -403,7 +405,7 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict) -
     complex_signal = []
     for freq_band in freq_bands.values():
         filtered = np.array([mne.filter.filter_data(data[participant], 
-                             sampling_rate, freq_band[0], freq_band[1],
+                             sampling_rate, l_freq=freq_band[0], h_freq=freq_band[1], **filter_options,
                              verbose=False)
                              for participant in range(2)  
                              # for each participant
