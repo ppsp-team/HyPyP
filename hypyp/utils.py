@@ -347,8 +347,9 @@ def generate_random_epoch(epoch: mne.Epochs, mu: float=0, sigma: float=2.0)-> mn
     sfreq = epoch.info['sfreq']
     ch_names = epoch.info['ch_names']
     ch_types='eeg'
+    montage = mne.channels.make_standard_montage('standard_1020')
+    info = create_info(ch_names=ch_names, montage=montage, sfreq=sfreq, ch_types=ch_types)
     
-    info = create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
     
     # Get epochs as a 3D NumPy array of shape (n_epochs, n_channels, n_times)
     # Get the arrays’ shape
