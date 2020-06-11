@@ -136,16 +136,20 @@ def test_stats(epochs):
     """
     Test stats
     """
+    # with PSD from Epochs with random values
+    random_r1 = generate_random_epoch(epochs.epo1, mu=0, sigma=0.01)
+    random_r2 = generate_random_epoch(epochs.epo2, mu=4, sigma=0.01)
+ 
     fmin = 10
     fmax = 13
-    psd_tuple = analyses.pow(epochs.epo1,
+    psd_tuple = analyses.pow(random_r1,
                              fmin, fmax,
                              n_fft=256,
                              n_per_seg=None,
                              epochs_average=False)
     psd = psd_tuple.psd
 
-    statsCondTuple = stats.statsCond(psd, epochs.epo1, 3000, 0.05, 0.05)
+    statsCondTuple = stats.statsCond(psd, random_r1, 3000, 0.05, 0.05)
     assert statsCondTuple.T_obs.shape[0] == len(epochs.epo1.info['ch_names'])
 
     for i in range(0, len(statsCondTuple.p_values)):
@@ -153,7 +157,7 @@ def test_stats(epochs):
     assert statsCondTuple.T_obs_plot.shape[0] == len(
         epochs.epo1.info['ch_names'])
 
-    psd_tuple2 = analyses.pow(epochs.epo2,
+    psd_tuple2 = analyses.pow(random_r2,
                               fmin, fmax,
                               n_fft=256,
                               n_per_seg=None,
@@ -162,7 +166,7 @@ def test_stats(epochs):
     freq_list = psd_tuple2.freq_list
 
     data = [psd, psd2]
-    con_matrixTuple = stats.con_matrix(epochs.epo1, freq_list, draw=False)
+    con_matrixTuple = stats.con_matrix(random_r1, freq_list, draw=False)
     statscondClusterTuple = stats.statscondCluster(data,
                                                    freq_list,
                                                    scipy.sparse.bsr_matrix(
@@ -177,7 +181,7 @@ def test_stats(epochs):
             epochs.epo1.info['ch_names'])
     assert statscondClusterTuple.cluster_p_values.shape[0] == len(
         statscondClusterTuple.clusters)
-    # test F_obs_plot (ntests,) with viz function
+    assert np.mean(statscondClusterTuple.F_obs_plot) != 0 
 
 
 def test_utils(epochs):
