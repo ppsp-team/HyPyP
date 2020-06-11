@@ -137,8 +137,8 @@ def test_stats(epochs):
     Test stats
     """
     # with PSD from Epochs with random values
-    random_r1 = generate_random_epoch(epochs.epo1, mu=0, sigma=0.01)
-    random_r2 = generate_random_epoch(epochs.epo2, mu=4, sigma=0.01)
+    random_r1 = utils.generate_random_epoch(epochs.epo1, mu=0, sigma=0.01)
+    random_r2 = utils.generate_random_epoch(epochs.epo2, mu=4, sigma=0.01)
  
     fmin = 10
     fmax = 13
