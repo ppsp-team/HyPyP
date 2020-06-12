@@ -322,8 +322,8 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
         - F_obs: statistic (F by default) observed for all variables,
           array of shape (n_tests,).
 
-        - clusters: list where each sublist contains the indices of locations
-          that together form a cluster, list.
+        - clusters: boolean array with same shape as the input data, 
+          True values indicating locations that are part of a cluster, array.
 
         - cluster_p_values: p-value for each cluster, array.
 
@@ -340,7 +340,7 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
                                                                      threshold=None,
                                                                      n_permutations=n_permutations,
                                                                      tail=tail, connectivity=ch_con_freq,
-                                                                     t_power=1, out_type='indices')
+                                                                     t_power=1, out_type='mask')
     # t_power = 1 weighs each location by its statistical score,
     # when set to 0 it gives a count of locations in each cluster
 
