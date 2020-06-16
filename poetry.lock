@@ -391,6 +391,22 @@ version = "8.2.0"
 
 [[package]]
 category = "dev"
+description = ""
+name = "mpl3d"
+optional = false
+python-versions = "*"
+version = "0.0.1"
+
+[package.dependencies]
+matplotlib = "*"
+numpy = "*"
+
+[package.source]
+reference = "538d514e7fd11843f5a338a52b5887c3f16a9bff"
+type = "git"
+url = "https://github.com/rougier/matplotlib-3d"
+[[package]]
+category = "dev"
 description = "Natural Language Toolkit"
 name = "nltk"
 optional = false
@@ -697,7 +713,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "cbf1c0ae9cb8355e6436f963175c640831f718217a35ab3864e03c9f89b3f759"
+content-hash = "68a1369f7f0ca684d08c4e7ca6e2982ca0964f007609a549a4d574722e82ca61"
 python-versions = "^3.6.1"
 
 [metadata.files]
@@ -917,6 +933,7 @@ more-itertools = [
     {file = "more-itertools-8.2.0.tar.gz", hash = "sha256:b1ddb932186d8a6ac451e1d95844b382f55e12686d51ca0c68b6f61f2ab7a507"},
     {file = "more_itertools-8.2.0-py3-none-any.whl", hash = "sha256:5dd8bcf33e5f9513ffa06d5ad33d78f31e1931ac9a18f33d37e77a180d393a7c"},
 ]
+mpl3d = []
 nltk = [
     {file = "nltk-3.5.zip", hash = "sha256:845365449cd8c5f9731f7cb9f8bd6fd0767553b9d53af9eb1b3abf7700936b35"},
 ]
