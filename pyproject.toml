@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hypyp"
-version = "0.2.0-alpha"
+version = "0.2.0-a1"
 description = "The Hyperscanning Python Pipeline."
 readme = "README.md"
 authors = [
@@ -44,6 +44,9 @@ pylint = "^2.4.4"
 black = "^19.10b0"
 markdown-include = "^0.5.1"
 mpl3d = {git = "https://github.com/rougier/matplotlib-3d"}
+jupyterlab = "^2.1.4"
+widgetsnbextension = "^3.5.1"
+ipywidgets = "^7.5.1"
 
 [build-system]
 requires = ["poetry>=0.12"]
