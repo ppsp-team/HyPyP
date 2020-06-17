@@ -587,18 +587,18 @@ def viz_2D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=
     # defining head model and adding sensors
     fig, ax = plt.subplots(1, 1)
     ax.axis("off")
-    vertices, faces = viz.get_3d_heads()
+    vertices, faces = get_3d_heads()
     camera = Camera("ortho", theta=90, phi=180, scale=1)
     mesh = Mesh(ax, camera.transform @ glm.yrotate(90), vertices, faces,
                 facecolors='white',  edgecolors='black', linewidths=.25)
     camera.connect(ax, mesh.update)
     plt.gca().set_aspect('equal', 'box')
     plt.axis('off')
-    viz.plot_sensors_2d(epo1, epo2, lab=True)  # bads are represented as squares
+    plot_sensors_2d(epo1, epo2, lab=True)  # bads are represented as squares
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
-    viz.plot_links_2d(epo1, epo2, C=C, threshold=2, steps=10)
+    plot_links_2d(epo1, epo2, C=C, threshold=2, steps=10)
     plt.tight_layout()
     plt.show()
     
@@ -627,17 +627,17 @@ def viz_3D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=
     """
 
     # defining head model and adding sensors
-    vertices, faces = viz.get_3d_heads()
+    vertices, faces = get_3d_heads()
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     ax.axis("off")
-    viz.plot_3d_heads(ax, vertices, faces)
+    plot_3d_heads(ax, vertices, faces)
     # bads are represented as squares
-    viz.plot_sensors_3d(ax, epo1, epo2, lab=False)
+    plot_sensors_3d(ax, epo1, epo2, lab=False)
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
-    viz.plot_links_3d(ax, epo1, epo2, C=C, threshold=2, steps=10)
+    plot_links_3d(ax, epo1, epo2, C=C, threshold=2, steps=10)
     plt.tight_layout()
     plt.show()
 
