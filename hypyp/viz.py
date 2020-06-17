@@ -561,11 +561,15 @@ def plot_3d_heads(ax, vertices, faces):
                 '-', color= 'grey', linewidth=0.3)
 
 
-def viz_2D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
+def viz_2D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = True):
     """
     Visualization of inter-brain connectivity in 2D.
 
     Arguments:
+        epo1: mne.Epochs
+          Epochs object to get channel information
+        epo2: mne.Epochs
+          Epochs object to get channel information
         C: array, (len(loc1), len(loc2))
           matrix with the values of hyper-connectivity
         threshold: float
@@ -574,9 +578,9 @@ def viz_2D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
-        weight: numpy.float
-          Connectivity weight to determine the thickness
-          of the link
+        lab: option to plot channel names
+          True by default.
+        
 
     Returns:
         None: plot headmodel with sensors and 
@@ -604,11 +608,15 @@ def viz_2D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=
     
     
 
-def viz_3D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
+def viz_3D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False):
     """
     Visualization of inter-brain connectivity in 3D.
 
     Arguments:
+        epo1: mne.Epochs
+          Epochs object to get channel information
+        epo2: mne.Epochs
+          Epochs object to get channel information
         C: array, (len(loc1), len(loc2))
           matrix with the values of hyper-connectivity
         threshold: float
@@ -617,9 +625,9 @@ def viz_3D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
-        weight: numpy.float
-          Connectivity weight to determine the thickness
-          of the link
+        lab: option to plot channel names
+          False by default.
+        
 
     Returns:
         None: plot headmodel with sensors and 
