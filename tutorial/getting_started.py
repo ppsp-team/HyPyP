@@ -244,7 +244,8 @@ epo1.info['bads'] = ['F8', 'Fp2', 'Cz', 'O2']
 epo2.info['bads'] = ['F7', 'O1']
 
 # Visualization of inter-brain connectivity in 2D
-viz_2D(epo1, epo2, C, threshold=0.95, steps=10)
+viz.viz_2D(epo1, epo2, C, threshold=0.95, steps=10)
 
 # Visualization of inter-brain connectivity in 3D
-viz_3D(epo1, epo2, C, threshold=0.95, steps=10)
+viz.viz_3D(epo1, epo2, C, threshold=0.95, steps=10)
+
