@@ -20,6 +20,11 @@ import matplotlib.pyplot as plt
 import mne
 import meshio
 
+import mpl3d  # pip install git+https://github.com/rougier/matplotlib-3d
+from mpl3d import glm
+from mpl3d.mesh import Mesh
+from mpl3d.camera import Camera
+
 
 def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.5, rotY: float=(np.pi)/2, rotZ: float=(np.pi)/2) -> np.ndarray:
     """
@@ -554,3 +559,88 @@ def plot_3d_heads(ax, vertices, faces):
                 [y_V[V3], y_V[V1]],
                 [z_V[V3], z_V[V1]],
                 '-', color= 'grey', linewidth=0.3)
+
+
+def viz_2D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
+    """
+    Visualization of inter-brain connectivity in 2D.
+
+    Arguments:
+        C: array, (len(loc1), len(loc2))
+          matrix with the values of hyper-connectivity
+        threshold: float
+          threshold for the inter-brain links;
+          only those above the set value will be plotted
+        steps: int
+          number of steps for the Bezier curves
+          if <3 equivalent to ploting straight lines
+        weight: numpy.float
+          Connectivity weight to determine the thickness
+          of the link
+
+    Returns:
+        None: plot headmodel with sensors and 
+              connectivity links in 2D.
+    """
+
+    # Visualization of inter-brain connectivity in 2D
+    # defining head model and adding sensors
+    fig, ax = plt.subplots(1, 1)
+    ax.axis("off")
+    vertices, faces = viz.get_3d_heads()
+    camera = Camera("ortho", theta=90, phi=180, scale=1)
+    mesh = Mesh(ax, camera.transform @ glm.yrotate(90), vertices, faces,
+                facecolors='white',  edgecolors='black', linewidths=.25)
+    camera.connect(ax, mesh.update)
+    plt.gca().set_aspect('equal', 'box')
+    plt.axis('off')
+    viz.plot_sensors_2d(epo1, epo2, lab=True)  # bads are represented as squares
+    # plotting links according to sign (red for positive values,
+    # blue for negative) and value (line thickness increases
+    # with the strength of connectivity)
+    viz.plot_links_2d(epo1, epo2, C=C, threshold=2, steps=10)
+    plt.tight_layout()
+    plt.show()
+    
+    
+
+def viz_3D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
+    """
+    Visualization of inter-brain connectivity in 3D.
+
+    Arguments:
+        C: array, (len(loc1), len(loc2))
+          matrix with the values of hyper-connectivity
+        threshold: float
+          threshold for the inter-brain links;
+          only those above the set value will be plotted
+        steps: int
+          number of steps for the Bezier curves
+          if <3 equivalent to ploting straight lines
+        weight: numpy.float
+          Connectivity weight to determine the thickness
+          of the link
+
+    Returns:
+        None: plot headmodel with sensors and 
+              connectivity links in 3D.
+    """
+
+    # defining head model and adding sensors
+    vertices, faces = viz.get_3d_heads()
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    ax.axis("off")
+    viz.plot_3d_heads(ax, vertices, faces)
+    # bads are represented as squares
+    viz.plot_sensors_3d(ax, epo1, epo2, lab=False)
+    # plotting links according to sign (red for positive values,
+    # blue for negative) and value (line thickness increases
+    # with the strength of connectivity)
+    viz.plot_links_3d(ax, epo1, epo2, C=C, threshold=2, steps=10)
+    plt.tight_layout()
+    plt.show()
+
+
+  
+    

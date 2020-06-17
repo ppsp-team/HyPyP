@@ -17,15 +17,10 @@ import numpy as np
 import scipy
 import mne
 
-import mpl3d  # pip install git+https://github.com/rougier/matplotlib-3d
-from mpl3d import glm
-from mpl3d.mesh import Mesh
-from mpl3d.camera import Camera
-
 from hypyp import prep # need pip install https://api.github.com/repos/autoreject/autoreject/zipball/master
 from hypyp import analyses
 from hypyp import stats
-from hypyp import viz
+from hypyp import viz # pip install git+https://github.com/rougier/matplotlib-3d
 
 plt.ion()
 
@@ -80,7 +75,7 @@ plt.close('all')
 # rejecting bad epochs, rejecting or interpolating partially bad channels
 # removing the same bad channels and epochs across participants
 # plotting signal before and after (verbose=True)
-cleaned_epochs_AR = prep.AR_local(cleaned_epochs_ICA, verbose=True)
+cleaned_epochs_AR = prep.AR_local(cleaned_epochs_ICA)
 input("Press ENTER to continue")
 plt.close('all')
 
@@ -249,36 +244,7 @@ epo1.info['bads'] = ['F8', 'Fp2', 'Cz', 'O2']
 epo2.info['bads'] = ['F7', 'O1']
 
 # Visualization of inter-brain connectivity in 2D
-# defining head model and adding sensors
-fig, ax = plt.subplots(1, 1)
-ax.axis("off")
-vertices, faces = viz.get_3d_heads()
-camera = Camera("ortho", theta=90, phi=180, scale=1)
-mesh = Mesh(ax, camera.transform @ glm.yrotate(90), vertices, faces,
-            facecolors='white',  edgecolors='black', linewidths=.25)
-camera.connect(ax, mesh.update)
-plt.gca().set_aspect('equal', 'box')
-plt.axis('off')
-viz.plot_sensors_2d(epo1, epo2, lab=True)  # bads are represented as squares
-# plotting links according to sign (red for positive values,
-# blue for negative) and value (line thickness increases
-# with the strength of connectivity)
-viz.plot_links_2d(epo1, epo2, C=C, threshold=2, steps=10)
-plt.tight_layout()
-plt.show()
+viz_2D(epo1, epo2, C, threshold=0.95, steps=10)
 
 # Visualization of inter-brain connectivity in 3D
-# defining head model and adding sensors
-vertices, faces = viz.get_3d_heads()
-fig = plt.figure()
-ax = fig.gca(projection='3d')
-ax.axis("off")
-viz.plot_3d_heads(ax, vertices, faces)
-# bads are represented as squares
-viz.plot_sensors_3d(ax, epo1, epo2, lab=False)
-# plotting links according to sign (red for positive values,
-# blue for negative) and value (line thickness increases
-# with the strength of connectivity)
-viz.plot_links_3d(ax, epo1, epo2, C=C, threshold=2, steps=10)
-plt.tight_layout()
-plt.show()
+viz_3D(epo1, epo2, C, threshold=0.95, steps=10)
