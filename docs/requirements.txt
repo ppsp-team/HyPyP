@@ -1,11 +1,11 @@
 appdirs==1.4.4
-appnope==0.1.0; sys_platform == "darwin" or platform_system == "Darwin" or python_version >= "3.3" and sys_platform == "darwin"
+appnope==0.1.0; python_version >= "3.3" and sys_platform == "darwin" or platform_system == "Darwin"
 astroid==2.4.2
 astropy==4.0.1.post1
 atomicwrites==1.4.0; sys_platform == "win32"
 attrs==19.3.0
 autoreject==0.2.1
-backcall==0.2.0
+backcall==0.2.0; python_version >= "3.3"
 beautifulsoup4==4.9.1
 black==19.10b0
 bleach==3.1.5
@@ -25,7 +25,7 @@ ipython==7.15.0
 ipython-genutils==0.2.0
 ipywidgets==7.5.1
 isort==4.3.21
-jedi==0.17.0
+jedi==0.17.0; python_version >= "3.3"
 jinja2==2.11.2
 joblib==0.14.1
 json5==0.9.5
@@ -60,14 +60,14 @@ numpy==1.18.5
 packaging==20.4
 pandas==1.0.4
 pandocfilters==1.4.2
-parso==0.7.0
+parso==0.7.0; python_version >= "3.3"
 pathspec==0.8.0
-pexpect==4.8.0; python_version >= "3.3" and sys_platform != "win32" or sys_platform != "win32"
-pickleshare==0.7.5
+pexpect==4.8.0; python_version >= "3.3" and sys_platform != "win32"
+pickleshare==0.7.5; python_version >= "3.3"
 pluggy==0.13.1
 prometheus-client==0.8.0
-prompt-toolkit==3.0.5
-ptyprocess==0.6.0; sys_platform != "win32" or os_name != "nt" or python_version >= "3.3" and sys_platform != "win32"
+prompt-toolkit==3.0.5; python_version >= "3.3"
+ptyprocess==0.6.0; python_version >= "3.3" and sys_platform != "win32" or os_name != "nt"
 py==1.8.2
 pygments==2.6.1
 pylint==2.5.3
@@ -83,7 +83,7 @@ pywinpty==0.5.7; os_name == "nt"
 pyyaml==5.3.1
 pyzmq==19.0.1
 regex==2020.6.8
-requests==2.23.0
+requests==2.24.0
 scikit-learn==0.22.2.post1
 scipy==1.4.1
 send2trash==1.5.0

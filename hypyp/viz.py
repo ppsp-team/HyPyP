@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import mne
 import meshio
 
-import mpl3d  # pip install git+https://github.com/rougier/matplotlib-3d
+import mpl3d  # https://github.com/rougier/matplotlib-3d
 from mpl3d import glm
 from mpl3d.mesh import Mesh
 from mpl3d.camera import Camera

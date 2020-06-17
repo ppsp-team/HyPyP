@@ -34,6 +34,8 @@ numpy = "^1.18.3"
 astropy = "^4.0.1"
 meshio = "^4.0.13"
 tqdm = "^4.46.0"
+scipy = "^1.4.1"
+mpl3d = {git = "https://github.com/rougier/matplotlib-3d"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
@@ -43,7 +45,6 @@ mkdocs-material = "^5.1.1"
 pylint = "^2.4.4"
 black = "^19.10b0"
 markdown-include = "^0.5.1"
-mpl3d = {git = "https://github.com/rougier/matplotlib-3d"}
 jupyterlab = "^2.1.4"
 widgetsnbextension = "^3.5.1"
 ipywidgets = "^7.5.1"
