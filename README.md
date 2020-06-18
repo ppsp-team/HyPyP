@@ -2,7 +2,7 @@
 
 The **Hy**perscanning **Py**thon **P**ipeline
 
-[![PyPI version shields.io](https://img.shields.io/pypi/v/hypyp.svg)](https://pypi.org/project/HyPyP/) <a href="https://travis-ci.org/GHFC/HyPyP"><img src="https://travis-ci.org/GHFC/HyPyP.svg?branch=master"></a> [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Gitter](https://badges.gitter.im/GHFC/HyPyP.svg)](https://gitter.im/GHFC/HyPyP)
+[![PyPI version shields.io](https://img.shields.io/pypi/v/hypyp.svg)](https://pypi.org/project/HyPyP/) <a href="https://travis-ci.org/GHFC/HyPyP"><img src="https://travis-ci.org/GHFC/HyPyP.svg?branch=master"></a> [![license](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Mattermost](https://img.shields.io/static/v1?label=chat&message=Mattermost&color=Blue)](https://mattermost.brainhack.org/brainhack/channels/hypyp)
 
 ## Contributors
 Florence BRUN, Anaël AYROLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS
