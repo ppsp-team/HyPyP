@@ -4,6 +4,14 @@ The **Hy**perscanning **Py**thon **P**ipeline
 
 [![PyPI version shields.io](https://img.shields.io/pypi/v/hypyp.svg)](https://pypi.org/project/HyPyP/) <a href="https://travis-ci.org/GHFC/HyPyP"><img src="https://travis-ci.org/GHFC/HyPyP.svg?branch=master"></a> [![license](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Mattermost](https://img.shields.io/static/v1?label=chat&message=Mattermost&color=Blue)](https://mattermost.brainhack.org/brainhack/channels/hypyp)
 
+:warning: This alpha version is still far from easy-to-use and should be considered with caution. While we have done our best to test all the functionalities, there is no guarantee that the pipeline is entirely bug-free. 
+
+📖 See our [preprint](https://psyarxiv.com/x5apu) for more explanation and our plan for upcoming functionalities (aka Roadmap).
+
+🤝 If you want to help you can submit bugs and suggestions of enhancements in our Github [Issues section](https://github.com/GHFC/HyPyP/issues).
+
+🤓 For the motivated contributors, you can even help directly in the developpment of HyPyP. You will need to install [Poetry](https://python-poetry.org/) (see section below).
+
 ## Contributors
 Florence BRUN, Anaël AYROLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS
 
@@ -35,26 +43,14 @@ For getting started with HyPyP, we have designed a little walkthrough: [getting_
 
 🎓 [Tutorials](https://github.com/GHFC/HyPyP/tree/master/tutorial) - Examples & documentation (Anaël, Florence, Yann, Guillaume)
 
-## Roadmap
+## Poetry installation (only for developpers)
 
-:warning: This is an alpha version and thus should be used with caution. While we have done our best to test all the functionalities, there is no guarantee that the pipeline is entirely bug-free. See Roadmap below for functionalities that will be implemented in the futur.
+Step 1: ```pip install poetry```
 
-### Alpha [Spring 2020]
+Step 2: ```git clone git@github.com:GHFC/HyPyP.git```
 
-First public version with a basic demonstration of the pipeline.
+Step 3: ```cd HyPyP```
 
-Availabel functionalities:
+Step 4: ```poetry install```
 
-[TABLE]
-
-### Beta [Summer 2020]
-
-Updated version with those functionalities:
-
-[TABLE]
-
-### Release [Fall/Winter 2020]
-
-Full stable version, including functionalities:
-
-[TABLE]
+Step 5: ```poetry shell```
