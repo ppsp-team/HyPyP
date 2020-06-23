@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import mne
 from mne.io.constants import FIFF
+from mne import create_info, EpochsArray
 
 
 def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> list:
@@ -324,3 +325,41 @@ def normalizing(baseline: np.ndarray, task: np.ndarray, type: str) -> np.ndarray
         Normed_task = np.log10(d)
 
     return Normed_task
+
+def generate_random_epoch(epoch: mne.Epochs, mu: float=0, sigma: float=2.0)-> mne.Epochs:
+    """
+    Generate epochs with random data. 
+
+    Arguments:
+        epoch: mne.Epochs
+          Epochs object to get epoch info structure
+        mu: float
+          Mean of the normal distribution
+        sigma: float
+          Standart deviation of the normal distribution
+
+    Returns:
+        mne.Epochs
+          new epoch with random data with normal distribution
+    """
+
+    # Get epoch information 
+    sfreq = epoch.info['sfreq']
+    ch_names = epoch.info['ch_names']
+    ch_types='eeg'
+    montage = mne.channels.make_standard_montage('standard_1020')
+    info = create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
+    
+    
+    # Get epochs as a 3D NumPy array of shape (n_epochs, n_channels, n_times)
+    # Get the arrays’ shape
+    data_shape = epoch.get_data().shape
+    i, j, k = data_shape
+    # Generate a numpy.array with same shape from the normal distribution
+    r_epoch = sigma * np.random.randn(i, j, k) + mu
+  
+    # Create new epoch
+    random_epoch=EpochsArray(data=r_epoch, info=info)
+    random_epoch.set_montage(montage)
+
+    return random_epoch

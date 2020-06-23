@@ -67,11 +67,13 @@ def ICA_choice_comp(icas: list, epochs: list) -> list:
     # if do not want to apply ICA on the data, do not fill the answer
     subj_numb = input("Which participant ICA do you want"
                       " to use as a template for artifact rejection?"
-                      " Index begins at zero. If you do not want to apply"
-                      " ICA on your data, enter nothing.")
+                      " Index begins at zero. (If you do not want to apply"
+                      " ICA on your data, do not enter nothing and press enter.)")
     comp_number = input("Which IC do you want to use as a template?"
-                        " Index begins at zero. If you do not want to apply"
-                        " ICA on your data, enter nothing.")
+                        " Index begins at zero. (If you did not choose"
+                        "a participant number at first question,"
+                        "then do not enter nothing and press enter again"
+                        "to not apply ICA on your data)")
 
     # applying ICA
     if (len(subj_numb) != 0 and len(comp_number) != 0):

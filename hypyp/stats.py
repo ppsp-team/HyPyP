@@ -322,8 +322,8 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
         - F_obs: statistic (F by default) observed for all variables,
           array of shape (n_tests,).
 
-        - clusters: list where each sublist contains the indices of locations
-          that together form a cluster, list.
+        - clusters: boolean array with same shape as the input data, 
+          True values indicating locations that are part of a cluster, array.
 
         - cluster_p_values: p-value for each cluster, array.
 
@@ -340,17 +340,18 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
                                                                      threshold=None,
                                                                      n_permutations=n_permutations,
                                                                      tail=tail, connectivity=ch_con_freq,
-                                                                     t_power=1, out_type='indices')
+                                                                     t_power=1, out_type='mask')
     # t_power = 1 weighs each location by its statistical score,
     # when set to 0 it gives a count of locations in each cluster
 
-    # getting significant clusters for visualization
-    F_obs_plot = np.nan * np.ones_like(F_obs)
-    for c in cluster_p_values:
-        if c <= alpha:
-            i = np.where(cluster_p_values == c)
-            F_obs_plot[i] = F_obs[i]
-    F_obs_plot = np.nan_to_num(F_obs_plot)
+    # getting F values for sensors belonging to a significant cluster
+    F_obs_plot = np.zeros(F_obs.shape)
+    for i_c, c in enumerate(clusters):
+        c = c[0]
+        if cluster_p_values[i_c] <= 0.05:
+            F_values = c.astype('uint8')*F_obs[i_c]
+            # taking maximum F value if a sensor belongs to many clusters
+            F_obs_plot = np.maximum(F_obs_plot, F_values)
 
     statscondClusterTuple = namedtuple('statscondCluster', [
                                        'F_obs', 'clusters', 'cluster_p_values', 'H0', 'F_obs_plot'])
