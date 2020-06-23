@@ -80,7 +80,7 @@ plt.close('all')
 # rejecting bad epochs, rejecting or interpolating partially bad channels
 # removing the same bad channels and epochs across participants
 # plotting signal before and after (verbose=True)
-cleaned_epochs_AR = prep.AR_local(cleaned_epochs_ICA, verbose=True)
+cleaned_epochs_AR, dic_AR = prep.AR_local(cleaned_epochs_ICA, verbose=True)
 input("Press ENTER to continue")
 plt.close('all')
 
