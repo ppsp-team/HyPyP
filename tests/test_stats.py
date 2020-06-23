@@ -180,12 +180,12 @@ def test_stats(epochs):
     assert statscondClusterTuple.F_obs.shape[0] == len(
         epochs.epo1.info['ch_names'])
     for i in range(0, len(statscondClusterTuple.clusters)):
-        assert len(statscondClusterTuple.clusters[i]) < len(
+        assert len(np.where(statscondClusterTuple.clusters[i])=='True') < len(
             epochs.epo1.info['ch_names'])
     assert statscondClusterTuple.cluster_p_values.shape[0] == len(
         statscondClusterTuple.clusters)
     assert np.mean(statscondClusterTuple.cluster_p_values) != float(0) 
-    # F_obs_plot
+    assert F_obs_plot.shape == F_obs.shape
 
 
 def test_utils(epochs):
