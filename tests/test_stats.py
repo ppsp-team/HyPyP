@@ -83,10 +83,13 @@ def test_AR_local(epochs):
     """
     # test on epochs, but usually applied on cleaned epochs with ICA
     ep = [epochs.epo1, epochs.epo2]
-    cleaned_epochs_AR = prep.AR_local(ep, verbose=False)
+    cleaned_epochs_AR, dic_AR = prep.AR_local(ep, verbose=False)
     assert len(epochs.epo1) >= len(cleaned_epochs_AR[0])
     assert len(epochs.epo2) >= len(cleaned_epochs_AR[1])
     assert len(cleaned_epochs_AR[0]) == len(cleaned_epochs_AR[1])
+    assert int(dic_AR['intersection']) == len(
+        epochs.epo1) - len(cleaned_epochs_AR[0])
+    assert int(dic_AR['S2']) <= int(dic_AR['intersection'])
 
 
 def test_PSD(epochs):
@@ -96,20 +99,20 @@ def test_PSD(epochs):
     fmin = 10
     fmax = 13
     psd_tuple = analyses.pow(epochs.epo1,
-                            fmin, fmax,
-                            n_fft=256,
-                            n_per_seg=None,
-                            epochs_average=True)
+                             fmin, fmax,
+                             n_fft=256,
+                             n_per_seg=None,
+                             epochs_average=True)
     psd = psd_tuple.psd
     freq_list = psd_tuple.freq_list
     assert type(psd) == np.ndarray
     assert psd.shape == (
         len(epochs.epo1.info['ch_names']), len(freq_list))
     psd_tuple = analyses.pow(epochs.epo1,
-                            fmin, fmax,
-                            n_fft=256,
-                            n_per_seg=None,
-                            epochs_average=False)
+                             fmin, fmax,
+                             n_fft=256,
+                             n_per_seg=None,
+                             epochs_average=False)
     psd = psd_tuple.psd
     assert psd.shape == (len(epochs.epo1), len(
         epochs.epo1.info['ch_names']), len(freq_list))

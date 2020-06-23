@@ -199,9 +199,12 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
 
     Returns:
         cleaned_epochs_AR: list of Epochs after local Autoreject.
+        dic_AR: dictionnary with the percentage of epochs rejection
+        for each subject and for the intersection of the them.
     """
     bad_epochs_AR = []
     AR = []
+    dic_AR = {}
 
     # defaults values for n_interpolates and consensus_percs
     n_interpolates = np.array([1, 4, 32])
@@ -243,7 +246,11 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
     bad1 = np.where(log1.bad_epochs == True)
     bad2 = np.where(log2.bad_epochs == True)
 
+    # storing the percentage of epochs rejection
     bad = list(set(bad1[0].tolist()).intersection(bad2[0].tolist()))
+    dic_AR['S1'] = len(bad1[0].tolist())/len(cleaned_epochs_ICA[0])*100
+    dic_AR['S2'] = len(bad2[0].tolist())/len(cleaned_epochs_ICA[1])*100
+    dic_AR['S1'] = len(bad)/len(cleaned_epochs_ICA[0])*100
     if verbose:
         print('%s percent of bad epochs' % int(len(bad)/len(list(log1.bad_epochs))*100))
 
@@ -284,4 +291,4 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
             axes[1].set_title('After autoreject')
             plt.tight_layout()
 
-    return cleaned_epochs_AR
+    return cleaned_epochs_AR, dic_AR
