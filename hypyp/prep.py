@@ -252,7 +252,7 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
     bad = list(set(bad1[0].tolist()).intersection(bad2[0].tolist()))
     dic_AR['S1'] = len(bad1[0].tolist())/len(cleaned_epochs_ICA[0])*100
     dic_AR['S2'] = len(bad2[0].tolist())/len(cleaned_epochs_ICA[1])*100
-    dic_AR['S1'] = len(bad)/len(cleaned_epochs_ICA[0])*100
+    dic_AR['intersection'] = len(bad)/len(cleaned_epochs_ICA[0])*100
     if verbose:
         print('%s percent of bad epochs' % int(len(bad)/len(list(log1.bad_epochs))*100))
 
