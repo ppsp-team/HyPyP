@@ -250,11 +250,11 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
     
     bad = list(set(bad1[0].tolist()).intersection(bad2[0].tolist()))
     # storing the percentage of epochs rejection
-    # dic_AR['S1'] = int(len(log1)/len(cleaned_epochs_ICA[0])*100)
-    # dic_AR['S2'] = int(len(log2)/len(cleaned_epochs_ICA[1])*100)
-    # dic_AR['intersection'] = int(len(bad)/len(cleaned_epochs_ICA[0])*100)
+    dic_AR['S1'] = float((len(bad1[0].tolist())/len(cleaned_epochs_ICA[0]))*100)
+    dic_AR['S2'] = float((len(bad2[0].tolist())/len(cleaned_epochs_ICA[1]))*100)
+    dic_AR['intersection'] = float((len(bad)/len(cleaned_epochs_ICA[0]))*100)
     if verbose:
-        print('%s percent of bad epochs' % int(len(bad)/len(list(log1.bad_epochs))*100))
+        print('%s percent of bad epochs' % dic_AR['intersection'])
 
     # picking good epochs for the two subj
     cleaned_epochs_AR = []
