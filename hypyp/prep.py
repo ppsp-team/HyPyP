@@ -248,7 +248,7 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
     bad1 = np.where(log1.bad_epochs == True)
     bad2 = np.where(log2.bad_epochs == True)
     
-    bad = list(set(bad1[0].tolist()).intersection(bad2[0].tolist()))
+    bad = bad1[0].tolist() + bad2[0].tolist()
     # storing the percentage of epochs rejection
     dic_AR['S1'] = float((len(bad1[0].tolist())/len(cleaned_epochs_ICA[0]))*100)
     dic_AR['S2'] = float((len(bad2[0].tolist())/len(cleaned_epochs_ICA[1]))*100)
@@ -264,8 +264,6 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
         ar = AR[cleaned_epochs_ICA.index(clean_epochs)]
         clean_epochs_AR = ar.transform(clean_epochs_ep)
         cleaned_epochs_AR.append(clean_epochs_AR)
-    # equalizing epochs length between two participants
-    mne.epochs.equalize_epoch_counts(cleaned_epochs_AR)
 
     # Vizualisation before after AR
     evoked_before = []
