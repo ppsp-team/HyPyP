@@ -247,12 +247,12 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
 
     bad1 = np.where(log1.bad_epochs == True)
     bad2 = np.where(log2.bad_epochs == True)
-
-    # storing the percentage of epochs rejection
+    
     bad = list(set(bad1[0].tolist()).intersection(bad2[0].tolist()))
-    dic_AR['S1'] = int(len(log1)/len(cleaned_epochs_ICA[0])*100)
-    dic_AR['S2'] = int(len(log2)/len(cleaned_epochs_ICA[1])*100)
-    dic_AR['intersection'] = int(len(bad)/len(cleaned_epochs_ICA[0])*100)
+    # storing the percentage of epochs rejection
+    # dic_AR['S1'] = int(len(log1)/len(cleaned_epochs_ICA[0])*100)
+    # dic_AR['S2'] = int(len(log2)/len(cleaned_epochs_ICA[1])*100)
+    # dic_AR['intersection'] = int(len(bad)/len(cleaned_epochs_ICA[0])*100)
     if verbose:
         print('%s percent of bad epochs' % int(len(bad)/len(list(log1.bad_epochs))*100))
 
