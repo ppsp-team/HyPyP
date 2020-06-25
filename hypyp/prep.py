@@ -13,6 +13,7 @@ Data preprocessing functions
 
 
 import numpy as np
+import copy
 import matplotlib.pyplot as plt
 import mne
 from autoreject import get_rejection_threshold, AutoReject
@@ -273,7 +274,9 @@ def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float =
     # picking good epochs for the two subj
     cleaned_epochs_AR = []
     for clean_epochs in cleaned_epochs_ICA:  # per subj
-        clean_epochs_ep = clean_epochs.drop(indices=bad)
+        # keep a copy of the original data
+        clean_epochs_ep = copy.deepcopy(clean_epochs)
+        clean_epochs_ep = clean_epochs_ep.drop(indices=bad)
         # interpolating bads or removing epochs
         ar = AR[cleaned_epochs_ICA.index(clean_epochs)]
         clean_epochs_AR = ar.transform(clean_epochs_ep)
