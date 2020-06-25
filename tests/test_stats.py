@@ -83,12 +83,15 @@ def test_AR_local(epochs):
     """
     # test on epochs, but usually applied on cleaned epochs with ICA
     ep = [epochs.epo1, epochs.epo2]
-    cleaned_epochs_AR, dic_AR = prep.AR_local(ep, verbose=False)
+    cleaned_epochs_AR, dic_AR = prep.AR_local(ep, strategy = 'union', threshold = 50.0, verbose=False)
     assert len(epochs.epo1) >= len(cleaned_epochs_AR[0])
     assert len(epochs.epo2) >= len(cleaned_epochs_AR[1])
     assert len(cleaned_epochs_AR[0]) == len(cleaned_epochs_AR[1])
-    assert dic_AR['S2'] <= dic_AR['intersection']
-
+    assert dic_AR['S2'] + dic_AR['S1'] == dic_AR['dyad']
+    cleaned_epochs_AR, dic_AR = prep.AR_local(ep, strategy = 'intersection', threshold = 50.0, verbose=False)
+    assert dic_AR['S2'] <= dic_AR['dyad']
+    cleaned_epochs_AR, dic_AR = prep.AR_local(ep, strategy = 'intersection', threshold = 0.0, verbose=False)
+    # should print an error
 
 def test_PSD(epochs):
     """
