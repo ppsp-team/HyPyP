@@ -283,7 +283,7 @@ def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float =
         # equalizing epochs length between two participants
         mne.epochs.equalize_epoch_counts(cleaned_epochs_AR)
 
-    dic_AR['dyad'] = float((len(cleaned_epochs_AR[0])/len(cleaned_epochs_ICA[0]))*100)
+    dic_AR['dyad'] = float(((len(cleaned_epochs_ICA[0])-len(cleaned_epochs_AR[0]))/len(cleaned_epochs_ICA[0]))*100)
     if dic_AR['dyad'] >= threshold:
         TypeError('percentage of rejected epochs above threshold!')
     if verbose:
