@@ -72,7 +72,7 @@ def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.5,
     return locs
 
 
-def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = True):
+def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False):
     """
     Plots sensors in 2D with x representation for bad sensors.
 
@@ -487,6 +487,77 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
 
     return None
 
+
+def plot_2d_topomap(ax):
+    """
+    Plot 2D head topomap
+    
+    Arguments:
+        ax : Matplotlib axis
+
+    Returns:
+        None : plot the 2D topomap within the current axis.
+    """
+
+    # plot first Head 
+    N = 300             # number of points for interpolation
+    xy_center = [-0.178,0]   # center of the plot
+    radius = 0.1         # radius
+
+    # draw a circle
+    circle = matplotlib.patches.Circle(xy = xy_center, radius = radius, edgecolor = "k", facecolor = "w")
+    ax.add_patch(circle)
+    
+    # make the axis invisible 
+    for loc, spine in ax.spines.items():
+        spine.set_linewidth(0)
+    
+    # remove the ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+    
+    # add some body parts. Hide unwanted parts by setting the zorder low
+    # add two ears
+    circle = matplotlib.patches.Ellipse(xy = [-0.19,0.095], width = 0.05, height = 0.025, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(circle)
+    circle = matplotlib.patches.Ellipse(xy = [-0.19,-0.095], width = 0.05, height = 0.025, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(circle)
+    ## add a nose
+    xy = [[-0.087,-0.027],[-0.087,0.027], [-0.068,0]]
+    polygon = matplotlib.patches.Polygon(xy = xy, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(polygon) 
+    
+
+    # Plot second Head 
+    x2y2_center = [0.178,0]   # center of the plot
+    radius2 = 0.1         # radius
+    
+    # draw a circle
+    circle = matplotlib.patches.Circle(xy = x2y2_center, radius = radius2, edgecolor = "k", facecolor = "w")
+    ax.add_patch(circle)
+    
+    # make the axis invisible 
+    for loc, spine in ax.spines.items():
+        spine.set_linewidth(0)
+    
+    # remove the ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+    
+    ## add some body parts. Hide unwanted parts by setting the zorder low
+    # add two ears
+    circle = matplotlib.patches.Ellipse(xy = [0.19,0.095], width = 0.05, height = 0.025, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(circle)
+    circle = matplotlib.patches.Ellipse(xy = [0.19,-0.095], width = 0.05, height = 0.025, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(circle)
+    ## add a nose
+    x2y2 = [[0.087,-0.027],[0.087,0.027], [0.068,0]]
+    polygon = matplotlib.patches.Polygon(xy = x2y2, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(polygon) 
+    
+
+   
+  
 def get_3d_heads():
     """
     Returns Vertices and Faces of a 3D OBJ representing two facing heads.
@@ -523,7 +594,8 @@ def get_3d_heads():
     return vertices, faces
 
 def plot_3d_heads(ax, vertices, faces):
-    """Plot heads models in 3D.
+    """
+    Plot heads models in 3D.
 
     Arguments:
         ax : Matplotlib axis created with projection='3d'
@@ -561,7 +633,48 @@ def plot_3d_heads(ax, vertices, faces):
                 '-', color= 'grey', linewidth=0.3)
 
 
-def viz_2D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = True):
+def viz_2D_topomap (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False):
+    """
+    Visualization of inter-brain connectivity in 3D.
+
+    Arguments:
+        epo1: mne.Epochs
+          Epochs object to get channel information
+        epo2: mne.Epochs
+          Epochs object to get channel information
+        C: array, (len(loc1), len(loc2))
+          matrix with the values of hyper-connectivity
+        threshold: float
+          threshold for the inter-brain links;
+          only those above the set value will be plotted
+        steps: int
+          number of steps for the Bezier curves
+          if <3 equivalent to ploting straight lines
+        lab: option to plot channel names
+          False by default.
+        
+
+    Returns:
+        None: plot head topomap with sensors and 
+              connectivity links in 2D.
+    """
+
+    # defining head model and adding sensors
+    fig = plt.figure()
+    ax = fig.add_subplot(111, aspect = 1)
+    ax.axis("off")
+    plot_2d_topomap(ax)
+    # bads are represented as squares
+    plot_sensors_2d(epo1, epo2, lab = lab)
+    # plotting links according to sign (red for positive values,
+    # blue for negative) and value (line thickness increases
+    # with the strength of connectivity)
+    plot_links_2d(epo1, epo2, C=C, threshold=threshold, steps=steps)
+    plt.tight_layout()
+    plt.show()
+
+
+def viz_2D_headmodel (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = True):
     """
     Visualization of inter-brain connectivity in 2D.
 
@@ -598,11 +711,11 @@ def viz_2D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=
     camera.connect(ax, mesh.update)
     plt.gca().set_aspect('equal', 'box')
     plt.axis('off')
-    plot_sensors_2d(epo1, epo2, lab=True)  # bads are represented as squares
+    plot_sensors_2d(epo1, epo2, lab=lab)  # bads are represented as squares
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
-    plot_links_2d(epo1, epo2, C=C, threshold=2, steps=10)
+    plot_links_2d(epo1, epo2, C=C, threshold=threshold, steps=steps)
     plt.tight_layout()
     plt.show()
     
@@ -641,11 +754,11 @@ def viz_3D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=
     ax.axis("off")
     plot_3d_heads(ax, vertices, faces)
     # bads are represented as squares
-    plot_sensors_3d(ax, epo1, epo2, lab=False)
+    plot_sensors_3d(ax, epo1, epo2, lab=lab)
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
-    plot_links_3d(ax, epo1, epo2, C=C, threshold=2, steps=10)
+    plot_links_3d(ax, epo1, epo2, C=C, threshold=threshold, steps=steps)
     plt.tight_layout()
     plt.show()
 
