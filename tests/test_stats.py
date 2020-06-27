@@ -83,14 +83,15 @@ def test_AR_local(epochs):
     """
     # test on epochs, but usually applied on cleaned epochs with ICA
     ep = [epochs.epo1, epochs.epo2]
-    cleaned_epochs_AR, dic_AR = prep.AR_local(ep, verbose=False)
+    cleaned_epochs_AR, dic_AR = prep.AR_local(ep, strategy = 'union', threshold = 50.0, verbose=False)
     assert len(epochs.epo1) >= len(cleaned_epochs_AR[0])
     assert len(epochs.epo2) >= len(cleaned_epochs_AR[1])
     assert len(cleaned_epochs_AR[0]) == len(cleaned_epochs_AR[1])
-    assert dic_AR['intersection'] == len(
-        epochs.epo1) - len(cleaned_epochs_AR[0])
-    assert dic_AR['S2'] <= dic_AR['intersection']
-
+    assert dic_AR['S2'] + dic_AR['S1'] == dic_AR['dyad']
+    cleaned_epochs_AR, dic_AR = prep.AR_local(ep, strategy = 'intersection', threshold = 50.0, verbose=False)
+    assert dic_AR['S2'] <= dic_AR['dyad']
+    cleaned_epochs_AR, dic_AR = prep.AR_local(ep, strategy = 'intersection', threshold = 0.0, verbose=False)
+    # should print an error
 
 def test_PSD(epochs):
     """
@@ -179,13 +180,11 @@ def test_stats(epochs):
                                                    alpha=0.05)
     assert statscondClusterTuple.F_obs.shape[0] == len(
         epochs.epo1.info['ch_names'])
-    for i in range(0, len(statscondClusterTuple.clusters)):
-        assert len(np.where(statscondClusterTuple.clusters[i])=='True') < len(
-            epochs.epo1.info['ch_names'])
-    assert statscondClusterTuple.cluster_p_values.shape[0] == len(
-        statscondClusterTuple.clusters)
+    # for i in range(0, len(statscondClusterTuple.clusters)):
+    #    assert len(np.where(statscondClusterTuple.clusters[i])=='True') < len(
+    #        epochs.epo1.info['ch_names'])
     assert np.mean(statscondClusterTuple.cluster_p_values) != float(0) 
-    assert F_obs_plot.shape == F_obs.shape
+    assert statscondClusterTuple.F_obs_plot.shape == statscondClusterTuple.F_obs.shape
 
 
 def test_utils(epochs):

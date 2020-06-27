@@ -13,6 +13,7 @@ Data preprocessing functions
 
 
 import numpy as np
+import copy
 import matplotlib.pyplot as plt
 import mne
 from autoreject import get_rejection_threshold, AutoReject
@@ -186,27 +187,38 @@ def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, rand
     return icas
 
 
-def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
+def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float = 50.0, verbose: bool = False) -> list:
     """
     Applies local Autoreject to repair or reject bad epochs.
 
     Arguments:
         clean_epochs_ICA: list of Epochs after global Autoreject and ICA.
+        strategy: more or less generous strategy to reject bad epochs: 'union'
+          or 'intersection'. 'union' rejects bad epochs from subject 1 and
+          subject 2 immediatly, whereas 'intersection' rejects shared bad epochs
+          between subjects, tries to repare remaining bad epochs per subject,
+          reject the non-reparable per subject and finally equalize epochs number
+          between subjects. Set to 'union' by default.
+        threshold: percentage of epochs removed that is accepted. Above
+          this threshold, data are considered as a too shortened sample
+          for further analyses. Set to 50.0 by default.
         verbose: option to plot data before and after AR, boolean, set to
           False by default.
 
     Note:
         To reject or repair epochs, parameters are more or less conservative,
-        see http://autoreject.github.io/generated/autoreject.AutoReject.  
+        see http://autoreject.github.io/generated/autoreject.AutoReject.
 
     Returns:
         cleaned_epochs_AR: list of Epochs after local Autoreject.
         dic_AR: dictionnary with the percentage of epochs rejection
-        for each subject and for the intersection of the them.
+          for each subject and for the intersection of the them.
     """
     bad_epochs_AR = []
     AR = []
     dic_AR = {}
+    dic_AR['strategy'] = strategy
+    dic_AR['threshold'] = threshold
 
     # defaults values for n_interpolates and consensus_percs
     n_interpolates = np.array([1, 4, 32])
@@ -248,24 +260,37 @@ def AR_local(cleaned_epochs_ICA: list, verbose: bool = False) -> list:
     bad1 = np.where(log1.bad_epochs == True)
     bad2 = np.where(log2.bad_epochs == True)
 
+    if strategy == 'union':
+        bad = list(set(bad1[0].tolist()).union(set(bad2[0].tolist())))
+    elif strategy == 'intersection':
+        bad = list(set(bad1[0].tolist()).intersection(set(bad2[0].tolist())))
+    else:
+        TypeError('not good strategy input!')
+
     # storing the percentage of epochs rejection
-    bad = list(set(bad1[0].tolist()).intersection(bad2[0].tolist()))
-    dic_AR['S1'] = int(len(bad1[0].tolist())/len(cleaned_epochs_ICA[0])*100)
-    dic_AR['S2'] = int(len(bad2[0].tolist())/len(cleaned_epochs_ICA[1])*100)
-    dic_AR['intersection'] = int(len(bad)/len(cleaned_epochs_ICA[0])*100)
-    if verbose:
-        print('%s percent of bad epochs' % int(len(bad)/len(list(log1.bad_epochs))*100))
+    dic_AR['S1'] = float((len(bad1[0].tolist())/len(cleaned_epochs_ICA[0]))*100)
+    dic_AR['S2'] = float((len(bad2[0].tolist())/len(cleaned_epochs_ICA[1]))*100)
 
     # picking good epochs for the two subj
     cleaned_epochs_AR = []
     for clean_epochs in cleaned_epochs_ICA:  # per subj
-        clean_epochs_ep = clean_epochs.drop(indices=bad)
+        # keep a copy of the original data
+        clean_epochs_ep = copy.deepcopy(clean_epochs)
+        clean_epochs_ep = clean_epochs_ep.drop(indices=bad)
         # interpolating bads or removing epochs
         ar = AR[cleaned_epochs_ICA.index(clean_epochs)]
         clean_epochs_AR = ar.transform(clean_epochs_ep)
         cleaned_epochs_AR.append(clean_epochs_AR)
-    # equalizing epochs length between two participants
-    mne.epochs.equalize_epoch_counts(cleaned_epochs_AR)
+
+    if strategy == 'intersection':
+        # equalizing epochs length between two participants
+        mne.epochs.equalize_epoch_counts(cleaned_epochs_AR)
+
+    dic_AR['dyad'] = float(((len(cleaned_epochs_ICA[0])-len(cleaned_epochs_AR[0]))/len(cleaned_epochs_ICA[0]))*100)
+    if dic_AR['dyad'] >= threshold:
+        TypeError('percentage of rejected epochs above threshold!')
+    if verbose:
+        print('%s percent of bad epochs' % dic_AR['dyad'])
 
     # Vizualisation before after AR
     evoked_before = []
