@@ -8,7 +8,7 @@
 # version         : 1
 # python_version  : 3.7
 # ==============================================================================
-import os
+from pathlib import Path
 from copy import copy
 from collections import OrderedDict
 import matplotlib.pyplot as plt
@@ -48,11 +48,15 @@ sampling_rate = 500  #Hz
 
 # In our example, we load Epochs directly from EEG dataset in
 # the fiff format
-epo1 = mne.read_epochs(os.path.join(os.path.dirname(__file__),
-                                    os.pardir, 'data', "participant1-epo.fif"), preload=True)
+epo1 = mne.read_epochs(
+    Path('../data/participant1-epo.fif').resolve(),
+    preload=True,
+)
 
-epo2 = mne.read_epochs(os.path.join(os.path.dirname(__file__),
-                                    os.pardir, 'data', "participant2-epo.fif"), preload=True)
+epo2 = mne.read_epochs(
+    Path('../data/participant2-epo.fif').resolve(),
+    preload=True,
+)
 
 # In our example, since the dataset was not initially
 # dedicate to hyperscanning, we need to equalize
@@ -80,7 +84,7 @@ plt.close('all')
 # rejecting bad epochs, rejecting or interpolating partially bad channels
 # removing the same bad channels and epochs across participants
 # plotting signal before and after (verbose=True)
-cleaned_epochs_AR, dic_AR = prep.AR_local(cleaned_epochs_ICA, verbose=True)
+cleaned_epochs_AR, dic_AR = prep.AR_local(cleaned_epochs_ICA, verbose= True)
 input("Press ENTER to continue")
 plt.close('all')
 
