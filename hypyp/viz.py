@@ -763,7 +763,7 @@ def viz_3D_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
 
 
 
-def transform_2d_intra(locs: np.ndarray,traX: float=0.15, traY: float=0, rotZ: float=(np.pi)/2) -> np.ndarray:
+def transform_2d_intra(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ:float=0, rotZ: float=(np.pi)/2) -> np.ndarray:
     """
     Calculates new locations for the EEG locations.
 
@@ -774,6 +774,8 @@ def transform_2d_intra(locs: np.ndarray,traX: float=0.15, traY: float=0, rotZ: f
           X translation to apply to the sensors
         traY: float
           Y translation to apply to the sensors
+        traZ: float
+          Z translation to apply to the sensors
         rotZ: float
           Z rotation to apply to the sensors
 
@@ -784,6 +786,7 @@ def transform_2d_intra(locs: np.ndarray,traX: float=0.15, traY: float=0, rotZ: f
     # translation
     locs[:, 0] = locs[:, 0] + traX
     locs[:, 1] = locs[:, 1] + traY
+    locs[:, 2] = locs[:, 2] + traZ
 
     # Reduce the size of the eeg headsets
     newZ = locs[:, 0] * np.cos(rotZ) + locs[:, 1] * np.cos(rotZ) + locs[:, 2] * np.cos(rotZ/2)
@@ -791,6 +794,7 @@ def transform_2d_intra(locs: np.ndarray,traX: float=0.15, traY: float=0, rotZ: f
     locs[:, 2] = locs[:, 2]
 
     return locs
+
 
 def plot_2d_topomap_intra(ax):
     """
@@ -882,11 +886,11 @@ def plot_sensors_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False)
 
     # extract sensor info and transform loc to fit with headmodel
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-    loc1 = transform_intra(loc1, traX=-0.178, traY=0.012, rotZ=(-np.pi/2))
+    loc1 = transform_2d_intra(loc1, traX=-0.178, traY=0.012, traZ=0, rotZ=(-np.pi/2))
     lab1 = [ch for ch in epo1.ch_names]
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-    loc2 = transform_intra(loc2, traX=0.178, traY=0.012, rotZ=np.pi/2)
+    loc2 = transform_2d_intra(loc2, traX=0.178, traY=0.012, traZ=0, rotZ=(-np.pi/2))
     lab2 = [ch for ch in epo2.ch_names]
 
     for ch in epo1.ch_names:
@@ -958,10 +962,10 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs,
 
     # extract sensor infos and transform loc to fit with headmodel
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-    loc1 = transform_intra(loc1, traX=-0.178, traY=0.012, rotZ=(-np.pi/2))
+    loc1 = transform_2d_intra(loc1, traX=-0.178, traY=0.012, traZ=0, rotZ=(-np.pi/2))
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-    loc2 = transform_intra(loc2, traX=0.178, traY=0.012, rotZ=(-np.pi/2))
+    loc2 = transform_2d_intra(loc2, traX=0.178, traY=0.012, traZ=0, rotZ=(-np.pi/2))
 
     ctr1 = np.nanmean(loc1, 0)
     ctr2 = np.nanmean(loc2, 0)
@@ -1187,9 +1191,7 @@ def get_3d_heads_intra():
 
     # Copy the first head to create a second head
     head2_v = copy(mesh.points*zoom)
-
-    head1_v[:, 1] = head1_v[:, 0] - interval/2
-    head2_v[:, 1] = head2_v[:, 0] + interval/2
+    head2_v[:, 0] = head2_v[:, 0] + interval
 
     # Use the same faces
     head2_f = copy(mesh.cells[0].data)
@@ -1199,6 +1201,76 @@ def get_3d_heads_intra():
     # Concatenate the faces, shift vertices indexes for second head
     faces = np.concatenate((head1_f, head2_f + len(head1_v)))
     return vertices, faces
+
+
+
+def plot_sensors_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False):
+    """
+    Plots sensors in 3D with x representation for bad sensors.
+
+    Arguments:
+        ax: Matplotlib axis created with projection='3d'
+        epo1: mne.Epochs
+          Epochs object to get channel information
+        epo2: mne.Epochs
+          Epochs object to get channel information
+        lab: option to plot channel names
+          False by default.
+
+    Returns:
+        None: plot the sensors in 3D within the current axis.
+    """
+
+    # extract sensor infos and transform loc to fit with headmodel 
+    loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
+    loc1 = transform(loc1, traX=0, traY=0, traZ=0.04, rotY=0, rotZ=(-np.pi/2))
+    lab1 = [ch for ch in epo1.ch_names]
+
+    loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
+    loc2 = transform(loc2, traX=0, traY=0.32, traZ=0.04, rotY=0, rotZ=(-np.pi/2))
+    lab2 = [ch for ch in epo2.ch_names]
+
+    bads_epo1 =[]
+    bads_epo1 = epo1.info['bads']
+    bads_epo2 =[]
+    bads_epo2 = epo2.info['bads']
+
+    for ch in epo1.ch_names:
+      if ch in bads_epo1:
+        index_ch = epo1.ch_names.index(ch)
+        x1, y1, z1 = loc1[index_ch, :]
+        ax.scatter(x1, y1, z1, marker='x', color='dimgrey')
+        if lab:
+                ax.text(x1+0.012, y1+0.012 ,z1, lab1[index_ch],
+                        horizontalalignment='center',
+                        verticalalignment='center')
+      else:
+        index_ch = epo1.ch_names.index(ch)
+        x1, y1, z1 = loc1[index_ch, :]
+        ax.scatter(x1, y1, z1, marker='o', color='dimgrey')
+        if lab:
+                ax.text(x1+0.012, y1+0.012 ,z1, lab1[index_ch],
+                        horizontalalignment='center',
+                        verticalalignment='center')
+
+    for ch in epo2.ch_names:
+      if ch in bads_epo2:
+        index_ch = epo2.ch_names.index(ch)
+        x2, y2, z2 = loc2[index_ch, :]
+        ax.scatter(x2, y2, z2, marker='x', color='dimgrey')
+        if lab:
+                ax.text(x2+0.012, y2+0.012 ,z2, lab2[index_ch],
+                        horizontalalignment='center',
+                        verticalalignment='center')
+      else:
+        index_ch = epo2.ch_names.index(ch)
+        x2, y2, z2 = loc2[index_ch, :]
+        ax.scatter(x2, y2, z2, marker='o', color='dimgrey')
+        if lab:
+                ax.text(x2+0.012, y2+0.012 ,z2, lab2[index_ch],
+                        horizontalalignment='center',
+                        verticalalignment='center')
+
 
 def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
                         C1: np.ndarray, C2: np.ndarray, threshold: float=0.95,
@@ -1233,11 +1305,11 @@ def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
         
     # extract sensor infos and transform loc to fit with headmodel 
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-    loc1 = transform(loc1, traX=-0.17, traY=0, traZ=0.08, rotY=(-np.pi/12), rotZ=(-np.pi/2))
+    loc1 = transform(loc1, traX=0, traY=0, traZ=0.04, rotY=0, rotZ=(-np.pi/2))
   
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-    loc2 = transform(loc2, traX=0.17, traY=0, traZ=0.08, rotY=(np.pi/12), rotZ=np.pi/2)
+    loc2 = transform(loc2, traX=0, traY=0.32, traZ=0.04, rotY=0, rotZ=(-np.pi/2))
    
 
     ctr1 = np.nanmean(loc1, 0)
@@ -1444,10 +1516,6 @@ def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
 
                   
 
-
-
-
-
 def viz_3D_intra (epo1: mne.Epochs, epo2: mne.Epochs,
                   C1: np.ndarray, C2: np.ndarray,
                   threshold: float=0.95, steps: int=10,
@@ -1485,7 +1553,7 @@ def viz_3D_intra (epo1: mne.Epochs, epo2: mne.Epochs,
     ax.axis("off")
     plot_3d_heads(ax, vertices, faces)
     # bads are represented as squares
-    plot_sensors_3d_inter(ax, epo1, epo2, lab=lab)
+    plot_sensors_3d_intra(ax, epo1, epo2, lab=lab)
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)

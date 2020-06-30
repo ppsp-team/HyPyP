@@ -271,7 +271,7 @@ viz.viz_2D_topomap_intra(epo1, epo2,
                          steps=2,
                          lab=False)
 
-# Visualization of inter-brain connectivity in 3D
+# Visualization of intra-brain connectivity in 3D
 viz.viz_3D_intra(epo1, epo2,
                  C1= result_intra[0],
                  C2= result_intra[1],
