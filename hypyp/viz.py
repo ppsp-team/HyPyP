@@ -11,9 +11,8 @@ Basic visualization functions
 | date            | 2020-03-18 |
 """
 
-
+from pathlib import Path
 from copy import copy
-import os
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -72,7 +71,7 @@ def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.5,
     return locs
 
 
-def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False):
+def plot_sensors_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False):
     """
     Plots sensors in 2D with x representation for bad sensors.
 
@@ -138,7 +137,7 @@ def plot_sensors_2d(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False):
                    horizontalalignment='center',
                    verticalalignment='center')
 
-def plot_links_2d(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
+def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
     """
     Plots hyper-connectivity in 2D.
 
@@ -250,7 +249,7 @@ def plot_links_2d(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
                                  '-', color=color_n, linewidth=weight)
 
 
-def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False):
+def plot_sensors_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False):
     """
     Plots sensors in 3D with x representation for bad sensors.
 
@@ -317,7 +316,7 @@ def plot_sensors_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = Fal
                         horizontalalignment='center',
                         verticalalignment='center')
 
-def plot_links_3d(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
+def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
     """
     Plots hyper-connectivity in 3D.
 
@@ -489,9 +488,9 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
     return None
 
 
-def plot_2d_topomap(ax):
+def plot_2d_topomap_inter(ax):
     """
-    Plot 2D head topomap
+    Plot 2D head topomap for hyper-connectivity
     
     Arguments:
         ax : Matplotlib axis
@@ -530,43 +529,42 @@ def plot_2d_topomap(ax):
     
 
     # Plot second Head 
-     x2y2_center = [0.178,0]   # center of the plot
-     radius2 = 0.1         # radius
-     
-     # draw a circle
-     circle = matplotlib.patches.Circle(xy = x2y2_center, radius = radius2, edgecolor = "k", facecolor = "w")
-     ax.add_patch(circle)
-     
-     # make the axis invisible 
-     for loc, spine in ax.spines.items():
-         spine.set_linewidth(0)
-     
-     # remove the ticks
-     ax.set_xticks([])
-     ax.set_yticks([])
-     
-     ## add some body parts. Hide unwanted parts by setting the zorder low
-     # add two ears
-     circle = matplotlib.patches.Ellipse(xy = [0.19,0.095], width = 0.05, height = 0.025, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
-     ax.add_patch(circle)
-     circle = matplotlib.patches.Ellipse(xy = [0.19,-0.095], width = 0.05, height = 0.025, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
-     ax.add_patch(circle)
-     ## add a nose
-     x2y2 = [[0.087,-0.027],[0.087,0.027], [0.068,0]]
-     polygon = matplotlib.patches.Polygon(xy = x2y2, edgecolor = "k", facecolor = "w", zorder = 0)
-     ax.add_patch(polygon) 
+    x2y2_center = [0.178,0]   # center of the plot
+    radius2 = 0.1         # radius
+    
+    # draw a circle
+    circle = matplotlib.patches.Circle(xy = x2y2_center, radius = radius2, edgecolor = "k", facecolor = "w")
+    ax.add_patch(circle)
+    
+    # make the axis invisible 
+    for loc, spine in ax.spines.items():
+        spine.set_linewidth(0)
+    
+    # remove the ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+    
+    ## add some body parts. Hide unwanted parts by setting the zorder low
+    # add two ears
+    circle = matplotlib.patches.Ellipse(xy = [0.19,0.095], width = 0.05, height = 0.025, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(circle)
+    circle = matplotlib.patches.Ellipse(xy = [0.19,-0.095], width = 0.05, height = 0.025, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(circle)
+    ## add a nose
+    x2y2 = [[0.087,-0.027],[0.087,0.027], [0.068,0]]
+    polygon = matplotlib.patches.Polygon(xy = x2y2, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(polygon) 
     
 
    
   
-def get_3d_heads():
+def get_3d_heads_inter():
     """
     Returns Vertices and Faces of a 3D OBJ representing two facing heads.
     """
    
     # Extract vertices and faces for the first head
-    mesh = meshio.read(os.path.join(os.path.dirname(__file__),
-           os.pardir,'data',"Basehead.obj"))
+    mesh = meshio.read(Path('../data/Basehead.obj').resolve())
     zoom = 0.064
     interval = 0.32
 
@@ -634,9 +632,9 @@ def plot_3d_heads(ax, vertices, faces):
                 '-', color= 'grey', linewidth=0.3)
 
 
-def viz_inter_2D_topomap (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False):
+def viz_2D_topomap_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False):
     """
-    Visualization of inter-brain connectivity in 3D.
+    Visualization of inter-brain connectivity in 2D.
 
     Arguments:
         epo1: mne.Epochs
@@ -661,22 +659,21 @@ def viz_inter_2D_topomap (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thr
     """
 
     # defining head model and adding sensors
-    inter = True # Specify inter = True to plot 2 heads
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect = 1)
     ax.axis("off")
-    plot_2d_topomap(ax)
+    plot_2d_topomap_inter(ax)
     # bads are represented as squares
-    plot_sensors_2d(epo1, epo2, lab = lab)
+    plot_sensors_2d_inter(epo1, epo2, lab = lab)
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
-    plot_links_2d(epo1, epo2, C=C, threshold=threshold, steps=steps)
+    plot_links_2d_inter(epo1, epo2, C=C, threshold=threshold, steps=steps)
     plt.tight_layout()
     plt.show()
 
 
-def viz_inter_2D_headmodel (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = True):
+def viz_2D_headmodel_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = True):
     """
     Visualization of inter-brain connectivity in 2D.
 
@@ -713,17 +710,17 @@ def viz_inter_2D_headmodel (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, t
     camera.connect(ax, mesh.update)
     plt.gca().set_aspect('equal', 'box')
     plt.axis('off')
-    plot_sensors_2d(epo1, epo2, lab=lab)  # bads are represented as squares
+    plot_sensors_2d_inter(epo1, epo2, lab=lab)  # bads are represented as squares
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
-    plot_links_2d(epo1, epo2, C=C, threshold=threshold, steps=steps)
+    plot_links_2d_inter(epo1, epo2, C=C, threshold=threshold, steps=steps)
     plt.tight_layout()
     plt.show()
     
     
 
-def viz_inter_3D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False):
+def viz_3D_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False):
     """
     Visualization of inter-brain connectivity in 3D.
 
@@ -750,31 +747,200 @@ def viz_inter_3D (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
     """
 
     # defining head model and adding sensors
-    vertices, faces = get_3d_heads()
+    vertices, faces = get_3d_heads_inter()
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     ax.axis("off")
     plot_3d_heads(ax, vertices, faces)
     # bads are represented as squares
-    plot_sensors_3d(ax, epo1, epo2, lab=lab)
+    plot_sensors_3d_inter(ax, epo1, epo2, lab=lab)
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
-    plot_links_3d(ax, epo1, epo2, C=C, threshold=threshold, steps=steps)
+    plot_links_3d_inter(ax, epo1, epo2, C=C, threshold=threshold, steps=steps)
     plt.tight_layout()
     plt.show()
 
 
-  
-    
-def plot_links_intra_2d(epo: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
+
+def transform_2d_intra(locs: np.ndarray,traX: float=0.15, traY: float=0, rotZ: float=(np.pi)/2) -> np.ndarray:
     """
-    Plots intra-brain connectivity in 2D.
+    Calculates new locations for the EEG locations.
 
     Arguments:
-        epo: mne.Epochs
+        locs: array of shape (n_sensors, 3)
+          3d coordinates of the sensors
+        traX: float
+          X translation to apply to the sensors
+        traY: float
+          Y translation to apply to the sensors
+        rotZ: float
+          Z rotation to apply to the sensors
+
+    Returns:
+        result: array (n_sensors, 3)
+          new coordinates of the sensors
+    """
+    # translation
+    locs[:, 0] = locs[:, 0] + traX
+    locs[:, 1] = locs[:, 1] + traY
+
+    # Reduce the size of the eeg headsets
+    newZ = locs[:, 0] * np.cos(rotZ) + locs[:, 1] * np.cos(rotZ) + locs[:, 2] * np.cos(rotZ/2)
+    locs[:, 2] = newZ
+    locs[:, 2] = locs[:, 2]
+
+    return locs
+
+def plot_2d_topomap_intra(ax):
+    """
+    Plot 2D head topomap for intra-brain visualisation
+    
+    Arguments:
+        ax : Matplotlib axis
+
+    Returns:
+        None : plot the 2D topomap within the current axis.
+    """
+
+    # plot first Head 
+    N = 300             # number of points for interpolation
+    xy_center = [-0.178,0]   # center of the plot
+    radius = 0.1         # radius
+
+    # draw a circle
+    circle = matplotlib.patches.Circle(xy = xy_center, radius = radius, edgecolor = "k", facecolor = "w")
+    ax.add_patch(circle)
+    
+    # make the axis invisible 
+    for loc, spine in ax.spines.items():
+        spine.set_linewidth(0)
+    
+    # remove the ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+    
+    # add some body parts. Hide unwanted parts by setting the zorder low
+    # add two ears
+    circle = matplotlib.patches.Ellipse(xy = [-0.083,-0.012], width = 0.025, height = 0.05, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(circle)
+    circle = matplotlib.patches.Ellipse(xy = [-0.273,-0.012], width = 0.025, height = 0.05, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(circle)
+    ## add a nose
+    xy = [[-0.151,0.091],[-0.205,0.091], [-0.178,0.11]]
+    polygon = matplotlib.patches.Polygon(xy = xy, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(polygon) 
+    
+
+    # Plot second Head 
+    x2y2_center = [0.178,0]   # center of the plot
+    radius2 = 0.1         # radius
+    
+    # draw a circle
+    circle = matplotlib.patches.Circle(xy = x2y2_center, radius = radius2, edgecolor = "k", facecolor = "w")
+    ax.add_patch(circle)
+    
+    # make the axis invisible 
+    for loc, spine in ax.spines.items():
+        spine.set_linewidth(0)
+    
+    # remove the ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+    
+    ## add some body parts. Hide unwanted parts by setting the zorder low
+    # add two ears
+    circle = matplotlib.patches.Ellipse(xy = [0.083,-0.012], width = 0.025, height = 0.05, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(circle)
+    circle = matplotlib.patches.Ellipse(xy = [0.273,-0.012], width = 0.025, height = 0.05, angle = 0, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(circle)
+    ## add a nose
+    x2y2 = [[0.151,0.091],[0.205,0.091], [0.178,0.11]]
+    polygon = matplotlib.patches.Polygon(xy = x2y2, edgecolor = "k", facecolor = "w", zorder = 0)
+    ax.add_patch(polygon) 
+    
+
+def plot_sensors_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False):
+    """
+    Plots sensors in 2D with x representation for bad sensors.
+
+    Arguments:
+        epo1: mne.Epochs
           Epochs object to get channels information
-        C: array, (len(loc), len(loc))
+        epo2: mne.Epochs
+          Epochs object to get channels information
+        lab: option to plot channel names
+          True by default.
+
+    Returns:
+        None: plot the sensors in 2D within the current axis.
+    """
+    bads_epo1 = []
+    bads_epo1 = epo1.info['bads']
+    bads_epo2 = []
+    bads_epo2 = epo2.info['bads']
+
+    # extract sensor info and transform loc to fit with headmodel
+    loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
+    loc1 = transform_intra(loc1, traX=-0.178, traY=0.012, rotZ=(-np.pi/2))
+    lab1 = [ch for ch in epo1.ch_names]
+
+    loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
+    loc2 = transform_intra(loc2, traX=0.178, traY=0.012, rotZ=np.pi/2)
+    lab2 = [ch for ch in epo2.ch_names]
+
+    for ch in epo1.ch_names:
+      if ch in bads_epo1:
+        index_ch = epo1.ch_names.index(ch)
+        x1, y1, z1 = loc1[index_ch, :]
+        plt.plot(x1, y1, marker='x', color='dimgrey')
+        if lab:
+          plt.text(x1+0.012, y1+0.012, lab1[index_ch],
+                   horizontalalignment='center',
+                   verticalalignment='center')
+      else:
+        index_ch = epo1.ch_names.index(ch)
+        x1, y1, z1 = loc1[index_ch, :]
+        plt.plot(x1, y1, marker='o', color='dimgrey')
+        if lab:
+          plt.text(x1+0.012, y1+0.012, lab1[index_ch],
+                   horizontalalignment='center',
+                   verticalalignment='center')
+
+    
+    for ch in epo2.ch_names:
+      if ch in bads_epo2:
+        index_ch = epo2.ch_names.index(ch)
+        x2, y2, z2 = loc2[index_ch, :]
+        plt.plot(x2, y2, marker='x', color='dimgrey')
+        if lab:
+          plt.text(x2+0.012, y2+0.012, lab2[index_ch],
+                   horizontalalignment='center',
+                   verticalalignment='center')
+      else:
+        index_ch = epo2.ch_names.index(ch)
+        x2, y2, z2 = loc2[index_ch, :]
+        plt.plot(x2, y2, marker='o', color='dimgrey')
+        if lab:
+          plt.text(x2+0.012, y2+0.012, lab2[index_ch],
+                   horizontalalignment='center',
+                   verticalalignment='center')
+  
+    
+def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs,
+                        C1: np.ndarray, C2: np.ndarray,
+                        threshold: float=0.95, steps: int=2):
+    """
+    Plots hyper-connectivity in 2D.
+
+    Arguments:
+        epo1: mne.Epochs
+          Epochs object to get channels information
+        epo2: mne.Epochs
+          Epochs object to get channels information
+        C1: array, (len(loc1), len(loc1))
+          matrix with the values of intra-brain connectivity
+        C2: array, (len(loc2), len(loc2))
           matrix with the values of intra-brain connectivity
         threshold: float
           threshold for the inter-brain links;
@@ -787,103 +953,193 @@ def plot_links_intra_2d(epo: mne.Epochs, C: np.ndarray, threshold: float=0.95, s
           of the link
 
     Returns:
-        None: plot the intra-brain links in 2D within the current axis.
+        None: plot the links in 2D within the current axis.
     """
 
     # extract sensor infos and transform loc to fit with headmodel
-    loc = copy(np.array([ch['loc'][:3] for ch in epo.info['chs']]))
-    loc = transform(loc, traX=-0.17, traY=0, traZ=0.08, rotY=(-np.pi/12), rotZ=(-np.pi/2))
+    loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
+    loc1 = transform_intra(loc1, traX=-0.178, traY=0.012, rotZ=(-np.pi/2))
 
+    loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
+    loc2 = transform_intra(loc2, traX=0.178, traY=0.012, rotZ=(-np.pi/2))
 
+    ctr1 = np.nanmean(loc1, 0)
+    ctr2 = np.nanmean(loc2, 0)
+    
+    # Calculate vmin and vmax for colormap as min and max [C1, C2]
+    Cmax1=np.nanmax(C1[:])
+    Cmax2=np.nanmax(C2[:])
+    Cmax=[]
+    Cmax=[Cmax1, Cmax2]
+    vmax=np.nanmax(Cmax)
+    Cmin1=np.nanmin(C1[:])
+    Cmin2=np.nanmin(C2[:])
+    Cmin=[]
+    Cmin=[Cmin1, Cmin2]
+    vmin=np.min(Cmin)
+  
 
-    ctr1 = np.nanmean(loc, 0)
-    ctr2 = np.nanmean(loc, 0)
-
+    # Define colormap for both participant
     cmap_p = matplotlib.cm.get_cmap('Reds')
-    norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.nanmax(C[:]))
+    norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=vmax)
     cmap_n = matplotlib.cm.get_cmap('Blues_r')
-    norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
+    norm_n = matplotlib.colors.Normalize(vmin=vmin, vmax=-threshold)
 
-    for e1 in range(len(loc)):
-        x1 = loc[e1, 0]
-        y1 = loc[e1, 1]
-        for e2 in range(len(loc)):
-            x2 = loc[e2, 0]
-            y2 = loc[e2, 1]
-            if C[e1, e2] >= threshold:
-                color_p = cmap_p(norm_p(C[e1, e2]))
+    for e1 in range(len(loc1)):
+        x1 = loc1[e1, 0]
+        y1 = loc1[e1, 1]
+        for e2 in range(len(loc1)):
+            x2 = loc1[e2, 0]
+            y2 = loc1[e2, 1]
+            if C1[e1, e2] >= threshold:
+                color_p = cmap_p(norm_p(C1[e1, e2]))
                 if steps <= 2:
-                    weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
-                    plt.plot([loc[e1, 0], loc[e2, 0]],
-                             [loc[e1, 1], loc[e2, 1]],
+                    weight = 0.2 +1.6*((C1[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                    plt.plot([loc1[e1, 0], loc1[e2, 0]],
+                             [loc1[e1, 1], loc1[e2, 1]],
                              '-', color=color_p, linewidth=weight)
                 else:
                     alphas = np.linspace(0, 1, steps)
-                    weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
+                    weight = 0.2 +1.6*((C1[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
                     for idx in range(len(alphas)-1):
                         a = alphas[idx]
                         b = alphas[idx+1]
                         xn = ((1-a)**3 * x1 +
                               3 * (1-a)**2 * a * (2 * x1 - ctr1[0]) +
-                              3 * (1-a) * a**2 * (2 * x2 - ctr2[0]) +
+                              3 * (1-a) * a**2 * (2 * x2 - ctr1[0]) +
                               a**3 * x2)
                         xnn = ((1-b)**3 * x1 +
                                3 * (1-b)**2 * b * (2 * x1 - ctr1[0]) +
-                               3 * (1-b) * b**2 * (2 * x2 - ctr2[0]) +
+                               3 * (1-b) * b**2 * (2 * x2 - ctr1[0]) +
                                b**3 * x2)
                         yn = ((1-a)**3 * y1 +
                               3 * (1-a)**2 * a * (2 * y1 - ctr1[1]) +
-                              3 * (1-a) * a**2 * (2 * y2 - ctr2[1]) +
+                              3 * (1-a) * a**2 * (2 * y2 - ctr1[1]) +
                               a**3 * y2)
                         ynn = ((1-b)**3 * y1 +
                                3 * (1-b)**2 * b * (2 * y1 - ctr1[1]) +
-                               3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
+                               3 * (1-b) * b**2 * (2 * y2 - ctr1[1]) +
                                b**3 * y2)
                         plt.plot([xn, xnn], [yn, ynn],
                                  '-', color=color_p, linewidth=weight)
-            if C[e1, e2] <= -threshold:
-                color_n = cmap_n(norm_n(C[e1, e2]))
+            if C1[e1, e2] <= -threshold:
+                color_n = cmap_n(norm_n(C1[e1, e2]))
                 if steps <= 2:
-                    weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
-                    plt.plot([loc[e1, 0], loc[e2, 0]],
-                             [loc[e1, 1], loc[e2, 1]],
+                    weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                    plt.plot([loc1[e1, 0], loc1[e2, 0]],
+                             [loc1[e1, 1], loc1[e2, 1]],
                              '-', color=color_n, linewidth=weight)
                 else:
                     alphas = np.linspace(0, 1, steps)
-                    weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
+                    weight = 0.2 +1.6*((-C1[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
                     for idx in range(len(alphas)-1):
                         a = alphas[idx]
                         b = alphas[idx+1]
                         xn = ((1-a)**3 * x1 +
                               3 * (1-a)**2 * a * (2 * x1 - ctr1[0]) +
-                              3 * (1-a) * a**2 * (2 * x2 - ctr2[0]) +
+                              3 * (1-a) * a**2 * (2 * x2 - ctr1[0]) +
                               a**3 * x2)
                         xnn = ((1-b)**3 * x1 +
                                3 * (1-b)**2 * b * (2 * x1 - ctr1[0]) +
-                               3 * (1-b) * b**2 * (2 * x2 - ctr2[0]) +
+                               3 * (1-b) * b**2 * (2 * x2 - ctr1[0]) +
                                b**3 * x2)
                         yn = ((1-a)**3 * y1 +
                               3 * (1-a)**2 * a * (2 * y1 - ctr1[1]) +
-                              3 * (1-a) * a**2 * (2 * y2 - ctr2[1]) +
+                              3 * (1-a) * a**2 * (2 * y2 - ctr1[1]) +
                               a**3 * y2)
                         ynn = ((1-b)**3 * y1 +
                                3 * (1-b)**2 * b * (2 * y1 - ctr1[1]) +
-                               3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
+                               3 * (1-b) * b**2 * (2 * y2 - ctr1[1]) +
                                b**3 * y2)
                         plt.plot([xn, xnn], [yn, ynn],
                                  '-', color=color_n, linewidth=weight)
 
+    for e1 in range(len(loc2)):
+      x1 = loc2[e1, 0]
+      y1 = loc2[e1, 1]
+      for e2 in range(len(loc2)):
+          x2 = loc2[e2, 0]
+          y2 = loc2[e2, 1]
+          if C2[e1, e2] >= threshold:
+              color_p = cmap_p(norm_p(C2[e1, e2]))
+              if steps <= 2:
+                  weight = 0.2 +1.6*((C2[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                  plt.plot([loc2[e1, 0], loc2[e2, 0]],
+                           [loc2[e1, 1], loc2[e2, 1]],
+                           '-', color=color_p, linewidth=weight)
+              else:
+                  alphas = np.linspace(0, 1, steps)
+                  weight = 0.2 +1.6*((C2[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                  for idx in range(len(alphas)-1):
+                      a = alphas[idx]
+                      b = alphas[idx+1]
+                      xn = ((1-a)**3 * x1 +
+                            3 * (1-a)**2 * a * (2 * x1 - ctr2[0]) +
+                            3 * (1-a) * a**2 * (2 * x2 - ctr2[0]) +
+                            a**3 * x2)
+                      xnn = ((1-b)**3 * x1 +
+                             3 * (1-b)**2 * b * (2 * x1 - ctr2[0]) +
+                             3 * (1-b) * b**2 * (2 * x2 - ctr2[0]) +
+                             b**3 * x2)
+                      yn = ((1-a)**3 * y1 +
+                            3 * (1-a)**2 * a * (2 * y1 - ctr2[1]) +
+                            3 * (1-a) * a**2 * (2 * y2 - ctr2[1]) +
+                            a**3 * y2)
+                      ynn = ((1-b)**3 * y1 +
+                             3 * (1-b)**2 * b * (2 * y1 - ctr2[1]) +
+                             3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
+                             b**3 * y2)
+                      plt.plot([xn, xnn], [yn, ynn],
+                               '-', color=color_p, linewidth=weight)
+          if C2[e1, e2] <= -threshold:
+              color_n = cmap_n(norm_n(C2[e1, e2]))
+              if steps <= 2:
+                  weight = 0.2 +1.6*((-C2[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                  plt.plot([loc2[e1, 0], loc2[e2, 0]],
+                           [loc2[e1, 1], loc2[e2, 1]],
+                           '-', color=color_n, linewidth=weight)
+              else:
+                  alphas = np.linspace(0, 1, steps)
+                  weight = 0.2 +1.6*((-C2[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                  for idx in range(len(alphas)-1):
+                      a = alphas[idx]
+                      b = alphas[idx+1]
+                      xn = ((1-a)**3 * x1 +
+                            3 * (1-a)**2 * a * (2 * x1 - ctr2[0]) +
+                            3 * (1-a) * a**2 * (2 * x2 - ctr2[0]) +
+                            a**3 * x2)
+                      xnn = ((1-b)**3 * x1 +
+                             3 * (1-b)**2 * b * (2 * x1 - ctr2[0]) +
+                             3 * (1-b) * b**2 * (2 * x2 - ctr2[0]) +
+                             b**3 * x2)
+                      yn = ((1-a)**3 * y1 +
+                            3 * (1-a)**2 * a * (2 * y1 - ctr2[1]) +
+                            3 * (1-a) * a**2 * (2 * y2 - ctr2[1]) +
+                            a**3 * y2)
+                      ynn = ((1-b)**3 * y1 +
+                             3 * (1-b)**2 * b * (2 * y1 - ctr2[1]) +
+                             3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
+                             b**3 * y2)
+                      plt.plot([xn, xnn], [yn, ynn],
+                               '-', color=color_n, linewidth=weight)
 
 
-def viz_intra_2D_topomap (epo: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False):
+def viz_2D_topomap_intra (epo1: mne.Epochs, epo2: mne.Epochs,
+                          C1: np.ndarray, C2: np.ndarray,
+                          threshold: float=0.95, steps: int=2,
+                          lab: bool = False):
     """
     Visualization of inter-brain connectivity in 3D.
 
     Arguments:
-        epo: mne.Epochs
+        epo1: mne.Epochs
           Epochs object to get channel information
-        C: array, (len(loc1), len(loc2))
-          matrix with the values of hyper-connectivity
+        epo2: mne.Epochs
+          Epochs object to get channel information
+        C1: array, (len(loc1), len(loc1))
+          matrix with the values of intra-brain connectivity
+        C2: array, (len(loc2), len(loc2))
+          matrix with the values of intra-brain connectivity
         threshold: float
           threshold for the inter-brain links;
           only those above the set value will be plotted
@@ -903,19 +1159,50 @@ def viz_intra_2D_topomap (epo: mne.Epochs, C: np.ndarray, threshold: float=0.95,
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect = 1)
     ax.axis("off")
-    plot_2d_topomap(ax)
+    plot_2d_topomap_intra(ax)
     # bads are represented as squares
-    plot_sensors_2d(epo1, epo2, lab = lab)
+    plot_sensors_2d_intra(epo1, epo2, lab = lab)
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
-    plot_links_intra_2d(epo, C=C, threshold=threshold, steps=steps)
+    plot_links_2d_intra(epo1, epo2, C1=C1, C2=C2, threshold=threshold, steps=steps)
     plt.tight_layout()
     plt.show()
 
 
+   
+  
+def get_3d_heads_intra():
+    """
+    Returns Vertices and Faces of a 3D OBJ representing two facing heads.
+    """
+   
+    # Extract vertices and faces for the first head
+    mesh = meshio.read(Path('../data/Basehead.obj').resolve())
+    zoom = 0.064
+    interval = 0.32
 
-def plot_links_intra_3d(ax: str, epo: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
+    head1_v = mesh.points*zoom
+    head1_f = mesh.cells[0].data
+
+    # Copy the first head to create a second head
+    head2_v = copy(mesh.points*zoom)
+
+    head1_v[:, 1] = head1_v[:, 0] - interval/2
+    head2_v[:, 1] = head2_v[:, 0] + interval/2
+
+    # Use the same faces
+    head2_f = copy(mesh.cells[0].data)
+
+    # Concatenate the vertices
+    vertices = np.concatenate((head1_v, head2_v))
+    # Concatenate the faces, shift vertices indexes for second head
+    faces = np.concatenate((head1_f, head2_f + len(head1_v)))
+    return vertices, faces
+
+def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
+                        C1: np.ndarray, C2: np.ndarray, threshold: float=0.95,
+                        steps: int=10):
     """
     Plots hyper-connectivity in 3D.
 
@@ -925,8 +1212,10 @@ def plot_links_intra_3d(ax: str, epo: mne.Epochs, C: np.ndarray, threshold: floa
           3d coordinates of the sensors
         loc2: arrays of shape (n_sensors, 3)
           3d coordinates of the sensors
-        C: array, (len(loc1), len(loc2))
-          matrix with the values of hyper-connectivity
+        C1: array, (len(loc1), len(loc1))
+          matrix with the values of intra-brain connectivity
+        C2: array, (len(loc1), len(loc2))
+          matrix with the values of intra-brain connectivity
         threshold: float
           threshold for the inter-brain links;
           only those above the set value will be plotted
@@ -941,121 +1230,239 @@ def plot_links_intra_3d(ax: str, epo: mne.Epochs, C: np.ndarray, threshold: floa
         None: plot the links in 3D within the current axis.
           Plot hyper-connectivity in 3D.
     """
-    
+        
     # extract sensor infos and transform loc to fit with headmodel 
-    loc = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
-    loc = transform(loc, traX=-0.17, traY=0, traZ=0.08, rotY=(-np.pi/12), rotZ=(-np.pi/2))
+    loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
+    loc1 = transform(loc1, traX=-0.17, traY=0, traZ=0.08, rotY=(-np.pi/12), rotZ=(-np.pi/2))
+  
 
-    ctr1 = np.nanmean(loc, 0)
+    loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
+    loc2 = transform(loc2, traX=0.17, traY=0, traZ=0.08, rotY=(np.pi/12), rotZ=np.pi/2)
+   
+
+    ctr1 = np.nanmean(loc1, 0)
     ctr1[2] -= 0.2
-    ctr2 = np.nanmean(loc, 0)
+    ctr2 = np.nanmean(loc2, 0)
     ctr2[2] -= 0.2
 
-    cmap_p = matplotlib.cm.get_cmap('Reds')
-    norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.nanmax(C[:]))
-    cmap_n = matplotlib.cm.get_cmap('Blues_r')
-    norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
+    # Calculate vmin and vmax for colormap as min and max [C1, C2]
+    Cmax1=np.nanmax(C1[:])
+    Cmax2=np.nanmax(C2[:])
+    Cmax=[]
+    Cmax=[Cmax1, Cmax2]
+    vmax=np.nanmax(Cmax)
+    Cmin1=np.nanmin(C1[:])
+    Cmin2=np.nanmin(C2[:])
+    Cmin=[]
+    Cmin=[Cmin1, Cmin2]
+    vmin=np.min(Cmin)
+  
 
-    for e1 in range(len(loc)):
-        x1 = loc[e1, 0]
-        y1 = loc[e1, 1]
-        z1 = loc[e1, 2]
-        for e2 in range(len(loc)):
-            x2 = loc[e2, 0]
-            y2 = loc[e2, 1]
-            z2 = loc[e2, 2]
-            if C[e1, e2] >= threshold:
-                color_p = cmap_p(norm_p(C[e1, e2]))
+    # Define colormap for both participant
+    cmap_p = matplotlib.cm.get_cmap('Reds')
+    norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=vmax)
+    cmap_n = matplotlib.cm.get_cmap('Blues_r')
+    norm_n = matplotlib.colors.Normalize(vmin=vmin, vmax=-threshold)
+
+    for e1 in range(len(loc1)):
+        x1 = loc1[e1, 0]
+        y1 = loc1[e1, 1]
+        z1 = loc1[e1, 2]
+        for e2 in range(len(loc1)):
+            x2 = loc1[e2, 0]
+            y2 = loc1[e2, 1]
+            z2 = loc1[e2, 2]
+            if C1[e1, e2] >= threshold:
+                color_p = cmap_p(norm_p(C1[e1, e2]))
                 if steps <= 2:
-                    weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
-                    ax.plot([loc[e1, 0], loc[e2, 0]],
-                             [loc[e1, 1], loc[e2, 1]],
-                             [loc[e1, 2], loc[e2, 2]],
+                    weight = 0.2 +1.6*((C1[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                    ax.plot([loc1[e1, 0], loc1[e2, 0]],
+                             [loc1[e1, 1], loc1[e2, 1]],
+                             [loc1[e1, 2], loc1[e2, 2]],
                              '-', color=color_p, linewidth=weight)
                 else:
                     alphas = np.linspace(0, 1, steps)
-                    weight = 0.2 +1.6*((C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
+                    weight = 0.2 +1.6*((C1[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
                     for idx in range(len(alphas)-1):
                         a = alphas[idx]
                         b = alphas[idx+1]
                         xn = ((1-a)**3 * x1 +
                               3 * (1-a)**2 * a * (2 * x1 - ctr1[0]) +
-                              3 * (1-a) * a**2 * (2 * x2 - ctr2[0]) +
+                              3 * (1-a) * a**2 * (2 * x2 - ctr1[0]) +
                               a**3 * x2)
                         xnn = ((1-b)**3 * x1 +
                                3 * (1-b)**2 * b * (2 * x1 - ctr1[0]) +
-                               3 * (1-b) * b**2 * (2 * x2 - ctr2[0]) +
+                               3 * (1-b) * b**2 * (2 * x2 - ctr1[0]) +
                                b**3 * x2)
                         yn = ((1-a)**3 * y1 +
                               3 * (1-a)**2 * a * (2 * y1 - ctr1[1]) +
-                              3 * (1-a) * a**2 * (2 * y2 - ctr2[1]) +
+                              3 * (1-a) * a**2 * (2 * y2 - ctr1[1]) +
                               a**3 * y2)
                         ynn = ((1-b)**3 * y1 +
                                3 * (1-b)**2 * b * (2 * y1 - ctr1[1]) +
-                               3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
+                               3 * (1-b) * b**2 * (2 * y2 - ctr1[1]) +
                                b**3 * y2)
                         zn = ((1-a)**3 * z1 +
                               3 * (1-a)**2 * a * (2 * z1 - ctr1[2]) +
-                              3 * (1-a) * a**2 * (2 * z2 - ctr2[2]) +
+                              3 * (1-a) * a**2 * (2 * z2 - ctr1[2]) +
                               a**3 * z2)
                         znn = ((1-b)**3 * z1 +
                                3 * (1-b)**2 * b * (2 * z1 - ctr1[2]) +
+                               3 * (1-b) * b**2 * (2 * z2 - ctr1[2]) +
+                               b**3 * z2)
+                        ax.plot([xn, xnn], [yn, ynn], [zn, znn],
+                                 '-', color=color_p, linewidth=weight)
+            if C1[e1, e2] <= -threshold:
+                color_n = cmap_n(norm_n(C1[e1, e2]))
+                if steps <= 2:
+                    weight = 0.2 +1.6*((-C1[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                    ax.plot([loc1[e1, 0], loc1[e2, 0]],
+                             [loc1[e1, 1], loc1[e2, 1]],
+                             [loc1[e1, 2], loc1[e2, 2]],
+                             '-', color=color_n, linewidth=weight)
+                else:
+                    alphas = np.linspace(0, 1, steps)
+                    weight = 0.2 +1.6*((-C1[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                    for idx in range(len(alphas)-1):
+                        a = alphas[idx]
+                        b = alphas[idx+1]
+                        xn = ((1-a)**3 * x1 +
+                              3 * (1-a)**2 * a * (2 * x1 - ctr1[0]) +
+                              3 * (1-a) * a**2 * (2 * x2 - ctr1[0]) +
+                              a**3 * x2)
+                        xnn = ((1-b)**3 * x1 +
+                               3 * (1-b)**2 * b * (2 * x1 - ctr1[0]) +
+                               3 * (1-b) * b**2 * (2 * x2 - ctr1[0]) +
+                               b**3 * x2)
+                        yn = ((1-a)**3 * y1 +
+                              3 * (1-a)**2 * a * (2 * y1 - ctr1[1]) +
+                              3 * (1-a) * a**2 * (2 * y2 - ctr1[1]) +
+                              a**3 * y2)
+                        ynn = ((1-b)**3 * y1 +
+                               3 * (1-b)**2 * b * (2 * y1 - ctr1[1]) +
+                               3 * (1-b) * b**2 * (2 * y2 - ctr1[1]) +
+                               b**3 * y2)
+                        zn = ((1-a)**3 * z1 +
+                              3 * (1-a)**2 * a * (2 * z1 - ctr1[2]) +
+                              3 * (1-a) * a**2 * (2 * z2 - ctr1[2]) +
+                              a**3 * z2)
+                        znn = ((1-b)**3 * z1 +
+                               3 * (1-b)**2 * b * (2 * z1 - ctr1[2]) +
+                               3 * (1-b) * b**2 * (2 * z2 - ctr1[2]) +
+                               b**3 * z2)
+                        ax.plot([xn, xnn], [yn, ynn], [zn, znn],
+                                 '-', color=color_n, linewidth=weight)
+  
+    for e1 in range(len(loc2)):
+        x1 = loc2[e1, 0]
+        y1 = loc2[e1, 1]
+        z1 = loc2[e1, 2]
+        for e2 in range(len(loc2)):
+            x2 = loc2[e2, 0]
+            y2 = loc2[e2, 1]
+            z2 = loc2[e2, 2]
+            if C2[e1, e2] >= threshold:
+                color_p = cmap_p(norm_p(C2[e1, e2]))
+                if steps <= 2:
+                    weight = 0.2 +1.6*((C2[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                    ax.plot([loc2[e1, 0], loc2[e2, 0]],
+                             [loc2[e1, 1], loc2[e2, 1]],
+                             [loc2[e1, 2], loc2[e2, 2]],
+                             '-', color=color_p, linewidth=weight)
+                else:
+                    alphas = np.linspace(0, 1, steps)
+                    weight = 0.2 +1.6*((C2[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                    for idx in range(len(alphas)-1):
+                        a = alphas[idx]
+                        b = alphas[idx+1]
+                        xn = ((1-a)**3 * x1 +
+                              3 * (1-a)**2 * a * (2 * x1 - ctr2[0]) +
+                              3 * (1-a) * a**2 * (2 * x2 - ctr2[0]) +
+                              a**3 * x2)
+                        xnn = ((1-b)**3 * x1 +
+                               3 * (1-b)**2 * b * (2 * x1 - ctr2[0]) +
+                               3 * (1-b) * b**2 * (2 * x2 - ctr2[0]) +
+                               b**3 * x2)
+                        yn = ((1-a)**3 * y1 +
+                              3 * (1-a)**2 * a * (2 * y1 - ctr2[1]) +
+                              3 * (1-a) * a**2 * (2 * y2 - ctr2[1]) +
+                              a**3 * y2)
+                        ynn = ((1-b)**3 * y1 +
+                               3 * (1-b)**2 * b * (2 * y1 - ctr2[1]) +
+                               3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
+                               b**3 * y2)
+                        zn = ((1-a)**3 * z1 +
+                              3 * (1-a)**2 * a * (2 * z1 - ctr2[2]) +
+                              3 * (1-a) * a**2 * (2 * z2 - ctr2[2]) +
+                              a**3 * z2)
+                        znn = ((1-b)**3 * z1 +
+                               3 * (1-b)**2 * b * (2 * z1 - ctr2[2]) +
                                3 * (1-b) * b**2 * (2 * z2 - ctr2[2]) +
                                b**3 * z2)
                         ax.plot([xn, xnn], [yn, ynn], [zn, znn],
                                  '-', color=color_p, linewidth=weight)
-            if C[e1, e2] <= -threshold:
-                color_n = cmap_n(norm_n(C[e1, e2]))
+            if C2[e1, e2] <= -threshold:
+                color_n = cmap_n(norm_n(C2[e1, e2]))
                 if steps <= 2:
-                    weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
-                    ax.plot([loc[e1, 0], loc[e2, 0]],
-                             [loc[e1, 1], loc[e2, 1]],
-                             [loc[e1, 2], loc[e2, 2]],
+                    weight = 0.2 +1.6*((-C2[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                    ax.plot([loc2[e1, 0], loc2[e2, 0]],
+                             [loc2[e1, 1], loc2[e2, 1]],
+                             [loc2[e1, 2], loc2[e2, 2]],
                              '-', color=color_n, linewidth=weight)
                 else:
                     alphas = np.linspace(0, 1, steps)
-                    weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.nanmax(C[:]-threshold)))
+                    weight = 0.2 +1.6*((-C2[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
                     for idx in range(len(alphas)-1):
                         a = alphas[idx]
                         b = alphas[idx+1]
                         xn = ((1-a)**3 * x1 +
-                              3 * (1-a)**2 * a * (2 * x1 - ctr1[0]) +
+                              3 * (1-a)**2 * a * (2 * x1 - ctr2[0]) +
                               3 * (1-a) * a**2 * (2 * x2 - ctr2[0]) +
                               a**3 * x2)
                         xnn = ((1-b)**3 * x1 +
-                               3 * (1-b)**2 * b * (2 * x1 - ctr1[0]) +
+                               3 * (1-b)**2 * b * (2 * x1 - ctr2[0]) +
                                3 * (1-b) * b**2 * (2 * x2 - ctr2[0]) +
                                b**3 * x2)
                         yn = ((1-a)**3 * y1 +
-                              3 * (1-a)**2 * a * (2 * y1 - ctr1[1]) +
+                              3 * (1-a)**2 * a * (2 * y1 - ctr2[1]) +
                               3 * (1-a) * a**2 * (2 * y2 - ctr2[1]) +
                               a**3 * y2)
                         ynn = ((1-b)**3 * y1 +
-                               3 * (1-b)**2 * b * (2 * y1 - ctr1[1]) +
+                               3 * (1-b)**2 * b * (2 * y1 - ctr2[1]) +
                                3 * (1-b) * b**2 * (2 * y2 - ctr2[1]) +
                                b**3 * y2)
                         zn = ((1-a)**3 * z1 +
-                              3 * (1-a)**2 * a * (2 * z1 - ctr1[2]) +
+                              3 * (1-a)**2 * a * (2 * z1 - ctr2[2]) +
                               3 * (1-a) * a**2 * (2 * z2 - ctr2[2]) +
                               a**3 * z2)
                         znn = ((1-b)**3 * z1 +
-                               3 * (1-b)**2 * b * (2 * z1 - ctr1[2]) +
+                               3 * (1-b)**2 * b * (2 * z1 - ctr2[2]) +
                                3 * (1-b) * b**2 * (2 * z2 - ctr2[2]) +
                                b**3 * z2)
                         ax.plot([xn, xnn], [yn, ynn], [zn, znn],
                                  '-', color=color_n, linewidth=weight)
 
+                  
 
 
-def viz_intra_3D (epo: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False):
+
+
+
+def viz_3D_intra (epo1: mne.Epochs, epo2: mne.Epochs,
+                  C1: np.ndarray, C2: np.ndarray,
+                  threshold: float=0.95, steps: int=10,
+                  lab: bool = False):
     """
-    Visualization of inter-brain connectivity in 3D.
+    Visualization of intra-brain connectivity in 3D.
 
     Arguments:
-        epo: mne.Epochs
+        epo1: mne.Epochs
           Epochs object to get channel information
-        C: array, (len(loc1), len(loc2))
-          matrix with the values of hyper-connectivity
+        epo2: mne.Epochs
+          Epochs object to get channel information
+        C1: array, (len(loc1), len(loc1))
+          matrix with the values of intra-brain connectivity
+        C2: array, (len(loc2), len(loc2))
         threshold: float
           threshold for the inter-brain links;
           only those above the set value will be plotted
@@ -1068,20 +1475,20 @@ def viz_intra_3D (epo: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: 
 
     Returns:
         None: plot headmodel with sensors and 
-              intra-brain connectivity links in 3D.
+              connectivity links in 3D.
     """
 
     # defining head model and adding sensors
-    vertices, faces = get_3d_heads()
+    vertices, faces = get_3d_heads_intra()
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     ax.axis("off")
     plot_3d_heads(ax, vertices, faces)
     # bads are represented as squares
-    plot_sensors_3d(ax, epo1, epo2, lab=lab)
+    plot_sensors_3d_inter(ax, epo1, epo2, lab=lab)
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
-    plot_links_intra_3d(ax, epo, C=C, threshold=threshold, steps=steps)
+    plot_links_3d_intra(ax, epo1, epo2, C1=C1, C2=C2, threshold=threshold, steps=steps)
     plt.tight_layout()
     plt.show()
