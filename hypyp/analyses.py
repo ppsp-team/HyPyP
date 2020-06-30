@@ -321,7 +321,7 @@ def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tupl
     """
     formula = 'jilm,jimk->jilk'
     product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
-              np.einsum(formula, imag, imag.transpose(transpose_axes)) + 1j * \
+              np.einsum(formula, imag, imag.transpose(transpose_axes)) - 1j * \
               (np.einsum(formula, real, imag.transpose(transpose_axes)) - \
                np.einsum(formula, imag, real.transpose(transpose_axes)))
 

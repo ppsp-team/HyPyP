@@ -11,7 +11,7 @@ Basic visualization functions
 | date            | 2020-03-18 |
 """
 
-
+from pathlib import Path
 from copy import copy
 import os
 import numpy as np
@@ -488,8 +488,7 @@ def get_3d_heads():
     """
 
     # Extract vertices and faces for the first head
-    mesh = meshio.read(os.path.join(os.path.dirname(__file__),
-           os.pardir,'data',"Basehead.obj"))
+    mesh = meshio.read(Path('../data/Basehead.obj').resolve())
     zoom = 0.064
     interval = 0.32
 
