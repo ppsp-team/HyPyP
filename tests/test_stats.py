@@ -124,7 +124,7 @@ def test_behav_corr(epochs):
     Test data-behav correlation
     """
     # data = epochs.epo1
-    data = np.arrange(0, 10)
+    data = np.arange(0, 10)
     step = len(data)
     behav = np.arange(0, step)
     assert len(data) == len(behav)
