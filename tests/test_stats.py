@@ -133,7 +133,6 @@ def test_behav_corr(epochs):
                                      'time',
                                      False)
     assert corr_tuple.r in [-1, 1]
-    assert corr_tuple.strat == 'non-normal'
     # test with psd, with con?
 
 
