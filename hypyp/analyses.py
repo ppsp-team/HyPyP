@@ -102,7 +102,7 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
     normality of the data.
 
     Arguments:
-        data: data (raws, epochs, power, conncetivity values...) to correlate
+        data: data (raws, epochs, power, connectivity values...) to correlate
           with behavior, one dimensional array (shape (n,)).
         behav: behavioral values for a parameter (ex: timing to control
           for learning), one dimensional array from same shape as data.
@@ -125,12 +125,12 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
 
     # assert same length, sampling between data and behav
     # for Raw, average on ch
-    if len(data.shape) == 2:
-        data = np.mean(data, axis=0)
+    # if len(data) == 2:
+    #     data = np.mean(data, axis=0)
     # for Epochs, average across epochs and channels
-    elif len(data.shape) == 3:
-        data = np.mean(data, axis=0)
-        data = np.mean(data, axis=0)
+    # elif len(data) == 3:
+    #     data = np.mean(data, axis=0)
+    #     data = np.mean(data, axis=0)
         # BUT last dim in epochs n_times/epochs or total?
         # to adjust for being same length as behav!
         # ie data mean on ch then data.reshape(ep*time, order='C')

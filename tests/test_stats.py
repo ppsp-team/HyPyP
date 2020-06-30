@@ -123,12 +123,15 @@ def test_behav_corr(epochs):
     """
     Test data-behav correlation
     """
-    assert epochs.epo1.shape == (2, 3, 4)
-    step = epochs.epo1.shape[2]
-    behav = np.arange(0, 1, step)
-    corr_tuple = analyses.behav_corr(epochs.epo1,
-                                     behav, 'epochs',
-                                     'time', False)
+    # data = epochs.epo1
+    data = np.arrange(0, 10)
+    step = len(data)
+    behav = np.arange(0, step)
+    assert len(data) == len(behav)
+    corr_tuple = analyses.behav_corr(data, behav,
+                                     'epochs',
+                                     'time',
+                                     False)
     assert corr_tuple.r in [-1, 1]
     assert corr_tuple.strat == 'non-normal'
     # test with psd, with con?
