@@ -11,14 +11,17 @@ PSD, intra- and inter-brain measures functions
 | date            | 2020-03-18 |
 """
 
+import numpy as np
+import scipy
+import scipy.signal as signal
 import copy
 from collections import namedtuple
 from typing import Union
+from astropy.stats import circmean
+import matplotlib.pyplot as plt
+plt.ion()
 
 import mne
-import numpy as np
-import scipy.signal as signal
-from astropy.stats import circmean
 from mne.io.constants import FIFF
 from mne.time_frequency import psd_welch
 
@@ -90,6 +93,82 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
 
     return psd_tuple(freq_list=freq_list,
                      psd=psd)
+
+
+def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: str, verbose: bool=False) -> tuple:
+    """
+    Correlates data with a discontinuous behavioral parameter,
+    uses different linear correlations after checking for
+    normality of the data.
+
+    Arguments:
+        data: data (raws, epochs, power, conncetivity values...) to correlate
+          with behavior, one dimensional array (shape (n,)).
+        behav: behavioral values for a parameter (ex: timing to control
+          for learning), one dimensional array from same shape as data.
+        data_name: nature of the data (used for the legend of the figure,
+          if verbose=True), str.
+        behav_name: nature of the behavior values (used for the legend
+          of the figure, if verbose=True), str.
+        verbose: option to plot the correlation, boolean.
+          Set to False by default.
+
+    Returns:
+        r, pvalue, strat:
+          - r: pearson’s correlation coefficient, float.
+          - pvalue: two-tailed p-value (probability of an uncorrelated
+            system producing datasets that have a Pearson correlation
+            at least as extreme as the one computed from the dataset tested),
+            float.
+          - strat: normality of the datasets, 'non-normal' or 'normal', str.
+    """
+
+    # assert same length, sampling between data and behav
+    # for Raw, average on ch
+    if len(data.shape) == 2:
+        data = np.mean(data, axis=0)
+    # for Epochs, average across epochs and channels
+    elif len(data.shape) == 3:
+        data = np.mean(data, axis=0)
+        data = np.mean(data, axis=0)
+        # BUT last dim in epochs n_times/epochs or total?
+        # to adjust for being same length as behav!
+        # ie data mean on ch then data.reshape(ep*time, order='C')
+    # for connectivity matrix, average across epochs and channels: ?
+
+    assert data.shape == behav.shape
+
+    # test for normality on the first axis
+    _, pvalue1 = scipy.stats.normaltest(data, axis=0)
+    _, pvalue2 = scipy.stats.normaltest(behav, axis=0)
+    if min(pvalue1, pvalue2) < 0.05:
+        # reject null hypothesis
+        # (H0: data come from a normal distribution)
+        strat = 'non_normal'
+        r, pvalue = scipy.stats.spearmanr(behav, data, axis=0)
+    else:
+        strat = 'normal'
+        r, pvalue = scipy.stats.pearsonr(behav, data)
+
+    # spearman Ok?
+    # other than correlation cf. np.convolve
+    # or cross corerlation cf. np.correlate
+    # or np.corrcoeff
+    # or x and y find regression with polinomial solution
+    # cf. np.polyfit
+
+    if verbose:
+        plt.figure()
+        plt.scatter(behav, data, label=str(r)+str(pvalue))
+        plt.legend(loc='upper right')
+        plt.title('Linear correlation between '+behav_name+' and '+data_name)
+        plt.xlabel(behav_name)
+        plt.ylabel(data_name)
+        plt.show()
+
+    corr_tuple = namedtuple('corr_tuple', ['r', 'pvalue', 'strat'])
+
+    return corr_tuple(r=r, pvalue=pvalue, strat=strat)
 
 
 def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:

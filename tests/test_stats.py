@@ -119,6 +119,21 @@ def test_PSD(epochs):
         epochs.epo1.info['ch_names']), len(freq_list))
 
 
+def test_behav_corr(epochs):
+    """
+    Test data-behav correlation
+    """
+    assert epochs.epo1.shape == (2, 3, 4)
+    step = epochs.epo1.shape[2]
+    behav = np.arange(0, 1, step)
+    corr_tuple = analyses.behav_corr(epochs.epo1,
+                                     behav, 'epochs',
+                                     'time', False)
+    assert corr_tuple.r in [-1, 1]
+    assert corr_tuple.strat == 'non-normal'
+    # test with psd, with con?
+
+
 def test_indexes_connectivity(epochs):
     """
     Test index intra- and inter-brains
