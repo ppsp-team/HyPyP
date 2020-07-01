@@ -1184,7 +1184,7 @@ def get_3d_heads_intra():
     # Extract vertices and faces for the first head
     mesh = meshio.read(Path('../data/Basehead.obj').resolve())
     zoom = 0.064
-    interval = 0.32
+    interval = 0.5
 
     head1_v = mesh.points*zoom
     head1_f = mesh.cells[0].data
@@ -1227,7 +1227,7 @@ def plot_sensors_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool
     lab1 = [ch for ch in epo1.ch_names]
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-    loc2 = transform(loc2, traX=0, traY=0.32, traZ=0.04, rotY=0, rotZ=(-np.pi/2))
+    loc2 = transform(loc2, traX=0, traY=0.5, traZ=0.04, rotY=0, rotZ=(-np.pi/2))
     lab2 = [ch for ch in epo2.ch_names]
 
     bads_epo1 =[]
@@ -1309,7 +1309,7 @@ def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
   
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-    loc2 = transform(loc2, traX=0, traY=0.32, traZ=0.04, rotY=0, rotZ=(-np.pi/2))
+    loc2 = transform(loc2, traX=0, traY=0.5, traZ=0.04, rotY=0, rotZ=(-np.pi/2))
    
 
     ctr1 = np.nanmean(loc1, 0)
