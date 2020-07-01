@@ -488,7 +488,9 @@ def get_3d_heads():
     """
 
     # Extract vertices and faces for the first head
-    mesh = meshio.read(Path('../data/Basehead.obj').resolve())
+    mesh = meshio.read(os.path.join(os.path.dirname(__file__),
+           os.pardir,'data',"Basehead.obj"))
+
     zoom = 0.064
     interval = 0.32
 
