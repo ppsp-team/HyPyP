@@ -137,7 +137,7 @@ def plot_sensors_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False)
                    horizontalalignment='center',
                    verticalalignment='center')
 
-def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
+def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: str='auto', steps: int=10):
     """
     Plots hyper-connectivity in 2D.
 
@@ -148,9 +148,12 @@ def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thres
           Epochs object to get channels information
         C: array, (len(loc1), len(loc2))
           matrix with the values of hyper-connectivity
-        threshold: float
+        threshold: float | str
           threshold for the inter-brain links;
           only those above the set value will be plotted
+          Can also be "auto" to use a threshold automatically
+          calculated from your matrix as the maximum median 
+          by column + the maximum standard error by column
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
@@ -173,6 +176,12 @@ def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thres
 
     ctr1 = np.nanmean(loc1, 0)
     ctr2 = np.nanmean(loc2, 0)
+
+    # Calculate automatic threshold
+    if threshold is 'auto':
+      threshold = np.max(np.median(C, 0))+np.max(np.std(C, 0))
+    else:
+      threshold = threshold
 
     cmap_p = matplotlib.cm.get_cmap('Reds')
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.nanmax(C[:]))
@@ -316,7 +325,7 @@ def plot_sensors_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool
                         horizontalalignment='center',
                         verticalalignment='center')
 
-def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10):
+def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: str='auto', steps: int=10):
     """
     Plots hyper-connectivity in 3D.
 
@@ -328,9 +337,12 @@ def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarr
           3d coordinates of the sensors
         C: array, (len(loc1), len(loc2))
           matrix with the values of hyper-connectivity
-        threshold: float
+        threshold: float | str
           threshold for the inter-brain links;
           only those above the set value will be plotted
+          Can also be "auto" to use a threshold automatically
+          calculated from your matrix as the maximum median 
+          by column + the maximum standard error by column
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
@@ -356,6 +368,12 @@ def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarr
     ctr1[2] -= 0.2
     ctr2 = np.nanmean(loc2, 0)
     ctr2[2] -= 0.2
+
+    # Calculate automatic threshold
+    if threshold is 'auto':
+      threshold = np.max(np.median(C, 0))+np.max(np.std(C, 0))
+    else:
+      threshold = threshold
 
     cmap_p = matplotlib.cm.get_cmap('Reds')
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.nanmax(C[:]))
@@ -933,7 +951,7 @@ def plot_sensors_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False)
     
 def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs,
                         C1: np.ndarray, C2: np.ndarray,
-                        threshold: float=0.95, steps: int=2):
+                        threshold: str='auto', steps: int=2):
     """
     Plots hyper-connectivity in 2D.
 
@@ -946,9 +964,12 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs,
           matrix with the values of intra-brain connectivity
         C2: array, (len(loc2), len(loc2))
           matrix with the values of intra-brain connectivity
-        threshold: float
+        threshold: float | str
           threshold for the inter-brain links;
           only those above the set value will be plotted
+          Can also be "auto" to use a threshold automatically
+          calculated from your matrix as the maximum median 
+          by column + the maximum standard error by column
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
@@ -981,6 +1002,12 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs,
     Cmin=[]
     Cmin=[Cmin1, Cmin2]
     vmin=np.min(Cmin)
+
+    # Calculate automatic threshold
+    if threshold is 'auto':
+      threshold = np.max([np.median(C1, 0),np.median(C2,0)])+np.max([np.std(C1, 0),np.std(C2, 0)])
+    else:
+      threshold = threshold
   
 
     # Define colormap for both participant
@@ -1029,7 +1056,7 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs,
             if C1[e1, e2] <= -threshold:
                 color_n = cmap_n(norm_n(C1[e1, e2]))
                 if steps <= 2:
-                    weight = 0.2 +1.6*((-C[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
+                    weight = 0.2 +1.6*((-C1[e1, e2]-threshold)/(np.nanmax(vmax-threshold)))
                     plt.plot([loc1[e1, 0], loc1[e2, 0]],
                              [loc1[e1, 1], loc1[e2, 1]],
                              '-', color=color_n, linewidth=weight)
@@ -1273,7 +1300,7 @@ def plot_sensors_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool
 
 
 def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
-                        C1: np.ndarray, C2: np.ndarray, threshold: float=0.95,
+                        C1: np.ndarray, C2: np.ndarray, threshold: str='auto',
                         steps: int=10):
     """
     Plots hyper-connectivity in 3D.
@@ -1288,9 +1315,12 @@ def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
           matrix with the values of intra-brain connectivity
         C2: array, (len(loc1), len(loc2))
           matrix with the values of intra-brain connectivity
-        threshold: float
+        threshold: float | str
           threshold for the inter-brain links;
           only those above the set value will be plotted
+          Can also be "auto" to use a threshold automatically
+          calculated from your matrix as the maximum median 
+          by column + the maximum standard error by column
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
@@ -1328,7 +1358,12 @@ def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
     Cmin=[]
     Cmin=[Cmin1, Cmin2]
     vmin=np.min(Cmin)
-  
+
+    # Calculate automatic threshold
+    if threshold is 'auto':
+      threshold = np.max([np.median(C1, 0),np.median(C2,0)])+np.max([np.std(C1, 0),np.std(C2, 0)])
+    else:
+      threshold = threshold
 
     # Define colormap for both participant
     cmap_p = matplotlib.cm.get_cmap('Reds')

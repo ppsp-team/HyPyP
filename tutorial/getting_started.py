@@ -258,16 +258,16 @@ epo1.info["bads"] = ["F8", "Fp2", "Cz", "O2"]
 epo2.info["bads"] = ["F7", "O1"]
 
 # Visualization of inter-brain connectivity in 2D
-viz.viz_2D_topomap_inter(epo1, epo2, C, threshold=2, steps=10, lab=True)
+viz.viz_2D_topomap_inter(epo1, epo2, C, threshold='auto', steps=10, lab=True)
 
 # Visualization of inter-brain connectivity in 3D
-viz.viz_3D_inter(epo1, epo2, C, threshold=2, steps=10, lab=False)
+viz.viz_3D_inter(epo1, epo2, C, threshold='auto', steps=10, lab=False)
 
 # Visualization of intra-brain connectivity in 2D
 viz.viz_2D_topomap_intra(epo1, epo2,
                          C1= result_intra[0],
                          C2= result_intra[1],
-                         threshold=2,
+                         threshold='auto',
                          steps=2,
                          lab=False)
 
@@ -275,6 +275,11 @@ viz.viz_2D_topomap_intra(epo1, epo2,
 viz.viz_3D_intra(epo1, epo2,
                  C1= result_intra[0],
                  C2= result_intra[1],
-                 threshold=2,
+                 threshold='auto',
                  steps=10,
                  lab=False)
+
+
+threshold = np.max(np.median(C, 0))+np.max(np.std(C, 0))
+
+threshold = np.max([np.median(C1, 0),np.median(C2,0)])+np.max([np.std(C1, 0),np.std(C2, 0)])
