@@ -203,7 +203,7 @@ def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float =
           this threshold, data are considered as a too shortened sample
           for further analyses. Set to 50.0 by default.
         verbose: option to plot data before and after AR, boolean, set to
-          False by default.
+          False by default. # use verbose = false until next Autoreject update
 
     Note:
         To reject or repair epochs, parameters are more or less conservative,
