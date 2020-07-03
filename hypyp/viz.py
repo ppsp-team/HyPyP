@@ -153,7 +153,9 @@ def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thres
           only those above the set value will be plotted
           Can also be "auto" to use a threshold automatically
           calculated from your matrix as the maximum median 
-          by column + the maximum standard error by column
+          by column + the maximum standard error by column.
+          Note that the automatic threshold is specific to a 
+          dyad and does not allow to compare different dyads.
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
@@ -342,7 +344,9 @@ def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarr
           only those above the set value will be plotted
           Can also be "auto" to use a threshold automatically
           calculated from your matrix as the maximum median 
-          by column + the maximum standard error by column
+          by column + the maximum standard error by column.
+          Note that the automatic threshold is specific to a 
+          dyad and does not allow to compare different dyads.
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
@@ -969,7 +973,9 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs,
           only those above the set value will be plotted
           Can also be "auto" to use a threshold automatically
           calculated from your matrix as the maximum median 
-          by column + the maximum standard error by column
+          by column + the maximum standard error by column.
+          Note that the automatic threshold is specific to a 
+          dyad and does not allow to compare different dyads.
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
@@ -1320,7 +1326,9 @@ def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
           only those above the set value will be plotted
           Can also be "auto" to use a threshold automatically
           calculated from your matrix as the maximum median 
-          by column + the maximum standard error by column
+          by column + the maximum standard error by column.
+          Note that the automatic threshold is specific to a 
+          dyad and does not allow to compare different dyads.
         steps: int
           number of steps for the Bezier curves
           if <3 equivalent to ploting straight lines
