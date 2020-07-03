@@ -346,10 +346,10 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
 
     # getting F values for sensors belonging to a significant cluster
     F_obs_plot = np.zeros(F_obs.shape)
-    for i_c, c in enumerate(clusters):
-        c = c[0]
-        if cluster_p_values[i_c] <= 0.05:
-            F_values = c.astype('uint8')*F_obs[i_c]
+    for cluster_p in cluster_p_values:
+        if cluster_p <= 0.05:
+            sensors_plot = clusters[np.where(cluster_p_values == cluster_p)[0][0]].astype('uint8')
+            F_values = sensors_plot*F_obs
             # taking maximum F value if a sensor belongs to many clusters
             F_obs_plot = np.maximum(F_obs_plot, F_values)
 
