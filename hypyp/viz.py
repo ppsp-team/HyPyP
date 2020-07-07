@@ -86,10 +86,6 @@ def plot_sensors_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False)
     Returns:
         None: plot the sensors in 2D within the current axis.
     """
-    bads_epo1 = []
-    bads_epo1 = epo1.info['bads']
-    bads_epo2 = []
-    bads_epo2 = epo2.info['bads']
 
     # extract sensor info and transform loc to fit with headmodel
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
@@ -100,6 +96,12 @@ def plot_sensors_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False)
     loc2 = transform(loc2, traX=0.17, traY=0, traZ=0.08, rotY=(np.pi/12), rotZ=np.pi/2)
     lab2 = [ch for ch in epo2.ch_names]
 
+    bads_epo1 = []
+    bads_epo1 = epo1.info['bads']
+    bads_epo2 = []
+    bads_epo2 = epo2.info['bads']
+    
+    # plot sensors ('x' for bads)
     for ch in epo1.ch_names:
       if ch in bads_epo1:
         index_ch = epo1.ch_names.index(ch)
@@ -185,11 +187,13 @@ def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thres
     else:
       threshold = threshold
 
+    # define colormap
     cmap_p = matplotlib.cm.get_cmap('Reds')
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.nanmax(C[:]))
     cmap_n = matplotlib.cm.get_cmap('Blues_r')
     norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
 
+    # plot links
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
         y1 = loc1[e1, 1]
@@ -291,6 +295,7 @@ def plot_sensors_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool
     bads_epo2 =[]
     bads_epo2 = epo2.info['bads']
 
+    # plot sensors ('x' for bads)
     for ch in epo1.ch_names:
       if ch in bads_epo1:
         index_ch = epo1.ch_names.index(ch)
@@ -379,11 +384,13 @@ def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarr
     else:
       threshold = threshold
 
+    # define colormap
     cmap_p = matplotlib.cm.get_cmap('Reds')
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.nanmax(C[:]))
     cmap_n = matplotlib.cm.get_cmap('Blues_r')
     norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
 
+    # plot links
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
         y1 = loc1[e1, 1]
@@ -628,9 +635,12 @@ def plot_3d_heads(ax, vertices, faces):
     Returns:
         None : plot the head faces in 3D within the current axis.
     """
+    # extract vertices coordinates
     x_V = vertices[:, 2]
     y_V = vertices[:, 0]
     z_V = vertices[:, 1]
+
+    # plot link between vertices
     for F in range(len(faces)):
         V0 = faces[F, 0]
         V1 = faces[F, 1]
@@ -685,8 +695,7 @@ def viz_2D_topomap_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thr
     ax = fig.add_subplot(111, aspect = 1)
     ax.axis("off")
     plot_2d_topomap_inter(ax)
-    # bads are represented as squares
-    plot_sensors_2d_inter(epo1, epo2, lab = lab)
+    plot_sensors_2d_inter(epo1, epo2, lab = lab) # bads are represented as squares
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
@@ -774,8 +783,7 @@ def viz_3D_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
     ax = fig.gca(projection='3d')
     ax.axis("off")
     plot_3d_heads(ax, vertices, faces)
-    # bads are represented as squares
-    plot_sensors_3d_inter(ax, epo1, epo2, lab=lab)
+    plot_sensors_3d_inter(ax, epo1, epo2, lab=lab) # bads are represented as squares
     # plotting links according to sign (red for positive values,
     # blue for negative) and value (line thickness increases
     # with the strength of connectivity)
@@ -901,10 +909,6 @@ def plot_sensors_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False)
     Returns:
         None: plot the sensors in 2D within the current axis.
     """
-    bads_epo1 = []
-    bads_epo1 = epo1.info['bads']
-    bads_epo2 = []
-    bads_epo2 = epo2.info['bads']
 
     # extract sensor info and transform loc to fit with headmodel
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
@@ -915,6 +919,12 @@ def plot_sensors_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False)
     loc2 = transform_2d_intra(loc2, traX=0.178, traY=0.012, traZ=0, rotZ=(-np.pi/2))
     lab2 = [ch for ch in epo2.ch_names]
 
+    bads_epo1 = []
+    bads_epo1 = epo1.info['bads']
+    bads_epo2 = []
+    bads_epo2 = epo2.info['bads']
+
+    # plot sensors
     for ch in epo1.ch_names:
       if ch in bads_epo1:
         index_ch = epo1.ch_names.index(ch)
@@ -1022,6 +1032,7 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs,
     cmap_n = matplotlib.cm.get_cmap('Blues_r')
     norm_n = matplotlib.colors.Normalize(vmin=vmin, vmax=-threshold)
 
+    # plot links
     for e1 in range(len(loc1)):
         x1 = loc1[e1, 0]
         y1 = loc1[e1, 1]
@@ -1268,6 +1279,7 @@ def plot_sensors_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool
     bads_epo2 =[]
     bads_epo2 = epo2.info['bads']
 
+    # plot sensors
     for ch in epo1.ch_names:
       if ch in bads_epo1:
         index_ch = epo1.ch_names.index(ch)
