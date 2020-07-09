@@ -344,22 +344,14 @@ def generate_random_epoch(epoch: mne.Epochs, mu: float=0, sigma: float=2.0)-> mn
     """
 
     # Get epoch information 
-    sfreq = epoch.info['sfreq']
-    ch_names = epoch.info['ch_names']
-    ch_types='eeg'
-    montage = mne.channels.make_standard_montage('standard_1020')
-    info = create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
-    
-    
+    info = epoch.info #create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
+
     # Get epochs as a 3D NumPy array of shape (n_epochs, n_channels, n_times)
     # Get the arrays’ shape
     data_shape = epoch.get_data().shape
     i, j, k = data_shape
+
     # Generate a numpy.array with same shape from the normal distribution
     r_epoch = sigma * np.random.randn(i, j, k) + mu
-  
-    # Create new epoch
-    random_epoch=EpochsArray(data=r_epoch, info=info)
-    random_epoch.set_montage(montage)
 
-    return random_epoch
+    return EpochsArray(data=r_epoch, info=info)
