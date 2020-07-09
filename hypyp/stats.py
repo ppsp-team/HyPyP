@@ -200,9 +200,9 @@ def metaconn_matrix_2brains(electrodes: list, ch_con: scipy.sparse.csr_matrix, f
         for ne2, (e21, e22) in enumerate(electrodes):
             # print(ne1,e11,e12,ne2,e21,e22)
             # considering no a priori connectivity between the 2 brains
-            metaconn[ne1, ne2] = (((ch_con[e11, e21]) and (ch_con[e12-n, e22-n])) or
+            metaconn[ne1, ne2] = (((ch_con[e11, e21]) and (ch_con[e12-(n*(e12%n)), e22-(n*(e22%n))])) or
                                   ((ch_con[e11, e21]) and (e12 == e22)) or
-                                  ((ch_con[e12-n, e22-n]) and (e11 == e21)) or
+                                  ((ch_con[e12-(n*(e12%n)), e22-(n*(e22%n))]) and (e11 == e21)) or
                                   ((e12 == e22) and (e11 == e21)))
 
     # duplicating the array 'freqs_mean' times to take channel connectivity
