@@ -357,15 +357,16 @@ def generate_random_epoch(epoch: mne.Epochs, mu: float=0, sigma: float=2.0)-> mn
 
     return EpochsArray(data=r_epoch, info=info)
 
-def generate_virtual_epoch(epoch: mne.Epochs, frequency_mean: float=10, frequency_std: float=0.2,
-                           noise_phase_level: float=0.005, noise_amplitude_level: float=0.1,
-                           W: np.ndarray)-> mne.Epochs:
+def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: float=10, frequency_std: float=0.2,
+                           noise_phase_level: float=0.005, noise_amplitude_level: float=0.1)-> mne.Epochs:
     """
     Generate epochs with simulated data using Kuramoto oscillators. 
 
     Arguments:
         epoch: mne.Epochs
           Epochs object to get epoch info structure
+        W: np.ndarray
+          Coupling matrix between the oscillators
         frequency_mean: float
           Mean of the normal distribution for oscillators frequency
         frequency_std: float
@@ -374,8 +375,6 @@ def generate_virtual_epoch(epoch: mne.Epochs, frequency_mean: float=10, frequenc
           Amount of noise at the phase level
         noise_amplitude_level: float
           Amount of noise at the amplitude level
-        W: np.ndarray
-          Coupling matrix between the oscillators
 
     Returns:
         mne.Epochs
