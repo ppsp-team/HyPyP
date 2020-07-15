@@ -365,7 +365,7 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
         F_obs_plot=F_obs_plot)
 
 
-def statscluster(data: list, test: str, factor_level: list=None, ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float=0.05) -> tuple:
+def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float = 0.05) -> tuple:
     """
     Computes cluster-level statistical permutation test, corrected with
     channel connectivity across space and frequencies to compare groups
