@@ -348,7 +348,8 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
     F_obs_plot = np.zeros(F_obs.shape)
     for cluster_p in cluster_p_values:
         if cluster_p <= 0.05:
-            sensors_plot = clusters[np.where(cluster_p_values == cluster_p)[0][0]].astype('uint8')
+            sensors_plot = clusters[np.where(cluster_p_values == cluster_p)[
+                0][0]].astype('uint8')
             F_values = sensors_plot*F_obs
             # taking maximum F value if a sensor belongs to many clusters
             F_obs_plot = np.maximum(F_obs_plot, F_values)
@@ -362,3 +363,119 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
         cluster_p_values=cluster_p_values,
         H0=H0,
         F_obs_plot=F_obs_plot)
+
+
+def statscluster(data: list, test: str, factor_level: list=None, ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float=0.05) -> tuple:
+    """
+    Computes cluster-level statistical permutation test, corrected with
+    channel connectivity across space and frequencies to compare groups
+    or conditions for simple or multiple comparisons.
+
+    Arguments:
+        data: values from different groups or conditions to compare,
+          list of arrays (3d for time-frequency power or connectivity values),
+          or np.array for f multiple-way ANOVA test.
+        test: nature of the test used to compare groups or conditions.
+          Can be a t test for independant or paired samples
+          ('ind ttest' or 'rel ttest'), a one-way ANOVA test
+          ('f oneway'), or a multiple-way ANOVA test ('f multipleway), str.
+        factor_level: for multiple-way ANOVA test, describe the number of level
+          for each factor, list (if compare 2 groups and 2 conditions,
+          factor_levels = [2, 2] and data should be an np.array with
+          group1-condition1, group1-condition2, group2-condition1,
+          group2-condition2).
+          Set to None otherwise.
+        ch_con_freq: connectivity or metaconnectivity matrix for PSD or CSD
+          values to assess a priori connectivity between channels across
+          space and frequencies based on their position, bsr_matrix.
+        tail: direction of the ttest, can be set to 1, 0 or -1. The tail must
+          be set to 0 for a one-way ANOVA test and to 1 for a mutiple-way
+          ANOVA test.
+        n_permutations: number of permutations computed, can be set to 50000.
+        alpha: threshold to consider clusters significant, can be set to 0.05
+          that is the default value. An adjustment is done for a f one-way and
+          multiple-way tests to adapt 0.05 to the number of observations.
+
+    Notes:
+        With t_power set to 1, each location is weighted by its statistical
+        score in a cluster.
+        For a f multipleway ANOVA test with connectivity values, the last
+        dimensions have to be flattened in a vector, instead of the shape
+        (n_sensors, n_sensors), you can use np.reshape. Notice also that
+        the design must be balanced.
+
+    Returns:
+        F_obs, clusters, cluster_pv, H0, F_obs_plot:
+
+        - F_obs: statistic (T or F values according to the assignement
+          of 'test') observed for all variables,
+          array of shape (n_tests,).
+
+        - clusters: boolean array with same shape as the input data,
+          True values indicating locations that are part of a cluster, array.
+
+        - cluster_p_values: p-value for each cluster, array.
+
+        - H0: max cluster level stats observed under permutation, array of
+          shape (n_permutations,).
+
+        - F_obs_plot: statistical values above alpha threshold,
+          to plot significant sensors (see plot_significant_sensors
+          function in the toolbox) array of shape (n_tests,).
+    """
+
+    # type of test
+    if test == 'ind ttest':
+        def stat_fun(*arg):
+            return(scipy.stats.ttest_ind(arg[0], arg[1], equal_var=False)[0])
+    elif test == 'rel ttest':
+        def stat_fun(*arg):
+            return(scipy.stats.ttest_rel(arg[0], arg[1])[0])
+    elif test == 'f oneway':
+        def stat_fun(*arg):
+            return(scipy.stats.f_oneway(arg[0], arg[1])[0])
+    elif test == 'f multipleway':
+        if max(factor_level) > 2:
+            correction = True
+        else:
+            correction = False
+
+        def stat_fun(*arg):
+            return(mne.stats.f_mway_rm(np.swapaxes(args, 1, 0),
+                                       factor_levels,
+                                       effects='all',
+                                       correction=correction,
+                                       return_pvals=False)[0])
+        alpha = mne.stats.f_threshold_mway_rm(n_subjects=data.shape[1],
+                                              factor_levels=factor_levels,
+                                              effects='all',
+                                              pvalue=0.05)
+
+    # computing the cluster permutation t test
+    Stat_obs, clusters, cluster_p_values, h0 = mne.stats.permutation_cluster_test(data,
+                                                                                  stat_fun=stat_fun,
+                                                                                  threshold=alpha,
+                                                                                  tail=tail,
+                                                                                  n_permutations=n_permutations,
+                                                                                  connectivity=ch_con_freq,
+                                                                                  t_power=1,
+                                                                                  out_type='mask')
+    # getting F values for sensors belonging to a significant cluster
+    Stat_obs_plot = np.zeros(Stat_obs.shape)
+    for cluster_p in cluster_p_values:
+        if cluster_p <= 0.05:
+            sensors_plot = clusters[np.where(cluster_p_values == cluster_p)[
+                0][0]].astype('uint8')
+            Stat_values = sensors_plot*Stat_obs
+            # taking maximum statistical value if a sensor is in many clusters
+            Stat_obs_plot = np.maximum(Stat_obs_plot, Stat_values)
+
+    statscondClusterTuple = namedtuple('statscondCluster', [
+                                       'Stat_obs', 'clusters', 'cluster_p_values', 'H0', 'Stat_obs_plot'])
+
+    return statscondClusterTuple(
+        Stat_obs=Stat_obs,
+        clusters=clusters,
+        cluster_p_values=cluster_p_values,
+        H0=H0,
+        Stat_obs_plot=Stat_obs_plot)
