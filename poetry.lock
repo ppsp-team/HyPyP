@@ -8,6 +8,14 @@ version = "1.4.4"
 
 [[package]]
 category = "dev"
+description = "A Python module to correct p values for multiple comparisons"
+name = "statsmodels"
+optional = false
+python-versions = "*"
+version = "0.11.1"
+
+[[package]]
+category = "dev"
 description = "Disable App Nap on OS X 10.9"
 marker = "sys_platform == \"darwin\" or platform_system == \"Darwin\" or python_version >= \"3.3\" and sys_platform == \"darwin\""
 name = "appnope"

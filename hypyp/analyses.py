@@ -14,6 +14,7 @@ PSD, intra- and inter-brain measures functions
 import numpy as np
 import scipy
 import scipy.signal as signal
+import scipy.stats
 import statsmodels.stats.multitest
 import copy
 from collections import namedtuple
