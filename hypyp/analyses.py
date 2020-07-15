@@ -14,6 +14,7 @@ PSD, intra- and inter-brain measures functions
 import numpy as np
 import scipy
 import scipy.signal as signal
+import statsmodels.stats.multitest
 import copy
 from collections import namedtuple
 from typing import Union
@@ -95,7 +96,7 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
                      psd=psd)
 
 
-def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: str, verbose: bool=False) -> tuple:
+def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: str, p_thresh: float, multiple_corr: bool=True, verbose: bool=False) -> tuple:
     """
     Correlates data with a discontinuous behavioral parameter,
     uses different linear correlations after checking for
@@ -103,70 +104,97 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
 
     Arguments:
         data: data (raws, epochs, power, connectivity values...) to correlate
-          with behavior, one dimensional array (shape (n,)).
+          with behavior, numpy array with first dimension of shape (n,).
         behav: behavioral values for a parameter (ex: timing to control
           for learning), one dimensional array from same shape as data.
         data_name: nature of the data (used for the legend of the figure,
           if verbose=True), str.
         behav_name: nature of the behavior values (used for the legend
           of the figure, if verbose=True), str.
+        p_thresh: threshold to consider p values as significant for correlation
+          tests, can be set to 0.05 with multiple_corr to True or lower when
+          multiple_corr set to False, float.
+        multiple_corr: for connectivity correlation tests for example,
+           a correction for multiple comparison can be applied
+           (multiple_corr set to True by default), bool.
+           The method used is fdr_bh.
         verbose: option to plot the correlation, boolean.
           Set to False by default.
 
     Returns:
         r, pvalue, strat:
-          - r: pearson’s correlation coefficient, float.
+          - r: pearson’s correlation coefficient, float if data is a vector,
+            array of floats if data is an array of connectivity values. In this
+            last case, the array can be used as input in viz.plot_links_2d.
           - pvalue: two-tailed p-value (probability of an uncorrelated
             system producing datasets that have a Pearson correlation
             at least as extreme as the one computed from the dataset tested),
-            float.
-          - strat: normality of the datasets, 'non-normal' or 'normal', str.
+            float if data is a vector, array of floats if data is an array
+            of connectivity values. If multiple_corr is set to True, return
+            corrected pvalue.
+          - strat: normality of the datasets, 'non-normal' or 'normal' if data
+            is a vector, corection set for multiple comparisons or not if data
+            is an array of connectivity values, str.
     """
 
-    # assert same length, sampling between data and behav
-    # for Raw, average on ch
-    # if len(data) == 2:
-    #     data = np.mean(data, axis=0)
-    # for Epochs, average across epochs and channels
-    # elif len(data) == 3:
-    #     data = np.mean(data, axis=0)
-    #     data = np.mean(data, axis=0)
-        # BUT last dim in epochs n_times/epochs or total?
-        # to adjust for being same length as behav!
-        # ie data mean on ch then data.reshape(ep*time, order='C')
-    # for connectivity matrix, average across epochs and channels: ?
+    # simple correlation between vectors (data can be averaged PSD for example)
+    if data.shape == behav.shape:
+        # test for normality on the first axis
+        _, pvalue1 = scipy.stats.normaltest(data, axis=0)
+        _, pvalue2 = scipy.stats.normaltest(behav, axis=0)
+        if min(pvalue1, pvalue2) < 0.05:
+            # reject null hypothesis
+            # (H0: data come from a normal distribution)
+            strat = 'non_normal'
+            r, pvalue = scipy.stats.spearmanr(behav, data, axis=0)
+        else:
+            strat = 'normal'
+            r, pvalue = scipy.stats.pearsonr(behav, data)
+        # can also use np.convolve, np.correlate, np.corrcoeff
+        # vizualisation
+        if verbose:
+            plt.figure()
+            plt.scatter(behav, data, label=str(r)+str(pvalue))
+            plt.legend(loc='upper right')
+            plt.title('Linear correlation between '+behav_name+' and '+data_name)
+            plt.xlabel(behav_name)
+            plt.ylabel(data_name)
+            plt.show()
+        corr_tuple = namedtuple('corr_tuple', ['r', 'pvalue', 'strat'])
 
-    assert data.shape == behav.shape
-
-    # test for normality on the first axis
-    _, pvalue1 = scipy.stats.normaltest(data, axis=0)
-    _, pvalue2 = scipy.stats.normaltest(behav, axis=0)
-    if min(pvalue1, pvalue2) < 0.05:
-        # reject null hypothesis
-        # (H0: data come from a normal distribution)
-        strat = 'non_normal'
-        r, pvalue = scipy.stats.spearmanr(behav, data, axis=0)
-    else:
-        strat = 'normal'
-        r, pvalue = scipy.stats.pearsonr(behav, data)
-
-    # spearman Ok?
-    # other than correlation cf. np.convolve
-    # or cross corerlation cf. np.correlate
-    # or np.corrcoeff
-    # or x and y find regression with polinomial solution
-    # cf. np.polyfit
-
-    if verbose:
-        plt.figure()
-        plt.scatter(behav, data, label=str(r)+str(pvalue))
-        plt.legend(loc='upper right')
-        plt.title('Linear correlation between '+behav_name+' and '+data_name)
-        plt.xlabel(behav_name)
-        plt.ylabel(data_name)
-        plt.show()
-
-    corr_tuple = namedtuple('corr_tuple', ['r', 'pvalue', 'strat'])
+    # simple correlation between connectivity data and behavioral vector
+    elif len(data.shape) == 3:
+        r = np.zeros(shape=(data.shape[1], data.shape[2]))
+        pvals = np.zeros(shape=(data.shape[1], data.shape[2]))
+        significant_corr = np.zeros(shape=(data.shape[1], data.shape[2]))
+        # correlate across subjects for each pair of sensors, the connectivity value
+        # with a behavioral value
+        for i in range(0, data.shape[1]):
+            for j in range(0, data.shape[2]):
+                r, pvalue = scipy.stats.pearsonr(np.array(behav), data[:, i, j])
+                r[i, j] = r
+                pvals[i, j] = pvalue
+        # correction for multiple comparisons
+        if multiple_corr is True:
+            pvals_corrected = statsmodels.stats.multitest.multipletests(pvals,
+                                                                        alpha=0.05,
+                                                                        method='fdr_bh',
+                                                                        is_sorted=False,
+                                                                        returnsorted=False)
+        # get r value for significant correlation only
+        for i in range(0, data.shape[1]):
+            for j in range(0, data.shape[2]):
+                # with pvalues non corrected for multiple comparisons
+                if multiple_corr is False:
+                    pval = pvals
+                # or corrected for multiple comparisons
+                else:
+                    pval = pvals_corrected[0]
+                if pvals[i, j] < p_thresh:
+                    significant_corr[i, j] = r[i, j]
+        r = significant_corr
+        pvalue = pval
+        strat = 'correction for multiple comaprison ' + multiple_corr
 
     return corr_tuple(r=r, pvalue=pvalue, strat=strat)
 
