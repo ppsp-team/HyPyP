@@ -374,7 +374,8 @@ def statscluster(data: list, test: str, factor_level: list=None, ch_con_freq: sc
     Arguments:
         data: values from different groups or conditions to compare,
           list of arrays (3d for time-frequency power or connectivity values),
-          or np.array for f multiple-way ANOVA test.
+          or np.array for f multiple-way ANOVA test. For this test and the 
+          paired ttest, samples must have the same dimension.
         test: nature of the test used to compare groups or conditions.
           Can be a t test for independant or paired samples
           ('ind ttest' or 'rel ttest'), a one-way ANOVA test
@@ -401,8 +402,7 @@ def statscluster(data: list, test: str, factor_level: list=None, ch_con_freq: sc
         score in a cluster.
         For a f multipleway ANOVA test with connectivity values, the last
         dimensions have to be flattened in a vector, instead of the shape
-        (n_sensors, n_sensors), you can use np.reshape. Notice also that
-        the design must be balanced.
+        (n_sensors, n_sensors), you can use np.reshape.
 
     Returns:
         F_obs, clusters, cluster_pv, H0, F_obs_plot:
