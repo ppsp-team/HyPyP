@@ -169,9 +169,9 @@ def test_behav_corr(epochs):
     significant_r = []
     for i in corr_tuple.r.shape[0]:
         for j in corr_tuple.r.shape[1]:
-            if corr_tuple.r[i, j] =! 0:
+            if corr_tuple.r[i, j] != 0:
                 significant_r.append(corr_tuple.r[i, j])
-    assert len(significant_r) =! 0
+    assert len(significant_r) != 0
 
     # generate random subjects' connectivity data
     data = []
