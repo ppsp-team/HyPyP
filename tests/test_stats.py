@@ -153,9 +153,9 @@ def test_behav_corr(epochs):
                                           frequencies=[8, 10],
                                           mode='ccorr',
                                           epochs_average=True)
-    data = np.stack(con_ind, con_subj)
+    data = np.stack((con_ind, con_subj), axis=0)
     for k in range(0, 5):
-        data = np.stack(data, con_subj)
+        data = np.stack((data, con_subj), axis=0)
     behav = np.array([0, 1, 1, 1, 1, 1, 1])
     # correlate connectivity and behaviour across pairs
     corr_tuple = analyses.behav_corr(data, behav,
