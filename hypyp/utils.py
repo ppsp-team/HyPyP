@@ -14,6 +14,7 @@ Useful tools
 
 import numpy as np
 import pandas as pd
+from scipy.integrate import odeint
 import mne
 from mne.io.constants import FIFF
 from mne import create_info, EpochsArray
@@ -344,22 +345,64 @@ def generate_random_epoch(epoch: mne.Epochs, mu: float=0, sigma: float=2.0)-> mn
     """
 
     # Get epoch information 
-    sfreq = epoch.info['sfreq']
-    ch_names = epoch.info['ch_names']
-    ch_types='eeg'
-    montage = mne.channels.make_standard_montage('standard_1020')
-    info = create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
-    
-    
+    info = epoch.info #create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
+
     # Get epochs as a 3D NumPy array of shape (n_epochs, n_channels, n_times)
     # Get the arrays’ shape
     data_shape = epoch.get_data().shape
     i, j, k = data_shape
+
     # Generate a numpy.array with same shape from the normal distribution
     r_epoch = sigma * np.random.randn(i, j, k) + mu
-  
-    # Create new epoch
-    random_epoch=EpochsArray(data=r_epoch, info=info)
-    random_epoch.set_montage(montage)
 
-    return random_epoch
+    return EpochsArray(data=r_epoch, info=info)
+
+def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: float=10, frequency_std: float=0.2,
+                           noise_phase_level: float=0.005, noise_amplitude_level: float=0.1)-> mne.Epochs:
+    """
+    Generate epochs with simulated data using Kuramoto oscillators. 
+
+    Arguments:
+        epoch: mne.Epochs
+          Epochs object to get epoch info structure
+        W: np.ndarray
+          Coupling matrix between the oscillators
+        frequency_mean: float
+          Mean of the normal distribution for oscillators frequency
+        frequency_std: float
+          Standart deviation of the normal distribution for oscillators frequency
+        noise_phase_level: float
+          Amount of noise at the phase level
+        noise_amplitude_level: float
+          Amount of noise at the amplitude level
+
+    Returns:
+        mne.Epochs
+          new epoch with simulated data
+    """
+
+    n_epo, n_chan, n_samp = epochs.get_data().shape
+    sfreq = epochs.info['sfreq']
+
+    Nt = n_samp * n_epo
+    tmax = n_samp / sfreq * n_epo  # s
+    tv = np.linspace(0., tmax, Nt)
+
+    freq = frequency_mean + frequency_std * np.random.randn(n_chan)
+    omega = 2. * np.pi * freq
+
+    def fp(p, t):
+        p = np.atleast_2d(p)
+        coupling = np.squeeze((np.sin(p) * np.matmul(W, np.cos(p).T).T) - (np.cos(p) * np.matmul(W, np.sin(p).T).T))
+        dotp = omega - coupling + noise_phase_level * np.random.randn(n_chan) / n_samp
+        return dotp
+
+    p0 = 2 * np.pi * np.block([np.zeros(N), np.zeros(N) + np.random.rand(N) + 0.5])
+    
+    phi = odeint(fp, p0, tv) % (2*np.pi)
+    eeg = np.sin(phi) + noise_amplitude_level * np.random.randn(*phi.shape)
+    
+    simulation = epo_real.copy()
+    simulation._data = np.transpose(np.reshape(eeg.T, [n_chan, n_epo, n_samp]), (1, 0, 2))
+    
+    return simulation
