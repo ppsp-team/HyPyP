@@ -238,14 +238,9 @@ def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float =
             eog=False,
             exclude=[])
 
-        if verbose:
-            ar_verbose = 'progressbar'
-        else:
-            ar_verbose = False
-
         ar = AutoReject(n_interpolates, consensus_percs, picks=picks,
                         thresh_method='random_search', random_state=42,
-                        verbose=ar_verbose)
+                        verbose='tqdm_notebook')
         AR.append(ar)
 
         # fitting AR to get bad epochs
