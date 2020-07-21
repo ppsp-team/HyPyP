@@ -678,7 +678,7 @@ python-versions = ">=3.5"
 version = "8.4.0"
 
 [[package]]
-category = "dev"
+category = "main"
 description = ""
 name = "mpl3d"
 optional = false

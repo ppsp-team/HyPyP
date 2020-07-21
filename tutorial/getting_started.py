@@ -12,11 +12,11 @@ import io
 from copy import copy
 from collections import OrderedDict
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import scipy
 import mne
 import requests
+
 
 import mpl3d  # pip install git+https://github.com/rougier/matplotlib-3d
 from mpl3d import glm
@@ -273,43 +273,29 @@ epo1.info["bads"] = ["F8", "Fp2", "Cz", "O2"]
 epo2.info["bads"] = ["F7", "O1"]
 
 # Visualization of inter-brain connectivity in 2D
-# defining head model and adding sensors
-fig, ax = plt.subplots(1, 1)
-ax.axis("off")
-vertices, faces = viz.get_3d_heads()
-camera = Camera("ortho", theta=90, phi=180, scale=1)
-mesh = Mesh(
-    ax,
-    camera.transform @ glm.yrotate(90),
-    vertices,
-    faces,
-    facecolors="white",
-    edgecolors="black",
-    linewidths=0.25,
-)
-camera.connect(ax, mesh.update)
-plt.gca().set_aspect("equal", "box")
-plt.axis("off")
-viz.plot_sensors_2d(epo1, epo2, lab=True)  # bads are represented as squares
-# plotting links according to sign (red for positive values,
-# blue for negative) and value (line thickness increases
-# with the strength of connectivity)
-viz.plot_links_2d(epo1, epo2, C=C, threshold=2, steps=10)
-plt.tight_layout()
-plt.show()
+viz.viz_2D_topomap_inter(epo1, epo2, C, threshold='auto', steps=10, lab=True)
 
 # Visualization of inter-brain connectivity in 3D
-# defining head model and adding sensors
-vertices, faces = viz.get_3d_heads()
-fig = plt.figure()
-ax = fig.gca(projection="3d")
-ax.axis("off")
-viz.plot_3d_heads(ax, vertices, faces)
-# bads are represented as squares
-viz.plot_sensors_3d(ax, epo1, epo2, lab=False)
-# plotting links according to sign (red for positive values,
-# blue for negative) and value (line thickness increases
-# with the strength of connectivity)
-viz.plot_links_3d(ax, epo1, epo2, C=C, threshold=2, steps=10)
-plt.tight_layout()
-plt.show()
+viz.viz_3D_inter(epo1, epo2, C, threshold='auto', steps=10, lab=False)
+
+# Visualization of intra-brain connectivity in 2D
+viz.viz_2D_topomap_intra(epo1, epo2,
+                         C1= result_intra[0],
+                         C2= result_intra[1],
+                         threshold='auto',
+                         steps=2,
+                         lab=False)
+
+# Visualization of intra-brain connectivity in 3D
+viz.viz_3D_intra(epo1, epo2,
+                 C1= result_intra[0],
+                 C2= result_intra[1],
+                 threshold='auto',
+                 steps=10,
+                 lab=False)
+
+
+threshold = np.max(np.median(C, 0))+np.max(np.std(C, 0))
+
+threshold = np.max([np.median(C1, 0),np.median(C2,0)])+np.max([np.std(C1, 0),np.std(C2, 0)])
+
