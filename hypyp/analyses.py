@@ -137,7 +137,10 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
             is a vector, corection set for multiple comparisons or not if data
             is an array of connectivity values, str.
     """
-
+    
+    # storage to return results
+    corr_tuple = namedtuple('corr_tuple', ['r', 'pvalue', 'strat'])
+    
     # simple correlation between vectors (data can be averaged PSD for example)
     if data.shape == behav.shape:
         # test for normality on the first axis
@@ -161,7 +164,6 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
             plt.xlabel(behav_name)
             plt.ylabel(data_name)
             plt.show()
-        corr_tuple = namedtuple('corr_tuple', ['r', 'pvalue', 'strat'])
 
     # simple correlation between connectivity data and behavioral vector
     elif len(data.shape) == 3:
