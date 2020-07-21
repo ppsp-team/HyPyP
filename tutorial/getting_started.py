@@ -8,16 +8,24 @@
 # version         : 1
 # python_version  : 3.7
 # ==============================================================================
-
-from pathlib import Path
+import io
 from copy import copy
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import mne
+import requests
 
-from hypyp import prep
+
+import mpl3d  # pip install git+https://github.com/rougier/matplotlib-3d
+from mpl3d import glm
+from mpl3d.mesh import Mesh
+from mpl3d.camera import Camera
+
+from hypyp import (
+    prep,
+)  # need pip install https://api.github.com/repos/autoreject/autoreject/zipball/master
 from hypyp import analyses
 from hypyp import stats
 from hypyp import viz
@@ -45,15 +53,18 @@ sampling_rate = 500  # Hz
 
 # In our example, we load Epochs directly from EEG dataset in
 # the fiff format
-epo1 = mne.read_epochs(
-    Path('../data/participant1-epo.fif').resolve(),
-    preload=True,
+URL_TEMPLATE = (
+    "https://github.com/GHFC/HyPyP/blob/master/data/participant{}-epo.fif?raw=true"
 )
 
-epo2 = mne.read_epochs(
-    Path('../data/participant2-epo.fif').resolve(),
-    preload=True,
-)
+
+def get_data(idx):
+    return io.BytesIO(requests.get(URL_TEMPLATE.format(idx)).content)
+
+
+epo1 = mne.read_epochs(get_data(1), preload=True,)
+
+epo2 = mne.read_epochs(get_data(2), preload=True,)
 
 # In our example, since the dataset was not initially
 # dedicate to hyperscanning, we need to equalize
@@ -83,7 +94,9 @@ plt.close("all")
 # rejecting bad epochs, rejecting or interpolating partially bad channels
 # removing the same bad channels and epochs across participants
 # plotting signal before and after (verbose=True)
-cleaned_epochs_AR, dic_AR = prep.AR_local(cleaned_epochs_ICA, strategy='union', threshold=50.0, verbose=False)
+cleaned_epochs_AR, dic_AR = prep.AR_local(
+    cleaned_epochs_ICA, strategy="union", threshold=50.0, verbose=False
+)
 input("Press ENTER to continue")
 plt.close("all")
 
@@ -285,3 +298,4 @@ viz.viz_3D_intra(epo1, epo2,
 threshold = np.max(np.median(C, 0))+np.max(np.std(C, 0))
 
 threshold = np.max([np.median(C1, 0),np.median(C2,0)])+np.max([np.std(C1, 0),np.std(C2, 0)])
+
