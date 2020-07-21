@@ -161,7 +161,7 @@ def test_behav_corr(epochs):
                                      behav_name='imitation score',
                                      p_thresh=0.05,
                                      multiple_corr=True,
-                                     versbose=False)
+                                     verbose=False)
     # test that correlation (repeated measures)
     assert corr_tuple.pvalue <= 1
     significant_r = []
@@ -191,7 +191,7 @@ def test_behav_corr(epochs):
                                      behav_name='imitation score',
                                      p_thresh=0.05,
                                      multiple_corr=True,
-                                     versbose=False)
+                                     verbose=False)
     # test that no correlation (random)
     assert corr_tuple.pvalue <= 1
     for i in corr_tuple.r.shape[0]:
