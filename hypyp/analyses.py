@@ -174,8 +174,8 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
         # with a behavioral value
         for i in range(0, data.shape[1]):
             for j in range(0, data.shape[2]):
-                r, pvalue = scipy.stats.pearsonr(np.array(behav), data[:, i, j])
-                r[i, j] = r
+                ri, pvalue = scipy.stats.pearsonr(np.array(behav), data[:, i, j])
+                r[i, j] = ri
                 pvals[i, j] = pvalue
         # correction for multiple comparisons
         if multiple_corr is True:
