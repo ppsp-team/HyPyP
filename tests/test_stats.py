@@ -83,10 +83,18 @@ def test_AR_local(epochs):
     """
     # test on epochs, but usually applied on cleaned epochs with ICA
     ep = [epochs.epo1, epochs.epo2]
-    cleaned_epochs_AR = prep.AR_local(ep, verbose=False)
+    cleaned_epochs_AR, dic_AR = prep.AR_local(
+        ep, strategy='union', threshold=50.0, verbose=False)
     assert len(epochs.epo1) >= len(cleaned_epochs_AR[0])
     assert len(epochs.epo2) >= len(cleaned_epochs_AR[1])
     assert len(cleaned_epochs_AR[0]) == len(cleaned_epochs_AR[1])
+    assert dic_AR['S2'] + dic_AR['S1'] == dic_AR['dyad']
+    cleaned_epochs_AR, dic_AR = prep.AR_local(
+        ep, strategy='intersection', threshold=50.0, verbose=False)
+    assert dic_AR['S2'] <= dic_AR['dyad']
+    cleaned_epochs_AR, dic_AR = prep.AR_local(
+        ep, strategy='intersection', threshold=0.0, verbose=False)
+    # should print an error
 
 
 def test_PSD(epochs):
@@ -96,23 +104,101 @@ def test_PSD(epochs):
     fmin = 10
     fmax = 13
     psd_tuple = analyses.pow(epochs.epo1,
-                            fmin, fmax,
-                            n_fft=256,
-                            n_per_seg=None,
-                            epochs_average=True)
+                             fmin, fmax,
+                             n_fft=256,
+                             n_per_seg=None,
+                             epochs_average=True)
     psd = psd_tuple.psd
     freq_list = psd_tuple.freq_list
     assert type(psd) == np.ndarray
     assert psd.shape == (
         len(epochs.epo1.info['ch_names']), len(freq_list))
     psd_tuple = analyses.pow(epochs.epo1,
-                            fmin, fmax,
-                            n_fft=256,
-                            n_per_seg=None,
-                            epochs_average=False)
+                             fmin, fmax,
+                             n_fft=256,
+                             n_per_seg=None,
+                             epochs_average=False)
     psd = psd_tuple.psd
     assert psd.shape == (len(epochs.epo1), len(
         epochs.epo1.info['ch_names']), len(freq_list))
+
+
+def test_behav_corr(epochs):
+    """
+    Test data-behav correlation
+    """
+    # test for vector data
+    # data = epochs.epo1
+    data = np.arange(0, 10)
+    step = len(data)
+    behav = np.arange(0, step)
+    assert len(data) == len(behav)
+    corr_tuple = analyses.behav_corr(data, behav,
+                                     data_name='epochs',
+                                     behav_name='time',
+                                     p_thresh=0.05,
+                                     multiple_corr=False,
+                                     verbose=False)
+    assert corr_tuple.r in [-1, 1]
+
+    # test for connectivity values data
+    # generate artificial group of 2 subjects repeated
+    con_ind = analyses.pair_connectivity(np.array([epochs.epo1, epochs.epo1]),
+                                         sampling_rate=epochs.epo1.info['sfreq'],
+                                         frequencies=[8, 10],
+                                         mode='ccorr',
+                                         epochs_average=True)
+    con_subj = analyses.pair_connectivity(np.array([epochs.epo1, epochs.epo2]),
+                                          sampling_rate=epochs.epo1.info['sfreq'],
+                                          frequencies=[8, 10],
+                                          mode='ccorr',
+                                          epochs_average=True)
+    data = np.stack((con_ind, con_subj), axis=0)
+    for k in range(0, 5):
+        data = np.stack((data, con_subj), axis=0)
+    behav = np.array([0, 1, 1, 1, 1, 1, 1])
+    # correlate connectivity and behaviour across pairs
+    corr_tuple = analyses.behav_corr(data, behav,
+                                     data_name='ccorr',
+                                     behav_name='imitation score',
+                                     p_thresh=0.05,
+                                     multiple_corr=True,
+                                     versbose=False)
+    # test that correlation (repeated measures)
+    assert corr_tuple.pvalue <= 1
+    significant_r = []
+    for i in corr_tuple.r.shape[0]:
+        for j in corr_tuple.r.shape[1]:
+            if corr_tuple.r[i, j] != 0:
+                significant_r.append(corr_tuple.r[i, j])
+    assert len(significant_r) != 0
+
+    # generate random subjects' connectivity data
+    data = []
+    for k in range(0, 5):
+        random_r1 = utils.generate_random_epoch(epochs.epo1, mu=0, sigma=0.01)
+        random_r2 = utils.generate_random_epoch(epochs.epo2, mu=4, sigma=0.01)
+        con = analyses.pair_connectivity(np.array([random_r1, random_r2]),
+                                         sampling_rate=epochs.epo1.info['sfreq'],
+                                         frequencies=[8, 10],
+                                         mode='ccorr',
+                                         epochs_average=True)
+        data.append(con)
+    data = np.array([data])
+    # correlate connectivity and behaviour across pairs
+    dyads = data.shape[0]
+    behav = np.arange(0, dyads)
+    corr_tuple = analyses.behav_corr(data, behav,
+                                     data_name='ccorr',
+                                     behav_name='imitation score',
+                                     p_thresh=0.05,
+                                     multiple_corr=True,
+                                     versbose=False)
+    # test that no correlation (random)
+    assert corr_tuple.pvalue <= 1
+    for i in corr_tuple.r.shape[0]:
+        for j in corr_tuple.r.shape[1]:
+            assert corr_tuple.r[i, j] == 0
 
 
 def test_indexes_connectivity(epochs):
@@ -139,7 +225,7 @@ def test_stats(epochs):
     # with PSD from Epochs with random values
     random_r1 = utils.generate_random_epoch(epochs.epo1, mu=0, sigma=0.01)
     random_r2 = utils.generate_random_epoch(epochs.epo2, mu=4, sigma=0.01)
- 
+
     fmin = 10
     fmax = 13
     psd_tuple = analyses.pow(random_r1,
@@ -176,13 +262,11 @@ def test_stats(epochs):
                                                    alpha=0.05)
     assert statscondClusterTuple.F_obs.shape[0] == len(
         epochs.epo1.info['ch_names'])
-    for i in range(0, len(statscondClusterTuple.clusters)):
-        assert len(statscondClusterTuple.clusters[i]) < len(
-            epochs.epo1.info['ch_names'])
-    assert statscondClusterTuple.cluster_p_values.shape[0] == len(
-        statscondClusterTuple.clusters)
-    assert np.mean(statscondClusterTuple.cluster_p_values) != float(0) 
-    # F_obs_plot
+    # for i in range(0, len(statscondClusterTuple.clusters)):
+    #    assert len(np.where(statscondClusterTuple.clusters[i])=='True') < len(
+    #        epochs.epo1.info['ch_names'])
+    assert np.mean(statscondClusterTuple.cluster_p_values) != float(0)
+    assert statscondClusterTuple.F_obs_plot.shape == statscondClusterTuple.F_obs.shape
 
 
 def test_utils(epochs):
