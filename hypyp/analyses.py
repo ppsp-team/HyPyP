@@ -138,6 +138,9 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
             is an array of connectivity values, str.
     """
        
+    # storage for results
+    corr_tuple = namedtuple('corr_tuple', ['r', 'pvalue', 'strat'])
+    
     # simple correlation between vectors (data can be averaged PSD for example)
     if data.shape == behav.shape:
         # test for normality on the first axis
@@ -161,20 +164,19 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
             plt.xlabel(behav_name)
             plt.ylabel(data_name)
             plt.show()
-        corr_tuple = namedtuple('corr_tuple', ['r', 'pvalue', 'strat'])
 
     # simple correlation between connectivity data and behavioral vector
     elif len(data.shape) == 3:
-        r = np.zeros(shape=(data.shape[1], data.shape[2]))
+        rs = np.zeros(shape=(data.shape[1], data.shape[2]))
         pvals = np.zeros(shape=(data.shape[1], data.shape[2]))
         significant_corr = np.zeros(shape=(data.shape[1], data.shape[2]))
         # correlate across subjects for each pair of sensors, the connectivity value
         # with a behavioral value
         for i in range(0, data.shape[1]):
             for j in range(0, data.shape[2]):
-                ri, pvalue = scipy.stats.pearsonr(np.array(behav), data[:, i, j])
-                r[i, j] = ri
-                pvals[i, j] = pvalue
+                r_i, pvalue_i = scipy.stats.pearsonr(np.array(behav), data[:, i, j])
+                rs[i, j] = r_i
+                pvals[i, j] = pvalue_i
         # correction for multiple comparisons
         if multiple_corr is True:
             pvals_corrected = statsmodels.stats.multitest.multipletests(pvals,
@@ -187,16 +189,14 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
             for j in range(0, data.shape[2]):
                 # with pvalues non corrected for multiple comparisons
                 if multiple_corr is False:
-                    pval = pvals
+                    pvalue = pvals
                 # or corrected for multiple comparisons
                 else:
-                    pval = pvals_corrected[0]
-                if pvals[i, j] < p_thresh:
-                    significant_corr[i, j] = r[i, j]
+                    pvalue = pvals_corrected[0]
+                if pvalue[i, j] < p_thresh:
+                    significant_corr[i, j] = rs[i, j]
         r = significant_corr
-        pvalue = pval
         strat = 'correction for multiple comaprison ' + multiple_corr
-        corr_tuple = namedtuple('corr_tuple', ['r', 'pvalue', 'strat'])
 
     return corr_tuple(r=r, pvalue=pvalue, strat=strat)
 
