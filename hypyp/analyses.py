@@ -196,8 +196,8 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
                     pvalues = pvals_corrected[0]
                 if pvalues[i, j] < p_thresh:
                     significant_corr[i, j] = rs[i, j]
-                
-        return corr_tuple(r=significant_corr, pvalue=pvalues, strat='correction for multiple comaprison ' + multiple_corr)
+        strategy = 'correction for multiple comaprison ' + multiple_corr      
+        return corr_tuple(r=significant_corr, pvalue=pvalues, strat=strategy)
 
 
 def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:
