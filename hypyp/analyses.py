@@ -164,6 +164,7 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
             plt.xlabel(behav_name)
             plt.ylabel(data_name)
             plt.show()
+        return corr_tuple(r=r, pvalue=pvalue, strat=strat)
 
     # simple correlation between connectivity data and behavioral vector
     elif len(data.shape) == 3:
@@ -189,16 +190,13 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
             for j in range(0, data.shape[2]):
                 # with pvalues non corrected for multiple comparisons
                 if multiple_corr is False:
-                    pvalue = pvals
+                    pvalues = pvals
                 # or corrected for multiple comparisons
                 else:
-                    pvalue = pvals_corrected[0]
-                if pvalue[i, j] < p_thresh:
+                    pvalues = pvals_corrected[0]
+                if pvalues[i, j] < p_thresh:
                     significant_corr[i, j] = rs[i, j]
-        r = significant_corr
-        strat = 'correction for multiple comaprison ' + multiple_corr
-
-    return corr_tuple(r=r, pvalue=pvalue, strat=strat)
+    return corr_tuple(r=significant_corr, pvalue=pvalues, strat='correction for multiple comaprison ' + multiple_corr)
 
 
 def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:
