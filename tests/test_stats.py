@@ -153,6 +153,9 @@ def test_behav_corr(epochs):
                                           frequencies=[8, 10],
                                           mode='ccorr',
                                           epochs_average=True)
+    # remove frequency dimension
+    con_ind = np.mean(con_ind, axis=0)
+    cond_subj = np.mean(con_subj, axis=0)
     data = np.stack((con_ind, con_subj, con_subj, con_subj, con_subj, con_subj, con_subj), axis=0)
     behav = np.array([0, 1, 1, 1, 1, 1, 1])
     # correlate connectivity and behaviour across pairs
@@ -180,7 +183,7 @@ def test_behav_corr(epochs):
                                          frequencies=[8, 10],
                                          mode='ccorr',
                                          epochs_average=True)
-        data.append(con)
+        data.append(np.mean(con, axis=0))
     data = np.array([data])
     # correlate connectivity and behaviour across pairs
     dyads = data.shape[0]
