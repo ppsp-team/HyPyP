@@ -272,6 +272,10 @@ viz.plot_significant_sensors(T_obs_plot=statsCondTuple.T_obs_plot, epochs=prepro
 epo1.info["bads"] = ["F8", "Fp2", "Cz", "O2"]
 epo2.info["bads"] = ["F7", "O1"]
 
+# Warning, threshold='auto' must be used carefully, 
+# it is calculated specifically for the dyad, 
+# and therefore does not allow comparability between different dyads.
+
 # Visualization of inter-brain connectivity in 2D
 viz.viz_2D_topomap_inter(epo1, epo2, C, threshold='auto', steps=10, lab=True)
 
@@ -293,9 +297,3 @@ viz.viz_3D_intra(epo1, epo2,
                  threshold='auto',
                  steps=10,
                  lab=False)
-
-
-threshold = np.max(np.median(C, 0))+np.max(np.std(C, 0))
-
-threshold = np.max([np.median(C1, 0),np.median(C2,0)])+np.max([np.std(C1, 0),np.std(C2, 0)])
-
