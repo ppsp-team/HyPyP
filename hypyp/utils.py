@@ -308,6 +308,11 @@ def normalizing(baseline: np.ndarray, task: np.ndarray, type: str) -> np.ndarray
         task: PSD or CSD values for the 'task' conditions,
           ndarray, shape (n_epochs, n_channels, n_frequencies).
         type: normalization choice, str 'Zscore' or 'Logratio'.
+        
+    Note:
+        If normalization's type is 'Logratio', only positive values
+        can be used as input (if it is not the case, take the absolute
+        value).
 
     Returns:
         Normed_task: PSD or CSD values for the condition 'task' normed by
