@@ -104,8 +104,10 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
     normality of the data.
 
     Arguments:
-        data: data (raws, epochs, power, connectivity values...) to correlate
-          with behavior, numpy array with first dimension of shape (n,).
+        data: data to correlate with behavior. For now, inputs can be raw data
+          or psd vectors for example (from n_dyads length), or con values
+          without frequency dimension, numpy array of shape
+          (n_dyads, n_channels, n_channels).
         behav: behavioral values for a parameter (ex: timing to control
           for learning), one dimensional array from same shape as data.
         data_name: nature of the data (used for the legend of the figure,
