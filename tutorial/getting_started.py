@@ -18,11 +18,6 @@ import mne
 import requests
 
 
-import mpl3d  # pip install git+https://github.com/rougier/matplotlib-3d
-from mpl3d import glm
-from mpl3d.mesh import Mesh
-from mpl3d.camera import Camera
-
 from hypyp import (
     prep,
 )  # need pip install https://api.github.com/repos/autoreject/autoreject/zipball/master
