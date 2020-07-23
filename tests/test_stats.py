@@ -188,7 +188,7 @@ def test_behav_corr(epochs):
                                          mode='ccorr',
                                          epochs_average=True)
         data.append(np.mean(con, axis=0))
-    data = np.array([data])
+    data = np.mean(np.array([data]), axis=0)
     # correlate connectivity and behaviour across pairs
     dyads = data.shape[0]
     behav = np.arange(0, dyads)
