@@ -171,8 +171,8 @@ def test_behav_corr(epochs):
                                      verbose=False)
     # test that there is a correlation (repeated measures)
     significant_r = []
-    for i in corr_tuple.r.shape[0]:
-        for j in corr_tuple.r.shape[1]:
+    for i in range(0, corr_tuple.r.shape[0]):
+        for j in range(0, corr_tuple.r.shape[1]):
             if corr_tuple.r[i, j] != 0:
                 significant_r.append(corr_tuple.r[i, j])
     assert len(significant_r) != 0
@@ -199,8 +199,8 @@ def test_behav_corr(epochs):
                                      multiple_corr=True,
                                      verbose=False)
     # test that there is no correlation (random measures)
-    for i in corr_tuple.r.shape[0]:
-        for j in corr_tuple.r.shape[1]:
+    for i in range(0, corr_tuple.r.shape[0]):
+        for j in range(0, corr_tuple.r.shape[1]):
             assert corr_tuple.r[i, j] == 0
 
 
