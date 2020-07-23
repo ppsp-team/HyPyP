@@ -157,8 +157,9 @@ def test_behav_corr(epochs):
                                           epochs_average=True)
     # remove frequency dimension
     con_ind = np.mean(con_ind, axis=0)
-    cond_subj = np.mean(con_subj, axis=0)
+    con_subj = np.mean(con_subj, axis=0)
     assert con_ind.shape == (62, 62)
+    assert con_subj.shape == (62, 62)
     data = np.stack((con_ind, con_subj, con_subj, con_subj, con_subj, con_subj, con_subj))
     behav = np.array([0, 1, 1, 1, 1, 1, 1])
     # correlate connectivity and behaviour across pairs
