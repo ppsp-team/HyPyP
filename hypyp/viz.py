@@ -19,9 +19,9 @@ import matplotlib.pyplot as plt
 import mne
 import meshio
 
-from mpl3d import glm
-from mpl3d.mesh import Mesh
-from mpl3d.camera import Camera
+from hypyp.ext.mpl3d import glm
+from hypyp.ext.mpl3d.mesh import Mesh
+from hypyp.ext.mpl3d.camera import Camera
 
 
 def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.5, rotY: float=(np.pi)/2, rotZ: float=(np.pi)/2) -> np.ndarray:

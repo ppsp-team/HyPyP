@@ -37,7 +37,6 @@ astropy = "^4.0.1"
 meshio = "^4.0.13"
 tqdm = "^4.46.0"
 scipy = "^1.4.1"
-mpl3d = {git = "https://github.com/rougier/matplotlib-3d"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"

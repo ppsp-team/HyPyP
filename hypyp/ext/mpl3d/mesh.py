@@ -3,7 +3,7 @@
 # Distributed under the (new) BSD License.
 # -----------------------------------------------------------------------------
 import numpy as np
-import mpl3d.glm as glm
+import hypyp.ext.mpl3d.glm as glm
 import matplotlib as mpl
 from matplotlib.collections import PolyCollection
 
