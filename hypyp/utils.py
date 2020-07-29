@@ -14,7 +14,6 @@ Useful tools
 
 import numpy as np
 import pandas as pd
-from scipy.integrate import odeint
 import mne
 from mne.io.constants import FIFF
 from mne import create_info, EpochsArray
@@ -362,6 +361,21 @@ def generate_random_epoch(epoch: mne.Epochs, mu: float=0, sigma: float=2.0)-> mn
 
     return EpochsArray(data=r_epoch, info=info)
 
+
+def rungekutta4(f, y0, t, args=()):
+    n = len(t)
+    y = np.zeros((n, len(y0)))
+    y[0] = y0
+    for i in range(n - 1):
+        h = t[i+1] - t[i]
+        k1 = f(y[i], t[i], *args)
+        k2 = f(y[i] + k1 * h / 2., t[i] + h / 2., *args)
+        k3 = f(y[i] + k2 * h / 2., t[i] + h / 2., *args)
+        k4 = f(y[i] + k3 * h, t[i] + h, *args)
+        y[i+1] = y[i] + (h / 6.) * (k1 + 2*k2 + 2*k3 + k4)
+    return y
+
+
 def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: float=10, frequency_std: float=0.2,
                            noise_phase_level: float=0.005, noise_amplitude_level: float=0.1)-> mne.Epochs:
     """
@@ -404,7 +418,7 @@ def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: flo
 
     p0 = 2 * np.pi * np.block([np.zeros(N), np.zeros(N) + np.random.rand(N) + 0.5])
     
-    phi = odeint(fp, p0, tv) % (2*np.pi)
+    phi = rungekutta4(fp, p0, tv) % (2*np.pi)
     eeg = np.sin(phi) + noise_amplitude_level * np.random.randn(*phi.shape)
     
     simulation = epo_real.copy()
