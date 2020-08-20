@@ -21,7 +21,7 @@ from mne.channels import find_ch_connectivity
 from mne.stats import permutation_cluster_test
 
 
-def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha_bonferroni: float, alpha: float) -> tuple:
+def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: float) -> tuple:
     """
     Computes statistical t test on Power Spectral Density values
     (PSD) for a condition.
@@ -34,7 +34,6 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha_b
           used to get parameters from the info (sampling frequencies for example).
         n_permutations: the number of permutations, int. Should be at least 2*n
           sample, can be set to 50000 for example.
-        alpha_bonferroni: the threshold for bonferroni correction, float, can be set to 0.05.
         alpha: the threshold for ttest, float, can be set to 0.05.
 
     Note:
@@ -43,8 +42,8 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha_b
         hypothesis. Randomized data are generated with random sign flips.
         The tail is set to 0 by default (= the alternative hypothesis is that
         the data mean is different from 0).
-        To reduce false positive due to multiple comparisons, bonferroni
-        correction is applied to the p values.
+        To reduce false positive due to multiple comparisons, False Discovery Rate
+        (FDR) correction is applied to the p values.
         Note that the frequency dimension is reduced to one for the test
         (average in the frequency band-of-interest).
         To take frequencies into account, use cluster statistics
@@ -60,7 +59,7 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha_b
         - H0: T-statistic obtained by permutations and t-max trick for multiple
           comparisons, array of shape (n_permutations).
 
-        - adj_p: adjusted p values from bonferroni correction, array of shape
+        - adj_p: adjusted p values from FDR correction, array of shape
           (n_tests, n_tests), with boolean assessment for p values
           and p values corrected.
 
@@ -74,7 +73,7 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha_b
     power = np.mean(data, axis=2)
     T_obs, p_values, H0 = mne.stats.permutation_t_test(power, n_permutations,
                                                        tail=0, n_jobs=1)
-    adj_p = mne.stats.bonferroni_correction(p_values, alpha=alpha_bonferroni)
+    adj_p = mne.stats.fdr_correction(pval, alpha=alpha, method='indep')
 
     T_obs_plot = np.nan * np.ones_like(T_obs)
     for c in adj_p[1]:

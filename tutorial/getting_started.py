@@ -164,12 +164,11 @@ T_obs, p_values, H0 = mne.stats.permutation_t_test(
 
 # 2/ HyPyP parametric t test with bonferrroni correction
 # based on MNE function, the same things as above are true.
-# Bonferroni correction for multiple comparisons is added.
+# FDR correction for multiple comparisons is added.
 statsCondTuple = stats.statsCond(
     data=data_psd,
     epochs=preproc_S1,
     n_permutations=5000,
-    alpha_bonferroni=0.05,
     alpha=0.05,
 )
 
