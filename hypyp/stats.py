@@ -73,7 +73,7 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: 
     power = np.mean(data, axis=2)
     T_obs, p_values, H0 = mne.stats.permutation_t_test(power, n_permutations,
                                                        tail=0, n_jobs=1)
-    adj_p = mne.stats.fdr_correction(pval, alpha=alpha, method='indep')
+    adj_p = mne.stats.fdr_correction(p_values, alpha=alpha, method='indep')
 
     T_obs_plot = np.nan * np.ones_like(T_obs)
     for c in adj_p[1]:
