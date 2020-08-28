@@ -162,7 +162,7 @@ T_obs, p_values, H0 = mne.stats.permutation_t_test(
     X=X, n_permutations=5000, tail=0, n_jobs=1
 )
 
-# 2/ HyPyP parametric t test with bonferrroni correction
+# 2/ HyPyP parametric t test with FDR correction
 # based on MNE function, the same things as above are true.
 # FDR correction for multiple comparisons is added.
 statsCondTuple = stats.statsCond(
