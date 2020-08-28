@@ -23,13 +23,12 @@ from mne.stats import permutation_cluster_test
 
 def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: float) -> tuple:
     """
-    Computes statistical t test on Power Spectral Density values
-    (PSD) for a condition.
+    Computes statistical t test on participant measure (e.g. PSD) for a condition.
 
     Arguments:
-        data: array of participants PSD Logratio (ndarray) for
+        data: array of participants measure (e.g. PSD) for
           a condition (n_samples, n_tests, nfreq: n_tests the channels).
-          PSD values will be averaged on nfreq for statistics.
+          Values will be averaged on nfreq for statistics.
         epochs: Epochs object for a condition from a random participant, only
           used to get parameters from the info (sampling frequencies for example).
         n_permutations: the number of permutations, int. Should be at least 2*n
