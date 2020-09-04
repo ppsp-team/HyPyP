@@ -69,6 +69,10 @@ mne.epochs.equalize_epoch_counts([epo1, epo2])
 
 # Preprocessing epochs
 
+# Warning: here we directly load epochs data, 
+# for raw data we highly recommend to perform high-pass filtering
+# with prep.filt function before converting raw to epochs
+
 # Computing global AutoReject and Independant Components Analysis
 # for each participant
 icas = prep.ICA_fit(
