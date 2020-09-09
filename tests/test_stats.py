@@ -241,7 +241,7 @@ def test_stats(epochs):
                              epochs_average=False)
     psd = psd_tuple.psd
 
-    statsCondTuple = stats.statsCond(psd, random_r1, 3000, 0.05, 0.05)
+    statsCondTuple = stats.statsCond(psd, random_r1, 3000, 0.05)
     assert statsCondTuple.T_obs.shape[0] == len(epochs.epo1.info['ch_names'])
 
     for i in range(0, len(statsCondTuple.p_values)):
