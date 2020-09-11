@@ -25,7 +25,6 @@ include=["data/Basehead.obj"]
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
-mne = "^0.20.0"
 joblib = "^0.14.1"
 scikit-learn = "^0.22.2"
 statsmodels = "^0.11.1"
@@ -37,6 +36,8 @@ astropy = "^4.0.1"
 meshio = "^4.0.13"
 tqdm = "^4.46.0"
 scipy = "^1.4.1"
+pyqt5 = "^5.15.0"
+mne = "^0.20.8"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
