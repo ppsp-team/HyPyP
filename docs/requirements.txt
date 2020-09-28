@@ -106,4 +106,4 @@ webencodings==0.5.1
 widgetsnbextension==3.5.1
 wrapt==1.12.1
 zipp==3.1.0; python_version < "3.8"
-hypyp==0.2.0-a3
+hypyp==0.2.0-alpha.4

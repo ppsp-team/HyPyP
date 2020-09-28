@@ -49,7 +49,7 @@ sampling_rate = 500  # Hz
 # In our example, we load Epochs directly from EEG dataset in
 # the fiff format
 URL_TEMPLATE = (
-    "https://github.com/GHFC/HyPyP/blob/master/data/participant{}-epo.fif?raw=true"
+    "https://github.com/ppsp-team/HyPyP/blob/master/data/participant{}-epo.fif?raw=true"
 )
 
 
