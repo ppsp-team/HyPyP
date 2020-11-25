@@ -17,7 +17,7 @@ import numpy as np
 import scipy
 import matplotlib.pylab as plt
 import mne
-from mne.channels import find_ch_connectivity
+from mne.channels import find_ch_adjacency
 from mne.stats import permutation_cluster_test
 
 
@@ -122,7 +122,7 @@ def con_matrix(epochs: mne.Epochs, freqs_mean: list, draw: bool = False) -> tupl
     """
 
     # creating channel-to-channel connectivity matrix in space
-    ch_con, ch_names_con = find_ch_connectivity(epochs.info,
+    ch_con, ch_names_con = find_ch_adjacency(epochs.info,
                                                 ch_type='eeg')
 
     ch_con_arr = ch_con.toarray()

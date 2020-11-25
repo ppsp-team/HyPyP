@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import mne
 from scipy.integrate import solve_ivp
 from hypyp import utils, analyses
-from mne.channels import find_ch_connectivity
+from mne.channels import find_ch_adjacency
 
 
 def generate_virtual_epoch(epochs: mne.Epochs, W: np.ndarray, frequency_mean: float = 10, frequency_std: float = 0.2,
@@ -119,7 +119,7 @@ epo_real = utils.merge(epoch_S1=epo1, epoch_S2=epo2)
 # setting up parameters
 n_chan = len(epo_real.ch_names)
 # get channel locations
-con, _ = find_ch_connectivity(epo1.info, 'eeg')
+con, _ = find_ch_adjacency(epo1.info, 'eeg')
 con = con.toarray()
 
 N = int(n_chan/2)
