@@ -1,109 +1,116 @@
 appdirs==1.4.4
-appnope==0.1.0; sys_platform == "darwin" or platform_system == "Darwin" or python_version >= "3.3" and sys_platform == "darwin"
+appnope==0.1.0; python_version >= "3.3" and sys_platform == "darwin" or platform_system == "Darwin"
+argon2-cffi==20.1.0
 astroid==2.4.2
-astropy==4.0.1.post1
+astropy==4.1
+async-generator==1.10
 atomicwrites==1.4.0; sys_platform == "win32"
-attrs==19.3.0
+attrs==20.3.0
 autoreject==0.2.1
-backcall==0.2.0
-beautifulsoup4==4.9.1
+backcall==0.2.0; python_version >= "3.3"
+beautifulsoup4==4.9.3
 black==19.10b0
-bleach==3.1.5
-certifi==2020.6.20
+bleach==3.2.1
+certifi==2020.11.8
+cffi==1.14.4
 chardet==3.0.4
 click==7.1.2
-colorama==0.4.3; python_version >= "3.3" and sys_platform == "win32" or sys_platform == "win32"
+colorama==0.4.4; python_version >= "3.3" and sys_platform == "win32" or sys_platform == "win32"
 cycler==0.10.0
 decorator==4.4.2
 defusedxml==0.6.0
 entrypoints==0.3
 future==0.18.2
 idna==2.10
-importlib-metadata==1.7.0; python_version < "3.8"
+importlib-metadata==3.1.0; python_version < "3.8"
 ipykernel==5.3.4
 ipython==7.16.1
 ipython-genutils==0.2.0
 ipywidgets==7.5.1
-isort==4.3.21
-jedi==0.17.2
+isort==5.6.4
+jedi==0.17.2; python_version >= "3.3"
 jinja2==2.11.2
 joblib==0.14.1
 json5==0.9.5
 jsonschema==3.2.0
-jupyter-client==6.1.6
-jupyter-core==4.6.3
-jupyterlab==2.2.0
+jupyter-client==6.1.7
+jupyter-core==4.7.0
+jupyterlab==2.2.9
+jupyterlab-pygments==0.1.2
 jupyterlab-server==1.2.0
-kiwisolver==1.2.0
+kiwisolver==1.3.1
 lazy-object-proxy==1.4.3
-livereload==2.6.2
+livereload==2.6.3
 lunr==0.5.8
-markdown==3.2.2
+markdown==3.3.3
 markdown-include==0.5.1
 markupsafe==1.1.1
-matplotlib==3.3.0
+matplotlib==3.3.3
 mccabe==0.6.1
-meshio==4.0.16
+meshio==4.3.5
 mistune==0.8.4
 mkdocs==1.1.2
-mkdocs-material==5.4.0
-mkdocs-material-extensions==1.0
+mkdocs-material==5.5.14
+mkdocs-material-extensions==1.0.1
 mkdocstrings==0.10.3
-mne==0.20.8
-more-itertools==8.4.0
-nbconvert==5.6.1
-nbformat==5.0.7
+mne==0.21.2
+more-itertools==8.6.0
+nbclient==0.5.1
+nbconvert==6.0.7
+nbformat==5.0.8
+nest-asyncio==1.4.3
 nltk==3.5; python_version > "2.7"
-notebook==6.0.3
-numpy==1.19.1
+notebook==6.1.5
+numpy==1.19.4
 packaging==20.4
-pandas==1.0.5
-pandocfilters==1.4.2
-parso==0.7.0
-pathspec==0.8.0
+pandas==1.1.4
+pandocfilters==1.4.3
+parso==0.7.1; python_version >= "3.3"
+pathspec==0.8.1
 patsy==0.5.1
-pexpect==4.8.0; python_version >= "3.3" and sys_platform != "win32" or sys_platform != "win32"
-pickleshare==0.7.5
-pillow==7.2.0
+pexpect==4.8.0; python_version >= "3.3" and sys_platform != "win32"
+pickleshare==0.7.5; python_version >= "3.3"
+pillow==8.0.1
 pluggy==0.13.1
-prometheus-client==0.8.0
-prompt-toolkit==3.0.5
-ptyprocess==0.6.0; python_version >= "3.3" and sys_platform != "win32" or sys_platform != "win32" or os_name != "nt" or python_version >= "3.3" and sys_platform != "win32" and (python_version >= "3.3" and sys_platform != "win32" or sys_platform != "win32")
+prometheus-client==0.9.0
+prompt-toolkit==3.0.8; python_version >= "3.3"
+ptyprocess==0.6.0; python_version >= "3.3" and sys_platform != "win32" or os_name != "nt"
 py==1.9.0
-pygments==2.6.1
-pylint==2.5.3
+pycparser==2.20
+pygments==2.7.2
+pylint==2.6.0
 pymdown-extensions==7.1
 pyparsing==2.4.7
-pyqt5==5.15.0
+pyqt5==5.15.2
 pyqt5-sip==12.8.1
-pyrsistent==0.16.0
+pyrsistent==0.17.3
 pytest==5.4.3
 python-dateutil==2.8.1
 pytkdocs==0.3.0
-pytz==2020.1
-pywin32==228; sys_platform == "win32"
+pytz==2020.4
+pywin32==300; sys_platform == "win32"
 pywinpty==0.5.7; os_name == "nt"
 pyyaml==5.3.1
-pyzmq==19.0.1
-regex==2020.7.14
-requests==2.24.0
+pyzmq==20.0.0
+regex==2020.11.13
+requests==2.25.0
 scikit-learn==0.22.2.post1
-scipy==1.5.1
+scipy==1.5.4
 send2trash==1.5.0
 six==1.15.0
-soupsieve==1.9.6
+soupsieve==2.0.1; python_version >= "3.0"
 statsmodels==0.11.1
-terminado==0.8.3
+terminado==0.9.1
 testpath==0.4.4
-toml==0.10.1
-tornado==6.0.4
-tqdm==4.48.0
+toml==0.10.2
+tornado==6.1
+tqdm==4.53.0
 traitlets==4.3.3
 typed-ast==1.4.1
-urllib3==1.25.10
+urllib3==1.26.2
 wcwidth==0.2.5
 webencodings==0.5.1
 widgetsnbextension==3.5.1
 wrapt==1.12.1
-zipp==3.1.0; python_version < "3.8"
+zipp==3.4.0; python_version < "3.8"
 hypyp==0.2.0-alpha.4
