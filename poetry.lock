@@ -599,7 +599,7 @@ python-versions = "*"
 
 [[package]]
 name = "meshio"
-version = "4.3.5"
+version = "4.3.6"
 description = "I/O for many mesh formats"
 category = "main"
 optional = false
@@ -679,7 +679,7 @@ pytkdocs = ">=0.2.0,<0.4.0"
 
 [[package]]
 name = "mne"
-version = "0.21.2"
+version = "0.21.1"
 description = "MNE python project for MEG and EEG data analysis."
 category = "main"
 optional = false
@@ -1387,7 +1387,7 @@ testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "1b697f0a574ad1217ee00d1afbcfcc4497d8e0d0ee92159af48dfc78f98771cb"
+content-hash = "e2b1a6ecdc2a401a4c7f0b91ca28569a6cff807dd24cd50e265014ea452da177"
 
 [metadata.files]
 appdirs = [
@@ -1747,8 +1747,8 @@ mccabe = [
     {file = "mccabe-0.6.1.tar.gz", hash = "sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"},
 ]
 meshio = [
-    {file = "meshio-4.3.5-py3-none-any.whl", hash = "sha256:ab0dabb240d86a55c7bcb5cbd297131a0e1f04281d2e363cf576daeba2ede728"},
-    {file = "meshio-4.3.5.tar.gz", hash = "sha256:e69a715acdd04f80adadd66da02940f8560e50803b5e9d69defbb88d583509ea"},
+    {file = "meshio-4.3.6-py3-none-any.whl", hash = "sha256:2b2a0c01655112d7f19507fd1a593d079602b46dbb47c1e669a292bab4268214"},
+    {file = "meshio-4.3.6.tar.gz", hash = "sha256:649adebb1c47e2b3c431ff6221466f4ae4598259fb847e817b627f16ea63826a"},
 ]
 mistune = [
     {file = "mistune-0.8.4-py2.py3-none-any.whl", hash = "sha256:88a1051873018da288eee8538d476dffe1262495144b33ecb586c4ab266bb8d4"},
@@ -1771,8 +1771,8 @@ mkdocstrings = [
     {file = "mkdocstrings-0.10.3.tar.gz", hash = "sha256:13722641310562ad1ca6a225d65cfdad6554831b5e17dc1101ac66be35d0dbe5"},
 ]
 mne = [
-    {file = "mne-0.21.2-py3-none-any.whl", hash = "sha256:8d306bb97f17277a967b4a3d1f013f84ac80b186d566d4e73ec8b3b103964e4b"},
-    {file = "mne-0.21.2.tar.gz", hash = "sha256:45877784c924c21e962b5a9f69a231aa85c436a0b845be965bd6de0d2a280779"},
+    {file = "mne-0.21.1-py3-none-any.whl", hash = "sha256:a7f44440885d267e065c596bf3b0485cc890847df1400f738b127778a683ab55"},
+    {file = "mne-0.21.1.tar.gz", hash = "sha256:eef55afb62eec365c05e7a67c346dcf8be9ae34860465772cd712d3d6f719096"},
 ]
 more-itertools = [
     {file = "more-itertools-8.6.0.tar.gz", hash = "sha256:b3a9005928e5bed54076e6e549c792b306fddfe72b2d1d22dd63d42d5d3899cf"},

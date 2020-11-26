@@ -37,7 +37,7 @@ meshio = "^4.0.13"
 tqdm = "^4.46.0"
 scipy = "^1.4.1"
 pyqt5 = "^5.15.0"
-mne = "^0.21"
+mne = "=0.21.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
@@ -52,5 +52,5 @@ widgetsnbextension = "^3.5.1"
 ipywidgets = "^7.5.1"
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry>=1.0"]
 build-backend = "poetry.masonry.api"
