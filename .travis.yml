@@ -4,8 +4,7 @@ python:
 # command to install dependencies
 install:
   - pip install --upgrade pip
-  - pip install poetry==1.1.4
-  - poetry install -q
+  - pip install -q -r ./docs/requirements.txt
 # command to run tests
 script:
   - pytest

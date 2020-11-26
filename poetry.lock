@@ -47,18 +47,19 @@ wrapt = ">=1.11,<2.0"
 
 [[package]]
 name = "astropy"
-version = "4.1"
+version = "4.2"
 description = "Astronomy and astrophysics core library"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
-numpy = ">=1.16"
+numpy = ">=1.17"
+pyerfa = "*"
 
 [package.extras]
-all = ["scipy (>=0.18)", "dask", "h5py", "beautifulsoup4", "html5lib", "bleach", "PyYAML (>=3.12)", "pandas", "sortedcontainers", "pytz", "jplephem", "matplotlib (>=2.1)", "mpmath", "asdf (>=2.6)", "bottleneck", "ipython", "pytest"]
-docs = ["sphinx-astropy (>=1.3)", "pytest", "PyYAML (>=3.12)", "scipy", "matplotlib"]
+all = ["scipy (>=1.1)", "dask", "h5py", "beautifulsoup4", "html5lib", "bleach", "PyYAML (>=3.13)", "pandas", "sortedcontainers", "pytz", "jplephem", "matplotlib (>=3.0)", "mpmath", "asdf (>=2.6)", "bottleneck", "ipython", "pytest"]
+docs = ["sphinx", "sphinx-astropy (>=1.3)", "pytest", "PyYAML (>=3.13)", "scipy (>=1.1)", "matplotlib (>=3.1)"]
 test = ["pytest-astropy (>=0.8)", "pytest-xdist", "objgraph", "ipython", "coverage", "skyfield (>=1.20)", "sgp4 (>=2.3)"]
 
 [[package]]
@@ -284,11 +285,11 @@ test = ["pytest (!=5.3.4)", "pytest-cov", "flaky", "nose"]
 
 [[package]]
 name = "ipython"
-version = "7.16.1"
+version = "7.19.0"
 description = "IPython: Productive Interactive Computing"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 appnope = {version = "*", markers = "sys_platform == \"darwin\""}
@@ -296,7 +297,7 @@ backcall = "*"
 colorama = {version = "*", markers = "sys_platform == \"win32\""}
 decorator = "*"
 jedi = ">=0.10"
-pexpect = {version = "*", markers = "sys_platform != \"win32\""}
+pexpect = {version = ">4.3", markers = "sys_platform != \"win32\""}
 pickleshare = "*"
 prompt-toolkit = ">=2.0.0,<3.0.0 || >3.0.0,<3.0.1 || >3.0.1,<3.1.0"
 pygments = "*"
@@ -364,7 +365,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 parso = ">=0.7.0,<0.8.0"
 
 [package.extras]
-qa = ["flake8 (==3.7.9)"]
+qa = ["flake8 (3.7.9)"]
 testing = ["Django (<3.1)", "colorama", "docopt", "pytest (>=3.9.0,<5.0.0)"]
 
 [[package]]
@@ -740,11 +741,11 @@ testpath = "*"
 traitlets = ">=4.2"
 
 [package.extras]
-all = ["pytest", "pytest-cov", "pytest-dependency", "ipykernel", "ipywidgets (>=7)", "pyppeteer (==0.2.2)", "tornado (>=4.0)", "sphinx (>=1.5.1)", "sphinx-rtd-theme", "nbsphinx (>=0.2.12)", "ipython"]
+all = ["pytest", "pytest-cov", "pytest-dependency", "ipykernel", "ipywidgets (>=7)", "pyppeteer (0.2.2)", "tornado (>=4.0)", "sphinx (>=1.5.1)", "sphinx-rtd-theme", "nbsphinx (>=0.2.12)", "ipython"]
 docs = ["sphinx (>=1.5.1)", "sphinx-rtd-theme", "nbsphinx (>=0.2.12)", "ipython"]
 serve = ["tornado (>=4.0)"]
-test = ["pytest", "pytest-cov", "pytest-dependency", "ipykernel", "ipywidgets (>=7)", "pyppeteer (==0.2.2)"]
-webpdf = ["pyppeteer (==0.2.2)"]
+test = ["pytest", "pytest-cov", "pytest-dependency", "ipykernel", "ipywidgets (>=7)", "pyppeteer (0.2.2)"]
+webpdf = ["pyppeteer (0.2.2)"]
 
 [[package]]
 name = "nbformat"
@@ -985,6 +986,21 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
+name = "pyerfa"
+version = "1.7.1.1"
+description = "Python bindings for ERFA"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+numpy = ">=1.16"
+
+[package.extras]
+docs = ["sphinx-astropy (>=1.3)"]
+test = ["pytest", "pytest-doctestplus (>=0.7)"]
+
+[[package]]
 name = "pygments"
 version = "2.7.2"
 description = "Pygments is a syntax highlighting package written in Python."
@@ -1073,7 +1089,7 @@ py = ">=1.5.0"
 wcwidth = "*"
 
 [package.extras]
-checkqa-mypy = ["mypy (==v0.761)"]
+checkqa-mypy = ["mypy (v0.761)"]
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "requests", "xmlschema"]
 
 [[package]]
@@ -1163,7 +1179,7 @@ urllib3 = ">=1.21.1,<1.27"
 
 [package.extras]
 security = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)"]
-socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
+socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7)", "win-inet-pton"]
 
 [[package]]
 name = "scikit-learn"
@@ -1288,19 +1304,17 @@ dev = ["py-make (>=0.1.0)", "twine", "argopt", "pydoc-markdown", "wheel"]
 
 [[package]]
 name = "traitlets"
-version = "4.3.3"
-description = "Traitlets Python config system"
+version = "5.0.5"
+description = "Traitlets Python configuration system"
 category = "dev"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 
 [package.dependencies]
-decorator = "*"
 ipython-genutils = "*"
-six = "*"
 
 [package.extras]
-test = ["pytest", "mock"]
+test = ["pytest"]
 
 [[package]]
 name = "typed-ast"
@@ -1321,7 +1335,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 [package.extras]
 brotli = ["brotlipy (>=0.6.0)"]
 secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "ipaddress"]
-socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
+socks = ["PySocks (>=1.5.6,<1.5.7 || >1.5.7,<2.0)"]
 
 [[package]]
 name = "wcwidth"
@@ -1368,12 +1382,12 @@ python-versions = ">=3.6"
 
 [package.extras]
 docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
-testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
+testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pytest-cov", "jaraco.test (>=3.2.0)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = "^3.6.1"
-content-hash = "7182ad6641c72e2112a9cea3ec5a820d265d53ea9b555643e4e22d0590c8b4fc"
+python-versions = "^3.7"
+content-hash = "1b697f0a574ad1217ee00d1afbcfcc4497d8e0d0ee92159af48dfc78f98771cb"
 
 [metadata.files]
 appdirs = [
@@ -1407,22 +1421,22 @@ astroid = [
     {file = "astroid-2.4.2.tar.gz", hash = "sha256:2f4078c2a41bf377eea06d71c9d2ba4eb8f6b1af2135bec27bbbb7d8f12bb703"},
 ]
 astropy = [
-    {file = "astropy-4.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:0804f601dddfd6b5b72e11eb6e58133ff7db25bb8c26851449352ba1f414b74c"},
-    {file = "astropy-4.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:85f199c41d28da78c0a09076904fe3c3034c0f4917d251a23ad364ed0e9ff2d5"},
-    {file = "astropy-4.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:6d6792e4e49f4662be075477f75aff7d3cc5bf5c58702d6b55f0048f14610c00"},
-    {file = "astropy-4.1-cp36-cp36m-win32.whl", hash = "sha256:f0fe5387992e0c96d9186752b2ac6a5801a51af0316d75427823588af9be75da"},
-    {file = "astropy-4.1-cp36-cp36m-win_amd64.whl", hash = "sha256:27544cb41ba54a60acaf195c53b4912edbbfa4b0ab005c06d5d929553e0d8329"},
-    {file = "astropy-4.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:4a70a44a9f773acbb75ba24bf36e4f3a8b702f37384d03f9ff9097edd8ad0890"},
-    {file = "astropy-4.1-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:83cfa44aa6cac0c434b238be6a758d49a33ab608aad7bb2f7410ce497c28312d"},
-    {file = "astropy-4.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:2fb991128b522eb1f133e6ca1c14425368bda8888eb387dba1abc18ee76582ee"},
-    {file = "astropy-4.1-cp37-cp37m-win32.whl", hash = "sha256:aca1dbca1c9f6d6ba17682e44dc53ffd62dd0d13448d38713140d634ec45b295"},
-    {file = "astropy-4.1-cp37-cp37m-win_amd64.whl", hash = "sha256:70c4b97d2ac5d19fad753d0a7dccc7b14e12786546e78ae27cae3a7a73ecd11d"},
-    {file = "astropy-4.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:5083e1e8fbd065da521b761ee14382bb561d8bbe3957653b2f941690128f8940"},
-    {file = "astropy-4.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:51c3a29c4252b1697fd950e2b333d84cb6baf8d9a5258bbef6d0089b65c303b3"},
-    {file = "astropy-4.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:cd4390da737a5123397a1bb00cf597842bf21fd199862ba161d9c18cd2d12c14"},
-    {file = "astropy-4.1-cp38-cp38-win32.whl", hash = "sha256:d51f3b9091004a3ed263bc2a51a677762a6c8c7437da5115d3149dc1de6f71bf"},
-    {file = "astropy-4.1-cp38-cp38-win_amd64.whl", hash = "sha256:10e45a5456929b75b3a29d8174d39466b1823280bcf99f3b4c6c51e521a6f04d"},
-    {file = "astropy-4.1.tar.gz", hash = "sha256:a3bad6e1c2619135ad33e4d80452866eb9468f610bf00754da4001c63c1f7049"},
+    {file = "astropy-4.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:882434f6fe29a2aba9fe61bddac13943c95a9d6e8fdb19f3e35a9f9ae039bd10"},
+    {file = "astropy-4.2-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:2fea9cf1fb1ef4e68e5c93c679a26dcc6313be55783fa1ee162eb72c8c9eb0b4"},
+    {file = "astropy-4.2-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:4f33707d1bafd11884fc4aacc38f76f4c5c6f8d6f15dd968aad50bc197bc6edb"},
+    {file = "astropy-4.2-cp37-cp37m-win32.whl", hash = "sha256:e749b2ecfedceac0e316a5332eaf73c833d2f5e1c3b9524a4780105dc802f27b"},
+    {file = "astropy-4.2-cp37-cp37m-win_amd64.whl", hash = "sha256:c9d65d0071215995e1e637bc74e84afcf37fc5492e54451015981f2cb6ca9e60"},
+    {file = "astropy-4.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:a6890ec88220e2cbeaa1f70f012b19b4ffe908b19e3c264847ca87b710d5918f"},
+    {file = "astropy-4.2-cp38-cp38-manylinux1_i686.whl", hash = "sha256:ddaa04ba229b69c7a16efdd16dac77fcf8eb8923272cdc290b033992fe679323"},
+    {file = "astropy-4.2-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:6767b8dd29be6c7ec5d934b955875b71400464b2a33eb58b59d575302e4a1892"},
+    {file = "astropy-4.2-cp38-cp38-win32.whl", hash = "sha256:3638fd0c489fe4321d72056086acbdd48f767b19af8f6c39b865966c638e0efa"},
+    {file = "astropy-4.2-cp38-cp38-win_amd64.whl", hash = "sha256:e80117502290e97819e2328243221d89f3749c14526f3ad7c75613a07b56ae8e"},
+    {file = "astropy-4.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:daaf9f0264b686c870032987483f2ddbdd5ce31762ab53f53f84bf9c68e2720a"},
+    {file = "astropy-4.2-cp39-cp39-manylinux1_i686.whl", hash = "sha256:1b3d6e801ab719d448e179dffe23a2f3c5646b81090db9f4d95a6b3acd643888"},
+    {file = "astropy-4.2-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:ae3d690b6c20ce47d0644129046c08b7715cbafd2e7a49aba8d7c169dcfadbc1"},
+    {file = "astropy-4.2-cp39-cp39-win32.whl", hash = "sha256:21c293609741bb7e3fe43e0c9f906f41962b04bb8c799a221fc1aa2100353fad"},
+    {file = "astropy-4.2-cp39-cp39-win_amd64.whl", hash = "sha256:949b6111badc371129d811b74d7fe6df711719e41385b37189af0a4d325b811d"},
+    {file = "astropy-4.2.tar.gz", hash = "sha256:2c194f8a429b8399de64a413a06881ea49f0525cabaa2d78fc132b9e970adc6a"},
 ]
 async-generator = [
     {file = "async_generator-1.10-py3-none-any.whl", hash = "sha256:01c7bf666359b4967d2cda0000cc2e4af16a0ae098cbffcb8472fb9e8ad6585b"},
@@ -1507,7 +1521,6 @@ click = [
 ]
 colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
-    {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
 cycler = [
     {file = "cycler-0.10.0-py2.py3-none-any.whl", hash = "sha256:1d8a5ae1ff6c5cf9b93e8811e581232ad8920aeec647c37316ceac982b08cb2d"},
@@ -1541,8 +1554,8 @@ ipykernel = [
     {file = "ipykernel-5.3.4.tar.gz", hash = "sha256:9b2652af1607986a1b231c62302d070bc0534f564c393a5d9d130db9abbbe89d"},
 ]
 ipython = [
-    {file = "ipython-7.16.1-py3-none-any.whl", hash = "sha256:2dbcc8c27ca7d3cfe4fcdff7f45b27f9a8d3edfa70ff8024a71c7a8eb5f09d64"},
-    {file = "ipython-7.16.1.tar.gz", hash = "sha256:9f4fcb31d3b2c533333893b9172264e4821c1ac91839500f31bd43f2c59b3ccf"},
+    {file = "ipython-7.19.0-py3-none-any.whl", hash = "sha256:c987e8178ced651532b3b1ff9965925bfd445c279239697052561a9ab806d28f"},
+    {file = "ipython-7.19.0.tar.gz", hash = "sha256:cbb2ef3d5961d44e6a963b9817d4ea4e1fa2eb589c371a470fed14d8d40cbd6a"},
 ]
 ipython-genutils = [
     {file = "ipython_genutils-0.2.0-py2.py3-none-any.whl", hash = "sha256:72dd37233799e619666c9f639a9da83c34013a73e8bbc79a7a6348d93c61fab8"},
@@ -1931,6 +1944,37 @@ pycparser = [
     {file = "pycparser-2.20-py2.py3-none-any.whl", hash = "sha256:7582ad22678f0fcd81102833f60ef8d0e57288b6b5fb00323d101be910e35705"},
     {file = "pycparser-2.20.tar.gz", hash = "sha256:2d475327684562c3a96cc71adf7dc8c4f0565175cf86b6d7a404ff4c771f15f0"},
 ]
+pyerfa = [
+    {file = "pyerfa-1.7.1.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:93e26f7e7acf75be115cf24a3201167258f8468143a6712942e405e374fc76bd"},
+    {file = "pyerfa-1.7.1.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:3469d1a6b9d0a820631cd80f49e71494b1cdd68b590a6850b292832427d6cbe2"},
+    {file = "pyerfa-1.7.1.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:21393792f8f8e2d85cf17e73c8f848ea6063a86bd8dbdf668b08862cd350e80b"},
+    {file = "pyerfa-1.7.1.1-cp36-cp36m-manylinux2010_i686.whl", hash = "sha256:5eeea63a7d5ad3d7f15504cf781f9c907a3c5815ea1584841c4838cbe6726853"},
+    {file = "pyerfa-1.7.1.1-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:4460107375169ff1c2fa701c508db9404649d06b45c908e66e50bec0c6c32a43"},
+    {file = "pyerfa-1.7.1.1-cp36-cp36m-win32.whl", hash = "sha256:6bb90e15267841fcee7e85ad976dc3dc95e28d9aa72f72697472807d68931259"},
+    {file = "pyerfa-1.7.1.1-cp36-cp36m-win_amd64.whl", hash = "sha256:1cc8cfb11cdcbd17ec5620f75466582f64c69ed4414db2d22f281ab381e954a6"},
+    {file = "pyerfa-1.7.1.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:b9c215fd0b956ac2943be38812b29c5392e72f14ec5319496a01a092da1d3b13"},
+    {file = "pyerfa-1.7.1.1-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:6b99852bbd0317afae81805d811ea3f854bbfb3eaf9855f765ad6f2231f094e3"},
+    {file = "pyerfa-1.7.1.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:1bb9de4486c093a35d5740bbffc6d2c2f2ec136f32633a251f4d57e84bad507b"},
+    {file = "pyerfa-1.7.1.1-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:87810658ba216576de38589ce66b87c6793807b7d26d24470a22ebc3fa4339f5"},
+    {file = "pyerfa-1.7.1.1-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:7b417c9f1cfbaf050f32bb9988b05cb9838bdbc6388a8015c2184118224c4a5b"},
+    {file = "pyerfa-1.7.1.1-cp37-cp37m-win32.whl", hash = "sha256:c48beb3aa5e8464d2210eab930a38b9d1b84aea40073698dba450fddcc14463c"},
+    {file = "pyerfa-1.7.1.1-cp37-cp37m-win_amd64.whl", hash = "sha256:104c359969b427188854518f4f2c68fd0c30a16e8f9ed7fffdcd593b4676b87c"},
+    {file = "pyerfa-1.7.1.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:ca49a7417f90f39c93fe60d703fdd36a8def26bb5bda65d60d39ff34d1e38062"},
+    {file = "pyerfa-1.7.1.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:adc5b641e272fe35f631513b2837a57f0a5cfb62123b704f9db09d68e87779fe"},
+    {file = "pyerfa-1.7.1.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:a0566213aca1fcc76c57c279730554fc76d467038d59e4d6211c3d8876de7816"},
+    {file = "pyerfa-1.7.1.1-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:85d169c191742eed26df7df914ffe4343fd1040ec3b5169d849cc74232aa80e7"},
+    {file = "pyerfa-1.7.1.1-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:f8d4128a99dc5a256a9c877a23fd82719949fe0b55e750a238cb93511cdbc97f"},
+    {file = "pyerfa-1.7.1.1-cp38-cp38-win32.whl", hash = "sha256:9b0adeac749e4f749849e678e377c06111f393dad435d73c06f6464e5c5e4d8c"},
+    {file = "pyerfa-1.7.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:91b64609e945f73c9368bf81eb8c0a71a4c4b785f39fef51c2aca67a0da275fa"},
+    {file = "pyerfa-1.7.1.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:d81ff8478e1144fcb0471560503dfa88afb0c6d5364b288ce3a4f843f246997a"},
+    {file = "pyerfa-1.7.1.1-cp39-cp39-manylinux1_i686.whl", hash = "sha256:ae79ae54c05b77440f6caabdcb06cec3de61371d1aeb02ef573786a4c37fb81a"},
+    {file = "pyerfa-1.7.1.1-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:7e2442b015779f46a1eb7ceb2dfb44c9cbf3aae07ed966982ce0de6d3548273e"},
+    {file = "pyerfa-1.7.1.1-cp39-cp39-manylinux2010_i686.whl", hash = "sha256:b5b9ac2b6cc93a931e67602af5b23268a3cd9eff629295a4f2cb277e7e4b9361"},
+    {file = "pyerfa-1.7.1.1-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:31ddff47c5376900fea2c38796b4450f8261bd502cfea281f5d70ed91855d47b"},
+    {file = "pyerfa-1.7.1.1-cp39-cp39-win32.whl", hash = "sha256:9f226fd4b9cfca9a683e6c3a67bfcad934f43bed3c89f6e86b72d582e516fc79"},
+    {file = "pyerfa-1.7.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:35cbd7bf17537592fa5fe60f3b06c240b5a5db62c4f62c7cef72ba5f6403927e"},
+    {file = "pyerfa-1.7.1.1.tar.gz", hash = "sha256:b1048ae33eb26ad4925536ea79a956eaa6f33e77c6295f140178b4be35c32226"},
+]
 pygments = [
     {file = "Pygments-2.7.2-py3-none-any.whl", hash = "sha256:88a0bbcd659fcb9573703957c6b9cff9fab7295e6e76db54c9d00ae42df32773"},
     {file = "Pygments-2.7.2.tar.gz", hash = "sha256:381985fcc551eb9d37c52088a32914e00517e57f4a21609f48141ba08e193fa0"},
@@ -2254,8 +2298,8 @@ tqdm = [
     {file = "tqdm-4.53.0.tar.gz", hash = "sha256:3d3f1470d26642e88bd3f73353cb6ff4c51ef7d5d7efef763238f4bc1f7e4e81"},
 ]
 traitlets = [
-    {file = "traitlets-4.3.3-py2.py3-none-any.whl", hash = "sha256:70b4c6a1d9019d7b4f6846832288f86998aa3b9207c6821f3578a6a6a467fe44"},
-    {file = "traitlets-4.3.3.tar.gz", hash = "sha256:d023ee369ddd2763310e4c3eae1ff649689440d4ae59d7485eb4cfbbe3e359f7"},
+    {file = "traitlets-5.0.5-py3-none-any.whl", hash = "sha256:69ff3f9d5351f31a7ad80443c2674b7099df13cc41fc5fa6e2f6d3b0330b0426"},
+    {file = "traitlets-5.0.5.tar.gz", hash = "sha256:178f4ce988f69189f7e523337a3e11d91c786ded9360174a3d9ca83e79bc5396"},
 ]
 typed-ast = [
     {file = "typed_ast-1.4.1-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:73d785a950fc82dd2a25897d525d003f6378d1cb23ab305578394694202a58c3"},
