@@ -177,7 +177,7 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
     merged = np.array(merges)
     ch_names_merged = ch_names1+ch_names2
     info = mne.create_info(ch_names_merged, sfreq, ch_types='eeg',
-                           montage=None, verbose=None)
+                           verbose=None)
     ep_hyper = mne.EpochsArray(merged, info)
 
     # setting channels type
