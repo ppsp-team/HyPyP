@@ -679,7 +679,7 @@ pytkdocs = ">=0.2.0,<0.4.0"
 
 [[package]]
 name = "mne"
-version = "0.21.1"
+version = "0.21.2"
 description = "MNE python project for MEG and EEG data analysis."
 category = "main"
 optional = false
@@ -1387,7 +1387,7 @@ testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "e2b1a6ecdc2a401a4c7f0b91ca28569a6cff807dd24cd50e265014ea452da177"
+content-hash = "6525a08901b35cbcd2dd6e47ce3241c0c33523454de42f45bffa8fc0c00eeae6"
 
 [metadata.files]
 appdirs = [
@@ -1771,8 +1771,8 @@ mkdocstrings = [
     {file = "mkdocstrings-0.10.3.tar.gz", hash = "sha256:13722641310562ad1ca6a225d65cfdad6554831b5e17dc1101ac66be35d0dbe5"},
 ]
 mne = [
-    {file = "mne-0.21.1-py3-none-any.whl", hash = "sha256:a7f44440885d267e065c596bf3b0485cc890847df1400f738b127778a683ab55"},
-    {file = "mne-0.21.1.tar.gz", hash = "sha256:eef55afb62eec365c05e7a67c346dcf8be9ae34860465772cd712d3d6f719096"},
+    {file = "mne-0.21.2-py3-none-any.whl", hash = "sha256:8d306bb97f17277a967b4a3d1f013f84ac80b186d566d4e73ec8b3b103964e4b"},
+    {file = "mne-0.21.2.tar.gz", hash = "sha256:45877784c924c21e962b5a9f69a231aa85c436a0b845be965bd6de0d2a280779"},
 ]
 more-itertools = [
     {file = "more-itertools-8.6.0.tar.gz", hash = "sha256:b3a9005928e5bed54076e6e549c792b306fddfe72b2d1d22dd63d42d5d3899cf"},
