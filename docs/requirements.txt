@@ -120,3 +120,4 @@ webencodings==0.5.1
 widgetsnbextension==3.5.1
 wrapt==1.12.1
 zipp==3.4.0
+hypyp==0.2.0-alpha.4
