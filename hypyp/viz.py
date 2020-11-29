@@ -685,8 +685,9 @@ def viz_2D_topomap_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thr
         
 
     Returns:
-        None: plot head topomap with sensors and 
+        Plot head topomap with sensors and 
               connectivity links in 2D.
+        ax: The new Axes object.
     """
 
     # defining head model and adding sensors
@@ -701,6 +702,8 @@ def viz_2D_topomap_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thr
     plot_links_2d_inter(epo1, epo2, C=C, threshold=threshold, steps=steps)
     plt.tight_layout()
     plt.show()
+
+    return (ax)
 
 
 def viz_2D_headmodel_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = True):
@@ -725,8 +728,9 @@ def viz_2D_headmodel_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, t
         
 
     Returns:
-        None: plot headmodel with sensors and 
+        Plot headmodel with sensors and 
               connectivity links in 2D.
+        ax: The new Axes object.
     """
 
     # Visualization of inter-brain connectivity in 2D
@@ -748,6 +752,7 @@ def viz_2D_headmodel_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, t
     plt.tight_layout()
     plt.show()
     
+    return (ax)
     
 
 def viz_3D_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False):
@@ -772,8 +777,9 @@ def viz_3D_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
         
 
     Returns:
-        None: plot headmodel with sensors and 
+        Plot headmodel with sensors and 
               connectivity links in 3D.
+        ax: The new Axes object.
     """
 
     # defining head model and adding sensors
@@ -790,6 +796,7 @@ def viz_3D_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
     plt.tight_layout()
     plt.show()
 
+    return (ax)
 
 
 def transform_2d_intra(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ:float=0, rotZ: float=(np.pi)/2) -> np.ndarray:
@@ -1596,8 +1603,9 @@ def viz_3D_intra (epo1: mne.Epochs, epo2: mne.Epochs,
         
 
     Returns:
-        None: plot headmodel with sensors and 
+        Plot headmodel with sensors and 
               connectivity links in 3D.
+        ax: The new Axes object.
     """
 
     # defining head model and adding sensors
@@ -1614,3 +1622,6 @@ def viz_3D_intra (epo1: mne.Epochs, epo2: mne.Epochs,
     plot_links_3d_intra(ax, epo1, epo2, C1=C1, C2=C2, threshold=threshold, steps=steps)
     plt.tight_layout()
     plt.show()
+
+    return (ax)
+  
