@@ -1205,8 +1205,9 @@ def viz_2D_topomap_intra (epo1: mne.Epochs, epo2: mne.Epochs,
         
 
     Returns:
-        None: plot head topomap with sensors and 
+        Plot head topomap with sensors and 
               intra-brain connectivity links in 2D.
+        ax: The new Axes object.
     """
 
     # defining head model and adding sensors
@@ -1223,6 +1224,7 @@ def viz_2D_topomap_intra (epo1: mne.Epochs, epo2: mne.Epochs,
     plt.tight_layout()
     plt.show()
 
+    return (ax)
 
    
   
