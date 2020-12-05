@@ -103,67 +103,111 @@ def virtual_dyad(epochs,W, frequency_mean=10., frequency_std=0.2, noise_phase_le
 
 
 # Load data
-montage = mne.channels.read_custom_montage('../syncpipeline/FINS_data/enobio32.locs')
-info = mne.create_info(ch_names=montage.ch_names, sfreq=500, ch_types='eeg')
-epo1 = mne.EpochsArray(data=np.empty((36, 32, 501)), info=info)
-epo1.set_montage(montage)
+#Loading datasets (see MNE functions mne.io.read_raw_format), convert them to MNE Epochs.
+#In our example, we load Epochs directly from EEG dataset in the fiff format
 
-epo2 = epo1.copy()
+epo1 = mne.read_epochs(
+    Path('../data/participant1-epo.fif').resolve(),
+    preload=True,
+)
+
+epo2 = mne.read_epochs(
+    Path('../data/participant2-epo.fif').resolve(),
+    preload=True,
+)
+
+#Since our example dataset was not initially dedicated to hyperscanning, 
+# we need to equalize the number of epochs between our two participants.
+
 mne.epochs.equalize_epoch_counts([epo1, epo2])
+
+#Specify sampling frequency
 sampling_rate = epo1.info['sfreq'] #Hz
 
-
-# concatenate two datasets
+# Generate random epochs
 epo_real = utils.merge(epoch_S1=epo1, epoch_S2=epo2)
+epo_rnd = utils.generate_random_epoch(epoch=epo_real, mu=0.0, sigma=2.0)
+n_epo, n_chan, n_samp = epo_real.get_data().shape
+sfreq = epo_real.info['sfreq']
 
-# setting up parameters
-n_chan = len(epo_real.ch_names)
-# get channel locations
-con, _ = find_ch_adjacency(epo1.info, 'eeg')
-con = con.toarray()
+# Generate coupled oscillators
+
+frequency_mean = 10.  # Hz
+frequency_std = 0.2 # Hz
+
+noise_phase_level = 0.005 / n_samp
+noise_amplitude_level = 0.
 
 N = int(n_chan/2)
 A11 = 1 * np.ones((N, N))
 A12 = 0 * np.ones((N, N))
 A21 = 0 * np.ones((N, N))
 A22 = 1 * np.ones((N, N))
+W = np.block([[A11, A12], [A21, A22]])
+W = 0.2 * W
+plt.matshow(W)
 
-# A11 = con
-# A22 = con
+Nt = n_samp * n_epo
+tmax = n_samp / sfreq * n_epo  # s
+tv = np.linspace(0., tmax, Nt)
+
+freq = frequency_mean + frequency_std * np.random.randn(n_chan)
+omega = 2. * np.pi * freq
+
+def fp(p, t):
+    p = np.atleast_2d(p)
+    coupling = np.squeeze((np.sin(p) * np.matmul(W, np.cos(p).T).T) - (np.cos(p) * np.matmul(W, np.sin(p).T).T))
+    dotp = omega - coupling + noise_phase_level * np.random.randn(n_chan)
+    return dotp
+
+%%time
+p0 = 2 * np.pi * np.block([np.zeros(N), np.zeros(N) + np.random.rand(N) + 0.5])
+Phi = odeint(fp, p0, tv) % (2*np.pi)
+
+plt.figure(figsize=(20, 10))
+plt.subplot(2,1,1)
+plt.imshow(Phi[:n_samp, :].T,interpolation='none', cmap='hsv')
+plt.subplot(2,1,2)
+plt.imshow(Phi[-n_samp:, :].T,interpolation='none', cmap='hsv')
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(20, 10))
+plt.subplot(2,2,1)
+plt.plot(tv[:n_samp], np.squeeze(epo_real[0]._data.T), "-")
+plt.xlabel("Time, $t$ [s]")
+plt.ylabel("Amplitude, $x$ [m]")
+plt.title('Original EEG')
+plt.subplot(2,2,2)
+plt.plot(tv[:n_samp], np.squeeze(epo_rnd[0]._data).T, "-")
+plt.xlabel("Time, $t$ [s]")
+plt.ylabel("Amplitude, $x$ [m]")
+plt.title('Random signal')
+plt.subplot(2,2,3)
+plt.plot(tv[:n_samp], np.sin(Phi[:n_samp, :]), "-")
+plt.xlabel("Time, $t$ [s]")
+plt.ylabel("Amplitude, $x$ [m]")
+plt.title('Start of the simulation')
+plt.subplot(2,2,4)
+plt.plot(tv[-n_samp:], np.sin(Phi[-n_samp:, :]), "-")
+plt.xlabel("Time, $t$ [s]")
+plt.ylabel("Amplitude, $x$ [m]")
+plt.title('End of the simulation')
+plt.show()
+
+
+N = int(n_chan/2)
+A11 = 1 * np.ones((N, N))
+A12 = 0 * np.ones((N, N))
+A21 = 0 * np.ones((N, N))
+A22 = 1 * np.ones((N, N))
 W = np.block([[A11, A12], [A21, A22]])
 W = 0.2 * W
 
-# simulation params
-frequency_mean = 10.
-frequency_std = 0.2
-noise_phase_level = 0.005
-noise_amplitude_level = 0.1
-
-# check simulated set
-sim = generate_virtual_epoch(epochs=epo_real, frequency_mean=frequency_mean, frequency_std=frequency_std,
-                             noise_phase_level=noise_phase_level, noise_amplitude_level=noise_amplitude_level, W=W)
-# sim.plot(scalings=5, n_epochs=3, n_channels=62)
-# plt.show()
+sim = virtual_dyad(epochs = epo_real, frequency_mean = 10., frequency_std = 0.2, noise_phase_level = 0.005, noise_amplitude_level = 0.1, W = W)
+sim.plot(scalings=5, n_epochs=3, n_channels=62)
+plt.show()
 
 
-"""
-PLV
-"""
-modes = ['plv', 'ccorr', 'coh', 'imaginary_coh', 'envelope_corr', 'pow_corr']
 
-# generate 20 simulated datasets, and average the results
-
-for mode in modes:
-    cons = []
-    for i in range(20):
-        sim = generate_virtual_epoch(epochs=epo_real, frequency_mean=frequency_mean, frequency_std=frequency_std,
-                                     noise_phase_level=noise_phase_level,
-                                     noise_amplitude_level=noise_amplitude_level, W=W)
-        freq_bands = {'Alpha-Low': [8, 12]}
-        connectivity = analyses.pair_connectivity(data=[sim.get_data()[:,0:32,:], sim.get_data()[:,32:,:]],
-                                   sampling_rate=sampling_rate, frequencies=freq_bands, mode=mode)  # data.shape = (2, n_epochs, n_channels, n_times).
-        cons.append(connectivity[0])
-    plt.figure()
-    plt.imshow(np.nanmean(np.array(cons), axis=0))
-    plt.title(mode)
 
