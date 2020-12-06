@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hypyp"
-version = "0.2.0-alpha.5"
+version = "0.2.0-alpha.6"
 description = "The Hyperscanning Python Pipeline."
 readme = "README.md"
 authors = [

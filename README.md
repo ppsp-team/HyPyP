@@ -6,7 +6,7 @@ The **Hy**perscanning **Py**thon **P**ipeline
 
 :warning: This alpha version is still far from easy-to-use and should be considered with caution. While we have done our best to test all the functionalities, there is no guarantee that the pipeline is entirely bug-free. 
 
-📖 See our [preprint](https://psyarxiv.com/x5apu) for more explanation and our plan for upcoming functionalities (aka Roadmap).
+📖 See our [paper](https://academic.oup.com/scan/advance-article/doi/10.1093/scan/nsaa141/5919711) for more explanation and our plan for upcoming functionalities (aka Roadmap).
 
 🤝 If you want to help you can submit bugs and suggestions of enhancements in our Github [Issues section](https://github.com/ppsp-team/HyPyP/issues).
 
