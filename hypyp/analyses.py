@@ -545,7 +545,7 @@ def compute_conn_mvar(complex_signal, mvar_params, ica_params, measure_params, c
 
                 if counter == 0:
 
-                    print("MVAR model is not stable: number of time samples is not enough")
+                    print("MVAR model is not stable: number of time samples may be too small")
                     print("\n")
                     nes_sample = mvar_params["mvar_order"] * real_signal.shape[2] * real_signal.shape[2]
                     print("At least " + str(nes_sample) + " samples are required for fitting MVAR model")
