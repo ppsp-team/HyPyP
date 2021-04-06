@@ -41,6 +41,9 @@ mne = "^0.21.1"
 urllib3 = ">=1.26.4"
 pyyaml = ">=5.4"
 jinja2 = ">=2.11.3"
+Pygments = ">=2.7.4"
+Pillow = ">=8.1.1"
+bleach = ">=3.3.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
