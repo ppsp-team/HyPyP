@@ -21,7 +21,7 @@ classifiers=[
     "License :: OSI Approved :: BSD License",
 ]
 keywords=["hyperscanning", "neuroscience", "pipeline", "statistics", "visualization"]
-include=["data/Basehead.obj"]
+include=["hypyp/data/Basehead.obj"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
