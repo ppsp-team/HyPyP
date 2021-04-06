@@ -38,6 +38,9 @@ tqdm = "^4.46.0"
 scipy = "^1.4.1"
 pyqt5 = "^5.15.0"
 mne = "^0.21.1"
+urllib3 = ">=1.26.4"
+pyyaml = ">=5.4"
+jinja2 = ">=2.11.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
