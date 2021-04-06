@@ -21,11 +21,14 @@ from collections import namedtuple
 from typing import Union
 from astropy.stats import circmean
 import matplotlib.pyplot as plt
+
 plt.ion()
 
 import mne
 from mne.io.constants import FIFF
 from mne.time_frequency import psd_welch
+
+from .mvarica import MVAR, connectivity_mvarica
 
 
 def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int, epochs_average: bool) -> tuple:
@@ -97,7 +100,8 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
                      psd=psd)
 
 
-def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: str, p_thresh: float, multiple_corr: bool=True, verbose: bool=False) -> tuple:
+def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: str, p_thresh: float,
+               multiple_corr: bool = True, verbose: bool = False) -> tuple:
     """
     Correlates data with a discontinuous behavioral parameter,
     uses different linear correlations after checking for
@@ -139,10 +143,10 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
             is a vector, corection set for multiple comparisons or not if data
             is an array of connectivity values, str.
     """
-       
+
     # storage for results
     corr_tuple = namedtuple('corr_tuple', ['r', 'pvalue', 'strat'])
-    
+
     # simple correlation between vectors (data can be averaged PSD for example)
     if data.shape == behav.shape:
         # test for normality on the first axis
@@ -160,9 +164,9 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
         # vizualisation
         if verbose:
             plt.figure()
-            plt.scatter(behav, data, label=str(r)+str(pvalue))
+            plt.scatter(behav, data, label=str(r) + str(pvalue))
             plt.legend(loc='upper right')
-            plt.title('Linear correlation between '+behav_name+' and '+data_name)
+            plt.title('Linear correlation between ' + behav_name + ' and ' + data_name)
             plt.xlabel(behav_name)
             plt.ylabel(data_name)
             plt.show()
@@ -199,7 +203,7 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
                 if pvalue[i, j] < p_thresh:
                     significant_corr[i, j] = rs[i, j]
         r = np.nan_to_num(significant_corr)
-        strat = 'correction for multiple comaprison ' + str(multiple_corr)      
+        strat = 'correction for multiple comaprison ' + str(multiple_corr)
         return corr_tuple(r=r, pvalue=pvalue, strat=strat)
 
 
@@ -460,6 +464,125 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
     return con
 
 
+def compute_conn_mvar(complex_signal, mvar_params, ica_params, measure_params, check_stability=True):
+    """
+    Computes connectivity measures based on MVAR coefficients.
+
+    Arguments:
+        - complex_signal:
+            shape = (2, n_epochs, n_channels, n_freq_bins, n_times).
+            Analytic signals for computing connectivity between two participants.
+
+        - mvar_params:
+            python dictionary for defining the MVAR model parameters.
+            it should contain three variables:
+                { "mvar_order": ,
+                  "fitting_method: ,
+                  "delta: ,
+                }
+        - ica_params:
+            python dictionary for choosing the ica method.
+            it should contain two variables:
+                { "method": ,
+                  "random_state":
+                }
+        - measure_params:
+            python dictionary for defining connectivity measure attributes.
+            it should contain two variables:
+                { "name": ,
+                  "n_fft":
+                }
+        - check_stability:
+            bool, whether to check stability of mvar model or not.
+            note that mvar models need adequate sample number to be stable.
+            default: True
+
+    Returns:
+        connectivity measure matrix.
+        ndarray with shape = (epochs, frequency, channels, channels, n_fft)
+                          or (1, frequency,channels, channels, n_fft) if epochs are merged
+    """
+    n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
+                                    complex_signal.shape[3], complex_signal.shape[4]
+
+    complex_signal = complex_signal.transpose((1, 3, 0, 2, 4)).reshape(n_epoch, n_freq, 2 * n_ch, n_samp)
+    real_signal = np.real(complex_signal)
+    aug_signal = real_signal[np.newaxis, ...]
+
+    mvar = MVAR(mvar_params["mvar_order"], mvar_params["fitting_method"], mvar_params["delta"])
+
+    if check_stability:
+        c = True
+        fit_mvar = mvar.fit(aug_signal[:, 0, 0, :, :])
+        is_stable = fit_mvar.stability()
+
+        while c:
+
+            if is_stable:
+                print("MVAR model is stable")
+                inp = input(" Do you want to continue? ")
+
+                if inp.lower() == "yes":
+                    aux_3 = np.zeros((aug_signal.shape[1], aug_signal.shape[2], real_signal.shape[2],
+                                      real_signal.shape[2], measure_params["n_fft"]), dtype=np.complex128)
+                    for e in range(aug_signal.shape[1]):
+                        for f in range(aug_signal.shape[2]):
+                            aux_sig = aug_signal[:, e, f, :, :]
+                            conn_freq_epoch = connectivity_mvarica(real_signal=aux_sig, ica_params=ica_params,
+                                                                   measure_name=measure_params["name"],
+                                                                   n_fft=measure_params["n_fft"], var_model=mvar)
+                            d_type = conn_freq_epoch.dtype
+                            aux_3[e, f, :, :, :] = conn_freq_epoch
+
+                    return np.asarray(aux_3, dtype=d_type)
+
+                else:
+
+                    return None
+            else:
+
+                counter = 0
+
+                if counter == 0:
+
+                    print("MVAR model is not stable: number of time samples is not enough")
+                    print("\n")
+                    nes_sample = mvar_params["mvar_order"] * real_signal.shape[2] * real_signal.shape[2]
+                    print("At least " + str(nes_sample) + " samples are required for fitting MVAR model")
+                    print("\n")
+                    inp = input("Do you want to merge the epochs? ")
+
+                    if inp.lower() == "yes":
+
+                        merged_signal = aug_signal.reshape(1, real_signal.shape[1], real_signal.shape[2],
+                                                           real_signal.shape[3] * real_signal.shape[0])
+                        fit_mvar = mvar.fit(merged_signal[:, 0, 0, :][np.newaxis, ...])
+                        is_stable = fit_mvar.stability()
+                        aug_signal = merged_signal[np.newaxis, ...]
+                        counter += counter
+
+                    else:
+
+                        return None
+                else:
+
+                    return "epochs are already merged"
+    else:
+
+        aux_3 = np.zeros((aug_signal.shape[1], aug_signal.shape[2], real_signal.shape[2], real_signal.shape[2],
+                          measure_params["n_fft"]), dtype=np.complex128)
+        for e in range(aug_signal.shape[1]):
+            for f in range(aug_signal.shape[2]):
+                aux_sig = aug_signal[:, e, f, :, :]
+                conn_freq_epoch = connectivity_mvarica(real_signal=aux_sig, ica_params=ica_params,
+                                                       measure_name=measure_params["name"],
+                                                       n_fft=measure_params["n_fft"], var_model=mvar)
+                d_type = conn_freq_epoch.dtype
+                aux_3[e, f, :, :, :] = conn_freq_epoch
+
+        return np.asarray(aux_3, dtype=d_type)
+
+
 def compute_single_freq(data: np.ndarray, sampling_rate: int, freq_range: list) -> np.ndarray:
     """
     Computes analytic signal per frequency bin using the multitaper method.
@@ -515,10 +638,11 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict, *
     # filtering and hilbert transform
     complex_signal = []
     for freq_band in freq_bands.values():
-        filtered = np.array([mne.filter.filter_data(data[participant], 
-                             sampling_rate, l_freq=freq_band[0], h_freq=freq_band[1], **filter_options,
-                             verbose=False)
-                             for participant in range(2)  
+        filtered = np.array([mne.filter.filter_data(data[participant],
+                                                    sampling_rate, l_freq=freq_band[0], h_freq=freq_band[1],
+                                                    **filter_options,
+                                                    verbose=False)
+                             for participant in range(2)
                              # for each participant
                              ])
         hilb = signal.hilbert(filtered)
