@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+# coding=utf-8
+# ==============================================================================
+# title           : getting_started.py
+# description     : Demonstration of HyPyP basics.
+# author          : Guillaume Dumas, Anaël Ayrolles, Florence Brun
+# date            : 2020-03-18
+# version         : 1
+# python_version  : 3.7
+# ==============================================================================
 import io
 from copy import copy
 from collections import OrderedDict
