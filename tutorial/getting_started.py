@@ -1,13 +1,3 @@
-#!/usr/bin/env python
-# coding=utf-8
-# ==============================================================================
-# title           : getting_started.py
-# description     : Demonstration of HyPyP basics.
-# author          : Guillaume Dumas, Anaël Ayrolles, Florence Brun
-# date            : 2020-03-18
-# version         : 1
-# python_version  : 3.7
-# ==============================================================================
 import io
 from copy import copy
 from collections import OrderedDict
@@ -16,7 +6,6 @@ import numpy as np
 import scipy
 import mne
 import requests
-
 
 from hypyp import (
     prep,
@@ -42,7 +31,6 @@ freq_bands = OrderedDict(freq_bands)  # Force to keep order
 # Specify sampling frequency
 sampling_rate = 500  # Hz
 
-
 # Loading datasets (see MNE functions mne.io.read_raw_format),
 # convert them to MNE Epochs
 
@@ -57,23 +45,22 @@ def get_data(idx):
     return io.BytesIO(requests.get(URL_TEMPLATE.format(idx)).content)
 
 
-epo1 = mne.read_epochs(get_data(1), preload=True,)
+epo1 = mne.read_epochs(get_data(1), preload=True, )
 
-epo2 = mne.read_epochs(get_data(2), preload=True,)
+epo2 = mne.read_epochs(get_data(2), preload=True, )
 
 # In our example, since the dataset was not initially
 # dedicate to hyperscanning, we need to equalize
 # the number of epochs between our two participants
 mne.epochs.equalize_epoch_counts([epo1, epo2])
 
-
 # Preprocessing epochs
 
-# Warning: here we directly load epochs data, 
+# Warning: here we directly load epochs data,
 # for raw data we highly recommend to perform high-pass filtering
 # with prep.filt function before converting raw to epochs
 
-# Computing global AutoReject and Independant Components Analysis
+# Computing global AutoReject and Independent Components Analysis
 # for each participant
 icas = prep.ICA_fit(
     [epo1, epo2],
@@ -83,26 +70,44 @@ icas = prep.ICA_fit(
     random_state=42,
 )
 
-# Selecting relevant Independant Components for artefact rejection
+# Selecting relevant Independent Components for artefact rejection
 # on one participant, that will be transpose to the other participant
 # and fitting the ICA
 cleaned_epochs_ICA = prep.ICA_choice_comp(icas, [epo1, epo2])
+plt.close("all")
+
+# For using PDC measure (Partial Coherence Connectivity)
+# We should use the data that no ICA algorithm is applied on them.
+
+cleaned_epochs_no_ICA = prep.ICA_choice_comp(icas, [epo1, epo2])
 plt.close("all")
 
 # Applying local AutoReject for each participant
 # rejecting bad epochs, rejecting or interpolating partially bad channels
 # removing the same bad channels and epochs across participants
 # plotting signal before and after (verbose=True)
+
+# Applying on data obtained with ICA algorithm
 cleaned_epochs_AR, dic_AR = prep.AR_local(
     cleaned_epochs_ICA, strategy="union", threshold=50.0, verbose=True
 )
 input("Press ENTER to continue")
 plt.close("all")
 
+# Applying on data obtained without ICA algorithm
+no_ICA_cleaned_epochs_AR, no_ICA_dic_AR = prep.AR_local(cleaned_epochs_no_ICA,
+                                                        strategy="union",
+                                                        threshold=50.0,
+                                                        verbose=True
+                                                        )
+input("Press ENTER to continue")
+plt.close("all")
+
 # Picking the preprocessed epochs for each participant
 preproc_S1 = cleaned_epochs_AR[0]
 preproc_S2 = cleaned_epochs_AR[1]
-
+no_ICA_preproc_S1 = no_ICA_cleaned_epochs_AR[0]
+no_ICA_preproc_S2 = no_ICA_cleaned_epochs_AR[1]
 
 # Analysing data
 
@@ -111,6 +116,7 @@ preproc_S2 = cleaned_epochs_AR[1]
 # frequencies for which power spectral density is actually computed
 # are returned in freq_list,
 # and PSD values are averaged across epochs
+
 psd1 = analyses.pow(
     preproc_S1, fmin=7.5, fmax=11, n_fft=1000, n_per_seg=1000, epochs_average=True
 )
@@ -119,30 +125,49 @@ psd2 = analyses.pow(
 )
 data_psd = np.array([psd1.psd, psd2.psd])
 
+no_ICA_psd1 = analyses.pow(no_ICA_preproc_S1, fmin=7.5, fmax=11,
+                           n_fft=1000, n_per_seg=1000, epochs_average=True)
+no_ICA_psd2 = analyses.pow(no_ICA_preproc_S2, fmin=7.5, fmax=11,
+                           n_fft=1000, n_per_seg=1000, epochs_average=True)
+no_ICA_data_psd = np.array([no_ICA_psd1.psd, no_ICA_psd2.psd])
+
 # Connectivity
 
 # initializing data and storage
+
 data_inter = np.array([preproc_S1, preproc_S2])
 result_intra = []
+
+no_ICA_data_inter = np.array([no_ICA_preproc_S1, no_ICA_preproc_S2])
+no_ICA_result_intra = []
+no_ICA_result_inter = []
+
 # computing analytic signal per frequency band
+
 complex_signal = analyses.compute_freq_bands(data_inter, sampling_rate, freq_bands)
+
+no_ICA_complex_signal = analyses.compute_freq_bands(no_ICA_data_inter, sampling_rate,
+                                                    freq_bands)
+
 # computing frequency- and time-frequency-domain connectivity,
 # 'ccorr' for example
 result = analyses.compute_sync(complex_signal, mode="ccorr")
 
 # slicing results to get the Inter-brain part of the matrix
 n_ch = len(epo1.info["ch_names"])
-theta, alpha_low, alpha_high, beta, gamma = result[:, 0:n_ch, n_ch : 2 * n_ch]
-# choosing Alpha_Low for futher analyses for example
+theta, alpha_low, alpha_high, beta, gamma = result[:, 0:n_ch, n_ch: 2 * n_ch]
+
+# choosing Alpha_Low for further analyses for example
 values = alpha_low
 values -= np.diag(np.diag(values))
+
 # computing Cohens'D for further analyses for example
 C = (values - np.mean(values[:])) / np.std(values[:])
 
 # slicing results to get the Intra-brain part of the matrix
 for i in [0, 1]:
-    theta, alpha_low, alpha_high, beta, gamma = result[:, i : i + n_ch, i : i + n_ch]
-    # choosing Alpha_Low for futher analyses for example
+    theta, alpha_low, alpha_high, beta, gamma = result[:, i: i + n_ch, i: i + n_ch]
+    # choosing Alpha_Low for further analyses for example
     values_intra = alpha_low
     values_intra -= np.diag(np.diag(values_intra))
     # computing Cohens'D for further analyses for example
@@ -150,8 +175,60 @@ for i in [0, 1]:
     # can also sample CSD values directly for statistical analyses
     result_intra.append(C_intra)
 
+# Computing frequency- and time-frequency-domain connectivity measures
+# obtained by MVARICA approach, based on MVAR models' coefficients.
+# For instance: PDC measure, with MVAR model of order 2, extended infomax ICA method with checking the stability.
+mvar_result = analyses.compute_conn_mvar(no_ICA_complex_signal,
+                                         mvar_params={"mvar_order": 2, "fitting_method": "default", "delta": 0},
+                                         ica_params={"method": "infomax_extended", "random_state": None},
+                                         measure_params={"name": "pdc", "n_fft": 512}
+                                         )
 
-# Statistical anlyses
+# Slicing results to get the Inter-brain of the connectivity matrix.
+# assigning the maximum value in the frequency spectrum
+# mvar-based connectivity measures are calculated over a frequency range assigned by n_fft variable.
+# here n_fft = 512
+for i in [0, 1]:
+    mvar_result = mvar_result.squeeze()
+    if i == 0:
+        mvar_theta, mvar_alpha_low, mvar_alpha_high, mvar_beta, mvar_gamma = mvar_result[:, n_ch:n_ch * 2, 0:n_ch, :]
+    else:
+        mvar_theta, mvar_alpha_low, mvar_alpha_high, mvar_beta, mvar_gamma = mvar_result[:, 0:n_ch, n_ch:n_ch * 2, :]
+    # choosing Alpha_Low for further analyses for example
+    auxiliary = np.zeros((n_ch, n_ch), dtype=mvar_result.dtype)
+    for j in range(0, n_ch):
+        for k in range(0, n_ch):
+            auxiliary[j, k] = np.amax(mvar_alpha_low[j, k])
+    mvar_values_inter = auxiliary
+    # computing Cohens'D for further analyses for example
+    mvar_C_inter = (mvar_values_inter -
+                    np.mean(mvar_values_inter[:])) / np.std(mvar_values_inter[:])
+    # can also sample CSD values directly for statistical analyses
+    no_ICA_result_inter.append(mvar_C_inter)
+
+# Slicing results to get the Intra-brain of the connectivity matrix
+# assigning the maximum value in the frequency spectrum
+# mvar-based connectivity measures are calculated over a frequency range assigned by n_fft variable
+# here n_fft = 512
+for i in [0, 1]:
+    mvar_result = mvar_result.squeeze()
+    mvar_theta, mvar_alpha_low, mvar_alpha_high, mvar_beta, mvar_gamma = mvar_result[:, i * n_ch:n_ch * (i + 1),
+                                                                         i * n_ch:n_ch * (i + 1), :]
+    # choosing Alpha_Low for further analyses for example
+    auxiliary = np.zeros((n_ch, n_ch), dtype=mvar_result.dtype)
+    for j in range(0, n_ch):
+        for k in range(0, n_ch):
+            auxiliary[j, k] = np.amax(mvar_alpha_low[j, k])
+    mvar_alpha_low = auxiliary
+    mvar_values_intra = mvar_alpha_low
+    mvar_values_intra -= np.diag(np.diag(mvar_values_intra))
+    # computing Cohens'D for further analyses for example
+    mvar_C_intra = (mvar_values_intra -
+                    np.mean(mvar_values_intra[:])) / np.std(mvar_values_intra[:])
+    # can also sample CSD values directly for statistical analyses
+    no_ICA_result_intra.append(mvar_C_intra)
+
+# Statistical analyses
 
 # Comparing PSD values to random signal
 # Parametric t test
@@ -182,7 +259,7 @@ statsCondTuple = stats.statsCond(
 # in the Alpha_Low band for example
 con_matrixTuple = stats.con_matrix(preproc_S1, freqs_mean=psd1.freq_list)
 ch_con_freq = con_matrixTuple.ch_con_freq
-# consitute two artificial groups with 2 'participant1' and 2 'participant1'
+# constitute two artificial groups with 2 'participant1' and 2 'participant1'
 data_group = [np.array([psd1.psd, psd1.psd]), np.array([psd2.psd, psd2.psd])]
 statscondCluster = stats.statscondCluster(
     data=data_group,
@@ -192,7 +269,6 @@ statscondCluster = stats.statscondCluster(
     n_permutations=5000,
     alpha=0.05,
 )
-
 
 # Comparing Intra-brain connectivity values between participants
 
@@ -214,7 +290,7 @@ con_matrixTuple = stats.con_matrix(
 # to correct clusters
 ch_con = con_matrixTuple.ch_con
 
-# consitute two artificial groups with 2 'participant1' and 2 'participant2'
+# constitute two artificial groups with 2 'participant1' and 2 'participant2'
 # in Alpha_Low band for example (see above)
 Alpha_Low = [
     np.array([result_intra[0], result_intra[0]]),
@@ -235,7 +311,7 @@ statscondCluster_intra = stats.statscondCluster(
 # No a priori connectivity between channels is considered
 # between the two participants
 # in Alpha_Low band for example (see above)
-# consitute two artificial groups with 2 'participant1' and 2 'participant2'
+# constitute two artificial groups with 2 'participant1' and 2 'participant2'
 data = [np.array([values, values]), np.array([result_intra[0], result_intra[0]])]
 
 statscondCluster = stats.statscondCluster(
@@ -246,7 +322,6 @@ statscondCluster = stats.statscondCluster(
     n_permutations=5000,
     alpha=0.05,
 )
-
 
 # Visualization
 
@@ -259,7 +334,7 @@ viz.plot_significant_sensors(T_obs_plot=statsCondTuple.T_obs, epochs=preproc_S1)
 # Visualize T values for significant sensors only
 viz.plot_significant_sensors(T_obs_plot=statsCondTuple.T_obs_plot, epochs=preproc_S1)
 
-# Visulization of inter-brain links projected
+# Visualization of inter-brain links projected
 # on either 2D or 3D head models
 
 # can be applied to Cohen’s D (C as done here) or
@@ -270,28 +345,66 @@ viz.plot_significant_sensors(T_obs_plot=statsCondTuple.T_obs_plot, epochs=prepro
 epo1.info["bads"] = ["F8", "Fp2", "Cz", "O2"]
 epo2.info["bads"] = ["F7", "O1"]
 
-# Warning, threshold='auto' must be used carefully, 
-# it is calculated specifically for the dyad, 
+# Warning, threshold='auto' must be used carefully,
+# it is calculated specifically for the dyad,
 # and therefore does not allow comparability between different dyads.
 
-# Visualization of inter-brain connectivity in 2D
+# Inter-brain Hilbert-based connectivity
 viz.viz_2D_topomap_inter(epo1, epo2, C, threshold='auto', steps=10, lab=True)
 
+# Inter-brain VAR-based connectivity
+# Information flow from participant 1 to participant 2
+viz.viz_2D_topomap_inter(epo1, epo2, no_ICA_result_inter[0], threshold='auto', steps=10, lab=True)
+
+# Inter-brain VAR-based connectivity
+# Information flow from participant 2 to participant 1
+viz.viz_2D_topomap_inter(epo1, epo2, no_ICA_result_inter[1], threshold='auto', steps=10, lab=True)
+
 # Visualization of inter-brain connectivity in 3D
+
+# Inter-brain Hilbert-based connectivity
 viz.viz_3D_inter(epo1, epo2, C, threshold='auto', steps=10, lab=False)
 
+# Inter-brain VAR-based connectivity
+# Information flow from participant 1 to participant 2
+viz.viz_3D_inter(epo1, epo2, no_ICA_result_inter[0], threshold='auto', steps=10, lab=False)
+
+# Inter-brain VAR-based connectivity
+# Information flow from participant 2 to participant 1
+viz.viz_3D_inter(epo1, epo2, no_ICA_result_inter[1], threshold='auto', steps=10, lab=False)
+
 # Visualization of intra-brain connectivity in 2D
+
+# Intra-brain Hilbert-based connectivity
 viz.viz_2D_topomap_intra(epo1, epo2,
-                         C1= result_intra[0],
-                         C2= result_intra[1],
+                         C1=result_intra[0],
+                         C2=result_intra[1],
+                         threshold='auto',
+                         steps=2,
+                         lab=False)
+
+# Intra-brain VAR-based connectivity
+viz.viz_2D_topomap_intra(epo1, epo2,
+                         C1=no_ICA_result_intra[0],
+                         C2=no_ICA_result_intra[1],
                          threshold='auto',
                          steps=2,
                          lab=False)
 
 # Visualization of intra-brain connectivity in 3D
+
+# Intra-brain Hilbert-based connectivity
 viz.viz_3D_intra(epo1, epo2,
-                 C1= result_intra[0],
-                 C2= result_intra[1],
+                 C1=result_intra[0],
+                 C2=result_intra[1],
+                 threshold='auto',
+                 steps=10,
+                 lab=False)
+
+# Intra-brain VAR-based connectivity
+viz.viz_3D_intra(epo1, epo2,
+                 C1=no_ICA_result_intra[0],
+                 C2=no_ICA_result_intra[0],
                  threshold='auto',
                  steps=10,
                  lab=False)
