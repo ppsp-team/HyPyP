@@ -337,7 +337,7 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
     F_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(data,
                                                                      threshold=None,
                                                                      n_permutations=n_permutations,
-                                                                     tail=tail, connectivity=ch_con_freq,
+                                                                     tail=tail, adjacency=ch_con_freq,
                                                                      t_power=1, out_type='mask')
     # t_power = 1 weighs each location by its statistical score,
     # when set to 0 it gives a count of locations in each cluster
