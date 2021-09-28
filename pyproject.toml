@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hypyp"
-version = "0.3.0-beta.2"
+version = "0.3.0-beta.3"
 description = "The Hyperscanning Python Pipeline."
 readme = "README.md"
 authors = [
@@ -26,8 +26,8 @@ include=["hypyp/data/Basehead.obj"]
 [tool.poetry.dependencies]
 python = "^3.7"
 joblib = "^0.14.1"
-scikit-learn = "^0.22.2"
-statsmodels = "^0.11.1"
+scikit-learn = "1.0"
+statsmodels = "^0.12.2"
 autoreject = "^0.2.1"
 matplotlib = "^3.2.1"
 pandas = "^1.0.3"
