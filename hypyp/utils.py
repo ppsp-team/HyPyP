@@ -232,8 +232,8 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
     data_S2 = raw_merge.get_data(picks=ch_S2)
 
     # creating info for raws
-    info = mne.create_info(ch, raw_merge.info['sfreq'], ch_types='eeg',
-                           montage=None, verbose=None)
+    info = mne.create_info(ch, raw_merge.info['sfreq'], ch_types='eeg', verbose=None)
+
     raw_S1 = mne.io.RawArray(data_S1, info)
     raw_S2 = mne.io.RawArray(data_S2, info)
 
