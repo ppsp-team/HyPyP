@@ -20,7 +20,7 @@ from mne.io.constants import FIFF
 from mne import create_info, EpochsArray
 
 
-def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw) -> list:
+def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, duration: float) -> list:
     """
     Creates Epochs from Raws and vizualize Power Spectral Density (PSD)
     on average Epochs (option).
@@ -33,6 +33,7 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw) -> list:
           Raws are MNE objects: data are ndarray with shape
           (n_channels, n_times) and information is a dictionnary
           sampling parameters.
+        duration: Floating number, the duration to separate events by (in seconds).
 
     Note:
         Plots topomaps of PSD values calculated with welch FFT
@@ -52,14 +53,14 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw) -> list:
                                                      id=1,
                                                      start=0,
                                                      stop=None,
-                                                     duration=1.0,
+                                                     duration=duration,
                                                      first_samp=True,
                                                      overlap=0.0)
         fixed_events2 = mne.make_fixed_length_events(raw2,
                                                      id=1,
                                                      start=0,
                                                      stop=None,
-                                                     duration=1.0,
+                                                     duration=duration,
                                                      first_samp=True,
                                                      overlap=0.0)
 
