@@ -65,11 +65,11 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, duration: float) -> li
                                                      overlap=0.0)
 
         # epoching the events per time window
-        epoch1 = mne.Epochs(raw1, fixed_events1, event_id=1, tmin=0, tmax=1,
+        epoch1 = mne.Epochs(raw1, fixed_events1, event_id=1, tmin=0, tmax=duration,
                             baseline=None, preload=True, reject=None, proj=True)
         # reject=reject_criteria, no baseline correction
         # preload needed after
-        epoch2 = mne.Epochs(raw2, fixed_events2, event_id=1, tmin=0, tmax=1,
+        epoch2 = mne.Epochs(raw2, fixed_events2, event_id=1, tmin=0, tmax=duration,
                             baseline=None, preload=True, reject=None, proj=True)
 
 
