@@ -27,7 +27,7 @@ importlib-metadata==4.8.2; python_version == "3.7" and (python_version >= "3.6" 
 importlib-resources==5.4.0; python_version < "3.9" and python_version >= "3.7"
 ipykernel==6.5.0; python_version >= "3.7"
 ipython-genutils==0.2.0; python_version >= "3.6"
-ipython==7.29.0; python_version >= "3.7"
+ipython==7.31.1; python_version >= "3.7"
 ipywidgets==7.6.5
 isort==5.10.1; python_full_version >= "3.6.1" and python_version < "4.0" and python_version >= "3.6"
 jedi==0.18.0; python_version >= "3.7"
