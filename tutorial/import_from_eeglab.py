@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# # Import EEGlab file into HyPyP
+#
+# Authors          : Ghazaleh Ranjbaran
+#
+# Date            : 2021-12-16
+ 
 #Load useful libs
 
 #Data science
