@@ -20,7 +20,7 @@ from mne.io.constants import FIFF
 from mne import create_info, EpochsArray
 
 
-def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> list:
+def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, duration: float) -> list:
     """
     Creates Epochs from Raws and vizualize Power Spectral Density (PSD)
     on average Epochs (option).
@@ -33,7 +33,6 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> l
           Raws are MNE objects: data are ndarray with shape
           (n_channels, n_times) and information is a dictionnary
           sampling parameters.
-        freq_bands: frequency bands-of-interest, list of tuple.
 
     Note:
         Plots topomaps of PSD values calculated with welch FFT
@@ -53,29 +52,24 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, freq_bands: list) -> l
                                                      id=1,
                                                      start=0,
                                                      stop=None,
-                                                     duration=1.0,
+                                                     duration=duration,
                                                      first_samp=True,
                                                      overlap=0.0)
         fixed_events2 = mne.make_fixed_length_events(raw2,
                                                      id=1,
                                                      start=0,
                                                      stop=None,
-                                                     duration=1.0,
+                                                     duration=duration,
                                                      first_samp=True,
                                                      overlap=0.0)
 
         # epoching the events per time window
-        epoch1 = mne.Epochs(raw1, fixed_events1, event_id=1, tmin=0, tmax=1,
+        epoch1 = mne.Epochs(raw1, fixed_events1, event_id=1, tmin=0, tmax=duration,
                             baseline=None, preload=True, reject=None, proj=True)
         # reject=reject_criteria, no baseline correction
         # preload needed after
-        epoch2 = mne.Epochs(raw2, fixed_events2, event_id=1, tmin=0, tmax=1,
+        epoch2 = mne.Epochs(raw2, fixed_events2, event_id=1, tmin=0, tmax=duration,
                             baseline=None, preload=True, reject=None, proj=True)
-
-        # vizu topoplots of PSD for epochs
-        # epoch1.plot()
-        # epoch1.plot_psd_topomap(bands=freq_bands)  # welch FFT
-        # epoch1.plot_psd_topomap(bands=freq_bands)  # welch FFT
 
         # interpolating bad channels and removing the label
         if len(epoch1.info['bads']) > 0:
