@@ -24,6 +24,7 @@ from hypyp.ext.mpl3d import glm
 from hypyp.ext.mpl3d.mesh import Mesh
 from hypyp.ext.mpl3d.camera import Camera
 
+import math
 
 def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.5, rotY: float=(np.pi)/2, rotZ: float=(np.pi)/2) -> np.ndarray:
     """
@@ -263,7 +264,148 @@ def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thres
                         plt.plot([xn, xnn], [yn, ynn],
                                  '-', color=color_n, linewidth=weight)
 
+def plot_vector_2d_inter(epo1, epo2, C1, C2, axis, steps = 10, threshold = 'auto'):
 
+  locations = mne.channels.make_standard_montage('standard_1020', head_size=0.092)
+  epo1.set_montage(locations)
+  epo2.set_montage(locations)
+  
+  ax = axis
+
+  # extract sensor infos and transform loc to fit with headmodel
+  loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
+  loc1 = transform(loc1, traX=-0.17, traY=0, traZ=0.08, rotY=(-np.pi/12), rotZ=(-np.pi/2))
+
+  loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
+  loc2 = transform(loc2, traX=0.17, traY=0, traZ=0.08, rotY=(np.pi/12), rotZ=np.pi/2)
+
+  ctr1 = np.nanmean(loc1, 0)
+  ctr2 = np.nanmean(loc2, 0)
+
+  Cmax1=np.nanmax(C1[:])
+  Cmax2=np.nanmax(C2[:])
+  Cmax=[]
+  Cmax=[Cmax1, Cmax2]
+  vmax=np.nanmax(Cmax)
+  Cmin1=np.nanmin(C1[:])
+  Cmin2=np.nanmin(C2[:])
+  Cmin=[]
+  Cmin=[Cmin1, Cmin2]
+  vmin=np.min(Cmin)
+
+
+  if threshold is 'auto':
+    threshold = np.max([np.median(C1, 0),np.median(C2,0)])+np.max([np.std(C1, 0),np.std(C2, 0)])
+  else:
+    threshold = threshold
+
+  # define colormap
+  cmap_p = matplotlib.cm.get_cmap('Reds')
+  norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=vmax)
+  cmap_n = matplotlib.cm.get_cmap('Blues_r')
+  norm_n = matplotlib.colors.Normalize(vmin=vmin, vmax=-threshold)
+
+  for e1 in range(len(loc1)):
+    x1 = loc1[e1, 0]
+    y1 = loc1[e1, 1]
+
+    for e2 in range(len(loc2)):
+      x2 = loc2[e2, 0]
+      y2 = loc2[e2, 1]
+
+      if threshold > 0:
+
+        if steps > 2:
+
+          if C1[e1, e2] >= threshold and C2[e2, e1] < threshold:
+            color_p = cmap_p(norm_p(C1[e1, e2]))
+            alphas = np.linspace(0, 1, steps)
+            weight = 0.2 +1.6*((C1[e1, e2]-threshold)/(np.nanmax(C1[:]-threshold)))
+            first_side_vec_inter(x1, x2, y1, y2, ctr1, ctr2, color_p, weight, alphas, ax)
+
+          elif C1[e1, e2] < threshold and C2[e2, e1] >= threshold:
+            color_p = cmap_p(norm_p(C2[e2, e1]))
+            alphas = np.linspace(0, 1, steps)
+            weight = 0.2 +1.6*((C2[e2, e1]-threshold)/(np.nanmax(C2[:]-threshold)))
+            other_side_vec_inter(x1, x2, y1, y2, ctr1, ctr2, color_p, weight, alphas, ax)
+
+          elif C1[e1, e2] > threshold and C2[e2, e1] > threshold:
+            color_p1 = cmap_p(norm_p(C1[e1, e2]))
+            color_p2 = cmap_p(norm_p(C2[e2, e1]))
+            alphas = np.linspace(0, 1, steps)
+            weight_1 = 0.2 +1.6*((C1[e1, e2]-threshold)/(np.nanmax(C1[:]-threshold)))
+            weight_2 = 0.2 +1.6*((C2[e2, e1]-threshold)/(np.nanmax(C2[:]-threshold)))
+            first_side_vec_inter(x1, x2, y1, y2, ctr1, ctr2, color_p1, weight_1, alphas, ax)
+            mirror_vec_inter(x1, x2, y1, y2, ctr1, ctr2, color_p2, weight_2, alphas, ax)
+
+        if steps <= 2:
+
+          if C1[e1, e2] >= threshold and C2[e2, e1] < threshold:
+            color_p = cmap_p(norm_p(C1[e1, e2]))
+            weight = 0.2 +1.6*((C1[e1, e2]-threshold)/(np.nanmax(C1[:]-threshold)))
+            a = [loc1[e1, 0], loc1[e1, 1]]
+            b = [loc2[e2, 0], loc2[e2, 1]]
+            dx = b[0] - a[0]
+            dy = b[1] - a[1]
+            vec_ab = math.sqrt(dx**2+dy**2)
+            ax.arrow(a[0], a[1], dx, dy, head_width=vec_ab/50, head_length=vec_ab/30, fc=color_p, ec=color_p, linewidth=weight/5, length_includes_head = True)
+
+          elif C1[e1, e2] < threshold and C2[e2, e1] >= threshold:
+            color_p = cmap_p(norm_p(C2[e2, e1]))
+            weight = 0.2 +1.6*((C2[e2, e1]-threshold)/(np.nanmax(C2[:]-threshold)))
+            a = [loc2[e2, 0], loc2[e2, 1]]
+            b = [loc1[e1, 0], loc1[e1, 1]]
+            dx = b[0] - a[0]
+            dy = b[1] - a[1]
+            vec_ab = math.sqrt(dx**2+dy**2)
+            ax.arrow(a[0], a[1], dx, dy, head_width=vec_ab/50, head_length=vec_ab/30, fc=color_p, ec=color_p, linewidth=weight/5, length_includes_head = True)
+
+    if threshold <= 0:
+
+      if steps > 2:
+
+        if C1[e1, e2] < threshold and C2[e2, e1] >= threshold:
+          color_n = cmap_n(norm_n(C1[e1, e2]))
+          alphas = np.linspace(0, 1, steps)
+          weight = 0.2 +1.6*((C1[e1, e2]-threshold)/(np.nanmax(C1[:]-threshold)))
+          first_side_vec_inter(x1, x2, y1, y2, ctr1, ctr2, color_p, weight, alphas, ax)
+
+        elif C1[e1, e2] >= threshold and C2[e2, e1] < threshold:
+          color_n = cmap_n(norm_n(C2[e2, e1]))
+          alphas = np.linspace(0, 1, steps)
+          weight = 0.2 +1.6*((-C2[e2, e1]-threshold)/(np.nanmax(C2[:]-threshold)))
+          other_side_vec_inter(x1, x2, y1, y2, ctr1, ctr2, color_n, weight, alphas, ax)
+
+        elif C1[e1, e2] > threshold and C2[e2, e1] > threshold:
+          color_n1 = cmap_n(norm_n(C1[e1, e2]))
+          color_n2 = cmap_n(norm_n(C2[e2, e1]))
+          alphas = np.linspace(0, 1, steps)
+          weight_1 = 0.2 +1.6*((C1[e1, e2]-threshold)/(np.nanmax(C1[:]-threshold)))
+          weight_2 = 0.2 +1.6*((C2[e2, e1]-threshold)/(np.nanmax(C2[:]-threshold)))
+          first_side_vec_inter(x1, x2, y1, y2, ctr1, ctr2, color_n1, weight_1, alphas, ax)
+          mirror_vec_inter(x1, x2, y1, y2, ctr1, ctr2, color_n2, weight_2, alphas, ax)    
+
+      if steps <= 2:
+        
+        if C1[e1, e2] < threshold and C2[e2, e1] >= threshold:
+          color_n = cmap_n(norm_n(C1[e1, e2]))
+          weight = 0.2 +1.6*((C1[e1, e2]-threshold)/(np.nanmax(C1[:]-threshold)))
+          a = [loc1[e1, 0], loc1[e1, 1]]
+          b = [loc2[e2, 0], loc2[e2, 1]]
+          dx = b[0] - a[0]
+          dy = b[1] - a[1]
+          vec_ab = math.sqrt(dx**2+dy**2)
+          ax.arrow(a[0], a[1], dx, dy, head_width=vec_ab/50, head_length=vec_ab/30, fc=color_n, ec=color_n, linewidth=weight/5, length_includes_head = True)
+
+        elif C1[e1, e2] >= threshold and C2[e2, e1] < threshold:
+          color_n2 = cmap_n(norm_n(C2[e2, e1]))
+          weight = 0.2 +1.6*((C2[e2, e1]-threshold)/(np.nanmax(C2[:]-threshold)))
+          a = [loc2[e2, 0], loc2[e2, 1]]
+          b = [loc1[e1, 0], loc1[e1, 1]]
+          dx = b[0] - a[0]
+          dy = b[1] - a[1]
+          vec_ab = math.sqrt(dx**2+dy**2)
+          ax.arrow(a[0], a[1], dx, dy, head_width=vec_ab/50, head_length=vec_ab/30, fc=color_n, ec=color_n, linewidth=weight/5, length_includes_head = True)
 def plot_sensors_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False):
     """
     Plots sensors in 3D with x representation for bad sensors.
@@ -739,7 +881,7 @@ def viz_2D_headmodel_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, t
     # defining head model and adding sensors
     fig, ax = plt.subplots(1, 1)
     ax.axis("off")
-    vertices, faces = get_3d_heads()
+    vertices, faces = get_3d_heads_inter()
     camera = Camera("ortho", theta=90, phi=180, scale=1)
     mesh = Mesh(ax, camera.transform @ glm.yrotate(90), vertices, faces,
                 facecolors='white',  edgecolors='black', linewidths=.25)
