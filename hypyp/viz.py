@@ -739,7 +739,7 @@ def viz_2D_headmodel_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, t
     # defining head model and adding sensors
     fig, ax = plt.subplots(1, 1)
     ax.axis("off")
-    vertices, faces = get_3d_heads()
+    vertices, faces = get_3d_heads_inter()
     camera = Camera("ortho", theta=90, phi=180, scale=1)
     mesh = Mesh(ax, camera.transform @ glm.yrotate(90), vertices, faces,
                 facecolors='white',  edgecolors='black', linewidths=.25)
