@@ -9,7 +9,7 @@ from scipy.fftpack import fft
 class pdc_test(unittest.TestCase):
 
     def test_function(self):
-        # three sources  c <- a <- b <- c
+        # three sources  a <- b <- c
         # check connectivity is zero where expected
         var_coeffs_init = np.array([[0, 0.9, 0], [0, 0, 0.9], [0, 0, 0]])
         m, mp = var_coeffs_init.shape
