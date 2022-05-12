@@ -403,9 +403,9 @@ def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.s
         (n_sensors, n_sensors), you can use np.reshape.
 
     Returns:
-        F_obs, clusters, cluster_pv, H0, F_obs_plot:
+        Stat_obs, clusters, cluster_pv, H0, Stat_obs_plot:
 
-        - F_obs: statistic (T or F values according to the assignement
+        - Stat_obs: statistic (T or F values according to the assignement
           of 'test') observed for all variables,
           array of shape (n_tests,).
 
@@ -417,7 +417,7 @@ def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.s
         - H0: max cluster level stats observed under permutation, array of
           shape (n_permutations,).
 
-        - F_obs_plot: statistical values above alpha threshold,
+        - Stat_obs_plot: statistical values above alpha threshold,
           to plot significant sensors (see plot_significant_sensors
           function in the toolbox) array of shape (n_tests,).
     """
@@ -450,7 +450,7 @@ def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.s
                                               pvalue=0.05)
 
     # computing the cluster permutation t test
-    Stat_obs, clusters, cluster_p_values, h0 = mne.stats.permutation_cluster_test(data,
+    Stat_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_test(data,
                                                                                   stat_fun=stat_fun,
                                                                                   threshold=alpha,
                                                                                   tail=tail,
