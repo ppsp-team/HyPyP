@@ -176,7 +176,7 @@ C = (values - np.mean(values[:])) / np.std(values[:])
 
 # slicing results to get the Intra-brain part of the matrix
 for i in [0, 1]:
-    theta, alpha_low, alpha_high, beta, gamma = result[:, i: i + n_ch, i: i + n_ch]
+    theta, alpha_low, alpha_high, beta, gamma = result[:, (i * n_ch):((i + 1) * n_ch), (i * n_ch): ((i + 1) * n_ch)]
     # choosing Alpha_Low for further analyses for example
     values_intra = alpha_low
     values_intra -= np.diag(np.diag(values_intra))
