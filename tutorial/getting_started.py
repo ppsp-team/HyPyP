@@ -169,7 +169,6 @@ theta, alpha_low, alpha_high, beta, gamma = result[:, 0:n_ch, n_ch: 2 * n_ch]
 
 # choosing Alpha_Low for further analyses for example
 values = alpha_low
-values -= np.diag(np.diag(values))
 
 # computing Cohens'D for further analyses for example
 C = (values - np.mean(values[:])) / np.std(values[:])
