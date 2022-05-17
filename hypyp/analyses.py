@@ -322,6 +322,7 @@ def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int, frequen
           - 'ccorr': circular correlation coefficient
           - 'coh': coherence
           - 'imaginary_coh': imaginary coherence
+          - 'pli': phase lag index
           - 'wpli': weighted phase lag index
     """
 
@@ -424,6 +425,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
           - 'ccorr': circular correlation coefficient
           - 'coh': coherence
           - 'imaginary_coh': imaginary coherence
+          - 'pli': phase lag index
           - 'wpli': weighted phase lag index
 
     """
@@ -479,6 +481,12 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
         formula = 'nilm,nimk->nilk'
         con = np.einsum(formula, angle, angle.transpose(transpose_axes)) / \
               np.sqrt(np.einsum('nil,nik->nilk', np.sum(angle ** 2, axis=3), np.sum(angle ** 2, axis=3)))
+        
+    elif mode.lower() == 'pli':
+        c = np.real(complex_signal)
+        s = np.imag(complex_signal)
+        dphi = _multiply_conjugate_time(c, s, transpose_axes=transpose_axes)
+        con = abs(np.mean(np.sign(np.imag(dphi)), axis=4))
         
     elif mode.lower() == 'wpli':
         c = np.real(complex_signal)
