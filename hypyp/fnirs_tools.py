@@ -1,4 +1,3 @@
-
 import numpy as np
 import mne
 import os
@@ -11,25 +10,31 @@ def load_fnirs(path1: str, path2: str, attr: dict = None, preload: bool = False,
   """
   Loads fNIRS data files
 
-  Arguments:
+  Arguments
+  ----------
+  path1: str
+     participant #1 fNIRS data path (directory)
 
-  path1: participant #1 fNIRS data path (directory)
+  part2: str
+    participant #2 fNIRS data path (directory)
 
-  part2: participant #2 fNIRS data path (directory)
-
-  attr: directory containing optional attributes using to load different fNIRS file;
-        default: None, MNE's default attributes
+  attr: dict, optional
+    dictionary containing optional attributes using to load different fNIRS file
+    (default is None, which returns MNE's default attributes)
     
-  preload: Preload data into memory for data manipulation and faster indexing. 
-           If True, the data will be preloaded into memory (fast, requires large amount of memory). 
-           If preload is a string, preload is the file name of a memory-mapped file which is used to
-           store the data on the hard drive (slower, requires less memory).
+  preload: bool, optional
+    Preload data into memory for data manipulation and faster indexing. 
+    If True, the data will be preloaded into memory (fast, requires large amount of memory). 
+    If preload is a string, preload is the file name of a memory-mapped file which is used to
+    store the data on the hard drive: slower, requires less memory. (default is False)
     
-  verbose: Control verbosity of the logging output. If None, use the default verbosity level
+  verbose: bool, optional
+    Control verbosity of the logging output. If None, use the default verbosity level
 
-  Returns:
-
-  raw: instance of RawSNIRF; a Raw object containing fNIRS data.
+  Returns
+  --------
+  raw:
+     instance of RawSNIRF; a Raw object containing fNIRS data.
 
   """
   if ".snirf" in path1:
@@ -69,34 +74,44 @@ def make_fnirs_montage(source_labels:list, detector_labels:list, prob_directory:
     """
     Builds a compatible montage with MNE functions
 
-    Arguments:
+    Arguments
+    ---------
+    source_labels: list
+      list of sources' label in string format 'S#'
 
-    source_labels: list of sources' label in string format 'S#'
+    detector_labels: list
+      list of detectors' label in string format 'D#'
 
-    detector_labels: list of detectors' label in string format 'D#'
+    prob_directory: str
+      directory of the probeInfo.mat file
+      file extension can also be: '.loc' or '.locs' or '.eloc' (for EEGLAB files),
+      '.sfp' (BESA/EGI files), '.csd', '.elc', '.txt', '.csd', '.elp' (BESA spherical),
+      '.bvef' (BrainVision files),
+      '.csv', '.tsv', '.xyz' (XYZ coordinates)
 
-    prob_directory: directory of the probeInfo.mat file
-                    file extension can also be: '.loc' or '.locs' or '.eloc' (for EEGLAB files),
-                    '.sfp' (BESA/EGI files), '.csd', '.elc', '.txt', '.csd', '.elp' (BESA spherical),
-                    '.bvef' (BrainVision files),
-                    '.csv', '.tsv', '.xyz' (XYZ coordinates)
+    Nz: list
+      list of 3D Coordination of the tip of the nose: [x, y, z] in mm; x, y, z are float numbers
 
-    Nz: list of 3D Coordination of the tip of the nose: [x, y, z] in mm; x, y, z are float numbers
+    RPA: list
+      list of 3D Coordination of the right preauricular: [x, y, z] in mm; x, y, z are float numbers
 
-    RPA: list of 3D Coordination of the right preauricular: [x, y, z] in mm; x, y, z are float numbers
+    LPA: list
+      list of 3D Coordination of the left preauricular: [x, y, z] in mm; x, y, z are float numbers
 
-    LPA: list of 3D Coordination of the left preauricular: [x, y, z] in mm; x, y, z are float numbers
+    head_size: float
+      Head size in mm
 
-    head_size: Head size in mm
+    creat_montage: bool, optional 
+      if the montage is already compatible, this argument should be set to False indicating
+      there is no need to build the montage from the scratch. (default is True)
 
-    creat_montage: if the montage is already compatible, this argument should be set to False indicating
-                   there is no need to build the montage from the scratch.
+    mne_standard: str
+      builds the corresponding mne montage (default is None)
 
-    mne_standard: builds the corresponding mne montage
-
-    Returns:
-
-    montage: instance of DigMontage, a compatible montage with mne standards
+    Returns
+    -------
+    montage: 
+      instance of DigMontage, a compatible montage with mne standards
 
     Note: In MNE-Python the naming of channels MUST follow the structure S#_D# type
           where # is replaced by the appropriate source and detector numbers and type is either hbo, hbr or the wavelength. 
@@ -142,31 +157,38 @@ def fnirs_epoch(fnirs_participant_1: mne.io.Raw, fnirs_participant_2: mne.io.Raw
     """
     Extracts epochs from the raw instances
 
-    Arguments:
+    Arguments
+    ----------
+    fnirs_participant_1: mne.io.Raw
+      Raw object containing fNIRS data of participant #1
 
-    fnirs_participant_1: Raw object containing fNIRS data of participant #1
+    fnirs_participant_2: mne.io.Raw
+      Raw object containing fNIRS data of participant #2
 
-    fnirs_participant_2: Raw object containing fNIRS data of participant #2
+    tmin, tmax: float, optional
+      Start and end time of the epochs in seconds, relative to the time-locked event.
+      The closest or matching samples corresponding to the start and end time are included.
+      (Defaults are -0.1 and 1, respectively)
 
-    tmin, tmax: Start and end time of the epochs in seconds, relative to the time-locked event.
-                The closest or matching samples corresponding to the start and end time are included.
-                Defaults to -0.1 and 1, respectively
+    baseline: tuple, optional
+      a tuple (a, b). The time interval to consider as “baseline” when applying baseline correction.
+      The interval is between a and b (in seconds), including the endpoints.
+      If a is None, the beginning of the data is used; and if b is None, it is set to the end of the interval.
+      If (None, None), the entire time interval is used. Default: (None, 0)
 
-    baseline: a tuple (a, b). The time interval to consider as “baseline” when applying baseline correction.
-              The interval is between a and b (in seconds), including the endpoints.
-              If a is None, the beginning of the data is used; and if b is None, it is set to the end of the interval.
-              If (None, None), the entire time interval is used. Default: (None, 0)
+    preload: bool, optional, optional
+      Load all epochs from disk when creating the object or wait before accessing each epoch
+      more memory efficient but can be slower (default is True)
 
-    preload: Load all epochs from disk when creating the object or wait before accessing each epoch
-             (more memory efficient but can be slower)
+    event_repeated: str, optional
+      How to handle duplicates in events[:, 0].
+      Can be 'error', to raise an error, 
+      'drop' to only retain the row occurring first in the events,
+      or 'merge' to combine the coinciding events (=duplicates) into a new event. (default is 'merge')
 
-    event_repeated: How to handle duplicates in events[:, 0].
-                    Can be 'error', to raise an error, 
-                    'drop' to only retain the row occurring first in the events,
-                    or 'merge' (default) to combine the coinciding events (=duplicates) into a new event
-
-    Returns:
-    a tuple containing mne.Epoch data type of participant #1 and mne.Epoch data type of participant #2 
+    Returns
+    --------
+      a tuple containing mne.Epoch data type of participant #1 and mne.Epoch data type of participant #2 
 
     """
     fnirs_raw_1 = fnirs_participant_1
@@ -191,12 +213,14 @@ def fnirs_montage_ui():
   """
   Get the inputs for building the montage in a more user freindly way
 
-  Arguments:
+  Arguments
+  ---------
+    None
 
-  None
-
-  Returns:
-  source_labels, detector_labels, Nz, RPA, LPA, head_size: see make_fnirs_montage corresponding inputs' description
+  Returns
+  --------
+    source_labels, detector_labels, Nz, RPA, LPA, head_size:
+    see make_fnirs_montage corresponding inputs' description
 
   """
   source_labels = input("please enter sources names with the S# format: ").split()
