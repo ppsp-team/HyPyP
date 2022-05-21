@@ -322,6 +322,8 @@ def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int, frequen
           - 'ccorr': circular correlation coefficient
           - 'coh': coherence
           - 'imaginary_coh': imaginary coherence
+          - 'pli': phase lag index
+          - 'wpli': weighted phase lag index
     """
 
     # Data consists of two lists of np.array (n_epochs, n_channels, epoch_size)
@@ -364,6 +366,30 @@ def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tupl
     return product
 
 
+# helper function
+def _multiply_conjugate_time(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
+    """
+    Helper function to compute the product of a complex array and its conjugate.
+    Unlike _multiply_conjugate, this doenst collapse the last dimension of a 
+    four-dimensional array. Useful when computing some connectivity metrics 
+    (e.g., wpli), since it preserves the product values across e.g., time.
+    
+    Arguments:
+        real: the real part of the array.
+        imag: the imaginary part of the array.
+        transpose_axes: axes to transpose for matrix multiplication.
+    Returns:
+        product: the product of the array and its complex conjugate.
+    """
+    formula = 'jilm,jimk->jilkm'
+    product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
+              np.einsum(formula, imag, imag.transpose(transpose_axes)) - 1j * \
+              (np.einsum(formula, real, imag.transpose(transpose_axes)) - \
+               np.einsum(formula, imag, real.transpose(transpose_axes)))
+    
+    return product
+
+
 def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = True) -> np.ndarray:
     """
     Computes frequency- or time-frequency-domain connectivity measures from analytic signals.
@@ -399,6 +425,8 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
           - 'ccorr': circular correlation coefficient
           - 'coh': coherence
           - 'imaginary_coh': imaginary coherence
+          - 'pli': phase lag index
+          - 'wpli': weighted phase lag index
 
     """
 
@@ -453,6 +481,21 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
         formula = 'nilm,nimk->nilk'
         con = np.einsum(formula, angle, angle.transpose(transpose_axes)) / \
               np.sqrt(np.einsum('nil,nik->nilk', np.sum(angle ** 2, axis=3), np.sum(angle ** 2, axis=3)))
+        
+    elif mode.lower() == 'pli':
+        c = np.real(complex_signal)
+        s = np.imag(complex_signal)
+        dphi = _multiply_conjugate_time(c, s, transpose_axes=transpose_axes)
+        con = abs(np.mean(np.sign(np.imag(dphi)), axis=4))
+        
+    elif mode.lower() == 'wpli':
+        c = np.real(complex_signal)
+        s = np.imag(complex_signal)
+        dphi = _multiply_conjugate_time(c, s, transpose_axes=transpose_axes)
+        con_num = abs(np.mean(abs(np.imag(dphi)) * np.sign(np.imag(dphi)), axis=4))
+        con_den = np.mean(abs(np.imag(dphi)), axis=4)      
+        con_den[con_den == 0] = 1 
+        con = con_num / con_den        
 
     else:
         ValueError('Metric type not supported.')
