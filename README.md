@@ -13,7 +13,8 @@ The **Hy**perscanning **Py**thon **P**ipeline
 🤓 For the motivated contributors, you can even help directly in the developpment of HyPyP. You will need to install [Poetry](https://python-poetry.org/) (see section below).
 
 ## Contributors
-Florence BRUN, Anaël AYROLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS
+Original authors: Florence BRUN, Anaël AYROLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS
+New collaborators: Ghazaleh RANJBARAN, Quentin MOREAU, Katie DOUGLAS, Franck PORTEOUS, Jonas MAGO, Juan C. AVENDANO
 
 ## Installation
 
