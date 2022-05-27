@@ -1,8 +1,15 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# # Import fNIRS data into HyPyP
+#
+# Authors         : Ghazaleh Ranjbaran, Caitriona Douglas, Guillaume Dumas
+#
+# Date            : 2022-05-21
 
 import numpy as np
 import mne
 import os
-from mat4py import loadmat
 
 from hypyp.fnirs_tools import load_fnirs
 from hypyp.fnirs_tools import make_fnirs_montage
@@ -16,12 +23,12 @@ path_2 = "../data/FNIRS/DCARE_02_sub2.snirf"
 fnirs_participant_1 = load_fnirs(path_1, path_2, attr=None, preload=False, verbose=None)[0]
 fnirs_participant_2 = load_fnirs(path_1, path_2, attr=None, preload=False, verbose=None)[1]
 
-source_labels, detector_labels, Nz, RPA, LPA, head_size = fnirs_montage_ui()
+# source_labels, detector_labels, Nz, RPA, LPA, head_size = fnirs_montage_ui()
 
-prob_mat_file = '../data/FNIRS/MCARE_01_probeInfo.mat'
+# prob_mat_file = '../data/FNIRS/MCARE_01_probeInfo.mat'
 
-location = make_fnirs_montage(source_labels, detector_labels, prob_mat_file,
-                              Nz, RPA, LPA, head_size)
+# location = make_fnirs_montage(source_labels, detector_labels, prob_mat_file,
+#                               Nz, RPA, LPA, head_size)
 
 #Sources ' labels: S#
 source_labels = ['S1','S2','S3','S4','S5','S6','S7','S8']

@@ -1,7 +1,7 @@
 import numpy as np
 import mne
 import os
-from mat4py import loadmat
+from scipy.io import loadmat
 
 
 #Loading fnirs data 
@@ -123,13 +123,13 @@ def make_fnirs_montage(source_labels:list, detector_labels:list, prob_directory:
         f.write("# ASA optode file\n")
         f.write("ReferenceLabel	avg\n")
         f.write("UnitPosition	mm\n")
-        f.write("NumberPositions= " + str(prob_mat['probeInfo']['probes']['nChannel0']+3)+'\n')
+        f.write("NumberPositions= " + str(prob_mat['probeInfo']['probes'].item()['nChannel0'].item()+3)+'\n')
         f.write("Positions\n")
         f.write(str(Nz[0]) + ' ' + str(Nz[1]) + ' ' +str(Nz[2])+ '\n')
         f.write(str(RPA[0]) + ' ' + str(RPA[1]) + ' ' + str(RPA[2]) + '\n')
         f.write(str(LPA[0]) + ' ' + str(LPA[1]) + ' ' + str(LPA[2]) + '\n')
-        sensor_coord = prob_mat['probeInfo']['probes']['coords_s3']
-        detector_coord = prob_mat['probeInfo']['probes']['coords_d3']
+        sensor_coord = prob_mat['probeInfo']['probes'].item()['coords_s3'].item()
+        detector_coord = prob_mat['probeInfo']['probes'].item()['coords_d3'].item()
         for j in range(len(sensor_coord)):
             f.write(str(sensor_coord[j][0]) + ' ' + str(sensor_coord[j][1]) + ' ' +str(sensor_coord[j][2])+ '\n')
         for i in range(len(sensor_coord)):
@@ -141,6 +141,7 @@ def make_fnirs_montage(source_labels:list, detector_labels:list, prob_directory:
             f.write(str(source_labels[z]) +'\n')
         f.close()
         loc = mne.channels.read_custom_montage('fnirs_montage.elc', head_size=head_size)
+        os.remove('fnirs_montage.elc')
     else:
         if mne_standard is not None:
             loc = mne.channels.make_standard_montage(mne_standard)
