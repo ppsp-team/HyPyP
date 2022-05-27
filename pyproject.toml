@@ -57,6 +57,7 @@ markdown-include = "^0.5.1"
 jupyterlab = "^2.1.4"
 widgetsnbextension = "^3.5.1"
 ipywidgets = "^7.5.1"
+livereload = "^2.6.3"
 
 [tool.dephell.main]
 from = {format = "poetry", path = "pyproject.toml"}
