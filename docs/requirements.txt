@@ -47,6 +47,7 @@ jupyterlab-widgets==1.1.0; python_version >= "3.6"
 jupyterlab==2.3.2; python_version >= "3.5"
 kiwisolver==1.4.2; python_version >= "3.7" and python_version < "4.0"
 lazy-object-proxy==1.7.1; python_version >= "3.6" and python_full_version >= "3.6.2"
+livereload==2.6.3
 markdown-include==0.5.1
 markdown==3.3.7; python_version >= "3.6" and python_version < "4.0" and (python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" or python_version >= "3.6" and python_version < "4.0" and python_full_version >= "3.5.0")
 markupsafe==2.1.1; python_version >= "3.7"

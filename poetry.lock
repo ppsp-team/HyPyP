@@ -654,7 +654,7 @@ python-versions = ">=3.6"
 name = "livereload"
 version = "2.6.3"
 description = "Python LiveReload is an awesome tool for web developers"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -1525,7 +1525,7 @@ python-versions = ">=3.7"
 name = "tornado"
 version = "6.1"
 description = "Tornado is a Python web framework and asynchronous networking library, originally developed at FriendFeed."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">= 3.5"
 
@@ -1647,7 +1647,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "21345411d6a0299e26ca5d1358497a4a6c218bbe24969e3b5cee2c08dfd35c0b"
+content-hash = "5485925dc3cf9b3b56cad43746c16c4f11ebaddb93307365af561747ecab6b87"
 
 [metadata.files]
 appdirs = [
