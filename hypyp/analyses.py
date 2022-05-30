@@ -507,42 +507,45 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
     return con
 
 
-def compute_conn_mvar(complex_signal, mvar_params, ica_params, measure_params, check_stability=True):
+def compute_conn_mvar(complex_signal: np.ndarray, mvar_params: dict, ica_params: dict, measure_params: dict, check_stability: bool = True) -> np.ndarray:
     """
     Computes connectivity measures based on MVAR coefficients.
 
     Arguments:
-        - complex_signal:
-            shape = (2, n_epochs, n_channels, n_freq_bins, n_times).
-            Analytic signals for computing connectivity between two participants.
+      complex_signal:
+        shape = (2, n_epochs, n_channels, n_freq_bins, n_times).
+        Analytic signals for computing connectivity between two participants.
 
-        - mvar_params:
-            python dictionary for defining the MVAR model parameters.
-            it should contain three variables:
-                { "mvar_order": ,
-                  "fitting_method: ,
-                  "delta: ,
-                }
-        - ica_params:
-            python dictionary for choosing the ica method.
-            it should contain two variables:
-                { "method": ,
-                  "random_state":
-                }
-        - measure_params:
-            python dictionary for defining connectivity measure attributes.
-            it should contain two variables:
-                { "name": ,
-                  "n_fft":
-                }
-        - check_stability:
-            bool, whether to check stability of mvar model or not.
-            note that mvar models need adequate sample number to be stable.
-            default: True
+      mvar_params:
+        python dictionary for defining the MVAR model parameters.
+        it should contain three variables:
+        { "mvar_order": ,
+        "fitting_method: ,
+        "delta: ,
+        }
+
+      ica_params:
+        python dictionary for choosing the ica method.
+        it should contain two variables:
+        { "method": ,
+        "random_state":
+        }
+
+        measure_params:
+          python dictionary for defining connectivity measure attributes.
+          it should contain two variables:
+          { "name": ,
+          "n_fft":
+          }
+
+        check_stability:
+          bool, whether to check stability of mvar model or not.
+          note that mvar models need adequate sample number to be stable.
+          (default: True)
 
     Returns:
-        connectivity measure matrix.
-        ndarray with shape = (epochs, frequency, channels, channels, n_fft)
+      connectivity measure matrix.
+      ndarray with shape = (epochs, frequency, channels, channels, n_fft)
                           or (1, frequency,channels, channels, n_fft) if epochs are merged
     """
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
