@@ -87,7 +87,7 @@ ptyprocess==0.7.0; os_name != "nt" and python_version >= "3.7" and sys_platform 
 py==1.11.0; python_version >= "3.7" and python_full_version < "3.0.0" and implementation_name == "pypy" or python_full_version >= "3.5.0" and python_version >= "3.7" and implementation_name == "pypy"
 pycparser==2.21; python_version >= "3.7" and python_full_version < "3.0.0" and implementation_name == "pypy" or implementation_name == "pypy" and python_version >= "3.7" and python_full_version >= "3.4.0"
 pyerfa==2.0.0.1; python_version >= "3.7"
-pygments==2.12.0; python_version >= "3.6"
+pygments==2.11.0; python_version >= "3.5"
 pylint==2.13.9; python_full_version >= "3.6.2"
 pymdown-extensions==7.1; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4.0" or python_version >= "3.6" and python_version < "4.0" and python_full_version >= "3.5.0"
 pyparsing==3.0.9; python_version >= "3.7" and python_version < "4.0" and python_full_version >= "3.6.8"
