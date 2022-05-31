@@ -301,3 +301,13 @@ def test_utils(epochs):
     for i in range(0, len(ep_hyper_data[ne][ch_index1])):
         assert ep_hyper_data[ne][ch_index1][i] == epo1_data[ne][nch][i]
         assert ep_hyper_data[ne][ch_index2][i] == epo2_data[ne][nch][i]
+
+
+def test_compute_nmPLV(epochs):
+    result = analyses.compute_nmPLV(data=epochs, sampling_rate=500, freq_range1=[4, 8], freq_range2=[10, 14])
+    hPLV = result[:, :31, 31:].mean()
+    PLV1 = result[:, :31, :31].mean()
+    PLV2 = result[:, 31:, 31:].mean()
+    assert hPLV < PLV1
+    assert hPLV < PLV2
+    assert (PLV1 - PLV2) < 1e-2

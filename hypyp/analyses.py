@@ -702,3 +702,55 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict, *
     complex_signal = np.moveaxis(np.array(complex_signal), [0], [3])
 
     return complex_signal
+
+
+def compute_nmPLV(data: np.ndarray, sampling_rate: int, freq_range1: list, freq_range2: list, **filter_options) -> np.ndarray:
+    """
+    Computes the n:m PLV for a dyad with two different frequency ranges.
+
+    Arguments:
+        data : np.ndarray
+            shape is (2, n_epochs, n_channels, n_times)
+            real-valued data to compute analytic signal from.
+        sampling_rate: int
+            sampling rate.
+        freq_range1 : list
+            a list of two specifying the frequency range for participant 1
+            e.g. [5,30] refers to every integer in the frequency bin from 5 Hz to 30 Hz.
+        freq_range2 : list
+            a list of two specifying the frequency range for participant 1
+            e.g. [5,30] refers to every integer in the frequency bin from 5 Hz to 30 Hz.
+        **filter_options:
+            additional arguments for mne.filter.filter_data, such as filter_length, l_trans_bandwidth, h_trans_bandwidth
+    Returns:
+        con:
+            Connectivity matrix. The shape is either (n_freq, 2*n_channels, 2*n_channels)
+
+            To extract inter-brain connectivity values, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
+    """
+    r = np.mean(freq_range2)/np.mean(freq_range1)
+    freq_range = [np.min(freq_range1), np.max(freq_range2)]
+    complex_signal = compute_single_freq(data, sampling_rate, freq_range, **filter_options)
+
+    n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
+                                    complex_signal.shape[3], complex_signal.shape[4]
+
+    # calculate all epochs at once, the only downside is that the disk may not have enough space
+    complex_signal = complex_signal.transpose((1, 3, 0, 2, 4)).reshape(n_epoch, n_freq, 2 * n_ch, n_samp)
+    transpose_axes = (0, 1, 3, 2)
+    phase = complex_signal / np.abs(complex_signal)
+
+    freqsn = freq_range
+    freqsm = [f * r for f in freqsn]
+    n_mult = (freqsn[0] + freqsm[0]) / (2 * freqsn[0])
+    m_mult = (freqsm[0] + freqsn[0]) / (2 * freqsm[0])
+
+    phase[:, :, :, :n_ch] = n_mult * phase[:, :, :, :n_ch]
+    phase[:, :, :, n_ch:] = m_mult * phase[:, :, :, n_ch:]
+
+    c = np.real(phase)
+    s = np.imag(phase)
+    dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
+    con = abs(dphi) / n_samp
+    con = np.nanmean(con, axis=1)
+    return con
