@@ -37,14 +37,18 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
 
     Arguments:
 
-        epochs: A participant's Epochs object, for a condition (can result from the
+        epochs : mne.Epochs
+            A participant's Epochs object, for a condition (can result from the
             concatenation of Epochs from different files with the same condition).
             Epochs are MNE objects: data are stored in arrays of shape
             (n_epochs, n_channels, n_times) and parameter information is stored
             in a dictionary.
 
-        fmin, fmax: minimum and maximum frequencies in Hz of interest for PSD calculation,
-            floats.
+        fmin : float
+            Minimum frequency in Hz of interest for PSD calculation.
+
+        fmax : float
+            Maximum frequency in Hz of interest for PSD calculation.
 
         n_fft: The length of FFT used, must be ``>= n_per_seg`` (default: 256).
             The segments will be zero-padded if ``n_fft > n_per_seg``.
@@ -55,7 +59,8 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
             Length of each Welch segment (windowed with a Hamming window). Defaults
             to None, which sets n_per_seg equal to n_fft.
 
-        epochs_average: option to collapse the time course or not, boolean.
+        epochs_average : bool
+            Option to collapse the time course or not, boolean.
             If False, PSD won't be averaged over epochs (the time
             course is maintained).
             If True, PSD values are averaged over epochs.
