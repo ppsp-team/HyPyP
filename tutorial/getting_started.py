@@ -36,6 +36,8 @@ freq_bands = {
     "Beta": [13.5, 29.5],
     "Gamma": [30, 48],
 }
+#Full frequency band for PDC connectivity measure 
+full_freq = { 'full_frq': [1, 48]}
 freq_bands = OrderedDict(freq_bands)  # Force to keep order
 
 # Specify sampling frequency
@@ -149,15 +151,13 @@ data_inter = np.array([preproc_S1, preproc_S2])
 result_intra = []
 
 no_ICA_data_inter = np.array([no_ICA_preproc_S1, no_ICA_preproc_S2])
-no_ICA_result_intra = []
-no_ICA_result_inter = []
 
 # computing analytic signal per frequency band
 
 complex_signal = analyses.compute_freq_bands(data_inter, sampling_rate, freq_bands)
 
 no_ICA_complex_signal = analyses.compute_freq_bands(no_ICA_data_inter, sampling_rate,
-                                                    freq_bands)
+                                             full_freq)
 
 # computing frequency- and time-frequency-domain connectivity,
 # 'ccorr' for example
@@ -187,8 +187,8 @@ for i in [0, 1]:
 # Computing frequency- and time-frequency-domain connectivity measures
 # obtained by MVARICA approach, based on MVAR models' coefficients.
 # For instance: PDC measure, with MVAR model of order 2, extended infomax ICA method with checking the stability.
-mvar_result = analyses.compute_conn_mvar(no_ICA_complex_signal,
-                                         mvar_params={"mvar_order": 2, "fitting_method": "default", "delta": 0},
+PDC = analyses.compute_conn_mvar(no_ICA_complex_signal, 
+                                         mvar_params={"mvar_order": 2, "fitting_method":"default", "delta": 0},
                                          ica_params={"method": "infomax_extended", "random_state": None},
                                          measure_params={"name": "pdc", "n_fft": 512}
                                          )
@@ -197,21 +197,22 @@ mvar_result = analyses.compute_conn_mvar(no_ICA_complex_signal,
 # assigning the maximum value in the frequency spectrum
 # mvar-based connectivity measures are calculated over a frequency range assigned by n_fft variable.
 # here n_fft = 512
+no_ICA_result_inter = []
 for i in [0, 1]:
-    mvar_result = mvar_result.squeeze()
-    if i == 0:
-        mvar_theta, mvar_alpha_low, mvar_alpha_high, mvar_beta, mvar_gamma = mvar_result[:, n_ch:n_ch * 2, 0:n_ch, :]
+    PDC_q = PDC.squeeze()
+    if i == 0 :
+      mvar_spectrum =  PDC_q[n_ch:n_ch*2, 0:n_ch, :]
     else:
-        mvar_theta, mvar_alpha_low, mvar_alpha_high, mvar_beta, mvar_gamma = mvar_result[:, 0:n_ch, n_ch:n_ch * 2, :]
-    # choosing Alpha_Low for further analyses for example
-    auxiliary = np.zeros((n_ch, n_ch), dtype=mvar_result.dtype)
+      mvar_spectrum =  PDC_q[0:n_ch, n_ch:n_ch*2, :]   
+    PDC_fmax = np.zeros((n_ch, n_ch), dtype=PDC.dtype)
     for j in range(0, n_ch):
-        for k in range(0, n_ch):
-            auxiliary[j, k] = np.amax(mvar_alpha_low[j, k])
-    mvar_values_inter = auxiliary
+      for k in range(0, n_ch):
+        PDC_fmax[j, k] = np.amax(mvar_spectrum[j,k,:])
+    mvar_values_inter = PDC_fmax
+    mvar_values_inter -= np.diag(np.diag(mvar_values_inter))
     # computing Cohens'D for further analyses for example
     mvar_C_inter = (mvar_values_inter -
-                    np.mean(mvar_values_inter[:])) / np.std(mvar_values_inter[:])
+               np.mean(mvar_values_inter[:])) / np.std(mvar_values_inter[:])
     # can also sample CSD values directly for statistical analyses
     no_ICA_result_inter.append(mvar_C_inter)
 
@@ -219,21 +220,20 @@ for i in [0, 1]:
 # assigning the maximum value in the frequency spectrum
 # mvar-based connectivity measures are calculated over a frequency range assigned by n_fft variable
 # here n_fft = 512
+no_ICA_result_intra = []
 for i in [0, 1]:
-    mvar_result = mvar_result.squeeze()
-    mvar_theta, mvar_alpha_low, mvar_alpha_high, mvar_beta, mvar_gamma = mvar_result[:, i * n_ch:n_ch * (i + 1),
-                                                                         i * n_ch:n_ch * (i + 1), :]
-    # choosing Alpha_Low for further analyses for example
-    auxiliary = np.zeros((n_ch, n_ch), dtype=mvar_result.dtype)
+    PDC = PDC.squeeze()
+    mvar_spectrum =  PDC[i*n_ch:n_ch*(i+1), i*n_ch:n_ch*(i+1), :]
+    # choosing the max values for futher analyses for example
+    PDC_fmax = np.zeros((n_ch, n_ch), dtype=PDC.dtype)
     for j in range(0, n_ch):
-        for k in range(0, n_ch):
-            auxiliary[j, k] = np.amax(mvar_alpha_low[j, k])
-    mvar_alpha_low = auxiliary
-    mvar_values_intra = mvar_alpha_low
+      for k in range(0, n_ch):
+        PDC_fmax[j, k] = np.amax(mvar_spectrum[j, k, :])
+    mvar_values_intra = PDC_fmax
     mvar_values_intra -= np.diag(np.diag(mvar_values_intra))
     # computing Cohens'D for further analyses for example
     mvar_C_intra = (mvar_values_intra -
-                    np.mean(mvar_values_intra[:])) / np.std(mvar_values_intra[:])
+               np.mean(mvar_values_intra[:])) / np.std(mvar_values_intra[:])
     # can also sample CSD values directly for statistical analyses
     no_ICA_result_intra.append(mvar_C_intra)
 
