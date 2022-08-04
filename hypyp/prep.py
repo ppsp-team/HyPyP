@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import mne
 from autoreject import get_rejection_threshold, AutoReject
 from mne.preprocessing import ICA, corrmap
+from mne_icalabel import label_components
 
 
 def filt(raw_S: list) -> list:
@@ -127,8 +128,71 @@ def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> li
     return cleaned_epochs_ICA
 
 
-def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, random_state: int) -> list:
+# def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, random_state: int) -> list:
+#     """
+#     Computes global Autorejection to fit Independent Components Analysis
+#     on Epochs, for each participant.
+
+#     Pre requisite : install autoreject
+#     https://api.github.com/repos/autoreject/autoreject/zipball/master
+
+#     Arguments:
+#         epochs: list of 2 Epochs objects (for each participant).
+#           Epochs_S1 and Epochs_S2 correspond to a condition and can result
+#           from the concatenation of Epochs from different experimental
+#           realisations of the condition (Epochs are MNE objects).
+#         n_components: the number of principal components that are passed to the
+#           ICA algorithm during fitting, int. For a first estimation,
+#           n_components can be set to 15.
+#         method: the ICA method used, str 'fastica', 'infomax' or 'picard'.
+#           'Fastica' is the most frequently used. Use the fit_params argument to set
+#            additional parameters. Specifically, if you want Extended Infomax, set
+#            method=’infomax’ and fit_params=dict(extended=True) (this also works
+#            for method=’picard’). 
+#         fit_params: Additional parameters passed to the ICA estimator
+#            as specified by method. None by default.
+#         random_state: the parameter used to compute random distributions
+#           for ICA calulation, int or None. It can be useful to fix
+#           random_state value to have reproducible results. For 15
+#           components, random_state can be set to 97, for 20 components to 0
+#           for example.
+
+#     Note:
+#         If Autoreject and ICA take too much time, change the decim value
+#         (see MNE documentation).
+#         Please filter the Epochs between 2 and 30 Hz before ICA fit
+#         (mne.Epochs.filter(epoch, 2, 30, method='fir')).
+
+#     Returns:
+#         icas: list of Independant Components for each participant (IC are MNE
+#           objects, see MNE documentation for more details).
+#     """
+#     icas = []
+#     for epoch in epochs:
+#         # per subj
+#         # applying AR to find global rejection threshold
+#         reject = get_rejection_threshold(epoch, ch_types='eeg')
+#         # if very long, can change decim value
+#         print('The rejection dictionary is %s' % reject)
+
+#         # fitting ICA on filt_raw after AR
+#         ica = ICA(n_components=n_components,
+#                   method=method,
+#                   fit_params= fit_params,
+#                   random_state=random_state).fit(epoch)
+#         # take bad channels into account in ICA fit
+#         epoch_all_ch = mne.Epochs.copy(epoch)
+#         epoch_all_ch.info['bads'] = []
+#         icas.append(ica.fit(epoch_all_ch, reject=reject, tstep=1))
+
+#     return icas
+
+
+
+def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, random_state: int, brain_components="automatic") -> list:
     """
+    NOTE : This function has been modified,it can automatically detect non-brain components.
+
     Computes global Autorejection to fit Independent Components Analysis
     on Epochs, for each participant.
 
@@ -155,6 +219,10 @@ def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, rand
           random_state value to have reproducible results. For 15
           components, random_state can be set to 97, for 20 components to 0
           for example.
+        brain_components: 
+            'automatic' (default) : finding non-brain components automatically and remove them
+            'manual': user can choose which component(s) that need to be removed.
+
 
     Note:
         If Autoreject and ICA take too much time, change the decim value
@@ -167,7 +235,7 @@ def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, rand
           objects, see MNE documentation for more details).
     """
     icas = []
-    for epoch in epochs:
+    for idx, epoch in enumerate(epochs):
         # per subj
         # applying AR to find global rejection threshold
         reject = get_rejection_threshold(epoch, ch_types='eeg')
@@ -182,7 +250,44 @@ def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, rand
         # take bad channels into account in ICA fit
         epoch_all_ch = mne.Epochs.copy(epoch)
         epoch_all_ch.info['bads'] = []
-        icas.append(ica.fit(epoch_all_ch, reject=reject, tstep=1))
+
+        if (brain_components ==  "manual"):
+
+            # Let the user choose which components want to be rejected / retained later in ICA_choice_comp
+            icas.append(ica.fit(epoch_all_ch, reject=reject, tstep=1))
+
+        elif (brain_components == "automatic"):
+
+            # Will detect non-brain components and remove them. 
+            # In the end it will plot before and after removing non-brain components
+
+            ica.fit(epoch_all_ch, reject=reject, tstep=1)
+            
+            # 1. Insert automatic labeling for detecting non-brain components
+            ica_with_labels_fitted = label_components(epoch, ica, method="iclabel")
+            ica_with_labels_component_detected = ica_with_labels_fitted["labels"]
+            print(f"Subject-{idx+1} :")
+            print(ica_with_labels_component_detected)
+            print("")
+
+            # 2. Remove non-brain components (take only brain components for each subject)
+            excluded_idx_components = [idx for idx, label in enumerate(ica_with_labels_component_detected) if label not in ["brain"]]
+            print(f"Excluded ICA components's indices from Subject-{idx+1}: {excluded_idx_components}")
+
+            # 3. Visualizing before and after the non-brain components are removed
+            ica.apply(epoch_all_ch, exclude=excluded_idx_components)
+            
+            # Plot before removing non-brain components
+            print()
+            print(f"BEFORE removing non-brain component(s) of Subject-{idx+1}")
+            epoch.plot(show_scrollbars=False);
+
+            # Plot after removing non-brain components
+            print(f"AFTER removing non-brain component(s) of Subject-{idx+1}")
+            epoch_all_ch.plot(show_scrollbars=False);
+
+            # Save into a list for modified ica with non-brain components that have been removed
+            icas.append(ica_with_labels_fitted)
 
     return icas
 
