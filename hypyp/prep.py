@@ -128,7 +128,7 @@ def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> li
     return cleaned_epochs_ICA
 
 
-def ICA_autocorrect(icas: list, epochs: list) -> list:
+def ICA_autocorrect(icas: list, epochs: list, verbose: bool = False) -> list:
     """
     Automatically detect the ICA components that are not brain related and remove them.
 
@@ -142,6 +142,8 @@ def ICA_autocorrect(icas: list, epochs: list) -> list:
           Epochs are MNE objects: data are stored in an array of shape
           (n_epochs, n_channels, n_times) and parameters information is
           stored in a disctionnary.
+        verbose: option to plot data before and after ICA correction, 
+          boolean, set to False by default. 
 
     Returns:
         cleaned_epochs_ICA: list of 2 cleaned Epochs for each participant
@@ -159,6 +161,10 @@ def ICA_autocorrect(icas: list, epochs: list) -> list:
         ica.apply(cleaned_epoch_ICA, exclude=excluded_idx_components)
         cleaned_epoch_ICA.info['bads'] = copy.deepcopy(epoch.info['bads'])
         cleaned_epochs_ICA.append(cleaned_epoch_ICA)
+
+        if verbose:
+            epoch.plot(title='Before ICA correction', show=True)
+            cleaned_epoch_ICA.plot(title='After ICA correction',show=True)
     return cleaned_epochs_ICA
 
 

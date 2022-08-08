@@ -81,7 +81,7 @@ test_all = ["pytest (>=7.0)", "pytest-doctestplus (>=0.12)", "pytest-astropy-hea
 
 [[package]]
 name = "asttokens"
-version = "2.0.5"
+version = "2.0.7"
 description = "Annotate AST trees with source code positions"
 category = "dev"
 optional = false
@@ -91,7 +91,7 @@ python-versions = "*"
 six = "*"
 
 [package.extras]
-test = ["astroid", "pytest"]
+test = ["astroid (<=2.5.3)", "pytest"]
 
 [[package]]
 name = "atomicwrites"
@@ -1412,7 +1412,7 @@ python-versions = "*"
 
 [[package]]
 name = "pywinpty"
-version = "2.0.6"
+version = "2.0.7"
 description = "Pseudo terminal support for Windows from Python."
 category = "dev"
 optional = false
@@ -1661,7 +1661,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "tomlkit"
-version = "0.11.1"
+version = "0.11.2"
 description = "Style preserving TOML library"
 category = "dev"
 optional = false
@@ -1669,7 +1669,7 @@ python-versions = ">=3.6,<4.0"
 
 [[package]]
 name = "torch"
-version = "1.12.0"
+version = "1.12.1"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
 category = "main"
 optional = false
