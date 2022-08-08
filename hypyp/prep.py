@@ -128,65 +128,54 @@ def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> li
     return cleaned_epochs_ICA
 
 
-# def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, random_state: int) -> list:
-#     """
-#     Computes global Autorejection to fit Independent Components Analysis
-#     on Epochs, for each participant.
+def ICA_autocorrect(icas: list, epochs: list, visualization: bool =True) -> list:
+    """
+    Automatically detect the ICA components that are not brain related and remove them.
 
-#     Pre requisite : install autoreject
-#     https://api.github.com/repos/autoreject/autoreject/zipball/master
+    Arguments:
+        icas: list of Independent Components for each participant (IC are MNE
+          objects).
+        epochs: list of 2 Epochs objects (for each participant). Epochs_S1
+          and Epochs_S2 correspond to a condition and can result from the
+          concatenation of Epochs from different experimental realisations
+          of the condition.
+          Epochs are MNE objects: data are stored in an array of shape
+          (n_epochs, n_channels, n_times) and parameters information is
+          stored in a disctionnary.
+        visualization: Visualize EEG data before and after removing non-brain related components
 
-#     Arguments:
-#         epochs: list of 2 Epochs objects (for each participant).
-#           Epochs_S1 and Epochs_S2 correspond to a condition and can result
-#           from the concatenation of Epochs from different experimental
-#           realisations of the condition (Epochs are MNE objects).
-#         n_components: the number of principal components that are passed to the
-#           ICA algorithm during fitting, int. For a first estimation,
-#           n_components can be set to 15.
-#         method: the ICA method used, str 'fastica', 'infomax' or 'picard'.
-#           'Fastica' is the most frequently used. Use the fit_params argument to set
-#            additional parameters. Specifically, if you want Extended Infomax, set
-#            method=’infomax’ and fit_params=dict(extended=True) (this also works
-#            for method=’picard’). 
-#         fit_params: Additional parameters passed to the ICA estimator
-#            as specified by method. None by default.
-#         random_state: the parameter used to compute random distributions
-#           for ICA calulation, int or None. It can be useful to fix
-#           random_state value to have reproducible results. For 15
-#           components, random_state can be set to 97, for 20 components to 0
-#           for example.
+    Returns:
+        cleaned_epochs_ICA: list of 2 cleaned Epochs for each participant
+          (the non-brain related IC have been removed from the signal).
+    """
 
-#     Note:
-#         If Autoreject and ICA take too much time, change the decim value
-#         (see MNE documentation).
-#         Please filter the Epochs between 2 and 30 Hz before ICA fit
-#         (mne.Epochs.filter(epoch, 2, 30, method='fir')).
+    cleaned_epochs_ICA = []
+    for index, (ica, epoch) in enumerate(zip(icas, epochs)):
+        ica_with_labels_fitted = label_components(epoch, ica, method="iclabel")
+        ica_with_labels_component_detected = ica_with_labels_fitted["labels"]
+        # Remove non-brain components (take only brain components for each subject)
+        excluded_idx_components = [idx for idx, label in enumerate(ica_with_labels_component_detected) if label not in ["brain"]]
+        cleaned_epoch_ICA = mne.Epochs.copy(epoch)
+        cleaned_epoch_ICA.info['bads'] = []
+        ica.apply(cleaned_epoch_ICA, exclude=excluded_idx_components)
+        cleaned_epoch_ICA.info['bads'] = copy.deepcopy(epoch.info['bads'])
+        cleaned_epochs_ICA.append(cleaned_epoch_ICA)
 
-#     Returns:
-#         icas: list of Independant Components for each participant (IC are MNE
-#           objects, see MNE documentation for more details).
-#     """
-#     icas = []
-#     for epoch in epochs:
-#         # per subj
-#         # applying AR to find global rejection threshold
-#         reject = get_rejection_threshold(epoch, ch_types='eeg')
-#         # if very long, can change decim value
-#         print('The rejection dictionary is %s' % reject)
+        if (visualization == True):
 
-#         # fitting ICA on filt_raw after AR
-#         ica = ICA(n_components=n_components,
-#                   method=method,
-#                   fit_params= fit_params,
-#                   random_state=random_state).fit(epoch)
-#         # take bad channels into account in ICA fit
-#         epoch_all_ch = mne.Epochs.copy(epoch)
-#         epoch_all_ch.info['bads'] = []
-#         icas.append(ica.fit(epoch_all_ch, reject=reject, tstep=1))
+            print(" ")
+            print(f"BEFORE removing non-brain components at Subject-{index+1}")
+            epoch.plot(show_scrollbars=False);
+            print(" ")
 
-#     return icas
+            print(f"AFTER removing non-brain components at Subject-{index+1}")
+            cleaned_epoch_ICA.plot(show_scrollbars=False);
+            print(" ")
+        
+        elif (visualization == False):
+            pass
 
+    return cleaned_epochs_ICA
 
 
 def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, random_state: int, brain_components="automatic") -> list:
