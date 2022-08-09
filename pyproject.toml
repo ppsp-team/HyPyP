@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hypyp"
-version = "0.4.0-beta.4"
+version = "0.4.0-beta.5"
 description = "The Hyperscanning Python Pipeline."
 readme = "README.md"
 authors = [
@@ -25,8 +25,6 @@ include=["hypyp/data/Basehead.obj"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"
-joblib = "^1.1.0"
-scikit-learn = "1.0"
 statsmodels = "^0.13.2"
 autoreject = ">=0.3.1"
 matplotlib = "^3.2.1"
@@ -36,16 +34,7 @@ astropy = "^5.1"
 meshio = "^5.3.4"
 tqdm = "^4.46.0"
 scipy = "^1.4.1"
-pyqt5 = "^5.15.0"
 mne = "^1.0.3"
-urllib3 = ">=1.26.4"
-pyyaml = ">=5.4"
-jinja2 = ">=2.11.3"
-Pillow = ">=8.1.1"
-bleach = ">=3.3.0"
-h5py = "^3.7.0"
-Pygments = "2.11"
-livereload = "^2.6.3"
 h5io = "^0.1.7"
 mne-icalabel = "^0.2"
 
