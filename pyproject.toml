@@ -37,6 +37,7 @@ scipy = "^1.4.1"
 mne = "^1.0.3"
 h5io = "^0.1.7"
 mne-icalabel = "^0.2"
+mistune = ">=2.0.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
