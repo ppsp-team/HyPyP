@@ -182,7 +182,7 @@ def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thres
     ctr2 = np.nanmean(loc2, 0)
 
     # Calculate automatic threshold
-    if threshold is 'auto':
+    if threshold == 'auto':
       threshold = np.max(np.median(C, 0))+np.max(np.std(C, 0))
     else:
       threshold = threshold
@@ -379,7 +379,7 @@ def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarr
     ctr2[2] -= 0.2
 
     # Calculate automatic threshold
-    if threshold is 'auto':
+    if threshold == 'auto':
       threshold = np.max(np.median(C, 0))+np.max(np.std(C, 0))
     else:
       threshold = threshold
@@ -1028,7 +1028,7 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs,
     vmin=np.min(Cmin)
 
     # Calculate automatic threshold
-    if threshold is 'auto':
+    if threshold == 'auto':
       threshold = np.max([np.median(C1, 0),np.median(C2,0)])+np.max([np.std(C1, 0),np.std(C2, 0)])
     else:
       threshold = threshold
@@ -1391,7 +1391,7 @@ def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
     vmin=np.min(Cmin)
 
     # Calculate automatic threshold
-    if threshold is 'auto':
+    if threshold == 'auto':
       threshold = np.max([np.median(C1, 0),np.median(C2,0)])+np.max([np.std(C1, 0),np.std(C2, 0)])
     else:
       threshold = threshold
