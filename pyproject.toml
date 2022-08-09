@@ -46,6 +46,8 @@ bleach = ">=3.3.0"
 h5py = "^3.7.0"
 Pygments = "2.11"
 livereload = "^2.6.3"
+h5io = "^0.1.7"
+mne-icalabel = "^0.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
