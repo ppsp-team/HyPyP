@@ -13,16 +13,23 @@ Basic visualization functions
 
 from pathlib import Path
 from copy import copy
+from typing import Union
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import mne
 import meshio
 import pkg_resources
+import math
+import sys
+if not sys.warnoptions:
+    import warnings
+    warnings.filterwarnings("ignore")
 
 from hypyp.ext.mpl3d import glm
 from hypyp.ext.mpl3d.mesh import Mesh
 from hypyp.ext.mpl3d.camera import Camera
+from hypyp.analyses import xwt
 
 
 def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.5, rotY: float=(np.pi)/2, rotZ: float=(np.pi)/2) -> np.ndarray:
