@@ -1637,3 +1637,17 @@ def viz_3D_intra (epo1: mne.Epochs, epo2: mne.Epochs,
 
     return (ax)
   
+    
+def COIError():
+    """
+    Called by the xwt, phase, and wtc plotting functions to display an Error
+    message if all data falls within COI.
+    Indicates that time span of data is too short for analysis.
+
+    Arguments:
+        None
+
+    Returns:
+        str: COI ERROR message
+    """
+    return 'ERROR: INVALID WT. All results are within COI.'
