@@ -833,8 +833,7 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs, sfreq: Union[int, float],
 
         if mode == 'power':
             data = np.abs((cross_sigs[:, :]))
-            normed_data = (data - np.min(data)) / (np.max(data) - np.min(data))
-            data = normed_data
+            data = data
 
         elif mode == 'phase':
             data = np.angle(cross_sigs[:, :])
