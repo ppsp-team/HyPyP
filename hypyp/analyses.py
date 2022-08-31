@@ -21,6 +21,10 @@ from collections import namedtuple
 from typing import Union
 from astropy.stats import circmean
 import matplotlib.pyplot as plt
+import sys
+if not sys.warnoptions:
+    import warnings
+    warnings.filterwarnings("ignore")
 
 plt.ion()
 
