@@ -761,7 +761,7 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int, freq_range1: list, freq_
 
 
 def xwt(sig1: mne.Epochs, sig2: mne.Epochs, sfreq: Union[int, float],
-        freqs: Union[int, np.ndarray], mode: str) -> np.ndarray:
+        freqs: Union[int, np.ndarray], analysis: str) -> np.ndarray:
     """
     Perfroms a cross wavelet transform on two signals.
 
@@ -831,20 +831,20 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs, sfreq: Union[int, float],
         abs_coh = np.abs(coh)
         wct = (abs_coh - np.min(abs_coh)) / (np.max(abs_coh) - np.min(abs_coh))
 
-        if mode == 'power':
+        if analysis == 'power':
             data = np.abs((cross_sigs[:, :]))
             data = data
 
-        elif mode == 'phase':
+        elif analysis == 'phase':
             data = np.angle(cross_sigs[:, :])
 
-        elif mode == 'wtc':
+        elif analysis == 'wtc':
             data = wct
 
-        elif mode == 'xwt':
+        elif analysis == 'xwt':
             data = cross_sigs
 
         else:
-            data = 'Please specify mode'
+            data = 'Please specify analysis'
             print(data)
         return data
