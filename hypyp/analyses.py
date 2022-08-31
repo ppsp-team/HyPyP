@@ -779,7 +779,7 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs, sfreq: Union[int, float],
         freqs: int | float
             Range of frequencies of interest in Hz.
 
-        mode: str
+        analysis: str
             Sets the type of analyses
 
     Note:
