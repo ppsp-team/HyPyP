@@ -1651,3 +1651,149 @@ def COIError():
         str: COI ERROR message
     """
     return 'ERROR: INVALID WT. All results are within COI.'
+
+
+def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
+             sfreq: Union[int, float],
+             freqs: Union[int, float, np.ndarray],
+             time: int, analysis: str,
+             figsize: tuple = (30, 8), tmin: int = 0,
+             x_units: Union[int, float] = 100):
+    """
+    Plots the results of the Cross wavelet analysis.
+
+    Arguments:
+         sig1 : mne.Epochs
+            Signal (eg. EEG data) of first participant.
+
+        sig2 : mne.Epochs
+            Signal (eg. EEG data) of second participant.
+
+        freqs: int | float | np.ndarray
+            Frequency range of interest in Hz.
+
+        time: int
+            Time of sample duration in seconds.
+
+        analysis: str
+            Sets type of analysis.
+
+        figsize: tuple
+            Figure size (default is (30, 8)).
+
+        xmin: int
+            Minimum x-value (default is 0).
+
+        x_units: int | float
+            distance between xticks on x-axis (time) (default is 100)
+
+    Note:
+        This function is not meant to be called indepedently,
+        but is meant to be called when using plot_xwt_crosspower
+        or plot_xwt_phase_angle.
+
+    Returns:
+    Figure of xwt results.
+    """
+
+    dt = 1/sfreq
+    xmax = time/dt
+    xmin = tmin * dt
+    tick_units = xmax/x_units
+    unit_conv = time/x_units
+    xticks = np.arange(xmin, xmax, tick_units)
+    x_labels = np.arange(tmin, time, unit_conv)
+    xmark = []
+    for xlabel in x_labels:
+        if xlabel != '':
+            mark = str(round(xlabel, 3))
+            xmark.append(mark)
+        else:
+            xmark = xlabel
+
+    coi = []
+    for f in freqs:
+        dt_f = 1/f
+        f_coi_init = math.sqrt(2*2*dt_f)
+        f_coi = f_coi_init/dt
+        coi.append(f_coi)
+
+    coi_check = []
+    for item in coi:
+        if item >= (time/dt):
+            coi_check.append(False)
+        else:
+            coi_check.append(True)
+
+    if False in coi_check:
+        print(COIError())
+    else:
+        print('Time window appropriate for wavelet transform')
+
+    coi_index = np.arange(0, len(freqs))
+
+    rev_coi = []
+    for f in freqs:
+        dt_f = 1/f
+        f_coi = math.sqrt(2*2*dt_f)
+        sub_max = (time-f_coi)/dt
+        rev_coi.append(sub_max)
+
+    fig = plt.figure(figsize=figsize)
+    plt.subplot(122)
+
+    if analysis == 'phase':
+        data = xwt(sig1, sig2, sfreq, freqs, mode='phase')
+        analysis_title = 'Cross Wavelet Transform (Phase Angle)'
+        cbar_title = 'Phase Difference'
+        my_cm = matplotlib.cm.get_cmap('hsv')
+        plt.imshow(data, aspect='auto', cmap=my_cm, interpolation='nearest')
+
+    elif analysis == 'power':
+        data = xwt(sig1, sig2, sfreq, freqs, mode='power')
+        normed_data = (data - np.min(data)) / (np.max(data) - np.min(data))
+        analysis_title = 'Cross Wavelet Transform (Power)'
+        cbar_title = 'Cross Power'
+        my_cm = matplotlib.cm.get_cmap('viridis')
+        plt.imshow(normed_data, aspect='auto', cmap=my_cm,
+                   interpolation='lanczos')
+
+    elif analysis == 'wtc':
+        data = xwt(sig1, sig2, sfreq, freqs, mode='wtc')
+        analysis_title = 'Wavelet Coherence'
+        cbar_title = 'Coherence'
+        my_cm = matplotlib.cm.get_cmap('plasma')
+        plt.imshow(data, aspect='auto', cmap=my_cm, interpolation='lanczos')
+
+    else:
+        ValueError('Analysis must be set as phase, power, or wtc.')
+
+    plt.gca().invert_yaxis()
+    plt.ylabel('Frequencies (Hz)')
+    plt.xlabel('Time (s)')
+    ylabels = np.linspace((freqs[0]), (freqs[-1]), len(freqs[0:]))
+    ymark = []
+    for ylabel in ylabels:
+        if ylabel != '':
+            mark = str(round(ylabel, 3))
+            ymark.append(mark)
+        else:
+            ymark = ylabel
+
+    plt.gca().set_yticks(ticks=np.arange(0, len(ylabels)), labels=ymark)
+    plt.gca().set_xticks(ticks=xticks, labels=xmark)
+    plt.xlim(tmin, xmax)
+    plt.ylim(0, int(len(ylabels[0:-1])))
+    plt.plot(coi, coi_index, 'w')
+    plt.plot(rev_coi, coi_index, 'w')
+
+    plt.fill_between(coi, coi_index, hatch='X', fc='w', alpha=0.5)
+    plt.fill_between(rev_coi, coi_index, hatch='X', fc='w', alpha=0.5)
+
+    plt.axvspan(xmin, min(coi), hatch='X', fc='w', alpha=0.5)
+    plt.axvspan(xmax, max(rev_coi), hatch='X', fc='w', alpha=0.5)
+
+    plt.title(analysis_title)
+    plt.colorbar(label=cbar_title)
+
+    return fig
