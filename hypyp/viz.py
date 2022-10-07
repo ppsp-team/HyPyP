@@ -21,10 +21,6 @@ import mne
 import meshio
 import pkg_resources
 import math
-import sys
-if not sys.warnoptions:
-    import warnings
-    warnings.filterwarnings("ignore")
 
 from hypyp.ext.mpl3d import glm
 from hypyp.ext.mpl3d.mesh import Mesh
