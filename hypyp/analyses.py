@@ -754,3 +754,93 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int, freq_range1: list, freq_
     con = abs(dphi) / n_samp
     con = np.nanmean(con, axis=1)
     return con
+
+
+def xwt(sig1: mne.Epochs, sig2: mne.Epochs, sfreq: Union[int, float],
+        freqs: Union[int, np.ndarray], analysis: str) -> np.ndarray:
+    """
+    Perfroms a cross wavelet transform on two signals.
+
+    Arguments:
+
+        sig1 : mne.Epochs
+            Signal (eg. EEG data) of first participant.
+
+        sig2 : mne.Epochs
+            Signal (eg. EEG data) of second participant.
+
+        sfreq: int | float
+            Sampling frequency of the data in Hz.
+
+        freqs: int | float
+            Range of frequencies of interest in Hz.
+
+        analysis: str
+            Sets the type of analyses
+
+    Note:
+        This function relies on MNE's mne.time_frequency.morlet
+        and mne.time_frequency.tfr.cwt functions.
+
+    Returns:
+        cross_sigs, wtc:
+       -cross_sigs: the crosswavelet transform results
+       -wtc: wavelet transform coherence calculated according to
+        Maraun & Kurths (2004)
+    """
+
+    # Set the mother wavelet
+    Ws = mne.time_frequency.tfr.morlet(sfreq, freqs, n_cycles=6.0, sigma=None,
+                                       zero_mean=True)
+
+    # Set parameters for the output
+    n_freqs = len(freqs)
+    n_epochs, n_chans, n_samples = sig1.get_data().shape
+    cross_sigs = np.zeros(
+        (n_chans, n_epochs, n_freqs, n_samples),
+        dtype=complex) * np.nan
+
+    # perform a continuous wavelet transform on all epochs of each signal
+    for ind, ch_label in enumerate(sig1.ch_names):
+
+        # Check the channels are the same between participants
+        assert sig2.ch_names[ind] == ch_label
+
+        # Extract the channel's data for both participants and apply cwt
+        cur_sig1 = np.squeeze(sig1.get_data(mne.pick_channels(sig1.ch_names,
+                                                              [ch_label])))
+        out1 = mne.time_frequency.tfr.cwt(cur_sig1, Ws, use_fft=True,
+                                          mode='same', decim=1)
+
+        cur_sig2 = np.squeeze(sig2.get_data(mne.pick_channels(sig2.ch_names,
+                                                              [ch_label])))
+        out2 = mne.time_frequency.tfr.cwt(cur_sig2, Ws, use_fft=True,
+                                          mode='same', decim=1)
+
+        # Perfrom the cross wavelet transform
+        tfr_cwt1 = out1.mean(0)
+        tfr_cwt2 = out2.mean(0)
+        wps1 = tfr_cwt1 * tfr_cwt1.conj()
+        wps2 = tfr_cwt2 * tfr_cwt2.conj()
+        cross_sigs = (out1 * out2.conj()).mean(0)
+        coh = (cross_sigs) / (np.sqrt(wps1*wps2))
+        abs_coh = np.abs(coh)
+        wct = (abs_coh - np.min(abs_coh)) / (np.max(abs_coh) - np.min(abs_coh))
+
+        if analysis == 'power':
+            data = np.abs((cross_sigs[:, :]))
+            data = data
+
+        elif analysis == 'phase':
+            data = np.angle(cross_sigs[:, :])
+
+        elif analysis == 'wtc':
+            data = wct
+
+        elif analysis == 'xwt':
+            data = cross_sigs
+
+        else:
+            data = 'Please specify analysis'
+            print(data)
+        return data
