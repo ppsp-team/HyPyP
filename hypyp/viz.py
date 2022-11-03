@@ -790,7 +790,7 @@ def viz_3D_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
     # defining head model and adding sensors
     vertices, faces = get_3d_heads_inter()
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     ax.axis("off")
     plot_3d_heads(ax, vertices, faces)
     plot_sensors_3d_inter(ax, epo1, epo2, lab=lab) # bads are represented as squares
@@ -1619,7 +1619,7 @@ def viz_3D_intra (epo1: mne.Epochs, epo2: mne.Epochs,
     # defining head model and adding sensors
     vertices, faces = get_3d_heads_intra()
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     ax.axis("off")
     plot_3d_heads(ax, vertices, faces)
     # bads are represented as squares
