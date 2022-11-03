@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 import mne
 from autoreject import get_rejection_threshold, AutoReject
 from mne.preprocessing import ICA, corrmap
-from mne_icalabel import label_components
 
 
 def filt(raw_S: list) -> list:
@@ -128,46 +127,6 @@ def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> li
     return cleaned_epochs_ICA
 
 
-def ICA_autocorrect(icas: list, epochs: list, verbose: bool = False) -> list:
-    """
-    Automatically detect the ICA components that are not brain related and remove them.
-
-    Arguments:
-        icas: list of Independent Components for each participant (IC are MNE
-          objects).
-        epochs: list of 2 Epochs objects (for each participant). Epochs_S1
-          and Epochs_S2 correspond to a condition and can result from the
-          concatenation of Epochs from different experimental realisations
-          of the condition.
-          Epochs are MNE objects: data are stored in an array of shape
-          (n_epochs, n_channels, n_times) and parameters information is
-          stored in a disctionnary.
-        verbose: option to plot data before and after ICA correction, 
-          boolean, set to False by default. 
-
-    Returns:
-        cleaned_epochs_ICA: list of 2 cleaned Epochs for each participant
-          (the non-brain related IC have been removed from the signal).
-    """
-
-    cleaned_epochs_ICA = []
-    for ica, epoch in zip(icas, epochs):
-        ica_with_labels_fitted = label_components(epoch, ica, method="iclabel")
-        ica_with_labels_component_detected = ica_with_labels_fitted["labels"]
-        # Remove non-brain components (take only brain components for each subject)
-        excluded_idx_components = [idx for idx, label in enumerate(ica_with_labels_component_detected) if label not in ["brain"]]
-        cleaned_epoch_ICA = mne.Epochs.copy(epoch)
-        cleaned_epoch_ICA.info['bads'] = []
-        ica.apply(cleaned_epoch_ICA, exclude=excluded_idx_components)
-        cleaned_epoch_ICA.info['bads'] = copy.deepcopy(epoch.info['bads'])
-        cleaned_epochs_ICA.append(cleaned_epoch_ICA)
-
-        if verbose:
-            epoch.plot(title='Before ICA correction', show=True)
-            cleaned_epoch_ICA.plot(title='After ICA correction',show=True)
-    return cleaned_epochs_ICA
-
-
 def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, random_state: int) -> list:
     """
     Computes global Autorejection to fit Independent Components Analysis
@@ -223,7 +182,8 @@ def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, rand
         # take bad channels into account in ICA fit
         epoch_all_ch = mne.Epochs.copy(epoch)
         epoch_all_ch.info['bads'] = []
-        icas.append(ica.fit(epoch_all_ch, reject=reject, tstep=1))
+        epoch_all_ch.drop_bad(reject=reject, flat=None)
+        icas.append(ica.fit(epoch_all_ch))
 
     return icas
 
