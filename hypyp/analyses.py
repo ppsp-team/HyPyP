@@ -783,64 +783,59 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs, sfreq: Union[int, float],
         and mne.time_frequency.tfr.cwt functions.
 
     Returns:
-        cross_sigs, wtc:
-       -cross_sigs: the crosswavelet transform results
-       -wtc: wavelet transform coherence calculated according to
-        Maraun & Kurths (2004)
+        data:
+            Wavelet results. The shape is (n_chans1, n_chans2, n_epochs, n_freqs, n_samples)
+            Wavelet transform coherence calculated according to Maraun & Kurths (2004)
     """
 
+
     # Set the mother wavelet
-    Ws = mne.time_frequency.tfr.morlet(sfreq, freqs, n_cycles=6.0, sigma=None,
+    Ws = mne.time_frequency.tfr.morlet(sfreq, freqs, n_cycles=5.0, sigma=None,
                                        zero_mean=True)
 
     # Set parameters for the output
     n_freqs = len(freqs)
-    n_epochs, n_chans, n_samples = sig1.get_data().shape
+    n_epochs, n_chans1, n_samples = sig1.get_data().shape
+    n_epochs, n_chans2, n_samples = sig2.get_data().shape
+
     cross_sigs = np.zeros(
-        (n_chans, n_epochs, n_freqs, n_samples),
+        (n_chans1, n_chans2, n_freqs, n_samples),
         dtype=complex) * np.nan
+    wcts = np.zeros(
+            (n_chans1, n_chans2, n_freqs, n_samples),
+            dtype=complex) * np.nan
 
     # perform a continuous wavelet transform on all epochs of each signal
-    for ind, ch_label in enumerate(sig1.ch_names):
-
-        # Check the channels are the same between participants
-        assert sig2.ch_names[ind] == ch_label
-
-        # Extract the channel's data for both participants and apply cwt
-        cur_sig1 = np.squeeze(sig1.get_data(mne.pick_channels(sig1.ch_names,
-                                                              [ch_label])))
-        out1 = mne.time_frequency.tfr.cwt(cur_sig1, Ws, use_fft=True,
-                                          mode='same', decim=1)
-
-        cur_sig2 = np.squeeze(sig2.get_data(mne.pick_channels(sig2.ch_names,
-                                                              [ch_label])))
-        out2 = mne.time_frequency.tfr.cwt(cur_sig2, Ws, use_fft=True,
-                                          mode='same', decim=1)
-
-        # Perfrom the cross wavelet transform
-        tfr_cwt1 = out1.mean(0)
-        tfr_cwt2 = out2.mean(0)
-        wps1 = tfr_cwt1 * tfr_cwt1.conj()
-        wps2 = tfr_cwt2 * tfr_cwt2.conj()
-        cross_sigs = (out1 * out2.conj()).mean(0)
-        coh = (cross_sigs) / (np.sqrt(wps1*wps2))
-        abs_coh = np.abs(coh)
-        wct = (abs_coh - np.min(abs_coh)) / (np.max(abs_coh) - np.min(abs_coh))
-
-        if analysis == 'power':
-            data = np.abs((cross_sigs[:, :]))
-            data = data
-
-        elif analysis == 'phase':
-            data = np.angle(cross_sigs[:, :])
-
-        elif analysis == 'wtc':
-            data = wct
-
-        elif analysis == 'xwt':
-            data = cross_sigs
-
-        else:
-            data = 'Please specify analysis'
-            print(data)
-        return data
+    for ind1, ch_label1 in enumerate(sig1.ch_names):
+        for ind2, ch_label2 in enumerate(sig2.ch_names):
+            # Extract the channel's data for both participants and apply cwt
+            cur_sig1 = np.squeeze(sig1.get_data(mne.pick_channels(sig1.ch_names, [ch_label1])))
+            out1 = mne.time_frequency.tfr.cwt(cur_sig1, Ws, use_fft=True,
+                                              mode='same', decim=1)
+            cur_sig2 = np.squeeze(sig2.get_data(mne.pick_channels(sig2.ch_names, [ch_label2])))
+            out2 = mne.time_frequency.tfr.cwt(cur_sig2, Ws, use_fft=True,
+                                              mode='same', decim=1)
+            # Average across epochs
+            tfr_cwt1 = out1.mean(0)
+            tfr_cwt2 = out2.mean(0)
+            # Compute cross-spectrum
+            wps1 = tfr_cwt1 * tfr_cwt1.conj()
+            wps2 = tfr_cwt2 * tfr_cwt2.conj()
+            cross_sig = (out1 * out2.conj()).mean(0)
+            cross_sigs[ind1, ind2, :, :] = cross_sig
+            coh = (cross_sig) / (np.sqrt(wps1*wps2))
+            abs_coh = np.abs(coh)
+            wct = (abs_coh - np.min(abs_coh)) / (np.max(abs_coh) - np.min(abs_coh))
+            wcts[ind1, ind2, :, :] = wct
+    if analysis == 'power':
+        data = np.abs((cross_sigs))
+    elif analysis == 'phase':
+        data = np.angle(cross_sigs)
+    elif analysis == 'xwt':
+        data = cross_sigs
+    elif analysis == 'wtc':
+        data = wcts
+    else:
+        data = 'Please specify a valid analysis: power, phase, xwt, or wtc.'
+        print(data)
+    return data
