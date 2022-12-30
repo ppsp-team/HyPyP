@@ -26,7 +26,7 @@ plt.ion()
 
 import mne
 from mne.io.constants import FIFF
-from mne.time_frequency import psd_welch
+from mne.time_frequency import EpochsSpectrum
 
 from .mvarica import MVAR, connectivity_mvarica
 
@@ -89,10 +89,13 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
 
     # computing power spectral density on epochs signal
     # average in the 1-second window around event (mean, but can choose 'median')
-    kwargs = dict(fmin=fmin, fmax=fmax, n_fft=n_fft, n_per_seg=n_per_seg, n_jobs=1)
-    psds, freq_list = psd_welch(
-        epochs, **kwargs, average='mean', picks='all')  # or median
-
+    kwargs = dict(fmin=fmin, fmax=fmax, n_fft=n_fft, n_per_seg=n_per_seg,
+                  tmin=None, tmax=None, method='welch', picks='all', proj=False,
+                  n_jobs=1)
+    spectrum = EpochsSpectrum(epochs, **kwargs)
+    psds = spectrum.get_data()
+    freq_list = spectrum.freqs
+    
     if epochs_average is True:
         # averaging power across epochs for each channel ch and each frequency f
         psd = np.mean(psds, axis=0)
