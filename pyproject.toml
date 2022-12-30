@@ -34,11 +34,11 @@ astropy = "^5.1"
 meshio = "^5.3.4"
 tqdm = "^4.46.0"
 scipy = "^1.4.1"
-mne = "^1.0.3"
+mne = "^1.3"
 h5io = "^0.1.7"
 mistune = ">=2.0.4"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^5.4.1"
 mkdocs = "^1.1"
 mkdocstrings = "^0.10.3"
@@ -50,6 +50,7 @@ jupyterlab = "^2.1.4"
 widgetsnbextension = "^3.5.1"
 ipywidgets = "^7.5.1"
 livereload = "^2.6.3"
+ipykernel = "^6.19.4"
 
 [tool.dephell.main]
 from = {format = "poetry", path = "pyproject.toml"}
