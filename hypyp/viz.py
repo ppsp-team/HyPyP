@@ -1632,21 +1632,7 @@ def viz_3D_intra (epo1: mne.Epochs, epo2: mne.Epochs,
     plt.show()
 
     return (ax)
-  
-    
-def COIError():
-    """
-    Called by the xwt, phase, and wtc plotting functions to display an Error
-    message if all data falls within COI.
-    Indicates that time span of data is too short for analysis.
 
-    Arguments:
-        None
-
-    Returns:
-        str: COI ERROR message
-    """
-    return 'ERROR: INVALID WT. All results are within COI.'
 
 
 def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
@@ -1722,9 +1708,9 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
             coi_check.append(True)
 
     if False in coi_check:
-        print(COIError())
+        print('Warning: your epoch length seems too short for the wavelet transform!')
     else:
-        print('Time window appropriate for wavelet transform')
+        print('Epoch length is appropriate for wavelet transform')
 
     coi_index = np.arange(0, len(freqs))
 
