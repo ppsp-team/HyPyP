@@ -27,12 +27,12 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: 
 
     Arguments:
         data: array of participants measure (e.g. PSD) for
-          a condition (n_samples, n_tests, nfreq: n_tests the channels).
-          Values will be averaged on nfreq for statistics.
+            a condition (n_samples, n_tests, nfreq: n_tests the channels).
+            Values will be averaged on nfreq for statistics.
         epochs: Epochs object for a condition from a random participant, only
-          used to get parameters from the info (sampling frequencies for example).
+            used to get parameters from the info (sampling frequencies for example).
         n_permutations: the number of permutations, int. Should be at least 2*n
-          sample, can be set to 50000 for example.
+            sample, can be set to 50000 for example.
         alpha: the threshold for ttest, float, can be set to 0.05.
 
     Note:
@@ -56,14 +56,14 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: 
         - p_values: p-values for all the tests, array of shape (n_tests).
 
         - H0: T-statistic obtained by permutations and t-max trick for multiple
-          comparisons, array of shape (n_permutations).
+            comparisons, array of shape (n_permutations).
 
         - adj_p: adjusted p values from FDR correction, array of shape
-          (n_tests, n_tests), with boolean assessment for p values
-          and p values corrected.
+            (n_tests, n_tests), with boolean assessment for p values
+            and p values corrected.
 
         - T_obs_plot: statistical values to plot, from sensors above alpha threshold,
-          array of shape (n_tests,).
+            array of shape (n_tests,).
     """
     # checking whether data have the same size
     assert(len(data.shape) == 3), "PSD does not have the appropriate shape!"
@@ -106,19 +106,19 @@ def con_matrix(epochs: mne.Epochs, freqs_mean: list, draw: bool = False) -> tupl
     Arguments:
         epochs: one participant Epochs object; contains channel information.
         freqs_mean: list of frequencies in frequency-band-of-interest used
-          by MNE for power or coherence spectral density calculation.
+            by MNE for power or coherence spectral density calculation.
         draw: option to plot the connectivity matrices, boolean.
 
     Returns:
         ch_con, ch_con_freq:
 
         - ch_con: connectivity matrix between channels along space based on
-          their position, scipy.sparse.csr_matrix of shape
-          (n_channels, n_channels).
+            their position, scipy.sparse.csr_matrix of shape
+            (n_channels, n_channels).
 
         - ch_con_freq: connectivity matrix between channels along space and
-          frequencies, scipy.sparse.csr_matrix of shape
-          (n_channels*len(freqs_mean), n_channels*len(freqs_mean)).
+            frequencies, scipy.sparse.csr_matrix of shape
+            (n_channels*len(freqs_mean), n_channels*len(freqs_mean)).
     """
 
     # creating channel-to-channel connectivity matrix in space
@@ -166,12 +166,12 @@ def metaconn_matrix_2brains(electrodes: list, ch_con: scipy.sparse.csr_matrix, f
 
     Arguments:
         electrodes: electrode pairs for which connectivity indices have
-          been computed, list of tuples with channels indexes, see
-          indices_connectivity_interbrain function in toolbox (analyses).
+            been computed, list of tuples with channels indexes, see
+            indices_connectivity_interbrain function in toolbox (analyses).
         ch_con: connectivity matrix between channels along space based on their
-          position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
+            position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
         freqs_mean: list of frequencies in the frequency-band-of-interest used
-          by MNE for coherence spectral density calculation (connectivity indices).
+            by MNE for coherence spectral density calculation (connectivity indices).
         plot: option to plot the connectivity matrices, boolean.
 
     Note:
@@ -182,13 +182,13 @@ def metaconn_matrix_2brains(electrodes: list, ch_con: scipy.sparse.csr_matrix, f
         metaconn, metaconn_freq:
 
         - metaconn: a priori connectivity based on channel location, between
-          pairs of channels for which connectivity indices have been calculated,
-          to merge data, matrix of shape (len(electrodes), len(electrodes)).
+            pairs of channels for which connectivity indices have been calculated,
+            to merge data, matrix of shape (len(electrodes), len(electrodes)).
 
         - metaconn_freq: a priori connectivity between pairs of channels for which
-          connectivity indices have been calculated, across space and
-          frequencies, to merge data, matrix of shape
-          (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean)).
+            connectivity indices have been calculated, across space and
+            frequencies, to merge data, matrix of shape
+            (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean)).
     """
 
     n = np.max(electrodes, axis=0)[0]+1
@@ -239,24 +239,24 @@ def metaconn_matrix(electrodes: list, ch_con: scipy.sparse.csr_matrix, freqs_mea
 
     Arguments:
         electrodes: electrode pairs for which connectivity has been computed,
-          list of tuples with channel indices, see indices_connectivity
-          intrabrain function in toolbox (analyses).
+            list of tuples with channel indices, see indices_connectivity
+            intrabrain function in toolbox (analyses).
         ch_con: connectivity matrix between sensors along space based on their
-          position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
+            position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
         freqs_mean: list of frequencies in the frequency-band-of-interest used
-          by MNE for coherence spectral density calculation (connectivity indices).
+            by MNE for coherence spectral density calculation (connectivity indices).
 
     Returns:
         metaconn, metaconn_freq:
 
         - metaconn: a priori connectivity based on channel location, between
-          pairs of channels for which connectivity indices have been calculated,
-          matrix of shape (len(electrodes), len(electrodes)).
+            pairs of channels for which connectivity indices have been calculated,
+            matrix of shape (len(electrodes), len(electrodes)).
 
         - metaconn_freq: a priori connectivity between pairs of channels for which
-          connectivity indices have been calculated, across space and
-          frequencies, for merge data, matrix of shape
-          (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean)).
+            connectivity indices have been calculated, across space and
+            frequencies, for merge data, matrix of shape
+            (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean)).
     """
 
     metaconn = np.zeros((len(electrodes), len(electrodes)))
@@ -303,34 +303,34 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
 
     Arguments:
         data: values from different conditions or different groups to compare,
-          list of arrays (3d for time-frequency power or connectivity values).
+            list of arrays (3d for time-frequency power or connectivity values).
         freqs_mean: frequencies in frequency-band-of-interest used by MNE
-          for PSD or CSD calculation, list.
+            for PSD or CSD calculation, list.
         ch_con_freq: connectivity or metaconnectivity matrix for PSD or CSD
-          values to assess a priori connectivity between channels across
-          space and frequencies based on their position, bsr_matrix.
+            values to assess a priori connectivity between channels across
+            space and frequencies based on their position, bsr_matrix.
         tail: direction of the ttest, can be set to 1, 0 or -1.
         n_permutations: number of permutations computed, can be set to 50000.
         alpha: threshold to consider clusters significant, can be set to 0.05
-          or less.
+            or less.
 
     Returns:
         F_obs, clusters, cluster_pv, H0, F_obs_plot:
 
         - F_obs: statistic (F by default) observed for all variables,
-          array of shape (n_tests,).
+            array of shape (n_tests,).
 
         - clusters: boolean array with same shape as the input data, 
-          True values indicating locations that are part of a cluster, array.
+            True values indicating locations that are part of a cluster, array.
 
         - cluster_p_values: p-value for each cluster, array.
 
         - H0: max cluster level stats observed under permutation, array of
-          shape (n_permutations,).
+            shape (n_permutations,).
 
         - F_obs_plot: statistical values above alpha threshold, to plot
-          significant sensors (see plot_significant_sensors function in the toolbox)
-          array of shape (n_tests,).
+            significant sensors (see plot_significant_sensors function in the toolbox)
+            array of shape (n_tests,).
     """
 
     # computing the cluster permutation t test
@@ -371,29 +371,29 @@ def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.s
 
     Arguments:
         data: values from different groups or conditions to compare,
-          list of arrays (3d for time-frequency power or connectivity values),
-          or np.array for f multiple-way ANOVA test. For this test and the 
-          paired ttest, samples must have the same dimension.
+            list of arrays (3d for time-frequency power or connectivity values),
+            or np.array for f multiple-way ANOVA test. For this test and the 
+            paired ttest, samples must have the same dimension.
         test: nature of the test used to compare groups or conditions.
-          Can be a t test for independant or paired samples
-          ('ind ttest' or 'rel ttest'), a one-way ANOVA test
-          ('f oneway'), or a multiple-way ANOVA test ('f multipleway), str.
+            Can be a t test for independant or paired samples
+            ('ind ttest' or 'rel ttest'), a one-way ANOVA test
+            ('f oneway'), or a multiple-way ANOVA test ('f multipleway), str.
         factor_level: for multiple-way ANOVA test, describe the number of level
-          for each factor, list (if compare 2 groups and 2 conditions,
-          factor_levels = [2, 2] and data should be an np.array with
-          group1-condition1, group1-condition2, group2-condition1,
-          group2-condition2).
-          Set to None otherwise.
+            for each factor, list (if compare 2 groups and 2 conditions,
+            factor_levels = [2, 2] and data should be an np.array with
+            group1-condition1, group1-condition2, group2-condition1,
+            group2-condition2).
+            Set to None otherwise.
         ch_con_freq: connectivity or metaconnectivity matrix for PSD or CSD
-          values to assess a priori connectivity between channels across
-          space and frequencies based on their position, bsr_matrix.
+            values to assess a priori connectivity between channels across
+            space and frequencies based on their position, bsr_matrix.
         tail: direction of the ttest, can be set to 1, 0 or -1. The tail must
-          be set to 0 for a one-way ANOVA test and to 1 for a mutiple-way
-          ANOVA test.
+            be set to 0 for a one-way ANOVA test and to 1 for a mutiple-way
+            ANOVA test.
         n_permutations: number of permutations computed, can be set to 50000.
         alpha: threshold to consider clusters significant, can be set to 0.05
-          that is the default value. An adjustment is done for a f one-way and
-          multiple-way tests to adapt 0.05 to the number of observations.
+            that is the default value. An adjustment is done for a f one-way and
+            multiple-way tests to adapt 0.05 to the number of observations.
 
     Notes:
         With t_power set to 1, each location is weighted by its statistical
@@ -406,20 +406,20 @@ def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.s
         Stat_obs, clusters, cluster_pv, H0, Stat_obs_plot:
 
         - Stat_obs: statistic (T or F values according to the assignement
-          of 'test') observed for all variables,
-          array of shape (n_tests,).
+            of 'test') observed for all variables,
+            array of shape (n_tests,).
 
         - clusters: boolean array with same shape as the input data,
-          True values indicating locations that are part of a cluster, array.
+            True values indicating locations that are part of a cluster, array.
 
         - cluster_p_values: p-value for each cluster, array.
 
         - H0: max cluster level stats observed under permutation, array of
-          shape (n_permutations,).
+            shape (n_permutations,).
 
         - Stat_obs_plot: statistical values above alpha threshold,
-          to plot significant sensors (see plot_significant_sensors
-          function in the toolbox) array of shape (n_tests,).
+            to plot significant sensors (see plot_significant_sensors
+            function in the toolbox) array of shape (n_tests,).
     """
 
     # type of test

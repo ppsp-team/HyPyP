@@ -26,7 +26,7 @@ def filt(raw_S: list) -> list:
 
     Arguments:
         raw_S: list of Raw data (as an example: different occurences of
-          a condition for a participant). Raws are MNE objects.
+            a condition for a participant). Raws are MNE objects.
 
     Returns:
         raws: list of high-pass filtered raws.
@@ -47,14 +47,14 @@ def ICA_choice_comp(icas: list, epochs: list) -> list:
 
     Arguments:
         icas: list of Independent Components for each participant (IC are MNE
-          objects).
+            objects).
         epochs: list of 2 Epochs objects (for each participant). Epochs_S1
-          and Epochs_S2 correspond to a condition and can result from the
-          concatenation of Epochs from different experimental realisations
-          of the condition.
-          Epochs are MNE objects: data are stored in an array of shape
-          (n_epochs, n_channels, n_times) and parameters information is
-          stored in a disctionnary.
+            and Epochs_S2 correspond to a condition and can result from the
+            concatenation of Epochs from different experimental realisations
+            of the condition.
+            Epochs are MNE objects: data are stored in an array of shape
+            (n_epochs, n_channels, n_times) and parameters information is
+            stored in a disctionnary.
 
     Returns:
         cleaned_epochs_ICA: list of 2 cleaned Epochs for each participant
@@ -137,24 +137,24 @@ def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, rand
 
     Arguments:
         epochs: list of 2 Epochs objects (for each participant).
-          Epochs_S1 and Epochs_S2 correspond to a condition and can result
-          from the concatenation of Epochs from different experimental
-          realisations of the condition (Epochs are MNE objects).
+            Epochs_S1 and Epochs_S2 correspond to a condition and can result
+            from the concatenation of Epochs from different experimental
+            realisations of the condition (Epochs are MNE objects).
         n_components: the number of principal components that are passed to the
-          ICA algorithm during fitting, int. For a first estimation,
-          n_components can be set to 15.
+            ICA algorithm during fitting, int. For a first estimation,
+            n_components can be set to 15.
         method: the ICA method used, str 'fastica', 'infomax' or 'picard'.
-          'Fastica' is the most frequently used. Use the fit_params argument to set
-           additional parameters. Specifically, if you want Extended Infomax, set
-           method=’infomax’ and fit_params=dict(extended=True) (this also works
-           for method=’picard’). 
+            'Fastica' is the most frequently used. Use the fit_params argument to set
+            additional parameters. Specifically, if you want Extended Infomax, set
+            method=’infomax’ and fit_params=dict(extended=True) (this also works
+            for method=’picard’). 
         fit_params: Additional parameters passed to the ICA estimator
-           as specified by method. None by default.
+            as specified by method. None by default.
         random_state: the parameter used to compute random distributions
-          for ICA calulation, int or None. It can be useful to fix
-          random_state value to have reproducible results. For 15
-          components, random_state can be set to 97, for 20 components to 0
-          for example.
+            for ICA calulation, int or None. It can be useful to fix
+            random_state value to have reproducible results. For 15
+            components, random_state can be set to 97, for 20 components to 0
+            for example.
 
     Note:
         If Autoreject and ICA take too much time, change the decim value
@@ -164,7 +164,7 @@ def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, rand
 
     Returns:
         icas: list of Independant Components for each participant (IC are MNE
-          objects, see MNE documentation for more details).
+            objects, see MNE documentation for more details).
     """
     icas = []
     for epoch in epochs:
@@ -193,18 +193,18 @@ def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float =
     Applies local Autoreject to repair or reject bad epochs.
 
     Arguments:
-        clean_epochs_ICA: list of Epochs after global Autoreject and ICA.
+        cleaned_epochs_ICA: list of Epochs after global Autoreject and ICA.
         strategy: more or less generous strategy to reject bad epochs: 'union'
-          or 'intersection'. 'union' rejects bad epochs from subject 1 and
-          subject 2 immediatly, whereas 'intersection' rejects shared bad epochs
-          between subjects, tries to repare remaining bad epochs per subject,
-          reject the non-reparable per subject and finally equalize epochs number
-          between subjects. Set to 'union' by default.
+            or 'intersection'. 'union' rejects bad epochs from subject 1 and
+            subject 2 immediatly, whereas 'intersection' rejects shared bad epochs
+            between subjects, tries to repare remaining bad epochs per subject,
+            reject the non-reparable per subject and finally equalize epochs number
+            between subjects. Set to 'union' by default.
         threshold: percentage of epochs removed that is accepted. Above
-          this threshold, data are considered as a too shortened sample
-          for further analyses. Set to 50.0 by default.
+            this threshold, data are considered as a too shortened sample
+            for further analyses. Set to 50.0 by default.
         verbose: option to plot data before and after AR, boolean, set to
-          False by default. # use verbose = false until next Autoreject update
+            False by default. # use verbose = false until next Autoreject update
 
     Note:
         To reject or repair epochs, parameters are more or less conservative,
@@ -213,7 +213,7 @@ def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float =
     Returns:
         cleaned_epochs_AR: list of Epochs after local Autoreject.
         dic_AR: dictionnary with the percentage of epochs rejection
-          for each subject and for the intersection of the them.
+            for each subject and for the intersection of the them.
     """
     bad_epochs_AR = []
     AR = []

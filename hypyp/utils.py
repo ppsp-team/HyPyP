@@ -27,12 +27,12 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, duration: float) -> li
 
     Arguments:
         raw_S1: list of Raws for participant 1 (with the different
-          experimental realizations of a condition - for example
-          the baseline. The length can be 1).
+            experimental realizations of a condition - for example
+            the baseline. The length can be 1).
         raw_S2: list of Raws for participant 2.  
-          Raws are MNE objects: data are ndarray with shape
-          (n_channels, n_times) and information is a dictionnary
-          sampling parameters.
+            Raws are MNE objects: data are ndarray with shape
+            (n_channels, n_times) and information is a dictionnary
+            sampling parameters.
 
     Note:
         Plots topomaps of PSD values calculated with welch FFT
@@ -98,12 +98,12 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
     Arguments:
         epoch_S1: Epochs object for participant 1.
         epoch_S2: Epochs object for participant 2.  
-          epoch_S1 and epoch_S2 correspond to a condition and can result
-          from the concatenation of epochs from different experimental
-          realizations of a condition.  
-          Epochs are MNE objects: data are stored in an array of shape
-          (n_epochs, n_channels, n_times) and parameters information
-          is stored in a disctionnary.
+            epoch_S1 and epoch_S2 correspond to a condition and can result
+            from the concatenation of epochs from different experimental
+            realizations of a condition.  
+            Epochs are MNE objects: data are stored in an array of shape
+            (n_epochs, n_channels, n_times) and parameters information
+            is stored in a disctionnary.
 
     Note:
         Bad channels labelling is removed.
@@ -113,7 +113,7 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
 
     Returns:
         ep_hyper: Epochs object for the dyad (with merged data of the two
-          participants). The time alignement has been done at raw data creation.
+            participants). The time alignement has been done at raw data creation.
     """
     # checking bad ch for epochs, interpolating
     # and removing them from 'bads' if needed
@@ -199,8 +199,8 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
 
     Arguments:
         raw_merge: Raw data for the dyad with data from participant 1
-          and data from participant 2 (channels name are defined with
-          the suffix S1 and S2 respectively).
+            and data from participant 2 (channels name are defined with
+            the suffix S1 and S2 respectively).
 
     Note:
         Participant's Raw data is set to the standard montage 1020
@@ -209,7 +209,7 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
 
     Returns:
         raw_1020_S1, raw_1020_S2: Raw data for each participant separately.
-          Raws are MNE objects.
+            Raws are MNE objects.
     """
     ch_S1 = []
     ch_S2 = []
@@ -275,15 +275,15 @@ def concatenate_epochs(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs
 
     Arguments:
         epoch_S1: list of Epochs for participant 1 (for example the
-          list samples different experimental realizations
-          of the baseline condition).
+            list samples different experimental realizations
+            of the baseline condition).
         epoch_S2: list of Epochs for participant 2.  
-          Epochs are MNE objects.
+            Epochs are MNE objects.
 
     Returns:
         epoch_S1_concat, epoch_S2_concat: list of concatenate Epochs
-          (for example one epoch with all the experimental realizations
-          of the baseline condition) for each participant.
+            (for example one epoch with all the experimental realizations
+            of the baseline condition) for each participant.
     """
     epoch_S1_concat = mne.concatenate_epochs(epoch_S1)
     epoch_S2_concat = mne.concatenate_epochs(epoch_S2)
@@ -298,11 +298,11 @@ def normalizing(baseline: np.ndarray, task: np.ndarray, type: str) -> np.ndarray
 
     Arguments:
         baseline: PSD or CSD values for the 'baseline',
-          ndarray, shape (n_epochs, n_channels, n_frequencies).
+            ndarray, shape (n_epochs, n_channels, n_frequencies).
         task: PSD or CSD values for the 'task' conditions,
-          ndarray, shape (n_epochs, n_channels, n_frequencies).
+            ndarray, shape (n_epochs, n_channels, n_frequencies).
         type: normalization choice, str 'Zscore' or 'Logratio'.
-        
+
     Note:
         If normalization's type is 'Logratio', only positive values
         can be used as input (if it is not the case, take the absolute
@@ -310,8 +310,8 @@ def normalizing(baseline: np.ndarray, task: np.ndarray, type: str) -> np.ndarray
 
     Returns:
         Normed_task: PSD or CSD values for the condition 'task' normed by
-          values in a baseline and average across epochs, ndarray, shape
-          (n_channels, n_frequencies).
+            values in a baseline and average across epochs, ndarray, shape
+            (n_channels, n_frequencies).
     """
     m_baseline = np.mean(baseline, axis=0)
     m_task = np.mean(task, axis=0)
@@ -332,15 +332,15 @@ def generate_random_epoch(epoch: mne.Epochs, mu: float=0, sigma: float=2.0)-> mn
 
     Arguments:
         epoch: mne.Epochs
-          Epochs object to get epoch info structure
+            Epochs object to get epoch info structure
         mu: float
-          Mean of the normal distribution
+            Mean of the normal distribution
         sigma: float
-          Standart deviation of the normal distribution
+            Standart deviation of the normal distribution
 
     Returns:
         mne.Epochs
-          new epoch with random data with normal distribution
+            new epoch with random data with normal distribution
     """
 
     # Get epoch information 
@@ -364,21 +364,21 @@ def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: flo
 
     Arguments:
         epoch: mne.Epochs
-          Epochs object to get epoch info structure
+            Epochs object to get epoch info structure
         W: np.ndarray
-          Coupling matrix between the oscillators
+            Coupling matrix between the oscillators
         frequency_mean: float
-          Mean of the normal distribution for oscillators frequency
+            Mean of the normal distribution for oscillators frequency
         frequency_std: float
-          Standart deviation of the normal distribution for oscillators frequency
+            Standart deviation of the normal distribution for oscillators frequency
         noise_phase_level: float
-          Amount of noise at the phase level
+            Amount of noise at the phase level
         noise_amplitude_level: float
-          Amount of noise at the amplitude level
+            Amount of noise at the amplitude level
 
     Returns:
         mne.Epochs
-          new epoch with simulated data
+            new epoch with simulated data
     """
 
     n_epo, n_chan, n_samp = epochs.get_data().shape

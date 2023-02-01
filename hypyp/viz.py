@@ -34,21 +34,21 @@ def transform(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ: float=0.5,
 
     Arguments:
         locs: array of shape (n_sensors, 3)
-          3d coordinates of the sensors
+            3d coordinates of the sensors
         traX: float
-          X translation to apply to the sensors
+            X translation to apply to the sensors
         traY: float
-          Y translation to apply to the sensors
+            Y translation to apply to the sensors
         traZ: float
-          Z translation to apply to the sensors
+            Z translation to apply to the sensors
         rotY: float
-          Y rotation to apply to the sensors
+            Y rotation to apply to the sensors
         rotZ: float
-          Z rotation to apply to the sensors
+            Z rotation to apply to the sensors
 
     Returns:
         result: array (n_sensors, 3)
-          new 3d coordinates of the sensors
+            new 3d coordinates of the sensors
     """
     # Z rotation
     newX = locs[:, 0] * np.cos(rotZ) - locs[:, 1] * np.sin(rotZ)
@@ -80,11 +80,11 @@ def plot_sensors_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False)
 
     Arguments:
         epo1: mne.Epochs
-          Epochs object to get channels information
+            Epochs object to get channels information
         epo2: mne.Epochs
-          Epochs object to get channels information
+            Epochs object to get channels information
         lab: option to plot channel names
-          True by default.
+            True by default.
 
     Returns:
         None: plot the sensors in 2D within the current axis.
@@ -148,25 +148,22 @@ def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thres
 
     Arguments:
         epo1: mne.Epochs
-          Epochs object to get channels information
+            Epochs object to get channels information
         epo2: mne.Epochs
-          Epochs object to get channels information
+            Epochs object to get channels information
         C: array, (len(loc1), len(loc2))
-          matrix with the values of hyper-connectivity
+            matrix with the values of hyper-connectivity
         threshold: float | str
-          threshold for the inter-brain links;
-          only those above the set value will be plotted
-          Can also be "auto" to use a threshold automatically
-          calculated from your matrix as the maximum median 
-          by column + the maximum standard error by column.
-          Note that the automatic threshold is specific to a 
-          dyad and does not allow to compare different dyads.
+            threshold for the inter-brain links;
+            only those above the set value will be plotted
+            Can also be "auto" to use a threshold automatically
+            calculated from your matrix as the maximum median 
+            by column + the maximum standard error by column.
+            Note that the automatic threshold is specific to a 
+            dyad and does not allow to compare different dyads.
         steps: int
-          number of steps for the Bezier curves
-          if <3 equivalent to ploting straight lines
-        weight: numpy.float
-          Connectivity weight to determine the thickness
-          of the link
+            number of steps for the Bezier curves
+            if <3 equivalent to ploting straight lines
 
     Returns:
         None: plot the links in 2D within the current axis.
@@ -178,8 +175,6 @@ def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thres
 
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
     loc2 = transform(loc2, traX=0.17, traY=0, traZ=0.08, rotY=(np.pi/12), rotZ=np.pi/2)
-
-
 
     ctr1 = np.nanmean(loc1, 0)
     ctr2 = np.nanmean(loc2, 0)
@@ -274,11 +269,11 @@ def plot_sensors_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool
     Arguments:
         ax: Matplotlib axis created with projection='3d'
         epo1: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         epo2: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         lab: option to plot channel names
-          False by default.
+            False by default.
 
     Returns:
         None: plot the sensors in 3D within the current axis.
@@ -341,30 +336,27 @@ def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarr
 
     Arguments:
         ax: Matplotlib axis created with projection='3d'
-        loc1: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        loc2: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
+        epo1: mne.Epochs
+            Epochs object to get channel information
+        epo2: mne.Epochs
+            Epochs object to get channel information
         C: array, (len(loc1), len(loc2))
-          matrix with the values of hyper-connectivity
+            matrix with the values of hyper-connectivity
         threshold: float | str
-          threshold for the inter-brain links;
-          only those above the set value will be plotted
-          Can also be "auto" to use a threshold automatically
-          calculated from your matrix as the maximum median 
-          by column + the maximum standard error by column.
-          Note that the automatic threshold is specific to a 
-          dyad and does not allow to compare different dyads.
+            threshold for the inter-brain links;
+            only those above the set value will be plotted
+            Can also be "auto" to use a threshold automatically
+            calculated from your matrix as the maximum median 
+            by column + the maximum standard error by column.
+            Note that the automatic threshold is specific to a 
+            dyad and does not allow to compare different dyads.
         steps: int
-          number of steps for the Bezier curves
-          if <3 equivalent to ploting straight lines
-        weight: numpy.float
-          Connectivity weight to determine the thickness
-          of the link
+            number of steps for the Bezier curves
+            if <3 equivalent to ploting straight lines
 
     Returns:
         None: plot the links in 3D within the current axis.
-          Plot hyper-connectivity in 3D.
+            Plot hyper-connectivity in 3D.
     """
     
     # extract sensor infos and transform loc to fit with headmodel 
@@ -494,7 +486,7 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
 
     Arguments:
         T_obs_plot: statistical values to plot, from sensors above alpha threshold,
-          array of shape (n_tests,).
+            array of shape (n_tests,).
         epochs: one participant Epochs object to sample channel information in info.
 
     Returns:
@@ -674,24 +666,23 @@ def viz_2D_topomap_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thr
 
     Arguments:
         epo1: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         epo2: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         C: array, (len(loc1), len(loc2))
-          matrix with the values of hyper-connectivity
+            matrix with the values of hyper-connectivity
         threshold: float
-          threshold for the inter-brain links;
-          only those above the set value will be plotted
+            threshold for the inter-brain links;
+            only those above the set value will be plotted
         steps: int
-          number of steps for the Bezier curves
-          if <3 equivalent to ploting straight lines
+            number of steps for the Bezier curves
+            if <3 equivalent to ploting straight lines
         lab: option to plot channel names
-          False by default.
-        
+            False by default.
 
     Returns:
         Plot head topomap with sensors and 
-              connectivity links in 2D.
+            connectivity links in 2D.
         ax: The new Axes object.
     """
 
@@ -717,24 +708,23 @@ def viz_2D_headmodel_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, t
 
     Arguments:
         epo1: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         epo2: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         C: array, (len(loc1), len(loc2))
-          matrix with the values of hyper-connectivity
+            matrix with the values of hyper-connectivity
         threshold: float
-          threshold for the inter-brain links;
-          only those above the set value will be plotted
+            threshold for the inter-brain links;
+            only those above the set value will be plotted
         steps: int
-          number of steps for the Bezier curves
-          if <3 equivalent to ploting straight lines
+            number of steps for the Bezier curves
+            if <3 equivalent to ploting straight lines
         lab: option to plot channel names
-          True by default.
-        
+            True by default.
 
     Returns:
         Plot headmodel with sensors and 
-              connectivity links in 2D.
+            connectivity links in 2D.
         ax: The new Axes object.
     """
 
@@ -766,24 +756,23 @@ def viz_3D_inter (epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: 
 
     Arguments:
         epo1: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         epo2: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         C: array, (len(loc1), len(loc2))
-          matrix with the values of hyper-connectivity
+            matrix with the values of hyper-connectivity
         threshold: float
-          threshold for the inter-brain links;
-          only those above the set value will be plotted
+            threshold for the inter-brain links;
+            only those above the set value will be plotted
         steps: int
-          number of steps for the Bezier curves
-          if <3 equivalent to ploting straight lines
+            number of steps for the Bezier curves
+            if <3 equivalent to ploting straight lines
         lab: option to plot channel names
-          False by default.
-        
+            False by default.
 
     Returns:
         Plot headmodel with sensors and 
-              connectivity links in 3D.
+            connectivity links in 3D.
         ax: The new Axes object.
     """
 
@@ -810,19 +799,19 @@ def transform_2d_intra(locs: np.ndarray,traX: float=0.15, traY: float=0, traZ:fl
 
     Arguments:
         locs: array of shape (n_sensors, 3)
-          3d coordinates of the sensors
+            3d coordinates of the sensors
         traX: float
-          X translation to apply to the sensors
+            X translation to apply to the sensors
         traY: float
-          Y translation to apply to the sensors
+            Y translation to apply to the sensors
         traZ: float
-          Z translation to apply to the sensors
+            Z translation to apply to the sensors
         rotZ: float
-          Z rotation to apply to the sensors
+            Z rotation to apply to the sensors
 
     Returns:
         result: array (n_sensors, 3)
-          new coordinates of the sensors
+            new coordinates of the sensors
     """
     # translation
     locs[:, 0] = locs[:, 0] + traX
@@ -911,11 +900,11 @@ def plot_sensors_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False)
 
     Arguments:
         epo1: mne.Epochs
-          Epochs object to get channels information
+            Epochs object to get channels information
         epo2: mne.Epochs
-          Epochs object to get channels information
+            Epochs object to get channels information
         lab: option to plot channel names
-          True by default.
+            True by default.
 
     Returns:
         None: plot the sensors in 2D within the current axis.
@@ -982,27 +971,24 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs,
 
     Arguments:
         epo1: mne.Epochs
-          Epochs object to get channels information
+            Epochs object to get channels information
         epo2: mne.Epochs
-          Epochs object to get channels information
+            Epochs object to get channels information
         C1: array, (len(loc1), len(loc1))
-          matrix with the values of intra-brain connectivity
+            matrix with the values of intra-brain connectivity
         C2: array, (len(loc2), len(loc2))
-          matrix with the values of intra-brain connectivity
+            matrix with the values of intra-brain connectivity
         threshold: float | str
-          threshold for the inter-brain links;
-          only those above the set value will be plotted
-          Can also be "auto" to use a threshold automatically
-          calculated from your matrix as the maximum median 
-          by column + the maximum standard error by column.
-          Note that the automatic threshold is specific to a 
-          dyad and does not allow to compare different dyads.
+            threshold for the inter-brain links;
+            only those above the set value will be plotted
+            Can also be "auto" to use a threshold automatically
+            calculated from your matrix as the maximum median 
+            by column + the maximum standard error by column.
+            Note that the automatic threshold is specific to a 
+            dyad and does not allow to compare different dyads.
         steps: int
-          number of steps for the Bezier curves
-          if <3 equivalent to ploting straight lines
-        weight: numpy.float
-          Connectivity weight to determine the thickness
-          of the link
+            number of steps for the Bezier curves
+            if <3 equivalent to ploting straight lines
 
     Returns:
         None: plot the links in 2D within the current axis.
@@ -1192,26 +1178,25 @@ def viz_2D_topomap_intra (epo1: mne.Epochs, epo2: mne.Epochs,
 
     Arguments:
         epo1: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         epo2: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         C1: array, (len(loc1), len(loc1))
-          matrix with the values of intra-brain connectivity
+            matrix with the values of intra-brain connectivity
         C2: array, (len(loc2), len(loc2))
-          matrix with the values of intra-brain connectivity
+            matrix with the values of intra-brain connectivity
         threshold: float
-          threshold for the inter-brain links;
-          only those above the set value will be plotted
+            threshold for the inter-brain links;
+            only those above the set value will be plotted
         steps: int
-          number of steps for the Bezier curves
-          if <3 equivalent to ploting straight lines
+            number of steps for the Bezier curves
+            if <3 equivalent to ploting straight lines
         lab: option to plot channel names
-          False by default.
-        
+            False by default.
 
     Returns:
         Plot head topomap with sensors and 
-              intra-brain connectivity links in 2D.
+            intra-brain connectivity links in 2D.
         ax: The new Axes object.
     """
 
@@ -1269,11 +1254,11 @@ def plot_sensors_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool
     Arguments:
         ax: Matplotlib axis created with projection='3d'
         epo1: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         epo2: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         lab: option to plot channel names
-          False by default.
+            False by default.
 
     Returns:
         None: plot the sensors in 3D within the current axis.
@@ -1339,28 +1324,25 @@ def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs,
 
     Arguments:
         ax: Matplotlib axis created with projection='3d'
-        loc1: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
-        loc2: arrays of shape (n_sensors, 3)
-          3d coordinates of the sensors
+        epo1: arrays of shape (n_sensors, 3)
+            Epochs object to get channel information
+        epo2: arrays of shape (n_sensors, 3)
+            Epochs object to get channel information
         C1: array, (len(loc1), len(loc1))
-          matrix with the values of intra-brain connectivity
+            matrix with the values of intra-brain connectivity
         C2: array, (len(loc1), len(loc2))
-          matrix with the values of intra-brain connectivity
+            matrix with the values of intra-brain connectivity
         threshold: float | str
-          threshold for the inter-brain links;
-          only those above the set value will be plotted
-          Can also be "auto" to use a threshold automatically
-          calculated from your matrix as the maximum median 
-          by column + the maximum standard error by column.
-          Note that the automatic threshold is specific to a 
-          dyad and does not allow to compare different dyads.
+            threshold for the inter-brain links;
+            only those above the set value will be plotted
+            Can also be "auto" to use a threshold automatically
+            calculated from your matrix as the maximum median 
+            by column + the maximum standard error by column.
+            Note that the automatic threshold is specific to a 
+            dyad and does not allow to compare different dyads.
         steps: int
-          number of steps for the Bezier curves
-          if <3 equivalent to ploting straight lines
-        weight: numpy.float
-          Connectivity weight to determine the thickness
-          of the link
+            number of steps for the Bezier curves
+            if <3 equivalent to ploting straight lines
 
     Returns:
         None: plot the links in 3D within the current axis.
@@ -1594,25 +1576,24 @@ def viz_3D_intra (epo1: mne.Epochs, epo2: mne.Epochs,
 
     Arguments:
         epo1: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         epo2: mne.Epochs
-          Epochs object to get channel information
+            Epochs object to get channel information
         C1: array, (len(loc1), len(loc1))
-          matrix with the values of intra-brain connectivity
+            matrix with the values of intra-brain connectivity
         C2: array, (len(loc2), len(loc2))
         threshold: float
-          threshold for the inter-brain links;
-          only those above the set value will be plotted
+            threshold for the inter-brain links;
+            only those above the set value will be plotted
         steps: int
-          number of steps for the Bezier curves
-          if <3 equivalent to ploting straight lines
+            number of steps for the Bezier curves
+            if <3 equivalent to ploting straight lines
         lab: option to plot channel names
-          False by default.
-        
+            False by default.
 
     Returns:
         Plot headmodel with sensors and 
-              connectivity links in 3D.
+            connectivity links in 3D.
         ax: The new Axes object.
     """
 
@@ -1645,7 +1626,7 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
     Plots the results of the Cross wavelet analysis.
 
     Arguments:
-         sig1 : mne.Epochs
+        sig1 : mne.Epochs
             Signal (eg. EEG data) of first participant.
 
         sig2 : mne.Epochs
@@ -1663,9 +1644,6 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
         figsize: tuple
             Figure size (default is (30, 8)).
 
-        xmin: int
-            Minimum x-value (default is 0).
-
         x_units: int | float
             distance between xticks on x-axis (time) (default is 100)
 
@@ -1675,7 +1653,7 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
         or plot_xwt_phase_angle.
 
     Returns:
-    Figure of xwt results.
+        Figure: The figure with the xwt results.
     """
 
     dt = 1/sfreq

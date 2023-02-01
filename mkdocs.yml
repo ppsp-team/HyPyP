@@ -1,4 +1,6 @@
 site_name: HyPyP Docs
+site_url: https://hypyp.readthedocs.io/
+repo_url: https://github.com/ppsp-team/HyPyP/
 
 markdown_extensions:
   - admonition
@@ -17,7 +19,8 @@ plugins:
       default_handler: python
       handlers:
         python:
-          rendering:
+          options:
             show_source: false
-      watch:
-        - hypyp
+
+watch:
+  - hypyp
