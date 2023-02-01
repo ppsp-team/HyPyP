@@ -67,9 +67,9 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
 
     Note:
         The function can be iterated on the group and/or on conditions
-      (for epochs in epochs['epochs_%s_%s_%s' % (subj, group, cond_name)]).
-     The PSD distribution on the group can be visualized to check normality
-      for statistics.
+        (for epochs in epochs['epochs_%s_%s_%s' % (subj, group, cond_name)]).
+        The PSD distribution on the group can be visualized to check normality
+        for statistics.
 
     Returns:
         freq_list, psd:
@@ -77,9 +77,9 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
       - freq_list: list of frequencies in the actual frequency band of interest
         (frequency bin) used for PSD calculation.
       - psd: PSD value for each epoch, each channel, and each frequency,
-      ndarray (n_epochs, n_channels, n_frequencies).
-      Note that if time_resolved == True, PSD values are averaged
-      across epochs.
+        ndarray (n_epochs, n_channels, n_frequencies).
+        Note that if time_resolved == True, PSD values are averaged
+        across epochs.
     """
 
     # dropping EOG channels (incompatible with connectivity map model in stats)
