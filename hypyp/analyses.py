@@ -487,8 +487,9 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
         angle = np.sin(angle - mu_angle)
 
         formula = 'nilm,nimk->nilk'
-        con = np.einsum(formula, angle, angle.transpose(transpose_axes)) / \
-              np.sqrt(np.einsum('nil,nik->nilk', np.sum(angle ** 2, axis=3), np.sum(angle ** 2, axis=3)))
+        con = np.abs(np.einsum(formula, angle, angle.transpose(transpose_axes)) /
+                     np.sqrt(np.einsum('nil,nik->nilk', np.sum(angle ** 2, axis=3), 
+                                       np.sum(angle ** 2, axis=3))))
         
     elif mode.lower() == 'pli':
         c = np.real(complex_signal)
