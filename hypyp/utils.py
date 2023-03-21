@@ -215,10 +215,10 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
     ch_S2 = []
     ch = []
     for name in raw_merge.info['ch_names']:
-        if name.endswith('S1'):
+        if name.endswith('S1') or name.endswith('_1'):
             ch_S1.append(name)
             ch.append(name.split('_')[0])
-        elif name.endswith('S2'):
+        elif name.endswith('S2') or name.endswith('_2'):
             ch_S2.append(name)
 
     # picking individual participant data
@@ -240,16 +240,16 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
         raws.info['description'] = raw_merge.info['description']
         raws.info['events'] = raw_merge.info['events']
 
-    # setting montage 94 electrodes (ignore somes to correspond to our data)
+   # setting montage 94 electrodes (ignore somes to correspond to our data)
         for ch in raws.info['chs']:
-            if ch['ch_name'].startswith('MOh') or ch['ch_name'].startswith('MOb'):
+            if ch['ch_name'].startswith('MOh') or ch['ch_name'].startswith('MOb') or ('EOG' in ch['ch_name']):
                 # print('emg')
                 ch['kind'] = FIFF.FIFFV_EOG_CH
             else:
                 ch['kind'] = FIFF.FIFFV_EEG_CH
     montage = mne.channels.make_standard_montage('standard_1020')
-    raw_1020_S1 = raw_S1.copy().set_montage(montage)
-    raw_1020_S2 = raw_S2.copy().set_montage(montage)
+    raw_1020_S1 = raw_S1.copy().set_montage(montage, on_missing='ignore')
+    raw_1020_S2 = raw_S2.copy().set_montage(montage, on_missing='ignore')
     # raw_1020_S1.plot_sensors()
 
     # set reference to electrodes average
