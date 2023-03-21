@@ -238,9 +238,8 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
         ch.split('_')[0] for ch in ch_S2 if ch in raw_merge.info['bads']]
     for raws in (raw_S1, raw_S2):
         raws.info['description'] = raw_merge.info['description']
-        raws.info['events'] = raw_merge.info['events']
 
-   # setting montage 94 electrodes (ignore somes to correspond to our data)
+    # setting montage 94 electrodes (ignore somes to correspond to our data)
         for ch in raws.info['chs']:
             if ch['ch_name'].startswith('MOh') or ch['ch_name'].startswith('MOb') or ('EOG' in ch['ch_name']):
                 # print('emg')
@@ -250,21 +249,12 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
     montage = mne.channels.make_standard_montage('standard_1020')
     raw_1020_S1 = raw_S1.copy().set_montage(montage, on_missing='ignore')
     raw_1020_S2 = raw_S2.copy().set_montage(montage, on_missing='ignore')
-    # raw_1020_S1.plot_sensors()
 
     # set reference to electrodes average
     # (instate of initial ref to avoid ref biais)
     # and storing it in raw.info['projs']: applied when Epochs
-    raw_1020_S1, _ = mne.set_eeg_reference(
-        raw_1020_S1, 'average', projection=True)
-    raw_1020_S2, _ = mne.set_eeg_reference(
-        raw_1020_S2, 'average', projection=True)
-
-    # TODO: annotations, subj name, events
-    # task description different across subj
-
-    # raw_1020_S1.plot()
-    # raw_1020_S1.plot_psd()
+    raw_1020_S1, _ = mne.set_eeg_reference(raw_1020_S1, 'average', projection=True)
+    raw_1020_S2, _ = mne.set_eeg_reference(raw_1020_S2, 'average', projection=True)
 
     return raw_1020_S1, raw_1020_S2
 
