@@ -763,7 +763,7 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int, freq_range1: list, freq_
 def xwt(sig1: mne.Epochs, sig2: mne.Epochs, sfreq: Union[int, float],
         freqs: Union[int, np.ndarray], analysis: str) -> np.ndarray:
     """
-    Performs a cross wavelet transform on two signals.
+    Perfroms a cross wavelet transform on two signals.
 
     Arguments:
 
@@ -803,10 +803,10 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs, sfreq: Union[int, float],
     n_epochs, n_chans2, n_samples = sig2.get_data().shape
 
     cross_sigs = np.zeros(
-        (n_chans1, n_chans2, n_epochs, n_freqs, n_samples),
+        (n_chans1, n_chans2, n_freqs, n_samples),
         dtype=complex) * np.nan
     wcts = np.zeros(
-            (n_chans1, n_chans2, n_epochs, n_freqs, n_samples),
+            (n_chans1, n_chans2, n_freqs, n_samples),
             dtype=complex) * np.nan
 
     # perform a continuous wavelet transform on all epochs of each signal
