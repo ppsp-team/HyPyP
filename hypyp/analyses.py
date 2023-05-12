@@ -653,7 +653,7 @@ def compute_single_freq(data: np.ndarray, sampling_rate: int, freq_range: list) 
             e.g. [5,30] refers to every integer in the frequency bin from 5 Hz to 30 Hz.
     Returns:
         complex_signal:
-          shape is (2, n_epochs, n_channels, n_frequencies, n_times)
+          shape is (2, n_epochs, n_channels, n_tapers, n_frequencies, n_times)
     """
 
     complex_signal = np.array([mne.time_frequency.tfr_array_multitaper(data[participant], sfreq=sampling_rate,
