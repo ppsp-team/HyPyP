@@ -667,7 +667,7 @@ def compute_single_freq(data: np.ndarray, sampling_rate: int, freq_range: list) 
     return complex_signal
 
 
-def compute_freq_bands(data: np.ndarray, sampling_rate: int,freq_bands: dict,filter_signal: bool = True , **filter_options) -> np.ndarray:
+def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict, filter_signal: bool = True , **filter_options) -> np.ndarray:
     """
     Computes analytic signal per frequency band using FIR filtering
     and Hilbert transform.
@@ -679,11 +679,11 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int,freq_bands: dict,fil
         sampling_rate:
             sampling rate.
         filter_signal:
-            bool: wheter to apply a filter on the signal,
+            bool: whether to apply a filter on the signal,
             default, true
         freq_bands:
             a dictionary specifying frequency band labels and corresponding frequency ranges
-            e.g. {'alpha':[8,12],'beta':[12,20]} indicates that computations are performed over two frequency bands: 8-12 Hz for the alpha band and 12-20 Hz for the beta band.
+            e.g. {'alpha':[8,12], 'beta':[12,20]} indicates that computations are performed over two frequency bands: 8-12 Hz for the alpha band and 12-20 Hz for the beta band.
         **filter_options:
             additional arguments for mne.filter.filter_data, such as filter_length, l_trans_bandwidth, h_trans_bandwidth
     Returns:
@@ -693,7 +693,7 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int,freq_bands: dict,fil
     assert data[0].shape[0] == data[1].shape[0], "Two data streams should have the same number of trials."
     data = np.array(data)
 
-    # filtering and hilbert transform
+    # filtering and Hilbert transform
     complex_signal = []
     for freq_band in freq_bands.values():
         if filter_signal:
