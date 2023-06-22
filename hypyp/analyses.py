@@ -801,8 +801,8 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
     assert n_chans1 == n_chans2, "n_chans1 and n_chans2 should have the same number of channels"
     assert n_samples1 == n_samples2, "n_samples1 and n_samples2 should have the same number of samples"
 
-    cross_sigs = np.zeros((n_chans1, n_chans2, n_epochs, n_freqs, n_samples1), dtype=complex) * np.nan
-    wcts = np.zeros((n_chans1, n_chans2, n_epochs, n_freqs, n_samples1), dtype=complex) * np.nan
+    cross_sigs = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
+    wcts = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
 
     # Set the mother wavelet
     Ws = mne.time_frequency.tfr.morlet(sfreq, freqs, 
