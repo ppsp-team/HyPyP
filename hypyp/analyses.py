@@ -785,7 +785,7 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
     
     Returns:
         data:
-            Wavelet results. The shape is (n_chans1, n_chans2, n_freqs, n_samples).
+            Wavelet results. The shape is (n_chans1, n_chans2, n_epochs, n_freqs, n_samples).
             Wavelet transform coherence calculated according to Maraun & Kurths (2004)
     """
     
@@ -801,8 +801,8 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
     assert n_chans1 == n_chans2, "n_chans1 and n_chans2 should have the same number of channels"
     assert n_samples1 == n_samples2, "n_samples1 and n_samples2 should have the same number of samples"
 
-    cross_sigs = np.zeros((n_chans1, n_chans2, n_freqs, n_samples1), dtype=complex) * np.nan
-    wcts = np.zeros((n_chans1, n_chans2, n_freqs, n_samples1), dtype=complex) * np.nan
+    cross_sigs = np.zeros((n_chans1, n_chans2, n_epochs, n_freqs, n_samples1), dtype=complex) * np.nan
+    wcts = np.zeros((n_chans1, n_chans2, n_epochs, n_freqs, n_samples1), dtype=complex) * np.nan
 
     # Set the mother wavelet
     Ws = mne.time_frequency.tfr.morlet(sfreq, freqs, 
@@ -819,17 +819,17 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
             out2 = mne.time_frequency.tfr.cwt(cur_sig2, Ws, use_fft=True,
                                               mode='same', decim=1)
             # Average across epochs
-            tfr_cwt1 = out1.mean(0)
-            tfr_cwt2 = out2.mean(0)
+            tfr_cwt1 = out1
+            tfr_cwt2 = out2
             # Compute cross-spectrum
             wps1 = tfr_cwt1 * tfr_cwt1.conj()
             wps2 = tfr_cwt2 * tfr_cwt2.conj()
-            cross_sig = (out1 * out2.conj()).mean(0)
-            cross_sigs[ind1, ind2, :, :] = cross_sig
+            cross_sig = out1 * out2.conj()
+            cross_sigs[ind1, ind2, :, :, :] = cross_sig
             coh = (cross_sig) / (np.sqrt(wps1*wps2))
             abs_coh = np.abs(coh)
             wct = (abs_coh - np.min(abs_coh)) / (np.max(abs_coh) - np.min(abs_coh))
-            wcts[ind1, ind2, :, :] = wct
+            wcts[ind1, ind2, :, :, :] = wct
 
     if mode == 'power':
         data = np.abs(cross_sigs)
