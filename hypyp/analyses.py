@@ -792,14 +792,14 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
     # Set parameters for the output
     n_freqs = len(freqs)
     sfreq = sig1.info['sfreq']
-    assert sig1.info['sfreq'] == sig2.info['sfreq'], "Sig1 et sig2 should have the same sfreq value"
+    assert sig1.info['sfreq'] == sig2.info['sfreq'], "Sig1 et sig2 should have the same sfreq value."
 
     n_epochs1, n_chans1, n_samples1 = sig1.get_data().shape
     n_epochs2, n_chans2, n_samples2 = sig2.get_data().shape
 
-    assert n_epochs1 == n_epochs2, "n_epochs1 and n_epochs2 should have the same number of epochs"
-    assert n_chans1 == n_chans2, "n_chans1 and n_chans2 should have the same number of channels"
-    assert n_samples1 == n_samples2, "n_samples1 and n_samples2 should have the same number of samples"
+    assert n_epochs1 == n_epochs2, "n_epochs1 and n_epochs2 should have the same number of epochs."
+    assert n_chans1 == n_chans2, "n_chans1 and n_chans2 should have the same number of channels."
+    assert n_samples1 == n_samples2, "n_samples1 and n_samples2 should have the same number of samples."
 
     cross_sigs = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
     wcts = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
