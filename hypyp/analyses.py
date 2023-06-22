@@ -818,12 +818,10 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
             cur_sig2 = np.squeeze(sig2.get_data(mne.pick_channels(sig2.ch_names, [ch_label2])))
             out2 = mne.time_frequency.tfr.cwt(cur_sig2, Ws, use_fft=True,
                                               mode='same', decim=1)
-            # Average across epochs
-            tfr_cwt1 = out1
-            tfr_cwt2 = out2
+            
             # Compute cross-spectrum
-            wps1 = tfr_cwt1 * tfr_cwt1.conj()
-            wps2 = tfr_cwt2 * tfr_cwt2.conj()
+            wps1 = out1 * out1.conj()
+            wps2 = out2 * out2.conj()
             cross_sig = out1 * out2.conj()
             cross_sigs[ind1, ind2, :, :, :] = cross_sig
             coh = (cross_sig) / (np.sqrt(wps1*wps2))
