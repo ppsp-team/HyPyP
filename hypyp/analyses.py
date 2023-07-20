@@ -767,7 +767,7 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int, freq_range1: list, freq_
 
 
 def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
-        freqs: Union[int, np.ndarray], n_cycles=5.0, mode: str) -> np.ndarray:
+        freqs: Union[int, np.ndarray], n_cycles=5.0, mode: str = "xwt") -> np.ndarray:
     """
     Performs a cross wavelet transform on two signals.
 
