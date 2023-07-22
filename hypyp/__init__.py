@@ -1,5 +1,5 @@
-import pkg_resources
+from importlib.metadata import version
 from hypyp import analyses, prep, stats, utils, viz
 
-__version__ = pkg_resources.get_distribution("hypyp").version
+__version__ = version("hypyp")
 __all__ = ["analyses", "prep", "stats", "utils", "viz"]

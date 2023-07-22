@@ -19,7 +19,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import mne
 import meshio
-import pkg_resources
+import importlib_resources
+from contextlib import ExitStack
+import atexit
 import math
 
 from hypyp.ext.mpl3d import glm
@@ -588,7 +590,11 @@ def get_3d_heads_inter():
     """
    
     # Extract vertices and faces for the first head
-    filename = pkg_resources.resource_filename('hypyp', 'data/Basehead.obj')
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    ref = importlib_resources.files('hypyp') / 'data/Basehead.obj'
+    filename = file_manager.enter_context(importlib_resources.as_file(ref))
+
     mesh = meshio.read(Path(filename).resolve())
     zoom = 0.064
     interval = 0.32
@@ -1224,7 +1230,11 @@ def get_3d_heads_intra():
     """
    
     # Extract vertices and faces for the first head
-    filename = pkg_resources.resource_filename('hypyp', 'data/Basehead.obj')
+    file_manager = ExitStack()
+    atexit.register(file_manager.close)
+    ref = importlib_resources.files('hypyp') / 'data/Basehead.obj'
+    filename = file_manager.enter_context(importlib_resources.as_file(ref))
+
     mesh = meshio.read(Path(filename).resolve())
     zoom = 0.064
     interval = 0.5
