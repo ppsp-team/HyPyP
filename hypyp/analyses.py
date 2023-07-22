@@ -339,7 +339,8 @@ def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int, frequen
 
     # compute instantaneous analytic signal from EEG data
     if type(frequencies) == list:
-        values = compute_single_freq(data, sampling_rate, frequencies)
+        # average over tapers
+        values = np.mean(compute_single_freq(data, sampling_rate, frequencies), 3).squeeze()
     elif type(frequencies) == dict:
         values = compute_freq_bands(data, sampling_rate, frequencies)
     else:
@@ -740,7 +741,7 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int, freq_range1: list, freq_
     """
     r = np.mean(freq_range2)/np.mean(freq_range1)
     freq_range = [np.min(freq_range1), np.max(freq_range2)]
-    complex_signal = compute_single_freq(data, sampling_rate, freq_range, **filter_options)
+    complex_signal = np.mean(compute_single_freq(data, sampling_rate, freq_range, **filter_options),3).squeeze()
 
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
                                     complex_signal.shape[3], complex_signal.shape[4]
