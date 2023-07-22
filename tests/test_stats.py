@@ -162,13 +162,13 @@ def test_behav_corr(epochs):
     assert con_subj.shape == (62, 62)
     data = np.stack((con_ind, con_subj, con_subj, con_subj, con_subj, con_subj, con_subj))
     behav = np.array([0, 1, 1, 1, 1, 1, 1])
-    # correlate connectivity and behaviour across pairs
+    # correlate connectivity and behaviour across pairs without multiple comparison correction
     corr_tuple = analyses.behav_corr(data, behav,
                                      data_name='ccorr',
                                      behav_name='imitation score',
                                      p_thresh=0.05,
-                                     multiple_corr=True,
-                                     verbose=False)
+                                     multiple_corr=False,
+                                     verbose=True)
     # test that there is a correlation (repeated measures)
     significant_r = []
     for i in range(0, corr_tuple.r.shape[0]):
@@ -176,6 +176,21 @@ def test_behav_corr(epochs):
             if corr_tuple.r[i, j] != 0:
                 significant_r.append(corr_tuple.r[i, j])
     assert len(significant_r) != 0
+
+    # correlate connectivity and behaviour across pairs with multiple comparison correction
+    corr_tuple = analyses.behav_corr(data, behav,
+                                     data_name='ccorr',
+                                     behav_name='imitation score',
+                                     p_thresh=0.05,
+                                     multiple_corr=True,
+                                     verbose=True)
+    # test that there is a correlation (repeated measures)
+    significant_r = []
+    for i in range(0, corr_tuple.r.shape[0]):
+        for j in range(0, corr_tuple.r.shape[1]):
+            if corr_tuple.r[i, j] != 0:
+                significant_r.append(corr_tuple.r[i, j])
+    assert len(significant_r) == 0
 
     # generate random subjects' connectivity data
     data = []

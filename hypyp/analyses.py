@@ -194,11 +194,14 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
                 pvals[i, j] = pvalue_i
         # correction for multiple comparisons
         if multiple_corr is True:
-            pvals_corrected = statsmodels.stats.multitest.multipletests(pvals,
+            # note: we reshape pvals to be able to use fdr_bh
+            pvals_corrected = statsmodels.stats.multitest.multipletests(pvals.flatten(),
                                                                         alpha=0.05,
                                                                         method='fdr_bh',
                                                                         is_sorted=False,
                                                                         returnsorted=False)
+            # put pval in original shape
+            pvals_corrected = np.reshape(np.atleast_1d(pvals_corrected[1]), pvals.shape)
         # get r value for significant correlation only
         for i in range(0, data.shape[1]):
             for j in range(0, data.shape[2]):
@@ -207,7 +210,7 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
                     pvalue = pvals
                 # or corrected for multiple comparisons
                 else:
-                    pvalue = pvals_corrected[0]
+                    pvalue = pvals_corrected
                 if pvalue[i, j] < p_thresh:
                     significant_corr[i, j] = rs[i, j]
         r = np.nan_to_num(significant_corr)
