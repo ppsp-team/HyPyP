@@ -508,8 +508,7 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
     else:
         vmax = None
         vmin = None
-        mne.viz.plot_topomap(T_obs_plot, pos, vmin=vmin, vmax=vmax,
-                             sensors=True)
+        mne.viz.plot_topomap(T_obs_plot, pos, vlim=(vmin, vmax), sensors=True)
 
     return None
 
