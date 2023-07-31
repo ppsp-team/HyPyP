@@ -450,14 +450,14 @@ def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.s
                                               pvalue=0.05)
 
     # computing the cluster permutation t test
-    Stat_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_test(data,
-                                                                                  stat_fun=stat_fun,
-                                                                                  threshold=alpha,
-                                                                                  tail=tail,
-                                                                                  n_permutations=n_permutations,
-                                                                                  connectivity=ch_con_freq,
-                                                                                  t_power=1,
-                                                                                  out_type='mask')
+    Stat_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(data,
+                                                                        stat_fun=stat_fun,
+                                                                        threshold=alpha,
+                                                                        tail=tail,
+                                                                        n_permutations=n_permutations,
+                                                                        adjacency=ch_con_freq,
+                                                                        t_power=1,
+                                                                        out_type='mask')
     # getting F values for sensors belonging to a significant cluster
     Stat_obs_plot = np.zeros(Stat_obs.shape)
     for cluster_p in cluster_p_values:
