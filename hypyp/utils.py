@@ -371,8 +371,8 @@ def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: flo
             new epoch with simulated data
     """
 
-    n_epo, n_chan, n_samp = epochs.get_data().shape
-    sfreq = epochs.info['sfreq']
+    n_epo, n_chan, n_samp = epoch.get_data().shape
+    sfreq = epoch.info['sfreq']
 
     Nt = n_samp * n_epo
     tmax = n_samp / sfreq * n_epo  # s
@@ -387,13 +387,13 @@ def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: flo
         dotp = omega - coupling + noise_phase_level * np.random.randn(n_chan) / n_samp
         return dotp
 
-    p0 = 2 * np.pi * np.block([np.zeros(N), np.zeros(N) + np.random.rand(N) + 0.5])
+    p0 = 2 * np.pi * np.block([np.zeros(n_chan/2), np.zeros(n_chan/2) + np.random.rand(n_chan/2) + 0.5])
     ans = solve_ivp(fun=fp, t_span=(tv[0], tv[-1]), y0=p0, t_eval=tv)
     phi = ans['y'].T  % (2*np.pi)
 
     eeg = np.sin(phi) + noise_amplitude_level * np.random.randn(*phi.shape)
     
-    simulation = epo_real.copy()
+    simulation = epoch.copy()
     simulation._data = np.transpose(np.reshape(eeg.T, [n_chan, n_epo, n_samp]), (1, 0, 2))
     
     return simulation
