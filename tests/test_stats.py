@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 
+import pytest
 import random
 import numpy as np
 import scipy
@@ -139,7 +140,7 @@ def test_behav_corr(epochs):
                                      p_thresh=0.05,
                                      multiple_corr=False,
                                      verbose=False)
-    assert corr_tuple.r in [-1, 1]
+    assert pytest.approx(corr_tuple.r) in [-1, 1]
 
     # test for connectivity values data
     # generate artificial group of 2 subjects repeated
@@ -310,9 +311,9 @@ def test_utils(epochs):
     liste = ep_hyper.info['ch_names']
     ch_index1 = liste.index(ch_name + '_S1')
     ch_index2 = liste.index(ch_name + '_S2')
-    ep_hyper_data = ep_hyper.get_data()
-    epo1_data = epochs.epo1.get_data()
-    epo2_data = epochs.epo2.get_data()
+    ep_hyper_data = ep_hyper.get_data(copy=True)
+    epo1_data = epochs.epo1.get_data(copy=True)
+    epo2_data = epochs.epo2.get_data(copy=True)
     for i in range(0, len(ep_hyper_data[ne][ch_index1])):
         assert ep_hyper_data[ne][ch_index1][i] == epo1_data[ne][nch][i]
         assert ep_hyper_data[ne][ch_index2][i] == epo2_data[ne][nch][i]

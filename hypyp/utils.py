@@ -150,8 +150,8 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
 
     # picking data per epoch
     for l in range(0, len(epoch_S1)):
-        data_S1 = epoch_S1[l].get_data()
-        data_S2 = epoch_S2[l].get_data()
+        data_S1 = epoch_S1[l].get_data(copy=True)
+        data_S2 = epoch_S2[l].get_data(copy=True)
 
         data_S1 = np.squeeze(data_S1, axis=0)
         data_S2 = np.squeeze(data_S2, axis=0)
@@ -338,7 +338,7 @@ def generate_random_epoch(epoch: mne.Epochs, mu: float=0, sigma: float=2.0)-> mn
 
     # Get epochs as a 3D NumPy array of shape (n_epochs, n_channels, n_times)
     # Get the arrays’ shape
-    data_shape = epoch.get_data().shape
+    data_shape = epoch.get_data(copy=False).shape
     i, j, k = data_shape
 
     # Generate a numpy.array with same shape from the normal distribution
