@@ -296,7 +296,7 @@ def metaconn_matrix(electrodes: list, ch_con: scipy.sparse.csr_matrix, freqs_mea
         metaconn_freq=metaconn_freq)
 
 
-def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float) -> tuple:
+def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float = 0.05) -> tuple:
     """
     Computes cluster-level statistical permutation test, corrected with
     channel connectivity across space and frequencies.
@@ -345,7 +345,7 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
     # getting F values for sensors belonging to a significant cluster
     F_obs_plot = np.zeros(F_obs.shape)
     for cluster_p in cluster_p_values:
-        if cluster_p <= 0.05:
+        if cluster_p <= alpha:
             sensors_plot = clusters[np.where(cluster_p_values == cluster_p)[
                 0][0]].astype('uint8')
             F_values = sensors_plot*F_obs
