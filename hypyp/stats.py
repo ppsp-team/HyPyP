@@ -363,7 +363,7 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
         F_obs_plot=F_obs_plot)
 
 
-def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float = 0.05) -> tuple:
+def statscluster(data: list, test: str, factor_levels: list, ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float = 0.05) -> tuple:
     """
     Computes cluster-level statistical permutation test, corrected with
     channel connectivity across space and frequencies to compare groups
@@ -378,7 +378,7 @@ def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.s
             Can be a t test for independant or paired samples
             ('ind ttest' or 'rel ttest'), a one-way ANOVA test
             ('f oneway'), or a multiple-way ANOVA test ('f multipleway), str.
-        factor_level: for multiple-way ANOVA test, describe the number of level
+        factor_levels: for multiple-way ANOVA test, describe the number of level
             for each factor, list (if compare 2 groups and 2 conditions,
             factor_levels = [2, 2] and data should be an np.array with
             group1-condition1, group1-condition2, group2-condition1,
@@ -426,33 +426,35 @@ def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.s
     if test == 'ind ttest':
         def stat_fun(*arg):
             return(scipy.stats.ttest_ind(arg[0], arg[1], equal_var=False)[0])
+        threshold = alpha
     elif test == 'rel ttest':
         def stat_fun(*arg):
             return(scipy.stats.ttest_rel(arg[0], arg[1])[0])
+        threshold = alpha
     elif test == 'f oneway':
         def stat_fun(*arg):
             return(scipy.stats.f_oneway(arg[0], arg[1])[0])
+        threshold = alpha
     elif test == 'f multipleway':
-        if max(factor_level) > 2:
+        if max(factor_levels) > 2:
             correction = True
         else:
             correction = False
-
         def stat_fun(*arg):
             return(mne.stats.f_mway_rm(np.swapaxes(args, 1, 0),
                                        factor_levels,
                                        effects='all',
                                        correction=correction,
                                        return_pvals=False)[0])
-        alpha = mne.stats.f_threshold_mway_rm(n_subjects=data.shape[1],
-                                              factor_levels=factor_levels,
-                                              effects='all',
-                                              pvalue=0.05)
+        threshold = mne.stats.f_threshold_mway_rm(n_subjects=data.shape[1],
+                                                  factor_levels=factor_levels,
+                                                  effects='all',
+                                                  pvalue=0.05)
 
     # computing the cluster permutation t test
     Stat_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(data,
                                                                         stat_fun=stat_fun,
-                                                                        threshold=alpha,
+                                                                        threshold=threshold,
                                                                         tail=tail,
                                                                         n_permutations=n_permutations,
                                                                         adjacency=ch_con_freq,
@@ -461,7 +463,7 @@ def statscluster(data: list, test: str, factor_level: list, ch_con_freq: scipy.s
     # getting F values for sensors belonging to a significant cluster
     Stat_obs_plot = np.zeros(Stat_obs.shape)
     for cluster_p in cluster_p_values:
-        if cluster_p <= 0.05:
+        if cluster_p <= alpha:
             sensors_plot = clusters[np.where(cluster_p_values == cluster_p)[
                 0][0]].astype('uint8')
             Stat_values = sensors_plot*Stat_obs
