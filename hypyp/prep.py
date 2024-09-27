@@ -16,11 +16,22 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 import mne
-from autoreject import get_rejection_threshold, AutoReject
+from autoreject import get_rejection_threshold, AutoReject, RejectLog
 from mne.preprocessing import ICA, corrmap
+from typing import List, Tuple, TypedDict
+
+class DicAR(TypedDict):
+    """
+    Epoch rejection info
+    """
+    strategy: str
+    threshold: float
+    S1: float
+    S2: float
+    dyad: float
 
 
-def filt(raw_S: list) -> list:
+def filt(raw_S: List[mne.io.Raw]) -> List[mne.io.Raw]:
     """
     Filters list of raw data to remove slow drifts.
 
@@ -32,14 +43,14 @@ def filt(raw_S: list) -> list:
         raws: list of high-pass filtered raws.
     """
     # TODO: l_freq and h_freq as param
-    raws = []
+    raws: List[mne.io.Raw] = []
     for raw in raw_S:
         raws.append(mne.io.Raw.filter(raw, l_freq=2., h_freq=None))
 
     return raws
 
 
-def ICA_choice_comp(icas: list, epochs: list) -> list:
+def ICA_choice_comp(icas: List[ICA], epochs: List[mne.Epochs]) -> List[mne.Epochs]:
     """
     Plots Independent Components for each participant (calculated from Epochs),
     let the user choose the relevant components for artifact rejection
@@ -88,13 +99,13 @@ def ICA_choice_comp(icas: list, epochs: list) -> list:
     return cleaned_epochs_ICA
 
 
-def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> list:
+def ICA_apply(icas: List[ICA], subj_number: int, comp_number: int, epochs: List[mne.Epochs]) -> List[mne.Epochs]:
     """
     Applies ICA with template model from 1 participant in the dyad.
     See ICA_choice_comp for a detailed description of the parameters and output.
     """
 
-    cleaned_epochs_ICA = []
+    cleaned_epochs_ICA: List[ICA] = []
     # selecting which ICs corresponding to the template
     template_eog_component = icas[subj_number].get_components()[:, comp_number]
 
@@ -127,7 +138,7 @@ def ICA_apply(icas: int, subj_number: int, comp_number: int, epochs: list) -> li
     return cleaned_epochs_ICA
 
 
-def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, random_state: int) -> list:
+def ICA_fit(epochs: List[mne.Epochs], n_components: int, method: str, fit_params: dict, random_state: int) -> List[ICA]:
     """
     Computes global Autorejection to fit Independent Components Analysis
     on Epochs, for each participant.
@@ -166,7 +177,7 @@ def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, rand
         icas: list of Independant Components for each participant (IC are MNE
             objects, see MNE documentation for more details).
     """
-    icas = []
+    icas: List[ICA] = []
     for epoch in epochs:
         # per subj
         # applying AR to find global rejection threshold
@@ -188,7 +199,7 @@ def ICA_fit(epochs: list, n_components: int, method: str, fit_params: dict, rand
     return icas
 
 
-def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float = 50.0, verbose: bool = False) -> list:
+def AR_local(cleaned_epochs_ICA: List[mne.Epochs], strategy: str = 'union', threshold: float = 50.0, verbose: bool = False) -> Tuple[mne.Epochs, DicAR]:
     """
     Applies local Autoreject to repair or reject bad epochs.
 
@@ -215,9 +226,10 @@ def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float =
         dic_AR: dictionnary with the percentage of epochs rejection
             for each subject and for the intersection of the them.
     """
-    bad_epochs_AR = []
-    AR = []
-    dic_AR = {}
+
+    bad_epochs_AR: List[RejectLog] = []
+    AR: List[AutoReject] = []
+    dic_AR: DicAR = {}
     dic_AR['strategy'] = strategy
     dic_AR['threshold'] = threshold
 
@@ -268,7 +280,7 @@ def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float =
     dic_AR['S2'] = float((len(bad2[0].tolist())/len(cleaned_epochs_ICA[1]))*100)
 
     # picking good epochs for the two subj
-    cleaned_epochs_AR = []
+    cleaned_epochs_AR: List[mne.Epochs] = []
     for clean_epochs in cleaned_epochs_ICA:  # per subj
         # keep a copy of the original data
         clean_epochs_ep = copy.deepcopy(clean_epochs)
@@ -289,11 +301,11 @@ def AR_local(cleaned_epochs_ICA: list, strategy:str = 'union', threshold:float =
         print('%s percent of bad epochs' % dic_AR['dyad'])
 
     # Vizualisation before after AR
-    evoked_before = []
+    evoked_before: List[mne.Evoked] = []
     for clean_epochs in cleaned_epochs_ICA:  # per subj
         evoked_before.append(clean_epochs.average())
 
-    evoked_after_AR = []
+    evoked_after_AR: List[mne.Evoked] = []
     for clean in cleaned_epochs_AR:
         evoked_after_AR.append(clean.average())
 

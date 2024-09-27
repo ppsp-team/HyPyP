@@ -12,6 +12,7 @@ Useful tools
 """
 
 
+from typing import Tuple, List
 import numpy as np
 import pandas as pd
 from scipy.integrate import solve_ivp
@@ -20,7 +21,7 @@ from mne.io.constants import FIFF
 from mne import create_info, EpochsArray
 
 
-def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, duration: float) -> list:
+def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, duration: float) -> Tuple[mne.Epochs, mne.Epochs]:
     """
     Creates Epochs from Raws and vizualize Power Spectral Density (PSD)
     on average Epochs (option).
@@ -43,8 +44,8 @@ def create_epochs(raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, duration: float) -> li
     Returns:
         epoch_S1, epoch_S2: list of Epochs for each participant.
     """
-    epoch_S1 = []
-    epoch_S2 = []
+    epoch_S1: List[mne.Epochs] = []
+    epoch_S2: List[mne.Epochs] = []
 
     for raw1, raw2 in zip(raw_S1, raw_S2):
         # creating fixed events
@@ -259,7 +260,7 @@ def split(raw_merge: mne.io.Raw) -> mne.io.Raw:
     return raw_1020_S1, raw_1020_S2
 
 
-def concatenate_epochs(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
+def concatenate_epochs(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> Tuple[mne.Epochs, mne.Epochs]:
     """
     Concatenates a list of Epochs in one Epochs object.
 
