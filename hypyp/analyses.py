@@ -347,7 +347,7 @@ def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int, frequen
     elif type(frequencies) == dict:
         values = compute_freq_bands(data, sampling_rate, frequencies)
     else:
-        TypeError("Please use a list or a dictionary to specify frequencies.")
+        raise TypeError("Please use a list or a dictionary to specify frequencies.")
 
     # compute connectivity values
     result = compute_sync(values, mode, epochs_average)
@@ -511,7 +511,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
         con = con_num / con_den        
 
     else:
-        ValueError('Metric type not supported.')
+        raise ValueError('Metric type not supported.')
 
     con = con.swapaxes(0, 1)  # n_freq x n_epoch x 2*n_ch x 2*n_ch
     if epochs_average:

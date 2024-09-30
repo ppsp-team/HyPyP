@@ -1735,7 +1735,7 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
         plt.imshow(data, aspect='auto', cmap=my_cm, interpolation='lanczos')
 
     else:
-        ValueError('Analysis must be set as phase, power, or wtc.')
+        raise ValueError('Analysis must be set as phase, power, or wtc.')
 
     plt.gca().invert_yaxis()
     plt.ylabel('Frequencies (Hz)')

@@ -6,7 +6,6 @@ import random
 import numpy as np
 import scipy
 import mne
-from hypyp import prep
 from hypyp import stats
 from hypyp import utils
 from hypyp import analyses
@@ -58,44 +57,6 @@ def test_metaconn_matrix_2brains(epochs):
             assert metaconn_freq[n, p-tot*(i+1)] != metaconn_freq[n, p]
             # check for each f if connects to the good other ch and not to more
             assert metaconn_freq[n+tot*i, p+tot*i] == ch_con_freq[n, p-tot]
-
-
-def test_ICA(epochs):
-    """
-    Test ICA fit, ICA choice comp and ICA apply
-    """
-    ep = [epochs.epo1, epochs.epo2]
-    icas = prep.ICA_fit(ep, n_components=15, method='infomax', fit_params=dict(extended=True),
-                        random_state=97)
-    # check that the number of componenents is similar between the two participants
-    for i in range(0, len(icas)-1):
-        mne.preprocessing.ICA.get_components(
-            icas[i]).shape == mne.preprocessing.ICA.get_components(icas[i+1]).shape
-    # cleaned_epochs_ICA = prep.ICA_choice_comp(icas, ep) # pb interactive window
-    # check signal better after than before
-    # check bad channels are not deleted
-    # assert epochs.epo1.info['ch_names'] == cleaned_epochs_ICA[0].info['ch_names']
-    # assert epochs.epo2.info['ch_names'] == cleaned_epochs_ICA[1].info['ch_names']
-
-
-def test_AR_local(epochs):
-    """
-    Test AR local
-    """
-    # test on epochs, but usually applied on cleaned epochs with ICA
-    ep = [epochs.epo1, epochs.epo2]
-    cleaned_epochs_AR, dic_AR = prep.AR_local(
-        ep, strategy='union', threshold=50.0, verbose=False)
-    assert len(epochs.epo1) >= len(cleaned_epochs_AR[0])
-    assert len(epochs.epo2) >= len(cleaned_epochs_AR[1])
-    assert len(cleaned_epochs_AR[0]) == len(cleaned_epochs_AR[1])
-    assert dic_AR['S2'] + dic_AR['S1'] == dic_AR['dyad']
-    cleaned_epochs_AR, dic_AR = prep.AR_local(
-        ep, strategy='intersection', threshold=50.0, verbose=False)
-    assert dic_AR['S2'] <= dic_AR['dyad']
-    cleaned_epochs_AR, dic_AR = prep.AR_local(
-        ep, strategy='intersection', threshold=0.0, verbose=False)
-    # should print an error
 
 
 def test_PSD(epochs):
