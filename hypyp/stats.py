@@ -13,6 +13,7 @@ Statistical functions
 
 
 from collections import namedtuple
+from typing import List, Tuple
 import numpy as np
 import scipy
 import matplotlib.pylab as plt
@@ -99,7 +100,7 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: 
         T_obs_plot=T_obs_plot)
 
 
-def con_matrix(epochs: mne.Epochs, freqs_mean: list, draw: bool = False) -> tuple:
+def con_matrix(epochs: mne.Epochs, freqs_mean: List[float], draw: bool = False) -> tuple:
     """
     Computes a priori channel connectivity across space and frequencies.
 
@@ -158,7 +159,7 @@ def con_matrix(epochs: mne.Epochs, freqs_mean: list, draw: bool = False) -> tupl
         ch_con_freq=ch_con_freq)
 
 
-def metaconn_matrix_2brains(electrodes: list, ch_con: scipy.sparse.csr_matrix, freqs_mean: list, plot: bool = False) -> tuple:
+def metaconn_matrix_2brains(electrodes: List[Tuple[int, int]], ch_con: scipy.sparse.csr_matrix, freqs_mean: List[float], plot: bool = False) -> tuple:
     """
     Computes a priori connectivity across space and frequencies
     between pairs of channels for which connectivity indices have
@@ -231,7 +232,7 @@ def metaconn_matrix_2brains(electrodes: list, ch_con: scipy.sparse.csr_matrix, f
         metaconn_freq=metaconn_freq)
 
 
-def metaconn_matrix(electrodes: list, ch_con: scipy.sparse.csr_matrix, freqs_mean: list) -> tuple:
+def metaconn_matrix(electrodes: List[Tuple[int, int]], ch_con: scipy.sparse.csr_matrix, freqs_mean: List[float]) -> tuple:
     """
     Computes a priori connectivity between pairs of sensors for which
     connectivity indices have been calculated, across space and frequencies
@@ -363,7 +364,7 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
         F_obs_plot=F_obs_plot)
 
 
-def statscluster(data: list, test: str, factor_levels: list, ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float = 0.05) -> tuple:
+def statscluster(data: list, test: str, factor_levels: List[int], ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float = 0.05) -> tuple:
     """
     Computes cluster-level statistical permutation test, corrected with
     channel connectivity across space and frequencies to compare groups

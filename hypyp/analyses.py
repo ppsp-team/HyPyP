@@ -18,7 +18,7 @@ import scipy.stats
 import statsmodels.stats.multitest
 import copy
 from collections import namedtuple
-from typing import Union
+from typing import Union, List, Tuple
 from astropy.stats import circmean
 import matplotlib.pyplot as plt
 
@@ -218,7 +218,7 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
         return corr_tuple(r=r, pvalue=pvalue, strat=strat)
 
 
-def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:
+def indices_connectivity_intrabrain(epochs: mne.Epochs) -> List[Tuple[int, int]]:
     """
     Computes indices for connectivity analysis between all EEG
     channels for one participant. Can be used instead of
@@ -252,7 +252,7 @@ def indices_connectivity_intrabrain(epochs: mne.Epochs) -> list:
     return channels
 
 
-def indices_connectivity_interbrain(epoch_hyper: mne.Epochs) -> list:
+def indices_connectivity_interbrain(epoch_hyper: mne.Epochs) -> List[Tuple[int, int]]:
     """
     Computes indices for interbrain connectivity analyses between all EEG
     sensors for 2 participants (merge data).
@@ -642,7 +642,7 @@ def compute_conn_mvar(complex_signal: np.ndarray, mvar_params: dict, ica_params:
         return np.asarray(aux_3, dtype=d_type)
 
 
-def compute_single_freq(data: np.ndarray, sampling_rate: int, freq_range: list) -> np.ndarray:
+def compute_single_freq(data: np.ndarray, sampling_rate: int, freq_range: List[float]) -> np.ndarray:
     """
     Computes analytic signal per frequency bin using the multitaper method.
 
@@ -718,7 +718,7 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict, f
     return complex_signal
 
 
-def compute_nmPLV(data: np.ndarray, sampling_rate: int, freq_range1: list, freq_range2: list, **filter_options) -> np.ndarray:
+def compute_nmPLV(data: np.ndarray, sampling_rate: int, freq_range1: List[float], freq_range2: List[float], **filter_options) -> np.ndarray:
     """
     Computes the n:m PLV for a dyad with two different frequency ranges.
 
