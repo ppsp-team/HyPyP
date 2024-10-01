@@ -10,18 +10,21 @@ def test_filt():
     n_samples = 100000
     sfreq = 1000
 
+    random_state = np.random.RandomState(seed=42)
+
     # create noise signal
     info = mne.create_info(ch_names=n_channels, sfreq=sfreq, ch_types='eeg')
-    data = np.random.normal(size=(n_channels, n_samples))
+    data = random_state.normal(size=(n_channels, n_samples))
     raw = mne.io.RawArray(data, info)
     raw_psd = raw.compute_psd().get_data()
 
-    # compare on lowest freq
+    # compare power on lowest freq
+    # Take the first few frequencies and not just index 0
     raw_filt_default, = prep.filt([raw])
     raw_filt_default_psd = raw_filt_default.compute_psd().get_data()
-    assert np.sum(raw_filt_default_psd[:,0]) < np.sum(raw_psd[:,0])
+    assert np.sum(raw_filt_default_psd[:,:3]) < np.sum(raw_psd[:,:3])
 
-    # compare on highest freq
+    # compare power on highest freq
     raw_filt, = prep.filt([raw], (2., 10))
     raw_filt_psd = raw_filt.compute_psd().get_data()
     assert np.sum(raw_filt_psd[:,-1]) < np.sum(raw_filt_default_psd[:,-1])
