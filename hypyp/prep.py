@@ -45,6 +45,7 @@ def filt(
     Returns:
         raws: list of high-pass filtered raws.
     """
+  
     raws = [mne.io.Raw.filter(raw, l_freq=freqs[0], h_freq=freqs[1]) for raw in raw_S]
     return raws
 
@@ -284,6 +285,7 @@ def AR_local(cleaned_epochs_ICA: List[mne.Epochs], strategy: str = 'union', thre
 
     # picking good epochs for the two subj
     cleaned_epochs_AR: List[mne.Epochs] = []
+
     for subject_id, clean_epochs_subj in enumerate(cleaned_epochs_ICA):  # per subj
         # keep a copy of the original data
         epochs_subj = copy.deepcopy(clean_epochs_subj)
