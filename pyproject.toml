@@ -18,8 +18,7 @@ documentation = "https://hypyp.readthedocs.io"
 classifiers=[
     "Development Status :: 4 - Beta",
     "Topic :: Scientific/Engineering",
-    "License :: OSI Approved :: BSD License",
-]
+    "License :: OSI Approved :: BSD License"]
 keywords=["hyperscanning", "neuroscience", "pipeline", "statistics", "visualization"]
 include=["hypyp/data/Basehead.obj"]
 
@@ -66,3 +65,4 @@ to = {format = "setuppy", path = "setup.py"}
 [build-system]
 requires = ["poetry_core>=1.0"]
 build-backend = "poetry.masonry.api"
+
