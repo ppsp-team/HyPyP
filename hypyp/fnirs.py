@@ -13,6 +13,11 @@ class Subject:
     def load_snirf_file(self, filepath):
         self.filepath = filepath        
         self.raw = mne.io.read_raw_fif(filepath, verbose=True, preload=True)
+        return self
+    
+    def set_best_ch_names(self, ch_names):
+        self.best_ch_names = ch_names
+        return self
     
     def load_epochs(self, tmin: int, tmax: int, baseline: Tuple[int, int]):
         if self.raw is None:
@@ -32,6 +37,7 @@ class Subject:
             tmax = tmax,
             baseline = baseline,
             reject_by_annotation=False)
+        return self
 
 class DyadFNIRS:
     def __init__(self, s1: Subject, s2: Subject):

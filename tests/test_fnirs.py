@@ -31,11 +31,11 @@ def test_subject():
 def test_instanciate():
     s1 = Subject()
     s1.load_snirf_file(snirf_file)
-    s1.best_ch_names = ch_list_s1
+    s1.set_best_ch_names(ch_list_s1)
 
     s2 = Subject()
     s2.load_snirf_file(snirf_file)
-    s2.best_ch_names = ch_list_s2
+    s2.set_best_ch_names(ch_list_s2)
 
     dyad = DyadFNIRS(s1, s2)
     assert dyad.s1 is not None
