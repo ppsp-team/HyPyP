@@ -1,6 +1,14 @@
 from typing import List, Tuple
-
+import matplotlib.pyplot as plt
+import numpy as np
 import mne
+import itertools as itertools
+import pywt
+from matplotlib.colors import Normalize
+from scipy import signal
+from scipy.fft import ifft, fft, fftfreq
+import matplotlib.cm as cm
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 class Subject:
     def __init__(self):
@@ -51,4 +59,74 @@ class DyadFNIRS:
     
     def load_epochs(self, tmin: int, tmax: int, baseline: Tuple[int, int]):
         _ = [s.load_epochs(tmin, tmax, baseline) for s in self.subjects]
+        return self
     
+
+def rect(length, normalize=False):
+    """ Rectangular function adapted from https://github.com/regeirk/pycwt/blob/master/pycwt/helpers.py
+
+    Args:
+        length (int): length of the rectangular function
+        normalize (bool): normalize or not
+
+    Returns:
+        rect (array): the (normalized) rectangular function
+
+    """
+    rect = np.zeros(length)
+    rect[0] = rect[-1] = 0.5
+    rect[1:-1] = 1
+
+    if normalize:
+        rect /= rect.sum()
+
+    return rect
+
+def smoothing(coeff, snorm, dj, smooth_factor=0.1):
+    """ Smoothing function adapted from https://github.com/regeirk/pycwt/blob/master/pycwt/helpers.py
+
+    Args
+    ----
+
+    coeff : array
+        the wavelet coefficients get from wavelet transform **in the form of a1 + a2*1j**
+    snorm : array
+        normalized scales
+    dj : float
+        it satisfies the equation [ Sj = S0 * 2**(j*dj) ]
+
+    Returns
+    -------
+
+    rect : array
+        the (normalized) rectangular function
+
+    """
+    def fft_kwargs(signal, **kwargs):
+        return {'n': int(2 ** np.ceil(np.log2(len(signal))))}
+    
+    W = coeff #.transpose()
+    m, n = np.shape(W)
+
+    # Smooth in time
+    k = 2 * np.pi * fftfreq(fft_kwargs(W[0, :])['n'])
+    k2 = k ** 2
+    # Notes by Smoothing by Gaussian window (absolute value of wavelet function)
+    # using the convolution theorem: multiplication by Gaussian curve in
+    # Fourier domain for each scale, outer product of scale and frequency
+    
+    F = np.exp(-smooth_factor * (snorm[:, np.newaxis] ** 2) * k2)  # Outer product
+
+    smooth = ifft(F * fft(W, axis=1, **fft_kwargs(W[0, :])),
+                        axis=1,  # Along Fourier frequencies
+                        **fft_kwargs(W[0, :], overwrite_x=True))
+    T = smooth[:, :n]  # Remove possibly padded region due to FFT
+    if np.isreal(W).all():
+        T = T.real
+
+    # Smooth in scale
+    wsize = 0.6 / dj * 2
+    win = rect(int(np.round(wsize)), normalize=True)
+    T = signal.convolve2d(T, win[:, np.newaxis], 'same')
+
+    return T
