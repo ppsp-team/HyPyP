@@ -95,7 +95,7 @@ def spectrogram_plot_period(z, times, frequencies, coif, cmap="viridis", norm=No
     
 
 
-def plot_line(items, key, title):
+def plot_line(items, key, title, use_log_scale=False):
     fig, axes = plt.subplots(1, len(items), figsize=(18,4))
     fig.suptitle(title)
     for i in range(len(items)):
@@ -103,6 +103,8 @@ def plot_line(items, key, title):
         try:
             print(f"{title}: {item[key].shape}")
             axes[i].plot(item[key])
+            if use_log_scale:
+                axes[i].set_yscale('log')
         except Exception as e:
             print(e)
             pass
@@ -124,23 +126,15 @@ def plot_times(items):
         axes[i].plot(item['times'])
     plt.show()
 
-def plot_im(tracers, key, title):
-    fig, axes = plt.subplots(2, len(tracers), figsize=(18,4))
+def plot_coefs(tracers, key, title):
+    fig, axes = plt.subplots(1, len(tracers), figsize=(18,10))
+
     fig.suptitle(title)
-    # real
     for i in range(len(tracers)):
         tracer = tracers[i]
-        xx, yy = np.meshgrid(np.arange(0, tracer[key].shape[1]), np.arange(0, tracer[key].shape[0]))
-        ZZ = np.real(tracer[key])
-        im = axes[0, i].pcolor(xx, yy, ZZ)
-        fig.colorbar(im, ax=axes[0, i])
-    # imag
-    for i in range(len(tracers)):
-        tracer = tracers[i]
-        xx, yy = np.meshgrid(np.arange(0, tracer[key].shape[1]), np.arange(0, tracer[key].shape[0]))
-        ZZ = np.imag(tracer[key])
-        im = axes[1, i].pcolor(xx, yy, ZZ)
-        fig.colorbar(im, ax=axes[1, i])
+        im = axes[i].pcolormesh(tracer['x1'], tracer['freq'], np.abs(tracer[key]))
+        axes[i].set_yscale('log')
+        fig.colorbar(im, ax=axes[i])
 
     
 def plot_S12(tracers):

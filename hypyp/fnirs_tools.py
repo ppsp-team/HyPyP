@@ -2,8 +2,7 @@ import numpy as np
 import mne
 import os
 from scipy.io import loadmat
-from scipy import signal
-from scipy.fft import fft, fftfreq, ifft
+from scipy import signal, fft
 import pywt
 
 
@@ -270,57 +269,251 @@ def rect(length, normalize=False):
 
     return rect
 
-def smoothing(coeff, snorm, dj, smooth_factor=0.1):
-    """ Smoothing function adapted from https://github.com/regeirk/pycwt/blob/master/pycwt/helpers.py
+#def smoothing(W, dt, dj, scales, smooth_factor=-0.5):
+#    """ Smoothing function adapted from https://github.com/regeirk/pycwt/blob/master/pycwt/helpers.py
+#
+#    Args
+#    ----
+#
+#    coeff : array
+#        the wavelet coefficients get from wavelet transform **in the form of a1 + a2*1j**
+#    snorm : array
+#        normalized scales
+#    dj : float
+#        it satisfies the equation [ Sj = S0 * 2**(j*dj) ]
+#
+#    Returns
+#    -------
+#
+#    rect : array
+#        the (normalized) rectangular function
+#
+#    """
+#    def fft_kwargs(signal, **kwargs):
+#        return {'n': int(2 ** np.ceil(np.log2(len(signal))))}
+#    
+#    m, n = np.shape(W)
+#
+#    # Smooth in time
+#    k = 2 * np.pi * fftfreq(fft_kwargs(W[0, :])['n'])
+#    k2 = k ** 2
+#    snorm = scales / dt
+#
+#    # Notes by Smoothing by Gaussian window (absolute value of wavelet function)
+#    # using the convolution theorem: multiplication by Gaussian curve in
+#    # Fourier domain for each scale, outer product of scale and frequency
+#    
+#    F = np.exp(-smooth_factor * (snorm[:, np.newaxis] ** 2) * k2)  # Outer product
+#
+#    smooth = ifft(F * fft(W, axis=1, **fft_kwargs(W[0, :])),
+#                      axis=1,  # Along Fourier frequencies
+#                      **fft_kwargs(W[0, :], overwrite_x=True))
+#    T = smooth[:, :n]  # Remove possibly padded region due to FFT
+#    if np.isreal(W).all():
+#        T = T.real
+#
+#    # Smooth in scale
+#    wsize = 0.6 / dj * 2
+#    win = rect(int(np.round(wsize)), normalize=True)
+#    T = signal.convolve2d(T, win[:, np.newaxis], 'same')
+#
+#    return T
+#
+def smoothing(W, dt, dj, scales):
+    """Smoothing function used in coherence analysis.
 
-    Args
-    ----
-
-    coeff : array
-        the wavelet coefficients get from wavelet transform **in the form of a1 + a2*1j**
-    snorm : array
-        normalized scales
-    dj : float
-        it satisfies the equation [ Sj = S0 * 2**(j*dj) ]
+    Parameters
+    ----------
+    W :
+    dt :
+    dj :
+    scales :
 
     Returns
     -------
-
-    rect : array
-        the (normalized) rectangular function
+    T :
 
     """
+    # The smoothing is performed by using a filter given by the absolute
+    # value of the wavelet function at each scale, normalized to have a
+    # total weight of unity, according to suggestions by Torrence &
+    # Webster (1999) and by Grinsted et al. (2004).
+    m, n = W.shape
+
+    # Filter in time.
     def fft_kwargs(signal, **kwargs):
         return {'n': int(2 ** np.ceil(np.log2(len(signal))))}
-    
-    W = coeff #.transpose()
-    m, n = np.shape(W)
-
-    # Smooth in time
-    k = 2 * np.pi * fftfreq(fft_kwargs(W[0, :])['n'])
+    k = 2 * np.pi * fft.fftfreq(fft_kwargs(W[0, :])['n'])
     k2 = k ** 2
-    # Notes by Smoothing by Gaussian window (absolute value of wavelet function)
+    snorm = scales / dt
+    # Smoothing by Gaussian window (absolute value of wavelet function)
     # using the convolution theorem: multiplication by Gaussian curve in
     # Fourier domain for each scale, outer product of scale and frequency
-    
-    F = np.exp(-smooth_factor * (snorm[:, np.newaxis] ** 2) * k2)  # Outer product
-
-    smooth = ifft(F * fft(W, axis=1, **fft_kwargs(W[0, :])),
+    F = np.exp(-0.5 * (snorm[:, np.newaxis] ** 2) * k2)  # Outer product
+    smooth = fft.ifft(F * fft.fft(W, axis=1, **fft_kwargs(W[0, :])),
                       axis=1,  # Along Fourier frequencies
                       **fft_kwargs(W[0, :], overwrite_x=True))
     T = smooth[:, :n]  # Remove possibly padded region due to FFT
+
     if np.isreal(W).all():
         T = T.real
 
-    # Smooth in scale
+    # Filter in scale. For the Morlet wavelet it's simply a boxcar with
+    # 0.6 width.
     wsize = 0.6 / dj * 2
     win = rect(int(np.round(wsize)), normalize=True)
-    T = signal.convolve2d(T, win[:, np.newaxis], 'same')
+    T = signal.convolve2d(T, win[:, np.newaxis], 'same')  # Scales are "vertical"
 
     return T
 
 
-def xwt_coherence_morl(x1, x2, fs, nNotes=12, detrend=False, normalize=False, tracer=None):
+#def xwt_coherence_morl(x1, x2, fs, nNotes=12, detrend=False, normalize=False, tracer=None):
+#    """
+#    Calculates the cross wavelet transform coherence between two time series using the Morlet wavelet.
+#
+#    Arguments:
+#        x1 : array
+#            Time series data of the first signal.
+#        x2 : array
+#            Time series data of the second signal.
+#        fs : int
+#            Sampling frequency of the time series data.
+#        nNotes : int, optional
+#            Number of notes per octave for scale decomposition, defaults to 12.
+#        detrend : bool, optional
+#            If True, linearly detrends the time series data, defaults to True.
+#        normalize : bool, optional
+#            If True, normalizes the time series data by its standard deviation, defaults to True.
+#
+#    Note:
+#        This function uses PyWavelets for performing continuous wavelet transforms
+#        and scipy.ndimage for filtering operations.
+#
+#    Returns:
+#        WCT : array
+#            Wavelet coherence transform values.
+#        times : array
+#            Time points corresponding to the time series data.
+#        frequencies : array
+#            Frequencies corresponding to the wavelet scales.
+#        coif : array
+#            Cone of influence in frequency, reflecting areas in the time-frequency space
+#            affected by edge artifacts.
+#    """
+#    # Assertions and initial computations
+#    N1 = len(x1)
+#    N2 = len(x2)
+#    assert (N1 == N2), "error: arrays not same size"
+#   
+#    N = N1
+#    dt = 1.0 / fs
+#    times = np.arange(N) * dt
+# 
+#    # Data preprocessing: detrend and normalize
+#    if detrend:
+#        x1 = signal.detrend(x1, type='linear')
+#        x2 = signal.detrend(x2, type='linear')
+#    if normalize:
+#        stddev1 = x1.std()
+#        x1 = x1 / stddev1
+#        stddev2 = x2.std()
+#        x2 = x2 / stddev2
+# 
+#    # Wavelet transform parameters
+#    #nOctaves = int(np.log2(2 * np.floor(N / 2.0))) 
+#    nOctaves = int(np.log2(2 * np.floor(N / 2.0))) + 0.6
+#
+#    def morlet_flambda():
+#        """From pycwt/mothers.py"""
+#        """Fourier wavelength as of Torrence and Compo (1998)."""
+#        f0 = 6
+#        return (4 * np.pi) / (f0 + np.sqrt(2 + f0**2))
+#
+#    #scales = 2 ** np.arange(1, (nOctaves), 1.0 / nNotes)
+#    #def get_scales():
+#    #    #scales = 2 ** np.arange(1, nOctaves, 1.0 / nNotes)
+#    #    # Number of scales
+#    #    s0 = 2 * dt / morlet_flambda()
+#    #    dj = 1 / 12
+#    #    J = int(np.round(np.log2(N1 * dt / s0) / dj))
+#    #    #J = nOctaves - 1
+#    #    # The scales as of Mallat 1999
+#    #    sj = 2 ** (np.arange(0, J + 1) * dj)
+#    #    return sj
+#    #scales = get_scales()
+#    # logarithmic scale for scales, as suggested by Torrence & Compo:
+#    scales = np.geomspace(1, 300, num=116)
+#
+#    tracer['scales'] = scales
+#
+#    coef1, freqs1 = pywt.cwt(x1, scales, 'cmor2.5-1.0', sampling_period=dt, tracer=tracer)
+#    coef2, freqs2 = pywt.cwt(x2, scales, 'cmor2.5-1.0', sampling_period=dt)
+#    
+#    dj = 1 / 12
+#
+#    tracer['W1'] = coef1
+#    tracer['W2'] = coef2
+#
+#    #def get_frequencies():
+#    #    s0 = 2 * dt / morlet_flambda()
+#    #    J = int(np.round(np.log2(N1 * dt / s0) / dj))
+#    #    sj = s0 * 2 ** (np.arange(0, J + 1) * dj)
+#    #    return 1 / (morlet_flambda() * sj)
+#    
+#    #frequencies = get_frequencies()
+#    #print(frequencies.shape)
+#    #tracer['freq'] = frequencies # TODO: should take it from the return of pywt.cwt
+#
+#    #frequencies = pywt.scale2frequency('cmor2.5-1.0', scales) / dt
+#    tracer['freq'] = freqs1
+#    frequencies = freqs1
+#
+#    # Compute cross wavelet transform and coherence
+#    coef12 = coef1 * coef2.conj()
+#    scaleMatrix = np.ones([1, N]) * scales[:, None]
+#
+#    snorm = 1 / freqs1 # with "frequencies", we have the same old image
+#   
+#
+#    #s0 = snorm[0]
+#    #sN = snorm[-1]
+#    #dj = np.log2(sN/s0) / np.size(snorm)
+#
+#    # def smoothing(X, snorm, dj):
+#    #     return scipy.ndimage.gaussian_filter(X, sigma=[9, 1])
+#    
+#    S1 = smoothing(np.abs(coef1) ** 2 / scaleMatrix, snorm, dj)
+#    S2 = smoothing(np.abs(coef2) ** 2 / scaleMatrix, snorm, dj)
+#    S12 = smoothing(coef12 / scaleMatrix, scales, dj)
+#    if tracer is not None:
+#      tracer['S1'] = S1
+#      tracer['S2'] = S2
+#      tracer['S12'] = S12
+#    WCT = np.abs(S12) ** 2 / (S1 * S2)
+#
+#    # Cone of influence calculations
+#    f0 = 2 * np.pi
+#    cmor_coi = 1.0 / np.sqrt(2)
+#    cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+#    coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
+#    coi = cmor_flambda * cmor_coi * dt * coi
+#    coif = 1.0 / coi
+# 
+#    return WCT, times, frequencies, coif
+
+
+def xwt_coherence_morl(
+    y1,
+    y2,
+    dt,
+    dj=1/12,
+    normalize=True,
+    wavelet_pywct=None,
+    W1_pywct=None,
+    W2_pywct=None,
+    freq_pywct=None,
+    tracer=None
+  ):
     """
     Calculates the cross wavelet transform coherence between two time series using the Morlet wavelet.
 
@@ -354,94 +547,55 @@ def xwt_coherence_morl(x1, x2, fs, nNotes=12, detrend=False, normalize=False, tr
             affected by edge artifacts.
     """
     # Assertions and initial computations
-    N1 = len(x1)
-    N2 = len(x2)
+    N1 = len(y1)
+    N2 = len(y2)
     assert (N1 == N2), "error: arrays not same size"
-   
     N = N1
-    dt = 1.0 / fs
+    #nNotes = 1 / dj
     times = np.arange(N) * dt
  
     # Data preprocessing: detrend and normalize
-    if detrend:
-        x1 = signal.detrend(x1, type='linear')
-        x2 = signal.detrend(x2, type='linear')
-    if normalize:
-        stddev1 = x1.std()
-        x1 = x1 / stddev1
-        stddev2 = x2.std()
-        x2 = x2 / stddev2
+    y1 = y1 - y1.mean() / y1.std()
+    y2 = y2 - y2.mean() / y2.std()
  
     # Wavelet transform parameters
-    #nOctaves = int(np.log2(2 * np.floor(N / 2.0))) 
-    nOctaves = int(np.log2(2 * np.floor(N / 2.0))) + 0.6
+    #J = int(np.round(np.log2(y1.size * dt / s0) / dj))
+    #nOctaves = int(np.log2(2 * np.floor(N / 2.0)))
+    #scales = 2 ** np.arange(1, nOctaves, 1.0 / nNotes)
+    # Smallest resolvable scale
+    s0 = 2 * dt / wavelet_pywct.flambda()
+    # Number of scales
+    J = int(np.round(np.log2(N * dt / s0) / dj))
+    # The scales as of Mallat 1999
+    scales = s0 * 2 ** (np.arange(0, J + 1) * dj)
 
-    def morlet_flambda():
-        """From pycwt/mothers.py"""
-        """Fourier wavelength as of Torrence and Compo (1998)."""
-        f0 = 6
-        return (4 * np.pi) / (f0 + np.sqrt(2 + f0**2))
 
-    #scales = 2 ** np.arange(1, (nOctaves), 1.0 / nNotes)
-    #def get_scales():
-    #    #scales = 2 ** np.arange(1, nOctaves, 1.0 / nNotes)
-    #    # Number of scales
-    #    s0 = 2 * dt / morlet_flambda()
-    #    dj = 1 / 12
-    #    J = int(np.round(np.log2(N1 * dt / s0) / dj))
-    #    #J = nOctaves - 1
-    #    # The scales as of Mallat 1999
-    #    sj = 2 ** (np.arange(0, J + 1) * dj)
-    #    return sj
-    #scales = get_scales()
-    # logarithmic scale for scales, as suggested by Torrence & Compo:
-    scales = np.geomspace(1, 300, num=116)
+    if W1_pywct is None:
+      W1, freqs1 = pywt.cwt(y1, scales, 'cmor2.0-1.0', method='fft', sampling_period=dt)
+    else:
+      W1 = W1_pywct
 
-    tracer['scales'] = scales
+    if W2_pywct is None:
+      W2, freqs2 = pywt.cwt(y2, scales, 'cmor2.0-1.0', method='fft', sampling_period=dt)
+    else:
+      W2 = W2_pywct
 
-    coef1, freqs1 = pywt.cwt(x1, scales, 'cmor2.5-1.0', sampling_period=dt, tracer=tracer)
-    coef2, freqs2 = pywt.cwt(x2, scales, 'cmor2.5-1.0', sampling_period=dt)
-    
-    dj = 1 / 12
-
-    tracer['W1'] = coef1
-    tracer['W2'] = coef2
-
-    #def get_frequencies():
-    #    s0 = 2 * dt / morlet_flambda()
-    #    J = int(np.round(np.log2(N1 * dt / s0) / dj))
-    #    sj = s0 * 2 ** (np.arange(0, J + 1) * dj)
-    #    return 1 / (morlet_flambda() * sj)
-    
-    #frequencies = get_frequencies()
-    #print(frequencies.shape)
-    #tracer['freq'] = frequencies # TODO: should take it from the return of pywt.cwt
-
-    #frequencies = pywt.scale2frequency('cmor2.5-1.0', scales) / dt
-    tracer['freq'] = freqs1
-    frequencies = freqs1
+    #frequencies = 1 / (wavelet_pywct.flambda() * scales)
+    if freq_pywct is None:
+      frequencies = freqs1
+    else:
+      frequencies = freq_pywct
 
     # Compute cross wavelet transform and coherence
-    coef12 = coef1 * coef2.conj()
+
+
+
     scaleMatrix = np.ones([1, N]) * scales[:, None]
+    S1 = smoothing(np.abs(W1) ** 2 / scaleMatrix, dt, dj, scales)
+    S2 = smoothing(np.abs(W2) ** 2 / scaleMatrix, dt, dj, scales)
 
-    snorm = 1 / freqs1 # with "frequencies", we have the same old image
-   
-
-    #s0 = snorm[0]
-    #sN = snorm[-1]
-    #dj = np.log2(sN/s0) / np.size(snorm)
-
-    # def smoothing(X, snorm, dj):
-    #     return scipy.ndimage.gaussian_filter(X, sigma=[9, 1])
-    
-    S1 = smoothing(np.abs(coef1) ** 2 / scaleMatrix, snorm, dj)
-    S2 = smoothing(np.abs(coef2) ** 2 / scaleMatrix, snorm, dj)
-    S12 = smoothing(coef12 / scaleMatrix, scales, dj)
-    if tracer is not None:
-      tracer['S1'] = S1
-      tracer['S2'] = S2
-      tracer['S12'] = S12
+    W12 = W1 * W2.conj()
+    S12 = smoothing(W12 / scaleMatrix, dt, dj, scales)
     WCT = np.abs(S12) ** 2 / (S1 * S2)
 
     # Cone of influence calculations
@@ -452,5 +606,17 @@ def xwt_coherence_morl(x1, x2, fs, nNotes=12, detrend=False, normalize=False, tr
     coi = cmor_flambda * cmor_coi * dt * coi
     coif = 1.0 / coi
  
-    return WCT, times, frequencies, coif
+    tracer['x1'] = np.linspace(0, N1*dt, N1)
+    tracer['x2'] = np.linspace(0, N2*dt, N2)
+    tracer['y1'] = y1
+    tracer['y2'] = y2
+    tracer['freq'] = frequencies
+    tracer['W1'] = W1
+    tracer['W2'] = W2
+    tracer['W12'] = W12
+    tracer['scales'] = scales
+    tracer['S1'] = S1
+    tracer['S2'] = S2
+    tracer['S12'] = S12
 
+    return WCT, times, frequencies, coif
