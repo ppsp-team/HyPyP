@@ -555,8 +555,8 @@ def xwt_coherence_morl(
     times = np.arange(N) * dt
  
     # Data preprocessing: detrend and normalize
-    y1 = y1 - y1.mean() / y1.std()
-    y2 = y2 - y2.mean() / y2.std()
+    y1_normal = (y1 - y1.mean()) / y1.std()
+    y2_normal = (y2 - y2.mean()) / y2.std()
  
     # Wavelet transform parameters
     #J = int(np.round(np.log2(y1.size * dt / s0) / dj))
@@ -571,12 +571,12 @@ def xwt_coherence_morl(
 
 
     if W1_pywct is None:
-      W1, freqs1 = pywt.cwt(y1, scales, 'cmor2.0-1.0', method='fft', sampling_period=dt)
+      W1, freqs1 = pywt.cwt(y1_normal, scales, 'cmor2.0-1.0', method='fft', sampling_period=dt)
     else:
       W1 = W1_pywct
 
     if W2_pywct is None:
-      W2, freqs2 = pywt.cwt(y2, scales, 'cmor2.0-1.0', method='fft', sampling_period=dt)
+      W2, freqs2 = pywt.cwt(y2_normal, scales, 'cmor2.0-1.0', method='fft', sampling_period=dt)
     else:
       W2 = W2_pywct
 
@@ -610,6 +610,8 @@ def xwt_coherence_morl(
     tracer['x2'] = np.linspace(0, N2*dt, N2)
     tracer['y1'] = y1
     tracer['y2'] = y2
+    tracer['y1_normal'] = y1_normal
+    tracer['y2_normal'] = y2_normal
     tracer['freq'] = frequencies
     tracer['W1'] = W1
     tracer['W2'] = W2

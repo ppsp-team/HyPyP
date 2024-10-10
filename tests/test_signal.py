@@ -28,3 +28,11 @@ def test_chirp():
     assert len(signal.y) == len(signal.x)
     # TODO should test the frequencies
 
+def test_custom():
+    n = 300
+    signal = SynteticSignal(tmax=n, n_points=n)
+    signal.add_custom(np.ones((n, )))
+    assert np.sum(signal.y) == n
+
+    
+

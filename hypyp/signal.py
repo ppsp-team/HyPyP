@@ -23,8 +23,12 @@ class SynteticSignal:
         self.y += np.sin(self.times_vec * 2 * np.pi * freq)
         return self
     
-    def add_noise(self):
-        self.y += 0.3 * np.random.normal(0, 1, self.n_points)
+    def add_noise(self, level=0.1):
+        self.y += level * np.random.normal(0, 1, self.n_points)
+        return self
+    
+    def add_custom(self, y):
+        self.y += y
         return self
     
     def plot(self):
