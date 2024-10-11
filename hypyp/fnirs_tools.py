@@ -319,7 +319,7 @@ def rect(length, normalize=False):
 #
 #    return T
 #
-def smoothing(W, dt, dj, scales):
+def smoothing(W, dt, dj, scales, smooth_factor=-0.5, boxcar_size=0.6):
     """Smoothing function used in coherence analysis.
 
     Parameters
@@ -349,7 +349,7 @@ def smoothing(W, dt, dj, scales):
     # Smoothing by Gaussian window (absolute value of wavelet function)
     # using the convolution theorem: multiplication by Gaussian curve in
     # Fourier domain for each scale, outer product of scale and frequency
-    F = np.exp(-0.5 * (snorm[:, np.newaxis] ** 2) * k2)  # Outer product
+    F = np.exp(smooth_factor * (snorm[:, np.newaxis] ** 2) * k2)  # Outer product
     smooth = fft.ifft(F * fft.fft(W, axis=1, **fft_kwargs(W[0, :])),
                       axis=1,  # Along Fourier frequencies
                       **fft_kwargs(W[0, :], overwrite_x=True))
@@ -360,7 +360,7 @@ def smoothing(W, dt, dj, scales):
 
     # Filter in scale. For the Morlet wavelet it's simply a boxcar with
     # 0.6 width.
-    wsize = 0.6 / dj * 2
+    wsize = boxcar_size / dj * 2
     win = rect(int(np.round(wsize)), normalize=True)
     T = signal.convolve2d(T, win[:, np.newaxis], 'same')  # Scales are "vertical"
 
@@ -508,6 +508,7 @@ def xwt_coherence_morl(
     dt,
     dj=1/12,
     normalize=True,
+    smoothing_params = dict(),
     wavelet_pywct=None,
     W1_pywct=None,
     W2_pywct=None,
@@ -560,23 +561,25 @@ def xwt_coherence_morl(
  
     # Wavelet transform parameters
     #J = int(np.round(np.log2(y1.size * dt / s0) / dj))
-    #nOctaves = int(np.log2(2 * np.floor(N / 2.0)))
+    nOctaves = int(np.log2(2 * np.floor(N / 2.0)))
+    nNotes = 12
     #scales = 2 ** np.arange(1, nOctaves, 1.0 / nNotes)
+    scales = 2 ** np.linspace(1, 14, 200)
     # Smallest resolvable scale
-    s0 = 2 * dt / wavelet_pywct.flambda()
+    #s0 = 2 * dt / wavelet_pywct.flambda()
     # Number of scales
-    J = int(np.round(np.log2(N * dt / s0) / dj))
+    #J = int(np.round(np.log2(N * dt / s0) / dj))
     # The scales as of Mallat 1999
-    scales = s0 * 2 ** (np.arange(0, J + 1) * dj)
+    #scales = s0 * 2 ** (np.arange(0, J + 1) * dj)
 
 
     if W1_pywct is None:
-      W1, freqs1 = pywt.cwt(y1_normal, scales, 'cmor2.0-1.0', method='fft', sampling_period=dt)
+      W1, freqs1 = pywt.cwt(y1_normal, scales, 'cmor 0.01, 10', sampling_period=dt)
     else:
       W1 = W1_pywct
 
     if W2_pywct is None:
-      W2, freqs2 = pywt.cwt(y2_normal, scales, 'cmor2.0-1.0', method='fft', sampling_period=dt)
+      W2, freqs2 = pywt.cwt(y2_normal, scales, 'cmor 0.01, 10', sampling_period=dt)
     else:
       W2 = W2_pywct
 
@@ -591,11 +594,11 @@ def xwt_coherence_morl(
 
 
     scaleMatrix = np.ones([1, N]) * scales[:, None]
-    S1 = smoothing(np.abs(W1) ** 2 / scaleMatrix, dt, dj, scales)
-    S2 = smoothing(np.abs(W2) ** 2 / scaleMatrix, dt, dj, scales)
+    S1 = smoothing(np.abs(W1) ** 2 / scaleMatrix, dt, dj, scales, **smoothing_params)
+    S2 = smoothing(np.abs(W2) ** 2 / scaleMatrix, dt, dj, scales, **smoothing_params)
 
     W12 = W1 * W2.conj()
-    S12 = smoothing(W12 / scaleMatrix, dt, dj, scales)
+    S12 = smoothing(W12 / scaleMatrix, dt, dj, scales, **smoothing_params)
     WCT = np.abs(S12) ** 2 / (S1 * S2)
 
     # Cone of influence calculations
