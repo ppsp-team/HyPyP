@@ -101,7 +101,7 @@ def spectrogram_plot_period(
     
     return ax
 
-def plot_spectrogram_periods(items):
+def plot_spectrogram_periods(items, tracers):
     fig, axes = plt.subplots(1, len(items), figsize=(18,6))
     fig.suptitle('spectrogram periods')
     for i in range(len(items)):
@@ -117,6 +117,7 @@ def plot_spectrogram_periods(items):
             colorbar=False,
             norm=None
         )
+        axes[i].title.set_text(tracers[i]['name'])
     
     
     
@@ -155,13 +156,14 @@ def plot_times(items):
 
 def plot_coefs(tracers, key, title):
     fig, axes = plt.subplots(1, len(tracers), figsize=(18,10))
-
+    axes = np.atleast_1d(axes)
     fig.suptitle(title)
     for i in range(len(tracers)):
         tracer = tracers[i]
         im = axes[i].pcolormesh(tracer['x1'], tracer['freq'], np.abs(tracer[key]))
         axes[i].set_yscale('log')
         fig.colorbar(im, ax=axes[i])
+        axes[i].title.set_text(tracer['name'])
 
     
 def plot_S12(tracers):
@@ -172,6 +174,7 @@ def plot_S12(tracers):
         xx, yy = np.meshgrid(np.arange(0, tracer['S12'].shape[1]), np.arange(0, tracer['S12'].shape[0]))
         ZZ = np.real(tracer['S12'])
         axes[i].pcolor(xx, yy, ZZ)
+        axes[i].title.set_text(tracer['name'])
     plt.show()
     
     fig, axes = plt.subplots(1, len(tracers), figsize=(18,4))
