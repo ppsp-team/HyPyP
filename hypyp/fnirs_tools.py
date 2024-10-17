@@ -444,12 +444,16 @@ def xwt_coherence_morl(
     #nOctaves = int(np.log2(2 * np.floor(N / 2.0)))
     #scales = 2 ** np.arange(0.1, nOctaves, dj)
     #scales = 2 ** np.linspace(2, 10, 200)
-    scales = np.geomspace(10, 400, 300)
-    W1, freqs1 = pywt.cwt(y1_normal, scales, wavelet_name, sampling_period=dt, method='fft', tracer=tracer)
-    W2, freqs2 = pywt.cwt(y2_normal, scales, wavelet_name, sampling_period=dt, method='fft')
+    #scales = np.geomspace(10, 400, 300) <- useful for testing
 
+    nOctaves = int(np.log2(2 * np.floor(N / 2.0)))
+    scales = 2 ** np.arange(1, nOctaves, dj)
 
-    frequencies = freqs1
+    W1, _ = pywt.cwt(y1_normal, scales, wavelet_name, method='conv', tracer=tracer)
+    W2, _ = pywt.cwt(y2_normal, scales, wavelet_name, method='conv')
+
+    #frequencies = freqs1
+    frequencies = pywt.scale2frequency(wavelet_name, scales) / dt
 
     # Compute cross wavelet transform and coherence
     scaleMatrix = np.ones([1, N]) * scales[:, None]
@@ -476,8 +480,6 @@ def xwt_coherence_morl(
         tracer['y1_normal'] = y1_normal
         tracer['y2_normal'] = y2_normal
         tracer['freq'] = frequencies
-        tracer['freqs1'] = freqs1
-        tracer['freqs2'] = freqs2
         tracer['W1'] = W1
         tracer['W2'] = W2
         tracer['W12'] = W12

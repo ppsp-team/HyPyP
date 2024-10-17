@@ -41,6 +41,48 @@ def spectrogram_plot(z, times, frequencies, coif, cmap="viridis", norm=Normalize
 
     ax.set_xlim(times.min(), times.max())
     ax.set_ylim(frequencies.min(), frequencies.max())
+    ax.title.set_text('Wavelet coherence')
+
+    return ax
+
+def plot_wavelet_coherence(
+    wct,
+    times,
+    frequencies,
+    coif,
+    ax=None,
+    colorbar=True
+):
+    color_shaded = '0.2'
+    # create the figure if needed
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = plt.gcf()
+    
+    xx, yy = np.meshgrid(times, frequencies)
+    
+    im = ax.pcolor(xx, yy, wct, norm=Normalize())
+    ax.set_yscale('log')
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Frequency (Hz)')
+
+    # Cone of influence
+    ax.plot(times, coif, color=color_shaded)
+    ax.fill_between(times,coif, step="mid", color=color_shaded, alpha=0.4)
+
+    # Nyquist frequency
+    y_nyquist = np.ones((len(times),)) * 1 / np.diff(times).mean() / 2
+    y_top = np.ones((len(times),)) * frequencies[0]
+    ax.plot(times, y_nyquist, color=color_shaded)
+    ax.fill_between(times, y_nyquist, y_top, step="mid", color=color_shaded, alpha=0.4)
+    
+    if colorbar:
+        cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
+        fig.colorbar(im,cax=cbaxes, orientation='vertical')
+
+    ax.set_xlim(times.min(), times.max())
+    ax.set_ylim(frequencies.min(), frequencies.max())
 
     return ax
 
@@ -76,7 +118,7 @@ def spectrogram_plot_period(
     #ntimes = 5*times
     ntimes = times
     
-    xx,yy = np.meshgrid(ntimes, periods)
+    xx,yy = np.meshgrid(times, periods)
     ZZ = z
     
     im = ax.pcolor(xx, yy, ZZ, cmap=cmap)
@@ -84,15 +126,15 @@ def spectrogram_plot_period(
     #ax.set_yscale('log')
     ax.set_xlabel('Time')
     ax.set_ylabel('Period')
-    #ax.plot(ntimes,coif)
-    #ax.fill_between(times,coif, step="mid", alpha=0.4)
+    ax.plot(ntimes,coif)
+    ax.fill_between(times,coif, step="mid", alpha=0.4)
     
     if colorbar:
         cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
         fig.colorbar(im,cax=cbaxes, orientation='vertical')
 
-    #ax.set_xlim(ntimes.min(), ntimes.max())
-    #ax.set_ylim(periods.min(), periods.max())
+    ax.set_xlim(times.min(), times.max())
+    ax.set_ylim(periods.min(), periods.max())
 
     steps = np.arange(0, len(periods), 10)
     ax.set_yticks(np.round(periods[steps], 2), np.round(2**(periods[steps]), 2))
