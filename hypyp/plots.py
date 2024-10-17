@@ -77,12 +77,12 @@ def plot_wavelet_coherence(
     ax.plot(times, y_nyquist, color=color_shaded)
     ax.fill_between(times, y_nyquist, y_top, step="mid", color=color_shaded, alpha=0.4)
     
+    ax.set_xlim(times.min(), times.max())
+    ax.set_ylim(frequencies.min(), frequencies.max())
+
     if colorbar:
         cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
         fig.colorbar(im,cax=cbaxes, orientation='vertical')
-
-    ax.set_xlim(times.min(), times.max())
-    ax.set_ylim(frequencies.min(), frequencies.max())
 
     return ax
 
