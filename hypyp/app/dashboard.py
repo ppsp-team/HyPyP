@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import pywt
+import pycwt
 from scipy import fft
 
 root = os.path.join(Path(__file__).parent, '..', '..')
@@ -19,6 +20,12 @@ from hypyp.fnirs_tools import (
 default_plot_signal_height = 150
 
 matplotlib.use('Agg')
+
+def ui_option_row(label, ui_element, sizes=(6, 6)):
+    return ui.row(
+        ui.column(sizes[0], label),
+        ui.column(sizes[1], ui_element),
+    ),
 
 # UI
 app_ui = ui.page_fluid(
@@ -42,6 +49,7 @@ app_ui = ui.page_fluid(
                     ui.card(
                         ui.tags.strong('Wavelet'),
                         ui.output_plot('plot_mother_wavelet'),
+                        ui.output_plot('plot_daughter_wavelet'),
                     ),
                 ),
                 ui.column(
@@ -60,7 +68,7 @@ app_ui = ui.page_fluid(
             ui.tags.strong('Signal parameters'),
             ui.input_select(
                 "signal_choice",
-                "Signal choice",
+                "",
                 choices={
                     'chirp': 'Crossing chirps',
                     'chirp_multiple': 'Multiple crossing chirps',
@@ -69,20 +77,42 @@ app_ui = ui.page_fluid(
                     'sinusoid_dephased': 'Sinusoid dephased',
                 },
             ),
-            ui.input_numeric("signal_sampling_frequency", "Sampling frequency", value=5),
-            ui.input_numeric("signal_n", "Number of points", value=2000),
-            ui.input_numeric("signal_noise_level", "Noise level", value=0.01),
+            ui_option_row("Sampling freq. (Hz)", ui.input_numeric("signal_sampling_frequency", "", value=5)),
+            ui_option_row("Nb. points", ui.input_numeric("signal_n", "", value=2000)),
+            ui_option_row("Noise level", ui.input_numeric("signal_noise_level", "", value=0.01)),
 
             ui.tags.strong('Wavelet parameters'),
             ui.input_select(
                 "wavelet_type",
-                "Wavelet type",
-                choices={'cmor': 'Complex Morlet', 'cgau1': 'Complex Gaussian 1', 'cgau2': 'Complex Gaussian 2'},
+                "",
+                choices={
+                    'cmor': 'Complex Morlet',
+                    'cmor_pycwt': 'Complex Morlet (pywct/Matlab)',
+                    'cgau1': 'Complex Gaussian 1',
+                    'cgau2': 'Complex Gaussian 2',
+                    'cgau3': 'Complex Gaussian 3',
+                    'cgau4': 'Complex Gaussian 4',
+                    'cgau5': 'Complex Gaussian 5',
+                    'cgau6': 'Complex Gaussian 6',
+                    'cgau7': 'Complex Gaussian 7',
+                    'cgau8': 'Complex Gaussian 8',
+                    'fbsp': 'Fbsp',
+                },
             ),
             ui.output_ui('ui_input_wavelet_options'),
 
             ui.tags.strong('Smoothing parameters'),
+            ui.output_ui('ui_input_smoothing_options'),
+
             ui.input_action_button("button_action_compute_wct", label="Compute WCT"),
+
+            ui.tags.strong('Display parameters'),
+            ui_option_row("Daughter wavelet id", ui.input_numeric("display_daughter_wavelet_id", "", value=0)),
+            ui_option_row("WCT frequencies at time", ui.input_numeric("display_wct_frequencies_at_time", "", value=-1)),
+
+            ui_option_row("Downsample", ui.input_checkbox("display_downsample", "", value=True), sizes=(8,4)),
+            ui_option_row("Show COI", ui.input_checkbox("display_show_coif", "", value=True), sizes=(8,4)),
+            ui_option_row("Show Nyquist", ui.input_checkbox("display_show_nyquist", "", value=True), sizes=(8,4)),
             open="always",
         ),
         title="Wavelet Explorer",
@@ -168,15 +198,31 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.button_action_compute_wct)
     def compute_coherence():
         x, y1, y2, _ = signals()
-        return xwt_coherence_morl(
-            y1,
-            y2,
-            wavelet_name=wavelet_name(),
-            dt=(x[1] - x[0]),
-            normalize=True,
-            smoothing_params=dict(smooth_factor=-0.1, boxcar_size=1),
-        )
-        
+        name = wavelet_name()
+        tracer = dict(name=name)
+        if name == 'cmor_pycwt':
+            wct, _, coif_periods, freqs, _ = pycwt.wct(y1, y2, dt=x[1]-x[0], sig=False, tracer=tracer)
+            coif = 1 / coif_periods
+            return wct, x, freqs, coif, tracer
+        else:
+            cwt_params = dict()
+            if input.wavelet_hack_compute_each_scale():
+                cwt_params['hack_compute_each_scale'] = True
+
+            wct, x, freqs, coif = xwt_coherence_morl(
+                y1,
+                y2,
+                wavelet_name=wavelet_name(),
+                dt=(x[1] - x[0]),
+                normalize=True,
+                smoothing_params=dict(
+                    smooth_factor=input.smoothing_smooth_factor(),
+                    boxcar_size=input.smoothing_boxcar_size(),
+                ),
+                cwt_params=cwt_params,
+                tracer=tracer,
+            )
+            return wct, x, freqs, coif, tracer
 
 
     @render.plot(height=default_plot_signal_height)
@@ -208,8 +254,15 @@ def server(input: Inputs, output: Outputs, session: Session):
     def plot_mother_wavelet():
         fig, ax = plt.subplots()
         name = wavelet_name()
-        wavelet = pywt.ContinuousWavelet(name)
-        psi, x = wavelet.wavefun(10)
+
+        if name == 'cmor_pycwt':
+            x = np.linspace(-8, 8, 1000)
+            psi = pycwt.wavelet.Morlet().psi(x)
+        else:
+            wavelet = pywt.ContinuousWavelet(name)
+            psi, x = wavelet.wavefun(10)
+
+
         ax.plot(x, np.real(psi))
         ax.plot(x, np.imag(psi))
         ax.plot(x, np.abs(psi))
@@ -218,11 +271,35 @@ def server(input: Inputs, output: Outputs, session: Session):
         return fig
 
     @render.plot()
+    def plot_daughter_wavelet():
+        fig, ax = plt.subplots()
+
+        _, _, freqs, _, tracer = compute_coherence()
+        id = input.display_daughter_wavelet_id()
+        psi = tracer['psi_scales'][id]
+        ax.plot(np.real(psi))
+        ax.plot(np.imag(psi))
+        ax.plot(np.abs(psi))
+        ax.title.set_text(f"daughter wavelet {id}/{len(tracer['psi_scales'])} for {freqs[id]:.3f}Hz")
+        ax.legend(['real', 'imag', 'abs'])
+        return fig
+
+    @render.plot()
     def plot_wct():
         fig, ax = plt.subplots()
 
-        wct, times, freqs, coif = compute_coherence()
-        hypyp.plots.plot_wavelet_coherence(np.abs(wct), times, freqs, coif, ax=ax, colorbar=False)
+        wct, times, freqs, coif, tracer = compute_coherence()
+        hypyp.plots.plot_wavelet_coherence(
+            np.abs(wct),
+            times,
+            freqs,
+            coif,
+            ax=ax,
+            colorbar=False,
+            downsample=input.display_downsample(),
+            show_coif=input.display_show_coif(),
+            show_nyquist=input.display_show_nyquist(),
+        )
         return fig
 
     @render.plot()
@@ -230,22 +307,37 @@ def server(input: Inputs, output: Outputs, session: Session):
         fig, ax = plt.subplots()
 
         x, y1, y2, chirp_frequencies = signals()
-        wct, times, freqs, coif = compute_coherence()
-        col_mid = len(times)//2
-        ax.plot(freqs, wct[:,col_mid])
-        ax.title.set_text(f'Frequencies at t={times[col_mid]:.1f} (max expected: {chirp_frequencies[col_mid]:.2f}Hz, found: {freqs[np.argmax(wct[:,col_mid])]:.2f}Hz)')
+        wct, times, freqs, coif, tracer  = compute_coherence()
+
+        if input.display_wct_frequencies_at_time() == -1:
+            col = len(times)//2
+        else:
+            dt = x[1] - x[0]
+            col = int(input.display_wct_frequencies_at_time() / dt)
+            
+        ax.plot(freqs, wct[:,col])
+        ax.title.set_text(f'Frequencies at t={times[col]:.1f} (max expected: {chirp_frequencies[col]:.2f}Hz, found: {freqs[np.argmax(wct[:,col])]:.2f}Hz)')
         ax.set_xscale('log')
         ax.set_xlabel('Frequency (Hz)')
         return fig
 
     @render.ui
     def ui_input_wavelet_options():
+        options = []
         if input.wavelet_type() == 'cmor':
+            options.append(ui_option_row("Bandwidth", ui.input_numeric("wavelet_bandwidth", "", value=2)))
+            options.append(ui_option_row("Center frequency", ui.input_numeric("wavelet_center_frequency", "", value=1)))
+        if input.wavelet_type() != 'cmor_pycwt':
+            options.append(ui_option_row("Hack compute each scale", ui.input_checkbox("wavelet_hack_compute_each_scale", "", value=False), sizes=(8,4)))
+        return options
+    
+    @render.ui
+    def ui_input_smoothing_options():
+        if input.wavelet_type() != 'cmor_pycwt':
             return [
-                ui.input_numeric("wavelet_bandwidth", "Wavelet bandwidth", value=2),
-                ui.input_numeric("wavelet_center_frequency", "Wavelet center frequency", value=1),
+                ui_option_row("Smooth factor", ui.input_numeric("smoothing_smooth_factor", "", value=-0.1)),
+                ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=1)),
             ]
-        return []
 
 
 app = App(app_ui, server)

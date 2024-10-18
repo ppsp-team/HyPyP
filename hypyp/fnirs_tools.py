@@ -385,6 +385,7 @@ def xwt_coherence_morl(
     wavelet_name='cmor2-1',
     detrend=False,
     normalize=True,
+    cwt_params=dict(),
     smoothing_params=dict(),
     tracer=None
   ):
@@ -449,8 +450,8 @@ def xwt_coherence_morl(
     nOctaves = int(np.log2(2 * np.floor(N / 2.0)))
     scales = 2 ** np.arange(1, nOctaves, dj)
 
-    W1, _ = pywt.cwt(y1_normal, scales, wavelet_name, method='conv', tracer=tracer)
-    W2, _ = pywt.cwt(y2_normal, scales, wavelet_name, method='conv')
+    W1, _ = pywt.cwt(y1_normal, scales, wavelet_name, method='fft', tracer=tracer, **cwt_params)
+    W2, _ = pywt.cwt(y2_normal, scales, wavelet_name, method='fft', **cwt_params)
 
     #frequencies = freqs1
     frequencies = pywt.scale2frequency(wavelet_name, scales) / dt

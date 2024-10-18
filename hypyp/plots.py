@@ -4,6 +4,7 @@ import itertools as itertools
 from matplotlib.colors import Normalize
 import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from skimage.measure import block_reduce
 
 
 def spectrogram_plot(z, times, frequencies, coif, cmap="viridis", norm=Normalize(), ax=None, colorbar=True):
@@ -51,7 +52,11 @@ def plot_wavelet_coherence(
     frequencies,
     coif,
     ax=None,
-    colorbar=True
+    colorbar=True,
+    downsample=False,
+    show_coif=True,
+    show_nyquist=True,
+    title=None,
 ):
     color_shaded = '0.2'
     # create the figure if needed
@@ -59,6 +64,14 @@ def plot_wavelet_coherence(
         fig, ax = plt.subplots()
     else:
         fig = plt.gcf()
+    
+    times_orig = times
+    if downsample:
+        factor = len(times) // 1000 + 1
+        print(f"Downscaling for display by a factor of {factor}")
+        times = block_reduce(times, block_size=factor, func=np.mean, cval=np.max(times))
+        wct = block_reduce(wct, block_size=(1,factor), func=np.mean, cval=np.mean(wct))
+        coif = block_reduce(coif, block_size=factor, func=np.mean, cval=np.mean(coif))
     
     xx, yy = np.meshgrid(times, frequencies)
     
@@ -68,14 +81,16 @@ def plot_wavelet_coherence(
     ax.set_ylabel('Frequency (Hz)')
 
     # Cone of influence
-    ax.plot(times, coif, color=color_shaded)
-    ax.fill_between(times,coif, step="mid", color=color_shaded, alpha=0.4)
+    if show_coif:
+        ax.plot(times, coif, color=color_shaded)
+        ax.fill_between(times,coif, step="mid", color=color_shaded, alpha=0.4)
 
     # Nyquist frequency
-    y_nyquist = np.ones((len(times),)) * 1 / np.diff(times).mean() / 2
-    y_top = np.ones((len(times),)) * frequencies[0]
-    ax.plot(times, y_nyquist, color=color_shaded)
-    ax.fill_between(times, y_nyquist, y_top, step="mid", color=color_shaded, alpha=0.4)
+    if show_nyquist:
+        y_nyquist = np.ones((len(times),)) * 1 / np.diff(times_orig).mean() / 2
+        y_top = np.ones((len(times),)) * frequencies[0]
+        ax.plot(times, y_nyquist, color=color_shaded)
+        ax.fill_between(times, y_nyquist, y_top, step="mid", color=color_shaded, alpha=0.4)
     
     ax.set_xlim(times.min(), times.max())
     ax.set_ylim(frequencies.min(), frequencies.max())
@@ -84,6 +99,9 @@ def plot_wavelet_coherence(
         cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
         fig.colorbar(im,cax=cbaxes, orientation='vertical')
 
+    if title is not None:
+        fig.suptitle(title)
+        
     return ax
 
 def spectrogram_plot_period(
@@ -133,8 +151,8 @@ def spectrogram_plot_period(
         cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
         fig.colorbar(im,cax=cbaxes, orientation='vertical')
 
-    ax.set_xlim(times.min(), times.max())
-    ax.set_ylim(periods.min(), periods.max())
+    #ax.set_xlim(times.min(), times.max())
+    #ax.set_ylim(periods.min(), periods.max())
 
     steps = np.arange(0, len(periods), 10)
     ax.set_yticks(np.round(periods[steps], 2), np.round(2**(periods[steps]), 2))
