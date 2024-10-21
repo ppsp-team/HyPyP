@@ -9,6 +9,7 @@ import matplotlib
 import pywt
 import pycwt
 from scipy import fft
+import mne
 
 root = os.path.join(Path(__file__).parent, '..', '..')
 sys.path.append(root)
@@ -75,6 +76,7 @@ app_ui = ui.page_fluid(
                     'sinusoid': 'Sinusoid different',
                     'sinusoid_almost_similar': 'Sinusoid almost similar',
                     'sinusoid_dephased': 'Sinusoid dephased',
+                    'fnirs_sub_110_session_1_pre': 'fNIRS sub 110 session 1',
                 },
             ),
             ui_option_row("Sampling freq. (Hz)", ui.input_numeric("signal_sampling_frequency", "", value=5)),
@@ -135,8 +137,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         chirp_frequencies = np.zeros_like(x)
         if input.signal_choice() == 'sinusoid':
-            freq1 = 0.02
-            freq2 = 0.04
+            freq1 = 1
+            freq2 = 0.8
             y1 = np.sin(x * 2 * np.pi * freq1)
             y2 = np.sin(x * 2 * np.pi * freq2)
         elif input.signal_choice() == 'sinusoid_almost_similar':
@@ -179,6 +181,50 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             y1 = sum_y1
             y2 = sum_y2
+        elif input.signal_choice() == 'fnirs_sub_110_session_1_pre':
+
+            prep_path = './data/'
+            fname1 = 'sub-110_session-1_pre_raw.fif'
+            fname2 = fname1
+            p1 = prep_path + fname1
+            p2 = prep_path + fname2
+
+            chs1 = ["S4_D4 hbo"] 
+            chs2 = ["S7_D6 hbo"]
+
+            #set events
+            tmin = 0 
+            tmax = 300
+            baseline = (0, 0)
+
+            # read in data 1
+            p1 = mne.io.read_raw_fif(p1, verbose=True, preload=True)
+            p2 = mne.io.read_raw_fif(p2, verbose=True, preload=True)
+
+            # select channels from csv of best channels
+            ch_list1 = chs1
+            ch_list2 = chs2
+            ch_picks1 = mne.pick_channels(p1.ch_names, include = ch_list1)
+            ch_picks2 = mne.pick_channels(p2.ch_names, include = ch_list2)
+            p1_best_ch = p1.copy().pick(ch_picks1)
+            p2_best_ch = p2.copy().pick(ch_picks2)
+
+            # get events
+            events1, event_dict1 = mne.events_from_annotations(p1_best_ch)
+            events2, event_dict2 = mne.events_from_annotations(p2_best_ch)
+            epo1 = mne.Epochs(p1_best_ch, events1,
+                            event_id = event_dict1, tmin = tmin, tmax = tmax,
+                            baseline = baseline, reject_by_annotation=False)
+            epo2 = mne.Epochs(p2_best_ch, events2,
+                            event_id = event_dict2, tmin = tmin, tmax = tmax,
+                            baseline = baseline, reject_by_annotation=False)
+            y1 = epo1.get_data()[0,0,:]
+            y2 = epo2.get_data()[0,0,:]
+            
+            # Force N for this signal
+            N = len(y1)
+            x = np.linspace(0, N/fs, N)
+
 
         noise_level = input.signal_noise_level()
         #noise_level = 0
