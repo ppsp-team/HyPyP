@@ -6,21 +6,17 @@ from scipy.signal import chirp
 class SynteticSignal:
     def __init__(self, tmax: int, n_points: int = 10000):
         self.n_points = n_points
-        self.times_vec = np.linspace(0, tmax, n_points)
+        self.x = np.linspace(0, tmax, n_points)
         self.sample_rate = n_points / tmax
         self.period = 1.0 / self.sample_rate
-        self.y = np.zeros_like(self.times_vec)
+        self.y = np.zeros_like(self.x)
     
-    @property
-    def x(self):
-        return self.times_vec
-
     def add_chirp(self, f0, f1):
-        self.y += chirp(self.times_vec, f0=f0, f1=f1, t1=np.max(self.times_vec), method='linear')
+        self.y += chirp(self.x, f0=f0, f1=f1, t1=np.max(self.x), method='linear')
         return self
     
     def add_sin(self, freq):
-        self.y += np.sin(self.times_vec * 2 * np.pi * freq)
+        self.y += np.sin(self.x * 2 * np.pi * freq)
         return self
     
     def add_noise(self, level=0.1):
@@ -32,7 +28,7 @@ class SynteticSignal:
         return self
     
     def plot(self):
-        plt.plot(self.times_vec, self.y)
+        plt.plot(self.x, self.y)
         plt.xlabel('Time (s)')
     
     def plot_fft(self):
