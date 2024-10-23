@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
+import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -64,51 +65,7 @@ app_ui = ui.page_fluid(
                     ),
                 ),
             ),
-            ui.card(
-                ui.tags.strong('Tracing of intermediary results'),
-                ui.row(
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_W1'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_W2'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_W12'),
-                    ),
-                ),
-                ui.row(
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_S1'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_S2'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_S12'),
-                    ),
-                ),
-                ui.row(
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_frequencies'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_scales'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_wct'),
-                    ),
-                ),
-            ),
+            ui.output_ui('ui_card_tracer'),
         ),
         selected='Wavelet Coherence',
         id='main_nav',
@@ -123,13 +80,11 @@ app_ui = ui.page_fluid(
                     'sinusoid': 'Sinusoid different',
                     'sinusoid_almost_similar': 'Sinusoid almost similar',
                     'sinusoid_dephased': 'Sinusoid dephased',
+                    'fnirs_syn_ce05_001_nirs_disk': 'fNIRS data from Passport Disk',
                     'fnirs_sub_110_session_1_pre': 'fNIRS sub 110 session 1',
                 },
             ),
             ui.output_ui('ui_input_signal_options'),
-            ui_option_row("Sampling freq. (Hz)", ui.input_numeric("signal_sampling_frequency", "", value=5)),
-            ui_option_row("Nb. points", ui.input_numeric("signal_n", "", value=2000)),
-            ui_option_row("Noise level", ui.input_numeric("signal_noise_level", "", value=0.01)),
 
             ui.tags.strong('Wavelet parameters'),
             ui.input_select(
@@ -163,6 +118,7 @@ app_ui = ui.page_fluid(
             ui_option_row("Downsample", ui.input_checkbox("display_downsample", "", value=True), sizes=(8,4)),
             ui_option_row("Show COI", ui.input_checkbox("display_show_coif", "", value=True), sizes=(8,4)),
             ui_option_row("Show Nyquist", ui.input_checkbox("display_show_nyquist", "", value=True), sizes=(8,4)),
+            ui_option_row("Show tracer plots", ui.input_checkbox("display_show_tracer", "", value=False), sizes=(8,4)),
             ui_option_row("Show Log value for tracers", ui.input_checkbox("display_show_log_tracer", "", value=False), sizes=(8,4)),
             ui.input_select(
                 "diplay_show_tracer_complex",
@@ -182,6 +138,9 @@ app_ui = ui.page_fluid(
 )
 
 def server(input: Inputs, output: Outputs, session: Session):
+    def is_real_data(input):
+        return input.signal_choice().startswith('fnirs_')
+
     @reactive.calc()
     def signals():
         fs = input.signal_sampling_frequency()
@@ -217,6 +176,15 @@ def server(input: Inputs, output: Outputs, session: Session):
         elif input.signal_choice() == 'chirp_sinusoid':
             y1 = SynteticSignal(tmax=N/fs, n_points=N).add_sin(input.signal_chirp_sinusoid_freq1()).y
             y2 = SynteticSignal(tmax=N/fs, n_points=N).add_chirp(input.signal_chirp_sinusoid_freq2(), input.signal_chirp_sinusoid_freq3()).y
+        elif input.signal_choice() == 'fnirs_syn_ce05_001_nirs_disk':
+            base_path = "/media/patrice/My Passport/DataNIRS/"
+            filename = "syn_ce05_001.nirs"
+            file_path = os.path.join(base_path, filename)
+            mat = scipy.io.loadmat(file_path)
+            x = mat['t']
+            y1 = mat['d'][:,0]
+            y2 = mat['d'][:,19]
+    
         elif input.signal_choice() == 'fnirs_sub_110_session_1_pre':
 
             prep_path = './data/'
@@ -262,44 +230,40 @@ def server(input: Inputs, output: Outputs, session: Session):
             x = np.linspace(0, N/fs, N)
 
 
-        noise_level = input.signal_noise_level()
-        #noise_level = 0
+        if not is_real_data(input):
+            noise_level = input.signal_noise_level()
+            #noise_level = 0
 
-        y1 +=  noise_level * np.random.normal(0, 1, len(x))
-        y2 +=  noise_level * np.random.normal(0, 1, len(x))
+            y1 +=  noise_level * np.random.normal(0, 1, len(x))
+            y2 +=  noise_level * np.random.normal(0, 1, len(x))
 
         return (x, y1, y2)
 
+
     @render.ui
     def ui_input_signal_options():
+        options = []
         if input.signal_choice() == 'sinusoid':
-            return [
-                ui_option_row("Freq 1", ui.input_numeric("signal_sinusoid_freq1", "", value=1)),
-                ui_option_row("Freq 2", ui.input_numeric("signal_sinusoid_freq2", "", value=0.8)),
-            ]
+            options.append(ui_option_row("Freq 1", ui.input_numeric("signal_sinusoid_freq1", "", value=1))),
+            options.append(ui_option_row("Freq 2", ui.input_numeric("signal_sinusoid_freq2", "", value=0.8))),
         elif input.signal_choice() == 'sinusoid_almost_similar':
-            return [
-                ui_option_row("Freq", ui.input_numeric("signal_sinusoid_almost_similar_freq1", "", value=0.2)),
-            ]
+            options.append(ui_option_row("Freq", ui.input_numeric("signal_sinusoid_almost_similar_freq1", "", value=0.2))),
         elif input.signal_choice() == 'sinusoid_dephased':
-            return [
-                ui_option_row("Freq", ui.input_numeric("signal_sinusoid_dephased_freq1", "", value=0.02)),
-            ]
+            options.append(ui_option_row("Freq", ui.input_numeric("signal_sinusoid_dephased_freq1", "", value=0.02))),
         elif input.signal_choice() == 'chirp':
-            return [
-                ui_option_row("Freq Chirp from", ui.input_numeric("signal_chirp_freq1", "", value=0.2)),
-                ui_option_row("Freq Chirp to", ui.input_numeric("signal_chirp_freq2", "", value=2)),
-            ]
+            options.append(ui_option_row("Freq Chirp from", ui.input_numeric("signal_chirp_freq1", "", value=0.2))),
+            options.append(ui_option_row("Freq Chirp to", ui.input_numeric("signal_chirp_freq2", "", value=2))),
         elif input.signal_choice() == 'chirp_sinusoid':
-            return [
-                ui_option_row("Freq Sinusoid", ui.input_numeric("signal_chirp_sinusoid_freq1", "", value=1)),
-                ui_option_row("Freq Chirp from", ui.input_numeric("signal_chirp_sinusoid_freq2", "", value=0.2)),
-                ui_option_row("Freq Chirp to", ui.input_numeric("signal_chirp_sinusoid_freq3", "", value=2)),
-            ]
-        elif input.signal_choice() == 'fnirs_sub_110_session_1_pre':
-            return []
-
-        return []
+            options.append(ui_option_row("Freq Sinusoid", ui.input_numeric("signal_chirp_sinusoid_freq1", "", value=1))),
+            options.append(ui_option_row("Freq Chirp from", ui.input_numeric("signal_chirp_sinusoid_freq2", "", value=0.2))),
+            options.append(ui_option_row("Freq Chirp to", ui.input_numeric("signal_chirp_sinusoid_freq3", "", value=2))),
+        
+        if not is_real_data(input):
+            options.append(ui_option_row("Sampling freq. (Hz)", ui.input_numeric("signal_sampling_frequency", "", value=5))),
+            options.append(ui_option_row("Nb. points", ui.input_numeric("signal_n", "", value=2000))),
+            options.append(ui_option_row("Noise level", ui.input_numeric("signal_noise_level", "", value=0.01))),
+            
+        return options
 
     @reactive.calc()
     def wavelet_name():
@@ -549,6 +513,55 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui_option_row("Smooth factor", ui.input_numeric("smoothing_smooth_factor", "", value=-0.1)),
                 ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=1)),
             ]
+    
+    @render.ui
+    def ui_card_tracer():
+        if input.display_show_tracer():
+            return ui.card(
+                ui.tags.strong('Tracing of intermediary results'),
+                ui.row(
+                    ui.column(
+                        4,
+                        ui.output_plot('plot_tracer_W1'),
+                    ),
+                    ui.column(
+                        4,
+                        ui.output_plot('plot_tracer_W2'),
+                    ),
+                    ui.column(
+                        4,
+                        ui.output_plot('plot_tracer_W12'),
+                    ),
+                ),
+                ui.row(
+                    ui.column(
+                        4,
+                        ui.output_plot('plot_tracer_S1'),
+                    ),
+                    ui.column(
+                        4,
+                        ui.output_plot('plot_tracer_S2'),
+                    ),
+                    ui.column(
+                        4,
+                        ui.output_plot('plot_tracer_S12'),
+                    ),
+                ),
+                ui.row(
+                    ui.column(
+                        4,
+                        ui.output_plot('plot_tracer_frequencies'),
+                    ),
+                    ui.column(
+                        4,
+                        ui.output_plot('plot_tracer_scales'),
+                    ),
+                    ui.column(
+                        4,
+                        ui.output_plot('plot_tracer_wct'),
+                    ),
+                ),
+            )
 
 
 app = App(app_ui, server)

@@ -1,16 +1,33 @@
 from typing import List, Tuple
-import matplotlib.pyplot as plt
+from os import listdir
+from os.path import isfile, join
+
 import numpy as np
 import mne
 import itertools as itertools
 import pywt
-from matplotlib.colors import Normalize
 from scipy import signal
 from scipy.fft import ifft, fft, fftfreq
 import matplotlib.cm as cm
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-class Subject:
+class DataLoaderFNIRS:
+    base_path = join('data')
+    fnirs_path = join('data', 'FNIRS')
+
+    @staticmethod
+    def list_all_files():
+        base = [join(DataLoaderFNIRS.base_path, f) for f in listdir(DataLoaderFNIRS.base_path) if isfile(join(DataLoaderFNIRS.base_path, f))]
+        fnirs = [join(DataLoaderFNIRS.fnirs_path, f) for f in listdir(DataLoaderFNIRS.fnirs_path) if isfile(join(DataLoaderFNIRS.fnirs_path, f))]
+        return base + fnirs
+
+    @staticmethod
+    def list_fif_files():
+        return [f for f in DataLoaderFNIRS.list_all_files() if f.endswith('.fif')]
+    
+    def __init__(self):
+        pass
+
+class SubjectFNIRS:
     def __init__(self):
         self.filepath: str | None
         self.raw: mne.io.Raw
@@ -18,9 +35,14 @@ class Subject:
         self.events: any # we should know what type this is
         self.epochs: mne.Epochs
 
-    def load_snirf_file(self, filepath):
+    def load_fif_file(self, filepath):
         self.filepath = filepath        
         self.raw = mne.io.read_raw_fif(filepath, verbose=True, preload=True)
+        return self
+    
+    def load_snirf_file(self, filepath):
+        self.filepath = filepath        
+        self.raw = mne.io.read_raw_snirf(filepath, verbose=True, preload=True)
         return self
     
     def set_best_ch_names(self, ch_names):
@@ -48,9 +70,9 @@ class Subject:
         return self
 
 class DyadFNIRS:
-    def __init__(self, s1: Subject, s2: Subject):
-        self.s1: Subject = s1
-        self.s2: Subject = s2
+    def __init__(self, s1: SubjectFNIRS, s2: SubjectFNIRS):
+        self.s1: SubjectFNIRS = s1
+        self.s2: SubjectFNIRS = s2
 
     
     @property 

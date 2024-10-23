@@ -7,6 +7,8 @@ import pywt
 import pycwt
 import scipy
 
+from .plots import plot_wavelet_coherence
+
 PYCWT_IMPLEMENTATION_WAVELET_NAME = 'cmor_pycwt'
 
 class WCT:
@@ -17,6 +19,9 @@ class WCT:
         self.frequencies = frequencies
         self.coif = coif
         self.tracer = tracer
+    
+    def plot(self, **kwargs):
+        return plot_wavelet_coherence(self.wct, self.times, self.frequencies, self.coif, **kwargs)
 
 class WaveletAnalyser:
     def __init__(
@@ -102,8 +107,8 @@ class WaveletAnalyser:
         S1 = self.weight_smoothing(np.abs(W1) ** 2 / scaleMatrix, dt, dj, scales)
         S2 = self.weight_smoothing(np.abs(W2) ** 2 / scaleMatrix, dt, dj, scales)
 
-        S12 = self.weight_smoothing(W12 / scaleMatrix, dt, dj, scales)
-        wct = np.abs(S12) ** 2 / (S1 * S2)
+        S12 = np.abs(self.weight_smoothing(W12 / scaleMatrix, dt, dj, scales))
+        wct = S12 ** 2 / (S1 * S2)
 
         # Cone of influence calculations
         f0 = 2 * np.pi

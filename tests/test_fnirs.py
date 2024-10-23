@@ -1,6 +1,6 @@
 import pytest
 
-from hypyp.fnirs import DyadFNIRS, Subject
+from hypyp.fnirs import DataLoaderFNIRS, DyadFNIRS, SubjectFNIRS
 
 
 #set events
@@ -11,13 +11,14 @@ baseline = (0, 0)
 ch_list_s1 = ["S4_D4 hbo"] 
 ch_list_s2 = ["S7_D6 hbo"]
 
-snirf_file = './data/sub-110_session-1_pre_raw.fif'
+fif_file = './data/sub-110_session-1_pre_raw.fif'
+snirf_file = './data/FNIRS/DCARE_02_sub1.snirf'
 
 def test_subject():
 
-    s1 = Subject()
-    s1.load_snirf_file(snirf_file)
-    assert s1.filepath == snirf_file
+    s1 = SubjectFNIRS()
+    s1.load_fif_file(fif_file)
+    assert s1.filepath == fif_file
     assert s1.raw is not None
 
     s1.best_ch_names = ch_list_s1
@@ -29,12 +30,12 @@ def test_subject():
     assert len(s1.epochs.ch_names) == len(ch_list_s1)
 
 def test_instanciate():
-    s1 = Subject()
-    s1.load_snirf_file(snirf_file)
+    s1 = SubjectFNIRS()
+    s1.load_fif_file(fif_file)
     s1.set_best_ch_names(ch_list_s1)
 
-    s2 = Subject()
-    s2.load_snirf_file(snirf_file)
+    s2 = SubjectFNIRS()
+    s2.load_fif_file(fif_file)
     s2.set_best_ch_names(ch_list_s2)
 
     dyad = DyadFNIRS(s1, s2)
@@ -52,3 +53,19 @@ def test_instanciate():
     assert dyad.s2.event_dict is not None
     assert dyad.s2.epochs is not None
     assert len(dyad.s2.epochs.ch_names) == len(ch_list_s2)
+
+def test_list_files():
+    print(DataLoaderFNIRS.list_all_files())
+    assert len(DataLoaderFNIRS.list_all_files()) > 0
+    assert len(DataLoaderFNIRS.list_fif_files()) > 0
+    assert DataLoaderFNIRS.list_fif_files()[0].startswith('data')
+
+def test_load_snirf():
+    s1 = SubjectFNIRS()
+    s1.load_snirf_file(snirf_file)
+    #s1.set_best_ch_names(['S1_D1 760'])
+    #s1.load_epochs(tmin=tmin, tmax=tmax, baseline=baseline)
+    #print(s1.epochs)
+    
+
+    
