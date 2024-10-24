@@ -2,112 +2,107 @@ from math import ceil, floor
 import numpy as np
 from scipy import signal, fft
 
-# Import multiple implementations for comparison
+from .base_wavelet import CWT, WCT, BaseWavelet
 import pywt
-import pycwt
 import scipy
 
-from .plots import plot_wavelet_coherence
+from ..plots import plot_wavelet_coherence
 
-PYCWT_IMPLEMENTATION_WAVELET_NAME = 'cmor_pycwt'
-
-class WCT:
-    def __init__(self, wct, times, scales, frequencies, coif, tracer):
-        self.wct = wct
-        self.times = times
-        self.scales = scales
-        self.frequencies = frequencies
-        self.coif = coif
-        self.tracer = tracer
-    
-    def plot(self, **kwargs):
-        return plot_wavelet_coherence(self.wct, self.times, self.frequencies, self.coif, **kwargs)
-
-class WaveletAnalyser:
+class Wavelet(BaseWavelet):
     def __init__(
         self,
         wavelet_name='cmor2,1',
         precision=10,
         lower_bound=-8,
         upper_bound=8,
-        wct_smoothing_smooth_factor=-0.1,
+        wct_smoothing_smooth_factor=-0.1, # TODO: this should be calculated automatically, based on the maths
         wct_smoothing_boxcar_size=1,
+        cwt_params=dict(),
+        evaluate=True,
     ):
         self.wct_smoothing_smooth_factor = wct_smoothing_smooth_factor
         self.wct_smoothing_boxcar_size = wct_smoothing_boxcar_size
         self.wavelet_name = wavelet_name
         self.precision = precision
-        self.cwt_params = dict()
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        self._wavelet = None
-
-        self._x = None
-        self._wct = None
-    
-    @property
-    def resolution(self):
-        if self._x is None:
-            raise RuntimeError('Wavelet not evaluated yet')
-        return self._x[1] - self._x[0]
-
-    @property
-    def domain(self):
-        if self._x is None:
-            raise RuntimeError('Wavelet not evaluated yet')
-        return self._x[0], self._x[-1]
+        self.cwt_params = cwt_params
+        self.tracer = dict(name='pywt')
+        super().__init__(evaluate)
 
     def evaluate_psi(self):
-        if self.wavelet_name == PYCWT_IMPLEMENTATION_WAVELET_NAME:
-            x = np.linspace(self.lower_bound, self.upper_bound, 2**self.precision)
-            psi = pycwt.wavelet.Morlet().psi(x)
-            self._x = x
-            return psi, x
-
         wavelet = pywt.ContinuousWavelet(self.wavelet_name)
         wavelet.lower_bound = self.lower_bound
         wavelet.upper_bound = self.upper_bound
         self._wavelet = wavelet
-        psi, x = wavelet.wavefun(self.precision)
-        self._x = x
-        return psi, x
-    
-    def wct(self, y1, y2, dt):
-        assert (len(y1) == len(y2)), "error: arrays not same size"
-        N = len(y1)
+        self._psi, self._psi_x = wavelet.wavefun(self.precision)
+        return self._psi, self._psi_x
+
+    def cwt(self, y, dt, dj=1/12) -> CWT:
+        N = len(y)
+        print(N)
         times = np.arange(N) * dt
+        nOctaves = int(np.log2(np.floor(N / 2.0)))
+        # TODO: find the right s0
+        scales = 2 ** np.arange(1, nOctaves, dj)
 
-        tracer = dict()
-        if self.wavelet_name == PYCWT_IMPLEMENTATION_WAVELET_NAME:
-            wct, _, coif_periods, frequencies, _ = pycwt.wct(y1, y2, dt=dt, sig=False, tracer=tracer)
-            coif = 1 / coif_periods
-            return WCT(wct, times, tracer['scales'], frequencies, coif, tracer)
+        W, freqs = pywt_copy_cwt(y, scales, self._wavelet, sampling_period=dt, method='conv', tracer=self.tracer, **self.cwt_params)
 
-        if self._wavelet is None:
-            self.evaluate_psi()
+        # TODO: this is hardcoded, we have to check where this equation comes from
+        # Cone of influence calculations
+        f0 = 2 * np.pi
+        cmor_coi = 1.0 / np.sqrt(2)
+        cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+        coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
+        coi = cmor_flambda * cmor_coi * dt * coi
+        coif = 1.0 / coi
+    
+        return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coif=coif, tracer=self.tracer)
+
+    def wct(self, y1, y2, dt):
+        if len(y1) != len(y2):
+            raise RuntimeError("Arrays not same size")
+
+        N = len(y1)
 
         dj = 1 / 12 # TODO have as parameter
     
-        # TODO: as detrend as parameter
-        # TODO: as normalize as parameter
+        # TODO: have detrend as parameter
+        # TODO: have normalize as parameter
         y1 = (y1 - y1.mean()) / y1.std()
         y2 = (y2 - y2.mean()) / y2.std()
     
-        nOctaves = int(np.log2(2 * np.floor(N / 2.0)))
-        scales = 2 ** np.arange(1, nOctaves, dj)
+        cwt1 = self.cwt(y1, dt, dj)
+        cwt2 = self.cwt(y2, dt, dj)
 
-        W1, _ = pywt_copy_cwt(y1, scales, self._wavelet, method='fft', tracer=tracer, **self.cwt_params)
-        W2, _ = pywt_copy_cwt(y2, scales, self._wavelet, method='fft', **self.cwt_params)
+        if (cwt1.scales != cwt2.scales).any():
+            raise RuntimeError('The two CWT have different scales')
+
+        if (cwt1.frequencies != cwt2.frequencies).any():
+            raise RuntimeError('The two CWT have different frequencies')
+
+        W1 = cwt1.W
+        W2 = cwt2.W
         W12 = W1 * W2.conj()
 
-        frequencies = pywt.scale2frequency(self.wavelet_name, scales) / dt
+        frequencies = cwt1.frequencies
+        scales = cwt1.scales
+        times = cwt1.times
 
         # Compute cross wavelet transform and coherence
+        # TODO: cross wavelet
         scaleMatrix = np.ones([1, N]) * scales[:, None]
-        S1 = self.weight_smoothing(np.abs(W1) ** 2 / scaleMatrix, dt, dj, scales)
-        S2 = self.weight_smoothing(np.abs(W2) ** 2 / scaleMatrix, dt, dj, scales)
+        smoothing_kwargs = dict(
+            dt=dt,
+            dj=dj,
+            scales=scales,
+            smooth_factor=self.wct_smoothing_smooth_factor,
+            boxcar_size=self.wct_smoothing_boxcar_size,
+        )
+        S1 = self.smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs)
+        S2 = self.smoothing(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs)
 
-        S12 = np.abs(self.weight_smoothing(W12 / scaleMatrix, dt, dj, scales))
+        S12 = np.abs(self.smoothing(W12 / scaleMatrix, **smoothing_kwargs))
         wct = S12 ** 2 / (S1 * S2)
 
         # Cone of influence calculations
@@ -119,17 +114,17 @@ class WaveletAnalyser:
         coi = cmor_flambda * cmor_coi * dt * coi
         coif = 1.0 / coi
     
-        tracer['W1'] = W1
-        tracer['W2'] = W2
-        tracer['W12'] = W12
-        tracer['S1'] = S1
-        tracer['S2'] = S2
-        tracer['S12'] = S12
+        self.tracer['W1'] = W1
+        self.tracer['W2'] = W2
+        self.tracer['W12'] = W12
+        self.tracer['S1'] = S1
+        self.tracer['S2'] = S2
+        self.tracer['S12'] = S12
 
-        return WCT(wct, times, scales, frequencies, coif, tracer)
+        return WCT(wct, times, scales, frequencies, coif, self.tracer)
 
     # TODO: test this
-    def weight_smoothing(self, W, dt, dj, scales, smooth_factor=-0.5, boxcar_size=0.6):
+    def smoothing(self, W, dt, dj, scales, smooth_factor=-0.5, boxcar_size=0.6):
         """Smoothing function used in coherence analysis.
     
         Parameters
@@ -151,6 +146,7 @@ class WaveletAnalyser:
         m, n = W.shape
     
         # Filter in time.
+        # TODO: check that padding is applied here correctly
         def fft_kwargs(signal, **kwargs):
             return {'n': int(2 ** np.ceil(np.log2(len(signal))))}
     
@@ -173,6 +169,7 @@ class WaveletAnalyser:
     
         # Filter in scale. For the Morlet wavelet it's simply a boxcar with
         # 0.6 width.
+        # TODO: check this. It's suspicious
         wsize = boxcar_size / dj * 2
         win = self.rect(int(np.round(wsize)), normalize=True)
         T = signal.convolve2d(T, win[:, np.newaxis], 'same')  # Scales are "vertical"
@@ -289,7 +286,9 @@ def pywt_copy_cwt(data, scales, wavelet, sampling_period=1., method='conv', axis
 
     dt_out = dt_cplx if wavelet.complex_cwt else dt
     out = np.empty((np.size(scales),) + data.shape, dtype=dt_out)
-    precision = 10
+    # Local change: Increased precision to avoid artifacts in high scales (low freq)
+    # TODO: this should come as a parameter
+    precision = 15
     int_psi, x = pywt.integrate_wavelet(wavelet, precision=precision)
     int_psi = np.conj(int_psi) if wavelet.complex_cwt else int_psi
 
@@ -368,6 +367,7 @@ def pywt_copy_cwt(data, scales, wavelet, sampling_period=1., method='conv', axis
             coef = coef.reshape(data_shape_pre)
             coef = coef.swapaxes(axis, -1)
         out[i, ...] = coef
+
 
     frequencies = pywt.scale2frequency(wavelet, scales, precision)
     if np.isscalar(frequencies):

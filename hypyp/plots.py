@@ -181,6 +181,19 @@ def plot_spectrogram_periods(items, tracers):
     
     
     
+def plot_cwt_weights(W, times, frequencies, coif):
+    fig, ax = plt.subplots()
+    im = ax.pcolormesh(times, frequencies, np.abs(W))
+    ax.set_yscale('log')
+    fig.colorbar(im, ax=ax)
+    ax.title.set_text('Weights')
+
+    # cone of influence
+    ax.plot(times, coif)
+    ax.fill_between(times, coif, step="mid", alpha=0.4)
+    ax.set_xlim(times.min(), times.max())
+    ax.set_ylim(frequencies.min(), frequencies.max())
+
 
 
 def plot_line(items, key, title, use_log_scale=False):
