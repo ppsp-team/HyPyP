@@ -1922,6 +1922,16 @@ files = [
 ]
 
 [[package]]
+name = "matlabengine"
+version = "23.2.3"
+description = "A module to call MATLAB from Python"
+optional = false
+python-versions = ">=3.9, <3.12"
+files = [
+    {file = "matlabengine-23.2.3.tar.gz", hash = "sha256:b38d40faec42be5bb8e9413585fba990fb471ddfb1a81d2782342dabeadf0770"},
+]
+
+[[package]]
 name = "matplotlib"
 version = "3.9.2"
 description = "Python plotting package"
@@ -2575,7 +2585,6 @@ files = [
 numpy = [
     {version = ">=1.22.4", markers = "python_version < \"3.11\""},
     {version = ">=1.23.2", markers = "python_version == \"3.11\""},
-    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -3938,7 +3947,6 @@ python-multipart = [
     {version = "*", markers = "platform_system == \"Emscripten\""},
 ]
 questionary = {version = ">=2.0.0", markers = "platform_system != \"Emscripten\""}
-setuptools = {version = "*", markers = "python_version >= \"3.12\""}
 starlette = "*"
 typing-extensions = ">=4.10.0"
 uvicorn = {version = ">=0.16.0", markers = "platform_system != \"Emscripten\""}
@@ -4902,5 +4910,5 @@ test = ["mypy", "pre-commit", "pytest", "pytest-asyncio", "websockets (>=10.0)"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.10,<3.13"
-content-hash = "db16a82e68b2d2c8fcea266ddd6b5e65fb451c39541def7225753eee0c31982a"
+python-versions = ">=3.10,<3.12"
+content-hash = "e6eaa49e27a84f2618fe18c1f63f2aade8fd3e67ab9df8ca8b3ae44be3aedd2e"

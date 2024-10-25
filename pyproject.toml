@@ -23,7 +23,7 @@ keywords=["hyperscanning", "neuroscience", "pipeline", "statistics", "visualizat
 include=["hypyp/data/Basehead.obj"]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+python = ">=3.10,<3.12" # changed for testing matlabengine
 statsmodels = "^0.13.2"
 autoreject = ">=0.3.1"
 matplotlib = "^3.7.2"
@@ -59,6 +59,7 @@ pytest = ">=7.2.0"
 mkdocstrings = ">=0.20.0"
 mkdocstrings-python-legacy = "^0.2.3"
 shiny = "^1.1.0"
+matlabengine = "^23.2"
 
 [tool.dephell.main]
 from = {format = "poetry", path = "pyproject.toml"}

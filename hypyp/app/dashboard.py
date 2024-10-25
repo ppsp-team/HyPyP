@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from hypyp.signal import SynteticSignal
+from hypyp.wavelet.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
 from hypyp.wavelet.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
 import pywt
@@ -98,6 +99,7 @@ app_ui = ui.page_fluid(
                 "wavelet_library",
                 "",
                 choices={
+                    'matlab': 'Use Matlab engine',
                     'scipy': 'Use scipy.signal (deprecated)',
                     'pycwt': 'Use pycwt (Matlab based)',
                     'pywavelets': 'Use pywavelets',
@@ -322,6 +324,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             wavelet = ScipyWavelet(
                 center_frequency=input.wavelet_scipy_center_frequency(),
             )
+
+        elif input.wavelet_library() == 'matlab':
+            wavelet = MatlabWavelet()
 
         else:
             raise RuntimeError(f'Unknown wavelet library: {input.wavelet_library()}')
