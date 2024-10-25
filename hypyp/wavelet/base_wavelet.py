@@ -1,19 +1,8 @@
 from abc import ABC, abstractmethod
 import numpy as np
+from skimage.measure import block_reduce
 
 from ..plots import plot_cwt_weights, plot_wavelet_coherence
-
-class WCT:
-    def __init__(self, wct, times, scales, frequencies, coif, tracer=None):
-        self.wct = wct
-        self.times = times
-        self.scales = scales
-        self.frequencies = frequencies
-        self.coif = coif
-        self.tracer = tracer
-    
-    def plot(self, **kwargs):
-        return plot_wavelet_coherence(self.wct, self.times, self.frequencies, self.coif, **kwargs)
 
 class CWT:
     def __init__(self, weights, times, scales, frequencies, coif, tracer=None):
@@ -21,11 +10,25 @@ class CWT:
         self.times: np.ndarray = times
         self.scales: np.ndarray = scales
         self.frequencies: np.ndarray = frequencies
+        self.coi: np.ndarray = 1 / coif # Cone of influence, in scales
         self.coif: np.ndarray = coif # Cone of influence, in frequencies
         self.tracer: dict = tracer
 
     def plot(self, **kwargs):
         return plot_cwt_weights(self.W, self.times, self.frequencies, self.coif)
+
+class WCT:
+    def __init__(self, wct, times, scales, frequencies, coif, tracer=None):
+        self.wct = wct
+        self.times = times
+        self.scales = scales
+        self.frequencies = frequencies
+        self.coi = 1 / coif
+        self.coif = coif
+        self.tracer = tracer
+    
+    def plot(self, **kwargs):
+        return plot_wavelet_coherence(self.wct, self.times, self.frequencies, self.coif, **kwargs)
 
 
 class BaseWavelet(ABC):

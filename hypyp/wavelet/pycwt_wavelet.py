@@ -3,7 +3,7 @@ import numpy as np
 
 from .base_wavelet import CWT, BaseWavelet, WCT
 
-class MatlabWavelet(BaseWavelet):
+class PycwtWavelet(BaseWavelet):
     def __init__(
         self,
         precision=10,

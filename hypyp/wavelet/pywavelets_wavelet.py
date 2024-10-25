@@ -8,11 +8,11 @@ import scipy
 
 from ..plots import plot_wavelet_coherence
 
-class Wavelet(BaseWavelet):
+class PywaveletsWavelet(BaseWavelet):
     def __init__(
         self,
         wavelet_name='cmor2,1',
-        precision=10,
+        precision=10, # TODO this is not used
         lower_bound=-8,
         upper_bound=8,
         wct_smoothing_smooth_factor=-0.1, # TODO: this should be calculated automatically, based on the maths
@@ -40,7 +40,6 @@ class Wavelet(BaseWavelet):
 
     def cwt(self, y, dt, dj=1/12) -> CWT:
         N = len(y)
-        print(N)
         times = np.arange(N) * dt
         nOctaves = int(np.log2(np.floor(N / 2.0)))
         # TODO: find the right s0
@@ -288,7 +287,8 @@ def pywt_copy_cwt(data, scales, wavelet, sampling_period=1., method='conv', axis
     out = np.empty((np.size(scales),) + data.shape, dtype=dt_out)
     # Local change: Increased precision to avoid artifacts in high scales (low freq)
     # TODO: this should come as a parameter
-    precision = 15
+    #precision = 15 # avoids artifacts but is slow
+    precision = 10
     int_psi, x = pywt.integrate_wavelet(wavelet, precision=precision)
     int_psi = np.conj(int_psi) if wavelet.complex_cwt else int_psi
 

@@ -3,12 +3,11 @@ import pytest
 import numpy as np
 
 from hypyp.signal import SynteticSignal
-from hypyp.wavelet.pywt_wavelet import Wavelet
-from hypyp.wavelet.matlab_wavelet import MatlabWavelet
+from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 
 def test_instanciate():
     wavelet_name = 'cgau1'
-    wavelet = Wavelet(wavelet_name=wavelet_name)
+    wavelet = PywaveletsWavelet(wavelet_name=wavelet_name)
     assert wavelet.wct_smoothing_smooth_factor != 0
     assert wavelet.wct_smoothing_boxcar_size > 0
     assert wavelet.wavelet_name == wavelet_name
@@ -16,7 +15,7 @@ def test_instanciate():
     assert isinstance(wavelet.cwt_params, dict)
 
 def test_resolution():
-    wavelet = Wavelet(evaluate=False)
+    wavelet = PywaveletsWavelet(evaluate=False)
     # need to be evaluated before calling .dt
     with pytest.raises(Exception):
         wavelet.psi_dx
@@ -26,14 +25,14 @@ def test_resolution():
     assert wavelet.psi_dx < 1
 
 def test_default_domain():
-    wavelet = Wavelet()
+    wavelet = PywaveletsWavelet()
     assert min(wavelet.psi_x) == wavelet.domain[0]
     assert max(wavelet.psi_x) == wavelet.domain[1]
     
 def test_domain():
     lower_bound = -1
     upper_bound = 1
-    wavelet = Wavelet(lower_bound=lower_bound, upper_bound=upper_bound)
+    wavelet = PywaveletsWavelet(lower_bound=lower_bound, upper_bound=upper_bound)
 
     assert min(wavelet.psi_x) == lower_bound
     assert max(wavelet.psi_x) == upper_bound
@@ -42,12 +41,12 @@ def test_domain():
     
 def test_precision():
     precision = 12
-    wavelet = Wavelet(precision=precision)
+    wavelet = PywaveletsWavelet(precision=precision)
     assert len(wavelet.psi_x) == 2 ** precision
     assert len(wavelet.psi) == 2 ** precision
     
 def test_psi():
-    wavelet = Wavelet(wavelet_name='cmor2,1')
+    wavelet = PywaveletsWavelet(wavelet_name='cmor2,1')
     assert len(wavelet.psi_x) == len(wavelet.psi)
     assert len(wavelet.psi_x) == 2 ** wavelet.precision
 
@@ -56,7 +55,7 @@ def test_psi():
     assert np.sum(np.abs(wavelet.psi) * wavelet.psi_dx) == pytest.approx(1)
 
 def test_cwt():
-    wavelet = Wavelet()
+    wavelet = PywaveletsWavelet()
     signal = SynteticSignal(tmax=100).add_sin(1)
     res = wavelet.cwt(signal.y, signal.period)
     assert len(res.scales) > 0
@@ -65,19 +64,8 @@ def test_cwt():
     import matplotlib.pyplot as plt
     assert res.frequencies[max_id] == pytest.approx(1, rel=0.05)
 
-
 def test_wct():
-    wavelet = Wavelet()
-    signal1 = SynteticSignal(tmax=300).add_noise()
-    signal2 = SynteticSignal(tmax=300).add_noise()
-    res = wavelet.wct(signal1.y, signal2.y, signal1.period)
-
-def test_pycwt_implementation():
-    wavelet = MatlabWavelet()
-    psi, x = wavelet.evaluate_psi()
-    assert min(x) == wavelet.lower_bound
-    assert max(x) == wavelet.upper_bound
-    assert len(x) == len(psi)
+    wavelet = PywaveletsWavelet()
     signal1 = SynteticSignal(tmax=300).add_noise()
     signal2 = SynteticSignal(tmax=300).add_noise()
     res = wavelet.wct(signal1.y, signal2.y, signal1.period)

@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from hypyp.signal import SynteticSignal
-from hypyp.wavelet.matlab_wavelet import MatlabWavelet
+from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
 import pywt
 import pycwt
 from scipy import fft
@@ -17,7 +17,7 @@ import mne
 root = os.path.join(Path(__file__).parent, '..', '..')
 sys.path.append(root)
 import hypyp.plots
-from hypyp.wavelet.pywt_wavelet import Wavelet
+from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.fnirs_tools import (
     xwt_coherence_morl
 )
@@ -56,6 +56,10 @@ app_ui = ui.page_fluid(
                         ui.tags.strong('Wavelet'),
                         ui.output_plot('plot_mother_wavelet'),
                         ui.output_plot('plot_daughter_wavelet'),
+                        ui.row(
+                            ui.column(6, ui.output_plot('plot_scales')),
+                            ui.column(6, ui.output_plot('plot_frequencies')),
+                        ),
                     ),
                 ),
                 ui.column(
@@ -106,8 +110,9 @@ app_ui = ui.page_fluid(
             ui.input_action_button("button_action_compute_wct", label="Compute WCT"),
 
             ui.tags.strong('Display parameters'),
+            ui_option_row("Signal offset y", ui.input_checkbox("display_signal_offset_y", "", value=True), sizes=(8,4)),
             ui_option_row("Daughter wavelet id", ui.input_numeric("display_daughter_wavelet_id", "", value=0)),
-            ui_option_row("WCT frequencies at time", ui.input_numeric("display_wct_frequencies_at_time", "", value=-1)),
+            ui_option_row("WCT frequencies at time (-1 for max)", ui.input_numeric("display_wct_frequencies_at_time", "", value=-1)),
 
             ui_option_row("Downsample", ui.input_checkbox("display_downsample", "", value=True), sizes=(8,4)),
             ui_option_row("Show COI", ui.input_checkbox("display_show_coif", "", value=True), sizes=(8,4)),
@@ -293,7 +298,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.calc()
     def wavelet():
         if input.wavelet_library() == 'pywt':
-            wavelet = Wavelet(
+            wavelet = PywaveletsWavelet(
                 wavelet_name=wavelet_name(),
                 precision=input.wavelet_precision(),
                 upper_bound=input.wavelet_upper_bound(),
@@ -305,7 +310,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 wavelet.cwt_params['hack_compute_each_scale'] = True
 
         elif input.wavelet_library() == 'pycwt':
-            wavelet = MatlabWavelet(
+            wavelet = PycwtWavelet(
                 precision=input.wavelet_precision(),
                 upper_bound=input.wavelet_upper_bound(),
                 lower_bound=-input.wavelet_upper_bound(),
@@ -323,8 +328,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     def plot_signals():
         fig, ax = plt.subplots()
         x, y1, y2, _ = signals()
-        ax.plot(x, y1)
-        ax.plot(x, y2)
+        offset = 0
+        if input.display_signal_offset_y():
+            offset = np.mean(np.abs(y1)) + np.mean(np.abs(y2))
+        ax.plot(x, y1 + offset)
+        ax.plot(x, y2 - offset)
         return fig
 
     @render.plot(height=default_plot_signal_height)
@@ -373,13 +381,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.plot()
     def plot_wct():
         fig, ax = plt.subplots()
-
-        wct_res = compute_coherence()
-        hypyp.plots.plot_wavelet_coherence(
-            np.abs(wct_res.wct),
-            wct_res.times,
-            wct_res.frequencies,
-            wct_res.coif,
+        compute_coherence().plot(
             ax=ax,
             colorbar=False,
             downsample=input.display_downsample(),
@@ -398,93 +400,66 @@ def server(input: Inputs, output: Outputs, session: Session):
         elif input.diplay_show_tracer_complex() == 'imag':
             ZZ = np.imag(ZZ)
         return ZZ
-        
+
+    def downsample_mat_for_plot(times, frequencies, ZZ):
+        if not input.display_downsample():
+            return (times, frequencies, ZZ, 1)
+        times, ZZ, factor = hypyp.plots.downsample_in_time(times, ZZ, t=500)
+        return times, frequencies, ZZ, factor
+
+    def get_fig_plot_tracer_mat(key):
+        fig, ax = plt.subplots()
+        wct_res = compute_coherence()
+        times, frequencies, ZZ, _ = downsample_mat_for_plot(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.tracer[key]))
+        im = ax.pcolormesh(times, frequencies, ZZ)
+        ax.set_yscale('log')
+        fig.colorbar(im, ax=ax)
+        ax.title.set_text(key)
+        return fig
 
     @render.plot()
     def plot_tracer_W1():
-        fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        im = ax.pcolormesh(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.tracer['W1']))
-        ax.set_yscale('log')
-        fig.colorbar(im, ax=ax)
-        ax.title.set_text('W1')
-        return fig
-
+        return get_fig_plot_tracer_mat('W1')
     @render.plot()
     def plot_tracer_W2():
-        fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        im = ax.pcolormesh(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.tracer['W2']))
-        ax.set_yscale('log')
-        fig.colorbar(im, ax=ax)
-        ax.title.set_text('W2')
-        return fig
-
+        return get_fig_plot_tracer_mat('W2')
     @render.plot()
     def plot_tracer_W12():
-        fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        im = ax.pcolormesh(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.tracer['W12']))
-        ax.set_yscale('log')
-        fig.colorbar(im, ax=ax)
-        ax.title.set_text('W12')
-        return fig
-
+        return get_fig_plot_tracer_mat('W12')
     @render.plot()
     def plot_tracer_S1():
-        fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        im = ax.pcolormesh(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.tracer['S1']))
-        ax.set_yscale('log')
-        fig.colorbar(im, ax=ax)
-        ax.title.set_text('S1')
-        return fig
-
+        return get_fig_plot_tracer_mat('S1')
     @render.plot()
     def plot_tracer_S2():
-        fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        im = ax.pcolormesh(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.tracer['S2']))
-        ax.set_yscale('log')
-        fig.colorbar(im, ax=ax)
-        ax.title.set_text('S2')
-        return fig
-
+        return get_fig_plot_tracer_mat('S2')
     @render.plot()
     def plot_tracer_S12():
-        fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        tracer = wct_res.tracer
-        im = ax.pcolormesh(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.tracer['S12']))
-        ax.set_yscale('log')
-        fig.colorbar(im, ax=ax)
-        ax.title.set_text('S12')
-        return fig
-
-    @render.plot()
-    def plot_tracer_frequencies():
-        fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        ax.plot(wct_res.frequencies)
-        ax.title.set_text('frequencies')
-        return fig
-
-    @render.plot()
-    def plot_tracer_scales():
-        fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        ax.plot(wct_res.scales)
-        ax.title.set_text('scales')
-        return fig
-
+        return get_fig_plot_tracer_mat('S12')
     @render.plot()
     def plot_tracer_wct():
         fig, ax = plt.subplots()
         wct_res = compute_coherence()
-        im = ax.pcolormesh(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.wct))
+        times, frequencies, ZZ, _ = downsample_mat_for_plot(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.wct))
+        im = ax.pcolormesh(times, frequencies, ZZ)
         ax.set_yscale('log')
         fig.colorbar(im, ax=ax)
         ax.title.set_text('wct')
+        return fig
+
+    @render.plot()
+    def plot_frequencies():
+        fig, ax = plt.subplots()
+        wct_res = compute_coherence()
+        ax.scatter(np.arange(len(wct_res.frequencies)), wct_res.frequencies, marker='.')
+        ax.title.set_text('frequencies')
+        return fig
+
+    @render.plot()
+    def plot_scales():
+        fig, ax = plt.subplots()
+        wct_res = compute_coherence()
+        ax.scatter(np.arange(len(wct_res.scales)), wct_res.scales, marker='.')
+        ax.title.set_text('scales')
         return fig
 
     @render.plot()
@@ -495,7 +470,9 @@ def server(input: Inputs, output: Outputs, session: Session):
         wct_res  = compute_coherence()
 
         if input.display_wct_frequencies_at_time() == -1:
-            col = len(wct_res.times)//2
+            foo = wct_res.wct * (wct_res.wct > wct_res.coif[np.newaxis, :]).astype(int)
+            col = np.argmax(np.sum(foo, axis=0))
+            #col = len(wct_res.times)//2
         else:
             dt = x[1] - x[0]
             col = int(input.display_wct_frequencies_at_time() / dt)
@@ -584,14 +561,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ),
                 ),
                 ui.row(
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_frequencies'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_scales'),
-                    ),
+                    ui.column(4),
+                    ui.column(4),
                     ui.column(
                         4,
                         ui.output_plot('plot_tracer_wct'),

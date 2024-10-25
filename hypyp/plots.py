@@ -1,3 +1,4 @@
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools as itertools
@@ -6,6 +7,27 @@ import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from skimage.measure import block_reduce
 
+def downsample_in_time(*args, t=1000):
+    ret = []
+    # We assume time is always the last column
+    factor = math.ceil(args[0].shape[-1] / t)
+
+    if factor == 1:
+        return [*args, 1]
+
+    for item in args:
+        if len(item.shape) == 1:
+            ret.append(block_reduce(item, block_size=factor, func=np.mean, cval=np.mean(item)))
+        elif len(item.shape) == 2:
+            ret.append(block_reduce(item, block_size=(1,factor), func=np.mean, cval=np.mean(item)))
+        else:
+            raise RuntimeError(f'Unsupported number of column for downsampling: {len(item)}')
+    
+    ret.append(factor)
+
+    return ret
+        
+    
 
 def spectrogram_plot(z, times, frequencies, coif, cmap="viridis", norm=Normalize(), ax=None, colorbar=True):
     ###########################################################################
