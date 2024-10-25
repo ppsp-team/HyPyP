@@ -1,12 +1,9 @@
 from math import ceil, floor
 import numpy as np
-from scipy import signal, fft
 
 from .base_wavelet import CWT, WCT, BaseWavelet
 import pywt
 import scipy
-
-from ..plots import plot_wavelet_coherence
 
 class PywaveletsWavelet(BaseWavelet):
     def __init__(
@@ -22,11 +19,11 @@ class PywaveletsWavelet(BaseWavelet):
     ):
         self.wct_smoothing_smooth_factor = wct_smoothing_smooth_factor
         self.wct_smoothing_boxcar_size = wct_smoothing_boxcar_size
+        self.cwt_params = cwt_params
         self.wavelet_name = wavelet_name
         self.precision = precision
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        self.cwt_params = cwt_params
         self.tracer = dict(name='pywt')
         super().__init__(evaluate)
 
@@ -57,145 +54,6 @@ class PywaveletsWavelet(BaseWavelet):
         coif = 1.0 / coi
     
         return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coif=coif, tracer=self.tracer)
-
-    def wct(self, y1, y2, dt):
-        if len(y1) != len(y2):
-            raise RuntimeError("Arrays not same size")
-
-        N = len(y1)
-
-        dj = 1 / 12 # TODO have as parameter
-    
-        # TODO: have detrend as parameter
-        # TODO: have normalize as parameter
-        y1 = (y1 - y1.mean()) / y1.std()
-        y2 = (y2 - y2.mean()) / y2.std()
-    
-        cwt1 = self.cwt(y1, dt, dj)
-        cwt2 = self.cwt(y2, dt, dj)
-
-        if (cwt1.scales != cwt2.scales).any():
-            raise RuntimeError('The two CWT have different scales')
-
-        if (cwt1.frequencies != cwt2.frequencies).any():
-            raise RuntimeError('The two CWT have different frequencies')
-
-        W1 = cwt1.W
-        W2 = cwt2.W
-        W12 = W1 * W2.conj()
-
-        frequencies = cwt1.frequencies
-        scales = cwt1.scales
-        times = cwt1.times
-
-        # Compute cross wavelet transform and coherence
-        # TODO: cross wavelet
-        scaleMatrix = np.ones([1, N]) * scales[:, None]
-        smoothing_kwargs = dict(
-            dt=dt,
-            dj=dj,
-            scales=scales,
-            smooth_factor=self.wct_smoothing_smooth_factor,
-            boxcar_size=self.wct_smoothing_boxcar_size,
-        )
-        S1 = self.smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs)
-        S2 = self.smoothing(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs)
-
-        S12 = np.abs(self.smoothing(W12 / scaleMatrix, **smoothing_kwargs))
-        wct = S12 ** 2 / (S1 * S2)
-
-        # Cone of influence calculations
-        f0 = 2 * np.pi
-        cmor_coi = 1.0 / np.sqrt(2)
-        # TODO: this is hardcoded, we have to check where this equation comes from
-        cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
-        coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
-        coi = cmor_flambda * cmor_coi * dt * coi
-        coif = 1.0 / coi
-    
-        self.tracer['W1'] = W1
-        self.tracer['W2'] = W2
-        self.tracer['W12'] = W12
-        self.tracer['S1'] = S1
-        self.tracer['S2'] = S2
-        self.tracer['S12'] = S12
-
-        return WCT(wct, times, scales, frequencies, coif, self.tracer)
-
-    # TODO: test this
-    def smoothing(self, W, dt, dj, scales, smooth_factor=-0.5, boxcar_size=0.6):
-        """Smoothing function used in coherence analysis.
-    
-        Parameters
-        ----------
-        W :
-        dt :
-        dj :
-        scales :
-    
-        Returns
-        -------
-        T :
-    
-        """
-        # The smoothing is performed by using a filter given by the absolute
-        # value of the wavelet function at each scale, normalized to have a
-        # total weight of unity, according to suggestions by Torrence &
-        # Webster (1999) and by Grinsted et al. (2004).
-        m, n = W.shape
-    
-        # Filter in time.
-        # TODO: check that padding is applied here correctly
-        def fft_kwargs(signal, **kwargs):
-            return {'n': int(2 ** np.ceil(np.log2(len(signal))))}
-    
-        my_fft_kwargs = fft_kwargs(W[0, :])
-    
-        k = 2 * np.pi * fft.fftfreq(my_fft_kwargs['n'])
-        k2 = k ** 2
-        snorm = scales / dt
-    
-        # Smoothing by Gaussian window (absolute value of wavelet function)
-        # using the convolution theorem: multiplication by Gaussian curve in
-        # Fourier domain for each scale, outer product of scale and frequency
-        gaus_fft = np.exp(smooth_factor * (snorm[:, np.newaxis] ** 2) * k2)  # Outer product
-        W_fft = fft.fft(W, axis=1, **my_fft_kwargs)
-        smooth = fft.ifft(gaus_fft * W_fft, axis=1,  **my_fft_kwargs, overwrite_x=True)
-        T = smooth[:, :n]  # Remove possibly padded region due to FFT
-    
-        if np.isreal(W).all():
-            T = T.real
-    
-        # Filter in scale. For the Morlet wavelet it's simply a boxcar with
-        # 0.6 width.
-        # TODO: check this. It's suspicious
-        wsize = boxcar_size / dj * 2
-        win = self.rect(int(np.round(wsize)), normalize=True)
-        T = signal.convolve2d(T, win[:, np.newaxis], 'same')  # Scales are "vertical"
-    
-        return T
-
-    # TODO: test this
-    def rect(self, length, normalize=False):
-        """ Rectangular function adapted from https://github.com/regeirk/pycwt/blob/master/pycwt/helpers.py
-    
-        Args:
-            length (int): length of the rectangular function
-            normalize (bool): normalize or not
-    
-        Returns:
-            rect (array): the (normalized) rectangular function
-    
-        """
-        rect = np.zeros(length)
-        rect[0] = rect[-1] = 0.5
-        rect[1:-1] = 1
-    
-        if normalize:
-            rect /= rect.sum()
-    
-        return rect
-    from math import ceil, floor
 
 fftmodule = scipy.fft
 next_fast_len = fftmodule.next_fast_len

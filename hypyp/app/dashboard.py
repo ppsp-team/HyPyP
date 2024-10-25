@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
+from hypyp.wavelet.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
 import pywt
 import pycwt
 from scipy import fft
@@ -97,8 +98,9 @@ app_ui = ui.page_fluid(
                 "wavelet_library",
                 "",
                 choices={
-                    'pywt': 'Use pywavelets',
+                    'scipy': 'Use scipy.signal (deprecated)',
                     'pycwt': 'Use pycwt (Matlab based)',
+                    'pywavelets': 'Use pywavelets',
                 },
             ),
             ui.output_ui('ui_input_wavelet_type'),
@@ -112,7 +114,7 @@ app_ui = ui.page_fluid(
             ui.tags.strong('Display parameters'),
             ui_option_row("Signal offset y", ui.input_checkbox("display_signal_offset_y", "", value=True), sizes=(8,4)),
             ui_option_row("Daughter wavelet id", ui.input_numeric("display_daughter_wavelet_id", "", value=0)),
-            ui_option_row("WCT frequencies at time (-1 for max)", ui.input_numeric("display_wct_frequencies_at_time", "", value=-1)),
+            ui_option_row("Coherence at time (-1 for max)", ui.input_numeric("display_wct_frequencies_at_time", "", value=-1)),
 
             ui_option_row("Downsample", ui.input_checkbox("display_downsample", "", value=True), sizes=(8,4)),
             ui_option_row("Show COI", ui.input_checkbox("display_show_coif", "", value=True), sizes=(8,4)),
@@ -297,7 +299,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @reactive.calc()
     def wavelet():
-        if input.wavelet_library() == 'pywt':
+        if input.wavelet_library() == 'pywavelets':
             wavelet = PywaveletsWavelet(
                 wavelet_name=wavelet_name(),
                 precision=input.wavelet_precision(),
@@ -315,8 +317,15 @@ def server(input: Inputs, output: Outputs, session: Session):
                 upper_bound=input.wavelet_upper_bound(),
                 lower_bound=-input.wavelet_upper_bound(),
             )
+
+        elif input.wavelet_library() == 'scipy':
+            wavelet = ScipyWavelet(
+                center_frequency=input.wavelet_scipy_center_frequency(),
+            )
+
         else:
             raise RuntimeError(f'Unknown wavelet library: {input.wavelet_library()}')
+
         return wavelet
 
     @reactive.event(input.button_action_compute_wct)
@@ -478,7 +487,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             col = int(input.display_wct_frequencies_at_time() / dt)
             
         ax.plot(wct_res.frequencies, wct_res.wct[:,col])
-        ax.title.set_text(f'Frequencies at t={wct_res.times[col]:.1f} (max found: {wct_res.frequencies[np.argmax(wct_res.wct[:,col])]:.2f}Hz)')
+        ax.title.set_text(f'Coherence at t={wct_res.times[col]:.1f} (max found: {wct_res.frequencies[np.argmax(wct_res.wct[:,col])]:.2f}Hz)')
         ax.set_xscale('log')
         ax.set_xlabel('Frequency (Hz)')
         return fig
@@ -486,7 +495,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def ui_input_wavelet_type():
         options = []
-        if input.wavelet_library() == 'pywt':
+        if input.wavelet_library() == 'pywavelets':
             options.append(ui.input_select(
                     "wavelet_type",
                     "",
@@ -509,7 +518,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def ui_input_wavelet_options():
         options = []
-        if input.wavelet_library() == 'pywt':
+        if input.wavelet_library() == 'pywavelets':
             if input.wavelet_type() == 'cmor':
                 options.append(ui_option_row("Bandwidth", ui.input_numeric("wavelet_bandwidth", "", value=2)))
                 options.append(ui_option_row("Center frequency", ui.input_numeric("wavelet_center_frequency", "", value=1)))
@@ -517,12 +526,16 @@ def server(input: Inputs, output: Outputs, session: Session):
             options.append(ui_option_row("Upper bound", ui.input_numeric("wavelet_upper_bound", "", value=8)))
             options.append(ui_option_row("Precision", ui.input_numeric("wavelet_precision", "", value=10)))
             options.append(ui_option_row("Hack compute each scale", ui.input_checkbox("wavelet_hack_compute_each_scale", "", value=False), sizes=(8,4)))
+
+        if input.wavelet_library() == 'scipy':
+            options.append(ui_option_row("Center frequency", ui.input_numeric("wavelet_scipy_center_frequency", "", value=DEFAULT_SCIPY_CENTER_FREQUENCY)))
+
         return options
     
     @render.ui
     def ui_input_coherence_options():
         options = []
-        if input.wavelet_library() == 'pywt':
+        if input.wavelet_library() in ['pywavelets','scipy']:
             options.append(ui_option_row("Smooth factor", ui.input_numeric("smoothing_smooth_factor", "", value=-0.1)))
             options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=1)))
         return options

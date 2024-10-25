@@ -56,7 +56,7 @@ def test_psi():
 
 def test_cwt():
     wavelet = PywaveletsWavelet()
-    signal = SynteticSignal(tmax=100).add_sin(1)
+    signal = SynteticSignal().add_sin(1)
     res = wavelet.cwt(signal.y, signal.period)
     assert len(res.scales) > 0
     assert len(res.scales) == len(res.frequencies)
@@ -66,8 +66,8 @@ def test_cwt():
 
 def test_wct():
     wavelet = PywaveletsWavelet()
-    signal1 = SynteticSignal(tmax=300).add_noise()
-    signal2 = SynteticSignal(tmax=300).add_noise()
+    signal1 = SynteticSignal().add_noise()
+    signal2 = SynteticSignal().add_noise()
     res = wavelet.wct(signal1.y, signal2.y, signal1.period)
 
     

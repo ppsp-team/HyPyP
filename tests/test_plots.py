@@ -8,7 +8,7 @@ import hypyp.plots
 
 def test_downsampling():
     wavelet = PywaveletsWavelet()
-    signal = SynteticSignal(tmax=300).add_sin(1)
+    signal = SynteticSignal(n_points=2000).add_sin(1)
     res = wavelet.cwt(signal.y, signal.period)
 
     assert res.W.shape[0] == len(res.scales)
@@ -24,10 +24,9 @@ def test_downsampling():
 
 def test_downsampling_low_values():
     wavelet = PywaveletsWavelet()
-    signal = SynteticSignal(tmax=10, n_points=500).add_sin(1)
+    signal = SynteticSignal(tmax=10, n_points=50).add_sin(1)
     res = wavelet.cwt(signal.y, signal.period)
 
-    t = 1000
     times, coif, W, factor = hypyp.plots.downsample_in_time(res.times, res.coif, res.W)
     assert factor == 1
     assert len(times) == len(res.times)

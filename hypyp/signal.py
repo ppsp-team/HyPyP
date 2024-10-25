@@ -4,7 +4,7 @@ from scipy.fft import fft, fftfreq
 from scipy.signal import chirp
 
 class SynteticSignal:
-    def __init__(self, tmax: int, n_points: int = 10000):
+    def __init__(self, tmax: int = 100, n_points: int = 1000):
         self.n_points = n_points
         self.x = np.linspace(0, tmax, n_points)
         self.sampling_rate = n_points / tmax

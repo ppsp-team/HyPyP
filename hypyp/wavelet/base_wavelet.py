@@ -3,6 +3,7 @@ import numpy as np
 from skimage.measure import block_reduce
 
 from ..plots import plot_cwt_weights, plot_wavelet_coherence
+from .smooth import smoothing
 
 class CWT:
     def __init__(self, weights, times, scales, frequencies, coif, tracer=None):
@@ -69,7 +70,68 @@ class BaseWavelet(ABC):
     def cwt(self, y, dt, dj):
         pass
     
-    @abstractmethod
     def wct(self, y1, y2, dt):
-        pass
+        if len(y1) != len(y2):
+            raise RuntimeError("Arrays not same size")
+
+        N = len(y1)
+
+        dj = 1 / 12 # TODO have as parameter
+    
+        # TODO: have detrend as parameter
+        # TODO: have normalize as parameter
+        y1 = (y1 - y1.mean()) / y1.std()
+        y2 = (y2 - y2.mean()) / y2.std()
+    
+        cwt1 = self.cwt(y1, dt, dj)
+        cwt2 = self.cwt(y2, dt, dj)
+
+        if (cwt1.scales != cwt2.scales).any():
+            raise RuntimeError('The two CWT have different scales')
+
+        if (cwt1.frequencies != cwt2.frequencies).any():
+            raise RuntimeError('The two CWT have different frequencies')
+
+        W1 = cwt1.W
+        W2 = cwt2.W
+        W12 = W1 * W2.conj()
+
+        frequencies = cwt1.frequencies
+        scales = cwt1.scales
+        times = cwt1.times
+
+        # Compute cross wavelet transform and coherence
+        # TODO: cross wavelet
+        scaleMatrix = np.ones([1, N]) * scales[:, None]
+        smoothing_kwargs = dict(
+            dt=dt,
+            dj=dj,
+            scales=scales,
+            smooth_factor=self.wct_smoothing_smooth_factor,
+            boxcar_size=self.wct_smoothing_boxcar_size,
+        )
+        S1 = smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs)
+        S2 = smoothing(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs)
+
+        S12 = np.abs(smoothing(W12 / scaleMatrix, **smoothing_kwargs))
+        wct = S12 ** 2 / (S1 * S2)
+
+        # Cone of influence calculations
+        f0 = 2 * np.pi
+        cmor_coi = 1.0 / np.sqrt(2)
+        # TODO: this is hardcoded, we have to check where this equation comes from
+        cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+        coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
+        coi = cmor_flambda * cmor_coi * dt * coi
+        coif = 1.0 / coi
+    
+        self.tracer['W1'] = W1
+        self.tracer['W2'] = W2
+        self.tracer['W12'] = W12
+        self.tracer['S1'] = S1
+        self.tracer['S2'] = S2
+        self.tracer['S12'] = S12
+
+        return WCT(wct, times, scales, frequencies, coif, self.tracer)
+
     
