@@ -7,25 +7,33 @@ import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+import pandas as pd
+from scipy import fft
+import mne
+
+from hypyp.fnirs import DyadSignals, DataLoaderFNIRS
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
 from hypyp.wavelet.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
-import pywt
-import pycwt
-from scipy import fft
-import mne
 
 root = os.path.join(Path(__file__).parent, '..', '..')
 sys.path.append(root)
 import hypyp.plots
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
-from hypyp.fnirs_tools import (
-    xwt_coherence_morl
-)
 
 default_plot_signal_height = 150
+HARDCODED_PRELOADED_EXTERNAL_PATH = "/media/patrice/My Passport/DataNIRS/"
+HARDCODED_PRELOADED_EXTERNAL_FILENAME = "syn_ce05_001.nirs"
+HARDCODED_PRELOADED_EXTERNAL_CHANNEL_A = 0
+HARDCODED_PRELOADED_EXTERNAL_CHANNEL_B = 19
 
+HARDCODED_PRELOADED_COMMITTED_PATH = './data/'
+HARDCODED_PRELOADED_COMMITTED_FILENAME = 'sub-110_session-1_pre_raw.fif'
+HARDCODED_PRELOADED_COMMITTED_CHANNEL_A = "S4_D4 hbo"
+HARDCODED_PRELOADED_COMMITTED_CHANNEL_B = "S7_D6 hbo"
+
+# This is to avoid having external windows launched
 matplotlib.use('Agg')
 
 def ui_option_row(label, ui_element, sizes=(6, 6)):
@@ -39,18 +47,25 @@ app_ui = ui.page_fluid(
     ui.page_navbar(
         ui.nav_spacer(),
         ui.nav_panel(
-            "Wavelet Coherence",
+            "Signals",
             ui.row(
                 ui.column(
                     12,
                     ui.card(
-                        ui.tags.strong('Signal'),
+                        ui.tags.strong('Signals'),
                         ui.output_ui('ui_input_signal_slider'),
                         ui.output_plot('plot_signals', height=default_plot_signal_height),
                         ui.output_plot('plot_signals_spectrum', height=default_plot_signal_height),
                     ),
                 ),
             ),
+            ui.row(
+                ui.column(6, ui.card(ui.tags.strong('Signal 1'), ui.output_table('table_info_s1'))),
+                ui.column(6, ui.card(ui.tags.strong('Signal 2'), ui.output_table('table_info_s2'))),
+            ),
+        ),
+        ui.nav_panel(
+            "Wavelet Coherence",
             ui.row(
                 ui.column(
                     6,
@@ -75,23 +90,19 @@ app_ui = ui.page_fluid(
             ),
             ui.output_ui('ui_card_tracer'),
         ),
-        selected='Wavelet Coherence',
+        selected='Signals',
         id='main_nav',
         sidebar=ui.sidebar(
             ui.tags.strong('Signal parameters'),
             ui.input_select(
-                "signal_choice",
+                "signal_type",
                 "",
                 choices={
-                    'chirp_sinusoid': 'One sinusoid, one chirp',
-                    'chirp': 'Crossing chirps',
-                    'sinusoid': 'Sinusoid different',
-                    'sinusoid_almost_similar': 'Sinusoid almost similar',
-                    'sinusoid_dephased': 'Sinusoid dephased',
-                    'fnirs_syn_ce05_001_nirs_disk': 'fNIRS data from Passport Disk',
-                    'fnirs_sub_110_session_1_pre': 'fNIRS sub 110 session 1',
+                    'preloaded': 'Preloaded signals',
+                    'testing': 'Test signals',
                 },
             ),
+            ui.output_ui('ui_input_signal_choice'),
             ui.output_ui('ui_input_signal_options'),
 
             ui.tags.strong('Wavelet parameters'),
@@ -141,141 +152,155 @@ app_ui = ui.page_fluid(
 )
 
 def server(input: Inputs, output: Outputs, session: Session):
-    def is_real_data(input):
-        return input.signal_choice().startswith('fnirs_')
-
     @reactive.calc()
     def signals():
-        fs = input.signal_sampling_frequency()
-        N = input.signal_n()
-        T = 1.0 / fs
-        x = np.linspace(0, N/fs, N)
-
-        if input.signal_choice() == 'sinusoid':
-            freq1 = input.signal_sinusoid_freq1()
-            freq2 = input.signal_sinusoid_freq2()
-            y1 = SynteticSignal(tmax=N/fs, n_points=N).add_sin(freq1).y
-            y2 = SynteticSignal(tmax=N/fs, n_points=N).add_sin(freq2).y
-        elif input.signal_choice() == 'sinusoid_almost_similar':
-            freq1 = input.signal_sinusoid_almost_similar_freq1()
-            freq2 = freq1 - 0.001
-            y1 = SynteticSignal(tmax=N/fs, n_points=N).add_sin(freq1).y
-            y2 = SynteticSignal(tmax=N/fs, n_points=N).add_sin(freq2).y
-        elif input.signal_choice() == 'sinusoid_dephased':
-            freq1 = input.signal_sinusoid_dephased_freq1()
-            y1 = SynteticSignal(tmax=N/fs, n_points=N).add_sin(freq1).y
-            y1_fft = np.fft.fft(y1)
-            y1_magnitude = np.abs(y1_fft)
-            y1_phase = np.angle(y1_fft)
-            y1_random_phase = np.random.uniform(-np.pi, np.pi, len(y1_phase))
-            y1_randomized_fft = y1_magnitude * np.exp(1j * y1_random_phase)
-            y2 = np.fft.ifft(y1_randomized_fft).real
-            y2 = y2 * 1 / (np.abs(np.max(y2)-np.min(y2)) / 2)
-        elif input.signal_choice() == 'chirp':
-            signal1 = SynteticSignal(tmax=N/fs, n_points=N)
-            signal1.add_chirp(input.signal_chirp_freq1(), input.signal_chirp_freq2())
-            y1 = signal1.y
-            y2 = np.flip(y1)
-        elif input.signal_choice() == 'chirp_sinusoid':
-            y1 = SynteticSignal(tmax=N/fs, n_points=N).add_sin(input.signal_chirp_sinusoid_freq1()).y
-            y2 = SynteticSignal(tmax=N/fs, n_points=N).add_chirp(input.signal_chirp_sinusoid_freq2(), input.signal_chirp_sinusoid_freq3()).y
-        elif input.signal_choice() == 'fnirs_syn_ce05_001_nirs_disk':
-            base_path = "/media/patrice/My Passport/DataNIRS/"
-            filename = "syn_ce05_001.nirs"
-            file_path = os.path.join(base_path, filename)
-            mat = scipy.io.loadmat(file_path)
-            x = mat['t'].flatten().astype(np.float64, copy=True)
-            y1 = mat['d'][:,0].flatten().astype(np.complex128, copy=True)
-            y2 = mat['d'][:,19].flatten().astype(np.complex128, copy=True)
-    
-        elif input.signal_choice() == 'fnirs_sub_110_session_1_pre':
-
-            prep_path = './data/'
-            fname1 = 'sub-110_session-1_pre_raw.fif'
-            fname2 = fname1
-            p1 = prep_path + fname1
-            p2 = prep_path + fname2
-
-            chs1 = ["S4_D4 hbo"] 
-            chs2 = ["S7_D6 hbo"]
-
-            #set events
-            tmin = 0 
-            tmax = 300
-            baseline = (0, 0)
-
-            # read in data 1
-            p1 = mne.io.read_raw_fif(p1, verbose=True, preload=True)
-            p2 = mne.io.read_raw_fif(p2, verbose=True, preload=True)
-
-            # select channels from csv of best channels
-            ch_list1 = chs1
-            ch_list2 = chs2
-            ch_picks1 = mne.pick_channels(p1.ch_names, include = ch_list1)
-            ch_picks2 = mne.pick_channels(p2.ch_names, include = ch_list2)
-            p1_best_ch = p1.copy().pick(ch_picks1)
-            p2_best_ch = p2.copy().pick(ch_picks2)
-
-            # get events
-            events1, event_dict1 = mne.events_from_annotations(p1_best_ch)
-            events2, event_dict2 = mne.events_from_annotations(p2_best_ch)
-            epo1 = mne.Epochs(p1_best_ch, events1,
-                            event_id = event_dict1, tmin = tmin, tmax = tmax,
-                            baseline = baseline, reject_by_annotation=False)
-            epo2 = mne.Epochs(p2_best_ch, events2,
-                            event_id = event_dict2, tmin = tmin, tmax = tmax,
-                            baseline = baseline, reject_by_annotation=False)
-            y1 = epo1.get_data()[0,0,:]
-            y2 = epo2.get_data()[0,0,:]
-            
-            # Force N for this signal
-            N = len(y1)
+        info_table1 = []
+        info_table2 = []
+        dyad = None
+        if input.signal_type() == 'testing':
+            fs = input.signal_sampling_frequency()
+            N = input.signal_n()
             x = np.linspace(0, N/fs, N)
+            tmax = N / fs
+            if input.signal_testing_choice() == 'sinusoid':
+                y1 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_sinusoid_freq1()).y
+                y2 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_sinusoid_freq2()).y
+            elif input.signal_testing_choice() == 'sinusoid_almost_similar':
+                y1 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_sinusoid_almost_similar_freq1()).y
+                y2 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_sinusoid_almost_similar_freq1() - 0.001).y
+            elif input.signal_testing_choice() == 'sinusoid_dephased':
+                y1 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_sinusoid_dephased_freq1()).y
+                y1_fft = np.fft.fft(y1)
+                y1_magnitude = np.abs(y1_fft)
+                y1_phase = np.angle(y1_fft)
+                y1_random_phase = np.random.uniform(-np.pi, np.pi, len(y1_phase))
+                y1_randomized_fft = y1_magnitude * np.exp(1j * y1_random_phase)
+                y2 = np.fft.ifft(y1_randomized_fft).real
+                y2 = y2 * 1 / (np.abs(np.max(y2)-np.min(y2)) / 2)
+            elif input.signal_testing_choice() == 'chirp':
+                signal1 = SynteticSignal(tmax=tmax, n_points=N)
+                signal1.add_chirp(input.signal_chirp_freq1(), input.signal_chirp_freq2())
+                y1 = signal1.y
+                y2 = np.flip(y1)
+            elif input.signal_testing_choice() == 'chirp_sinusoid':
+                y1 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_chirp_sinusoid_freq1()).y
+                y2 = SynteticSignal(tmax=tmax, n_points=N).add_chirp(input.signal_chirp_sinusoid_freq2(), input.signal_chirp_sinusoid_freq3()).y
 
-
-        if not is_real_data(input):
             noise_level = input.signal_noise_level()
-            #noise_level = 0
-
             y1 +=  noise_level * np.random.normal(0, 1, len(x))
             y2 +=  noise_level * np.random.normal(0, 1, len(x))
 
-        signal_from = 0
-        signal_to = len(x)
+        elif input.signal_type() == 'preloaded':
+            if input.signal_preloaded_choice() == 'preloaded_passport_disk':
+                file_path = os.path.join(HARDCODED_PRELOADED_EXTERNAL_PATH, HARDCODED_PRELOADED_EXTERNAL_FILENAME)
+                dyad = DataLoaderFNIRS.read_two_signals_from_mat(file_path, HARDCODED_PRELOADED_EXTERNAL_CHANNEL_A, HARDCODED_PRELOADED_EXTERNAL_CHANNEL_B)
+        
+            elif input.signal_preloaded_choice() == 'preloaded_committed':
+                file_path = os.path.join(HARDCODED_PRELOADED_COMMITTED_PATH, HARDCODED_PRELOADED_COMMITTED_FILENAME)
+
+                #set events
+                tmin = 0 
+                tmax = 300
+                baseline = (0, 0)
+
+                # use the same file for both
+                s1 = mne.io.read_raw_fif(file_path, verbose=True, preload=True)
+                s2 = mne.io.read_raw_fif(file_path, verbose=True, preload=True)
+
+                # select channels from csv of best channels
+                s1_selected_ch = s1.copy().pick(mne.pick_channels(s1.ch_names, include = [HARDCODED_PRELOADED_COMMITTED_CHANNEL_A]))
+                s2_selected_ch = s2.copy().pick(mne.pick_channels(s2.ch_names, include = [HARDCODED_PRELOADED_COMMITTED_CHANNEL_B]))
+
+                # get events
+                events1, event_dict1 = mne.events_from_annotations(s1_selected_ch)
+                events2, event_dict2 = mne.events_from_annotations(s2_selected_ch)
+                epo1 = mne.Epochs(
+                    s1_selected_ch,
+                    events1,
+                    event_id=event_dict1,
+                    tmin=tmin,
+                    tmax=tmax,
+                    baseline=baseline,
+                    reject_by_annotation=False
+                )
+                epo2 = mne.Epochs(
+                    s2_selected_ch,
+                    events2,
+                    event_id=event_dict2,
+                    tmin=tmin,
+                    tmax=tmax,
+                    baseline=baseline,
+                    reject_by_annotation=False
+                )
+                y1 = epo1.get_data()[0,0,:]
+                y2 = epo2.get_data()[0,0,:]
+                
+                # Force N for this signal
+                N = len(y1)
+                fs = epo1.info['sfreq']
+                x = np.linspace(0, N/fs, N)
+                info_table1 = [(k,epo1.info[k]) for k in epo1.info.keys()]
+                info_table2 = [(k,epo2.info[k]) for k in epo2.info.keys()]
+
+        if dyad is None:
+            dyad = DyadSignals(x, y1, y2, info_table1, info_table2)
+
         try:
             if input.signal_range() is not None:
-                signal_from = N * input.signal_range()[0] // 100
-                signal_to = N * input.signal_range()[1] // 100
+                return dyad.sub_hundred(input.signal_range())
         except:
             pass
+        
+        return dyad
 
-        return (
-            x[signal_from:signal_to],
-            y1[signal_from:signal_to],
-            y2[signal_from:signal_to],
-            len(x) # return length of signal to allow scrolling
-        )
 
+    @render.ui
+    def ui_input_signal_choice():
+        choices = []
+        if input.signal_type() == 'testing':
+            choices.append(ui.input_select(
+                "signal_testing_choice",
+                "",
+                choices={
+                    'chirp_sinusoid': 'One sinusoid, one chirp',
+                    'chirp': 'Crossing chirps',
+                    'sinusoid': 'Sinusoid different',
+                    'sinusoid_almost_similar': 'Sinusoid almost similar',
+                    'sinusoid_dephased': 'Sinusoid dephased',
+                },
+            ))
+        
+        elif input.signal_type() == 'preloaded':
+            choices.append(ui.input_select(
+                "signal_preloaded_choice",
+                "",
+                choices={
+                    'preloaded_committed': 'fNIRS sub 110 session 1',
+                    'preloaded_passport_disk': 'fNIRS data from Passport Disk',
+                },
+            ))
+        
+        return choices
 
     @render.ui
     def ui_input_signal_options():
         options = []
-        if input.signal_choice() == 'sinusoid':
-            options.append(ui_option_row("Freq 1", ui.input_numeric("signal_sinusoid_freq1", "", value=1))),
-            options.append(ui_option_row("Freq 2", ui.input_numeric("signal_sinusoid_freq2", "", value=0.8))),
-        elif input.signal_choice() == 'sinusoid_almost_similar':
-            options.append(ui_option_row("Freq", ui.input_numeric("signal_sinusoid_almost_similar_freq1", "", value=0.2))),
-        elif input.signal_choice() == 'sinusoid_dephased':
-            options.append(ui_option_row("Freq", ui.input_numeric("signal_sinusoid_dephased_freq1", "", value=0.02))),
-        elif input.signal_choice() == 'chirp':
-            options.append(ui_option_row("Freq Chirp from", ui.input_numeric("signal_chirp_freq1", "", value=0.2))),
-            options.append(ui_option_row("Freq Chirp to", ui.input_numeric("signal_chirp_freq2", "", value=2))),
-        elif input.signal_choice() == 'chirp_sinusoid':
-            options.append(ui_option_row("Freq Sinusoid", ui.input_numeric("signal_chirp_sinusoid_freq1", "", value=1))),
-            options.append(ui_option_row("Freq Chirp from", ui.input_numeric("signal_chirp_sinusoid_freq2", "", value=0.2))),
-            options.append(ui_option_row("Freq Chirp to", ui.input_numeric("signal_chirp_sinusoid_freq3", "", value=2))),
+        if input.signal_type() == 'testing':
+            if input.signal_testing_choice() == 'sinusoid':
+                options.append(ui_option_row("Freq 1", ui.input_numeric("signal_sinusoid_freq1", "", value=1))),
+                options.append(ui_option_row("Freq 2", ui.input_numeric("signal_sinusoid_freq2", "", value=0.8))),
+            elif input.signal_testing_choice() == 'sinusoid_almost_similar':
+                options.append(ui_option_row("Freq", ui.input_numeric("signal_sinusoid_almost_similar_freq1", "", value=0.2))),
+            elif input.signal_testing_choice() == 'sinusoid_dephased':
+                options.append(ui_option_row("Freq", ui.input_numeric("signal_sinusoid_dephased_freq1", "", value=0.02))),
+            elif input.signal_testing_choice() == 'chirp':
+                options.append(ui_option_row("Freq Chirp from", ui.input_numeric("signal_chirp_freq1", "", value=0.2))),
+                options.append(ui_option_row("Freq Chirp to", ui.input_numeric("signal_chirp_freq2", "", value=2))),
+            elif input.signal_testing_choice() == 'chirp_sinusoid':
+                options.append(ui_option_row("Freq Sinusoid", ui.input_numeric("signal_chirp_sinusoid_freq1", "", value=1))),
+                options.append(ui_option_row("Freq Chirp from", ui.input_numeric("signal_chirp_sinusoid_freq2", "", value=0.2))),
+                options.append(ui_option_row("Freq Chirp to", ui.input_numeric("signal_chirp_sinusoid_freq3", "", value=2))),
         
-        if not is_real_data(input):
             options.append(ui_option_row("Sampling freq. (Hz)", ui.input_numeric("signal_sampling_frequency", "", value=5))),
             options.append(ui_option_row("Nb. points", ui.input_numeric("signal_n", "", value=2000))),
             options.append(ui_option_row("Noise level", ui.input_numeric("signal_noise_level", "", value=0.01))),
@@ -336,30 +361,38 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @reactive.event(input.button_action_compute_wct)
     def compute_coherence():
-        x, y1, y2, _ = signals()
-        return wavelet().wct(y1, y2, x[1] - x[0])
+        dyad = signals()
+        return wavelet().wct(dyad.y1, dyad.y2, dyad.dt)
 
     @render.plot(height=default_plot_signal_height)
     def plot_signals():
         fig, ax = plt.subplots()
-        x, y1, y2, _ = signals()
+        dyad = signals()
         offset = 0
         if input.display_signal_offset_y():
-            offset = np.mean(np.abs(y1)) + np.mean(np.abs(y2))
-        ax.plot(x, y1 + offset)
-        ax.plot(x, y2 - offset)
+            offset = np.mean(np.abs(dyad.y1)) + np.mean(np.abs(dyad.y2))
+        ax.plot(dyad.x, dyad.y1 + offset)
+        ax.plot(dyad.x, dyad.y2 - offset)
         return fig
+    
+    @render.table
+    def table_info_s1():
+        return pd.DataFrame(signals().info_table1, columns=['Key', 'Value'])
+        
+    @render.table
+    def table_info_s2():
+        return pd.DataFrame(signals().info_table2, columns=['Key', 'Value'])
+        
 
     @render.plot(height=default_plot_signal_height)
     def plot_signals_spectrum():
         fig, ax = plt.subplots()
-        x, y1, y2, _ = signals()
-        N = len(x)
-        T = x[1] - x[0]
+        dyad = signals()
+        N = dyad.n
 
-        yf = fft.fft(y1)
-        xf = fft.fftfreq(N, T)[:N//2]
-        yf2 = fft.fft(y2)
+        yf = fft.fft(dyad.y1)
+        xf = fft.fftfreq(N, dyad.dt)[:N//2]
+        yf2 = fft.fft(dyad.y2)
 
         ax.plot(xf, 2.0/N * np.abs(yf[0:N//2]))
         ax.plot(xf, 2.0/N * np.abs(yf2[0:N//2]))
@@ -481,17 +514,15 @@ def server(input: Inputs, output: Outputs, session: Session):
     def plot_wct_half_time():
         fig, ax = plt.subplots()
 
-        x, y1, y2, _ = signals()
+        dyad = signals()
         wct_res  = compute_coherence()
 
         if input.display_wct_frequencies_at_time() == -1:
             # region of interest
             roi = wct_res.wct * (wct_res.wct > wct_res.coif[np.newaxis, :]).astype(int)
             col = np.argmax(np.sum(roi, axis=0))
-            #col = len(wct_res.times)//2
         else:
-            dt = x[1] - x[0]
-            col = int(input.display_wct_frequencies_at_time() / dt)
+            col = int(input.display_wct_frequencies_at_time() / dyad.dt)
             
         ax.plot(wct_res.frequencies, wct_res.wct[:,col])
         ax.title.set_text(f'Coherence at t={wct_res.times[col]:.1f} (max found: {wct_res.frequencies[np.argmax(wct_res.wct[:,col])]:.2f}Hz)')
