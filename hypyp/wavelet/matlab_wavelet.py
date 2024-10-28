@@ -6,6 +6,11 @@ import matlab.engine
 from hypyp.signal import SynteticSignal
 from .base_wavelet import CWT, BaseWavelet, WCT
 
+# In order to work, python must know the location of matlab
+# Add something like this to ~/.bashrc
+# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<your_path_to_matlab>/R2023b/bin/glnxa64
+
+
 class MatlabWavelet(BaseWavelet):
     def __init__(
         self,
@@ -55,7 +60,7 @@ class MatlabWavelet(BaseWavelet):
         #self.eng.eval("y2 = sin(times_vec * 2 * pi * freq2/5);", nargout=0)
         self.eng.workspace['y1'] = np.ascontiguousarray(y1)
         self.eng.workspace['y2'] = np.ascontiguousarray(y2)
-        self.eng.eval("[Rsq, period, scale, coi, ~] = wtc(y1, y2, 'mcc', 0, 'MakeFigure', 1, 'ArrowSize', 0.2, 'S0', 2, 'MaxScale', 966.5);  ", nargout=0)
+        self.eng.eval("[Rsq, period, scale, coi, sig] = wtc(y1, y2, 'mcc', 0, 'MakeFigure', 1, 'ArrowSize', 0.2, 'S0', 2, 'MaxScale', 966.5);  ", nargout=0)
 
         wct = np.array(self.eng.workspace['Rsq'])
         N = len(y1)
@@ -63,5 +68,6 @@ class MatlabWavelet(BaseWavelet):
         periods = np.array(self.eng.workspace['period']).flatten()
         scales = np.array(self.eng.workspace['scale']).flatten()
         coif = 1 / np.array(self.eng.workspace['coi']).flatten()
+        sig = np.array(self.eng.workspace['sig']).flatten()
         frequencies = 1 / periods
-        return WCT(wct, times, scales, frequencies, coif, self.tracer)
+        return WCT(wct, times, scales, frequencies, coif, tracer=self.tracer)

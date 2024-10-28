@@ -19,17 +19,20 @@ class CWT:
         return plot_cwt_weights(self.W, self.times, self.frequencies, self.coif)
 
 class WCT:
-    def __init__(self, wct, times, scales, frequencies, coif, tracer=None):
+    def __init__(self, wct, times, scales, frequencies, coif, sig=None, tracer=None):
         self.wct = wct
+        # TODO: compute Region of Interest, something like this:
+        #roi = wct * (wct > coif[np.newaxis, :]).astype(int)
         self.times = times
         self.scales = scales
         self.frequencies = frequencies
         self.coi = 1 / coif
         self.coif = coif
         self.tracer = tracer
+        self.sig = sig
     
     def plot(self, **kwargs):
-        return plot_wavelet_coherence(self.wct, self.times, self.frequencies, self.coif, **kwargs)
+        return plot_wavelet_coherence(self.wct, self.times, self.frequencies, self.coif, self.sig, **kwargs)
 
 
 class BaseWavelet(ABC):
@@ -132,6 +135,6 @@ class BaseWavelet(ABC):
         self.tracer['S2'] = S2
         self.tracer['S12'] = S12
 
-        return WCT(wct, times, scales, frequencies, coif, self.tracer)
+        return WCT(wct, times, scales, frequencies, coif, tracer=self.tracer)
 
     

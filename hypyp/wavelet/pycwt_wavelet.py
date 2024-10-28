@@ -9,11 +9,13 @@ class PycwtWavelet(BaseWavelet):
         precision=10,
         lower_bound=-8,
         upper_bound=8,
+        compute_significance=False,
         evaluate=True,
     ):
         self.precision = precision
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
+        self.compute_significance = compute_significance
         self.tracer = dict(name='pycwt')
         self.wavelet_name = 'pycwt'
         super().__init__(evaluate)
@@ -34,6 +36,8 @@ class PycwtWavelet(BaseWavelet):
         N = len(y1)
         times = np.arange(N) * dt
 
-        wct, _, coif_periods, frequencies, _ = pycwt.wct(y1, y2, dt=dt, sig=False, tracer=self.tracer)
+        wct, _, coif_periods, frequencies, sig = pycwt.wct(y1, y2, dt=dt, sig=self.compute_significance, tracer=self.tracer)
         coif = 1 / coif_periods
-        return WCT(wct, times, self.tracer['scales'], frequencies, coif, self.tracer)
+        if not self.compute_significance:
+            sig = None
+        return WCT(wct, times, self.tracer['scales'], frequencies, coif, sig, tracer=self.tracer)

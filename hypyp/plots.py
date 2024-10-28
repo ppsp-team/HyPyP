@@ -73,6 +73,7 @@ def plot_wavelet_coherence(
     times,
     frequencies,
     coif,
+    sig=None,
     ax=None,
     colorbar=True,
     downsample=False,
@@ -123,6 +124,9 @@ def plot_wavelet_coherence(
 
     if title is not None:
         fig.suptitle(title)
+
+    if sig is not None:
+        ax.contour(xx, yy, wct, levels=sig, color='k')
         
     return ax
 

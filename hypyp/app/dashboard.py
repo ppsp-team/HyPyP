@@ -99,10 +99,10 @@ app_ui = ui.page_fluid(
                 "wavelet_library",
                 "",
                 choices={
-                    'matlab': 'Use Matlab engine',
-                    'scipy': 'Use scipy.signal (deprecated)',
-                    'pycwt': 'Use pycwt (Matlab based)',
                     'pywavelets': 'Use pywavelets',
+                    'scipy': 'Use scipy.signal (deprecated)',
+                    'pycwt': 'Use pycwt (based on matlab code)',
+                    'matlab': 'Use Matlab engine',
                 },
             ),
             ui.output_ui('ui_input_wavelet_type'),
@@ -184,9 +184,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             filename = "syn_ce05_001.nirs"
             file_path = os.path.join(base_path, filename)
             mat = scipy.io.loadmat(file_path)
-            x = mat['t']
-            y1 = mat['d'][:,0]
-            y2 = mat['d'][:,19]
+            x = mat['t'].flatten().astype(np.float64, copy=True)
+            y1 = mat['d'][:,0].flatten().astype(np.complex128, copy=True)
+            y2 = mat['d'][:,19].flatten().astype(np.complex128, copy=True)
     
         elif input.signal_choice() == 'fnirs_sub_110_session_1_pre':
 
@@ -318,6 +318,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 precision=input.wavelet_precision(),
                 upper_bound=input.wavelet_upper_bound(),
                 lower_bound=-input.wavelet_upper_bound(),
+                compute_significance=input.wavelet_pycwt_significance(),
             )
 
         elif input.wavelet_library() == 'scipy':
@@ -484,8 +485,9 @@ def server(input: Inputs, output: Outputs, session: Session):
         wct_res  = compute_coherence()
 
         if input.display_wct_frequencies_at_time() == -1:
-            foo = wct_res.wct * (wct_res.wct > wct_res.coif[np.newaxis, :]).astype(int)
-            col = np.argmax(np.sum(foo, axis=0))
+            # region of interest
+            roi = wct_res.wct * (wct_res.wct > wct_res.coif[np.newaxis, :]).astype(int)
+            col = np.argmax(np.sum(roi, axis=0))
             #col = len(wct_res.times)//2
         else:
             dt = x[1] - x[0]
@@ -543,6 +545,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.wavelet_library() in ['pywavelets','scipy']:
             options.append(ui_option_row("Smooth factor", ui.input_numeric("smoothing_smooth_factor", "", value=-0.1)))
             options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=1)))
+        if input.wavelet_library() in ['pycwt']:
+            options.append(ui_option_row("Compute significance (slow)", ui.input_checkbox("wavelet_pycwt_significance", "", value=False), sizes=(8,4)))
         return options
     
     @render.ui
