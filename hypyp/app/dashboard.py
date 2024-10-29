@@ -11,7 +11,8 @@ import pandas as pd
 from scipy import fft
 import mne
 
-from hypyp.fnirs import DyadSignals, DataLoaderFNIRS
+from hypyp.fnirs.pair_signals import PairSignals
+from hypyp.fnirs.data_loader_fnirs import DataLoaderFNIRS
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
@@ -243,7 +244,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 info_table2 = [(k,epo2.info[k]) for k in epo2.info.keys()]
 
         if dyad is None:
-            dyad = DyadSignals(x, y1, y2, info_table1, info_table2)
+            dyad = PairSignals(x, y1, y2, info_table1, info_table2)
 
         try:
             if input.signal_range() is not None:

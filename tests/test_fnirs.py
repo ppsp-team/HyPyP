@@ -1,7 +1,8 @@
 import pytest
 
-from hypyp.fnirs import DataLoaderFNIRS, DyadFNIRS, SubjectFNIRS
-
+from hypyp.fnirs.subject_fnirs import SubjectFNIRS
+from hypyp.fnirs.dyad_fnirs import DyadFNIRS
+from hypyp.fnirs.data_loader_fnirs import DataLoaderFNIRS
 
 #set events
 tmin = 0 
@@ -54,11 +55,23 @@ def test_instanciate():
     assert dyad.s2.epochs is not None
     assert len(dyad.s2.epochs.ch_names) == len(ch_list_s2)
 
+def test_list_paths():
+    loader = DataLoaderFNIRS()
+    paths = loader.paths
+    assert len(paths) > 0
+
+def test_list_paths():
+    loader = DataLoaderFNIRS()
+    previous_count = len(loader.paths)
+    loader.add_source('/foo')
+    new_paths = loader.paths
+    assert len(new_paths) == previous_count + 1
+
 def test_list_files():
-    print(DataLoaderFNIRS.list_all_files())
-    assert len(DataLoaderFNIRS.list_all_files()) > 0
-    assert len(DataLoaderFNIRS.list_fif_files()) > 0
-    assert DataLoaderFNIRS.list_fif_files()[0].startswith('data')
+    loader = DataLoaderFNIRS()
+    assert len(loader.paths) > 0
+    assert len(loader.list_fif_files()) > 0
+    assert loader.list_fif_files()[0].startswith('data')
 
 def test_load_snirf():
     s1 = SubjectFNIRS()
