@@ -18,7 +18,7 @@ def test_pywavelets():
     assert len(x) == len(psi)
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
-    res = wavelet.wct(signal1.y, signal2.y, signal1.period)
+    res = wavelet.wtc(signal1.y, signal2.y, signal1.period)
 
 def test_pycwt():
     wavelet = PycwtWavelet()
@@ -29,7 +29,7 @@ def test_pycwt():
     assert len(x) == len(psi)
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
-    res = wavelet.wct(signal1.y, signal2.y, signal1.period)
+    res = wavelet.wtc(signal1.y, signal2.y, signal1.period)
 
 def test_scipy():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -40,7 +40,7 @@ def test_scipy():
 
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
-    res = wavelet.wct(signal1.y, signal2.y, signal1.period)
+    res = wavelet.wtc(signal1.y, signal2.y, signal1.period)
 
 
 

@@ -1,7 +1,7 @@
 from math import ceil, floor
 import numpy as np
 
-from .base_wavelet import CWT, WCT, BaseWavelet
+from .base_wavelet import CWT, WTC, BaseWavelet
 import pywt
 import scipy
 
@@ -12,13 +12,13 @@ class PywaveletsWavelet(BaseWavelet):
         precision=10, # TODO this is not used
         lower_bound=-8,
         upper_bound=8,
-        wct_smoothing_smooth_factor=-0.1, # TODO: this should be calculated automatically, based on the maths
-        wct_smoothing_boxcar_size=1,
+        wtc_smoothing_smooth_factor=-0.1, # TODO: this should be calculated automatically, based on the maths
+        wtc_smoothing_boxcar_size=1,
         cwt_params=dict(),
         evaluate=True,
     ):
-        self.wct_smoothing_smooth_factor = wct_smoothing_smooth_factor
-        self.wct_smoothing_boxcar_size = wct_smoothing_boxcar_size
+        self.wtc_smoothing_smooth_factor = wtc_smoothing_smooth_factor
+        self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
         self.cwt_params = cwt_params
         self.wavelet_name = wavelet_name
         self.precision = precision

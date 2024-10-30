@@ -812,7 +812,7 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
     assert n_samples1 == n_samples2, "n_samples1 and n_samples2 should have the same number of samples."
 
     cross_sigs = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
-    wcts = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
+    wtcs = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
 
     # Set the mother wavelet
     Ws = mne.time_frequency.tfr.morlet(sfreq, freqs, 
@@ -836,8 +836,8 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
             cross_sigs[ind1, ind2, :, :, :] = cross_sig
             coh = (cross_sig) / (np.sqrt(wps1*wps2))
             abs_coh = np.abs(coh)
-            wct = (abs_coh - np.min(abs_coh)) / (np.max(abs_coh) - np.min(abs_coh))
-            wcts[ind1, ind2, :, :, :] = wct
+            wtc = (abs_coh - np.min(abs_coh)) / (np.max(abs_coh) - np.min(abs_coh))
+            wtcs[ind1, ind2, :, :, :] = wtc
 
     if mode == 'power':
         data = np.abs(cross_sigs)
@@ -846,7 +846,7 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
     elif mode == 'xwt':
         data = cross_sigs
     elif mode == 'wtc':
-        data = wcts 
+        data = wtcs 
     else:
         data = 'Please specify a valid mode: power, phase, xwt, or wtc.'
         print(data)

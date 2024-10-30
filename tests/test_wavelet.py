@@ -8,8 +8,8 @@ from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 def test_instanciate():
     wavelet_name = 'cgau1'
     wavelet = PywaveletsWavelet(wavelet_name=wavelet_name)
-    assert wavelet.wct_smoothing_smooth_factor != 0
-    assert wavelet.wct_smoothing_boxcar_size > 0
+    assert wavelet.wtc_smoothing_smooth_factor != 0
+    assert wavelet.wtc_smoothing_boxcar_size > 0
     assert wavelet.wavelet_name == wavelet_name
     assert len(wavelet.psi) == 2 ** wavelet.precision
     assert isinstance(wavelet.cwt_params, dict)
@@ -64,10 +64,10 @@ def test_cwt():
     import matplotlib.pyplot as plt
     assert res.frequencies[max_id] == pytest.approx(1, rel=0.05)
 
-def test_wct():
+def test_wtc():
     wavelet = PywaveletsWavelet()
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
-    res = wavelet.wct(signal1.y, signal2.y, signal1.period)
+    res = wavelet.wtc(signal1.y, signal2.y, signal1.period)
 
     

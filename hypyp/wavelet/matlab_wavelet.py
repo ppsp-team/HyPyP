@@ -4,7 +4,7 @@ import numpy as np
 import matlab.engine
 
 from hypyp.signal import SynteticSignal
-from .base_wavelet import CWT, BaseWavelet, WCT
+from .base_wavelet import CWT, BaseWavelet, WTC
 
 # In order to work, python must know the location of matlab
 # Add something like this to ~/.bashrc
@@ -21,7 +21,7 @@ class MatlabWavelet(BaseWavelet):
         print("Starting matlab engine")
         self.eng = matlab.engine.start_matlab()
         print("Matlab engine started")
-        self.eng.cd('/home/patrice/work/ppsp/matlab-wct/Archive/wavelet-coherence/wavelet-coherence-master/')
+        self.eng.cd('/home/patrice/work/ppsp/matlab-wtc/Archive/wavelet-coherence/wavelet-coherence-master/')
         super().__init__(evaluate)
 
     def evaluate_psi(self):
@@ -52,7 +52,7 @@ class MatlabWavelet(BaseWavelet):
     def cwt(self, y, dt, dj):
         pass
 
-    def wct(self, y1, y2, dt):
+    def wtc(self, y1, y2, dt):
         #self.eng.eval("times_vec = linspace(0, 200, 1000); ", nargout=0)
         #self.eng.eval("freq1 = 0.1; ", nargout=0)
         #self.eng.eval("freq2 = 0.2; ", nargout=0)
@@ -62,7 +62,7 @@ class MatlabWavelet(BaseWavelet):
         self.eng.workspace['y2'] = np.ascontiguousarray(y2)
         self.eng.eval("[Rsq, period, scale, coi, sig] = wtc(y1, y2, 'mcc', 0, 'MakeFigure', 1, 'ArrowSize', 0.2, 'S0', 2, 'MaxScale', 966.5);  ", nargout=0)
 
-        wct = np.array(self.eng.workspace['Rsq'])
+        wtc = np.array(self.eng.workspace['Rsq'])
         N = len(y1)
         times = np.linspace(0, N*dt, N)
         periods = np.array(self.eng.workspace['period']).flatten()
@@ -70,4 +70,4 @@ class MatlabWavelet(BaseWavelet):
         coif = 1 / np.array(self.eng.workspace['coi']).flatten()
         sig = np.array(self.eng.workspace['sig']).flatten()
         frequencies = 1 / periods
-        return WCT(wct, times, scales, frequencies, coif, tracer=self.tracer)
+        return WTC(wtc, times, scales, frequencies, coif, tracer=self.tracer)

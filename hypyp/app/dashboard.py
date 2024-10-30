@@ -51,10 +51,19 @@ app_ui = ui.page_fluid(
     ui.page_navbar(
         ui.nav_spacer(),
         ui.nav_panel(
+            "Local data browser",
+            ui.navset_card_tab(  
+                ui.nav_panel(
+                    "File 1",
+                    ui.tags.strong("foo"),
+                ),
+                ui.nav_panel("File 2", "Not implemented. Use 'File 1' for browsing"),
+            ),
+        ),
+        ui.nav_panel(
             "Choice of signals",
             ui.row(
-                ui.column(
-                    12,
+                ui.column(12,
                     ui.card(
                         ui.tags.strong('Choice of signals'),
                         ui.output_ui('ui_input_signal_slider'),
@@ -71,8 +80,7 @@ app_ui = ui.page_fluid(
         ui.nav_panel(
             "Wavelet Coherence",
             ui.row(
-                ui.column(
-                    6,
+                ui.column(6,
                     ui.card(
                         ui.tags.strong('Wavelet'),
                         ui.output_plot('plot_mother_wavelet'),
@@ -83,19 +91,18 @@ app_ui = ui.page_fluid(
                         ),
                     ),
                 ),
-                ui.column(
-                    6,
+                ui.column(6,
                     ui.card(
                         ui.tags.strong('Wavelet Coherence'),
-                        ui.output_plot('plot_wct'),
-                        ui.output_ui('ui_plot_wct_at_time'),
+                        ui.output_plot('plot_wtc'),
+                        ui.output_ui('ui_plot_wtc_at_time'),
                     ),
                 ),
             ),
             ui.output_ui('ui_card_tracer'),
         ),
         ui.nav_spacer(),
-        selected='Choice of signals',
+        selected='Local data browser',
         id='main_nav',
         sidebar=ui.sidebar(
             ui.tags.strong('Signal parameters'),
@@ -103,8 +110,8 @@ app_ui = ui.page_fluid(
                 "signal_type",
                 "",
                 choices={
-                    'preloaded': 'Preloaded signals',
                     'data_files': 'Local data files',
+                    'preloaded': 'Preloaded signals',
                     'testing': 'Test signals',
                 },
             ),
@@ -128,7 +135,7 @@ app_ui = ui.page_fluid(
             ui.tags.strong('Coherence parameters'),
             ui.output_ui('ui_input_coherence_options'),
 
-            ui.input_action_button("button_action_compute_wct", label="Compute WCT"),
+            ui.input_action_button("button_action_compute_wtc", label="Compute Wavelet Transform Coherence"),
 
             ui.tags.strong('Display parameters'),
             ui_option_row("Signal offset y", ui.input_checkbox("display_signal_offset_y", "", value=True), sizes=(8,4)),
@@ -314,8 +321,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 precision=input.wavelet_precision(),
                 upper_bound=input.wavelet_upper_bound(),
                 lower_bound=-input.wavelet_upper_bound(),
-                wct_smoothing_smooth_factor=input.smoothing_smooth_factor(),
-                wct_smoothing_boxcar_size=input.smoothing_boxcar_size(),
+                wtc_smoothing_smooth_factor=input.smoothing_smooth_factor(),
+                wtc_smoothing_boxcar_size=input.smoothing_boxcar_size(),
             )
             # TODO: is this still implemented?
             if input.wavelet_hack_compute_each_scale():
@@ -342,10 +349,10 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         return wavelet
 
-    @reactive.event(input.button_action_compute_wct)
+    @reactive.event(input.button_action_compute_wtc)
     def compute_coherence():
         dyad = get_signals()
-        return get_wavelet().wct(dyad.y1, dyad.y2, dyad.dt)
+        return get_wavelet().wtc(dyad.y1, dyad.y2, dyad.dt)
 
 
     @render.ui
@@ -497,13 +504,13 @@ def server(input: Inputs, output: Outputs, session: Session):
     def plot_daughter_wavelet():
         fig, ax = plt.subplots()
 
-        wct_res = compute_coherence()
+        wtc_res = compute_coherence()
         id = input.display_daughter_wavelet_id()
-        psi = wct_res.tracer['psi_scales'][id]
+        psi = wtc_res.tracer['psi_scales'][id]
         ax.plot(np.real(psi))
         ax.plot(np.imag(psi))
         ax.plot(np.abs(psi))
-        ax.title.set_text(f"daughter wavelet {id}/{len(wct_res.tracer['psi_scales'])} for {wct_res.frequencies[id]:.3f}Hz")
+        ax.title.set_text(f"daughter wavelet {id}/{len(wtc_res.tracer['psi_scales'])} for {wtc_res.frequencies[id]:.3f}Hz")
         ax.legend(['real', 'imag', 'abs'])
         return fig
 
@@ -519,7 +526,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         
 
     @render.plot()
-    def plot_wct():
+    def plot_wtc():
         fig, ax = plt.subplots()
         compute_coherence().plot(
             ax=ax,
@@ -531,33 +538,33 @@ def server(input: Inputs, output: Outputs, session: Session):
         return fig
 
     @render.plot()
-    def plot_wct_at_time():
+    def plot_wtc_at_time():
         fig, ax = plt.subplots()
 
         dyad = get_signals()
-        wct_res  = compute_coherence()
+        wtc_res  = compute_coherence()
 
-        if input.display_wct_frequencies_at_time() == -1:
+        if input.display_wtc_frequencies_at_time() == -1:
             # region of interest
-            roi = wct_res.wct * (wct_res.wct > wct_res.coif[np.newaxis, :]).astype(int)
+            roi = wtc_res.wtc * (wtc_res.wtc > wtc_res.coif[np.newaxis, :]).astype(int)
             col = np.argmax(np.sum(roi, axis=0))
         else:
-            col = int(input.display_wct_frequencies_at_time() / dyad.dt)
+            col = int(input.display_wtc_frequencies_at_time() / dyad.dt)
             
-        ax.plot(wct_res.frequencies, wct_res.wct[:,col])
-        ax.title.set_text(f'Coherence at t={wct_res.times[col]:.1f} (max found: {wct_res.frequencies[np.argmax(wct_res.wct[:,col])]:.2f}Hz)')
+        ax.plot(wtc_res.frequencies, wtc_res.wtc[:,col])
+        ax.title.set_text(f'Coherence at t={wtc_res.times[col]:.1f} (max found: {wtc_res.frequencies[np.argmax(wtc_res.wtc[:,col])]:.2f}Hz)')
         ax.set_xscale('log')
         ax.set_xlabel('Frequency (Hz)')
         return fig
 
     @render.ui
-    def ui_plot_wct_at_time():
+    def ui_plot_wtc_at_time():
         # block on this, so that we render only when ready
         _ = compute_coherence()
         
         return [
-            ui.output_plot('plot_wct_at_time'),
-            ui_option_row("Plot coherence at time (-1 for max)", ui.input_numeric("display_wct_frequencies_at_time", "", value=-1), center=True),
+            ui.output_plot('plot_wtc_at_time'),
+            ui_option_row("Plot coherence at time (-1 for max)", ui.input_numeric("display_wtc_frequencies_at_time", "", value=-1), center=True),
         ]
         
     def ZZ_with_options(ZZ):
@@ -579,8 +586,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     def get_fig_plot_tracer_mat(key):
         fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        times, frequencies, ZZ, _ = downsample_mat_for_plot(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.tracer[key]))
+        wtc_res = compute_coherence()
+        times, frequencies, ZZ, _ = downsample_mat_for_plot(wtc_res.times, wtc_res.frequencies, ZZ_with_options(wtc_res.tracer[key]))
         im = ax.pcolormesh(times, frequencies, ZZ)
         ax.set_yscale('log')
         fig.colorbar(im, ax=ax)
@@ -606,54 +613,52 @@ def server(input: Inputs, output: Outputs, session: Session):
     def plot_tracer_S12():
         return get_fig_plot_tracer_mat('S12')
     @render.plot()
-    def plot_tracer_wct():
+    def plot_tracer_wtc():
         fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        times, frequencies, ZZ, _ = downsample_mat_for_plot(wct_res.times, wct_res.frequencies, ZZ_with_options(wct_res.wct))
+        wtc_res = compute_coherence()
+        times, frequencies, ZZ, _ = downsample_mat_for_plot(wtc_res.times, wtc_res.frequencies, ZZ_with_options(wtc_res.wtc))
         im = ax.pcolormesh(times, frequencies, ZZ)
         ax.set_yscale('log')
         fig.colorbar(im, ax=ax)
-        ax.title.set_text('wct')
+        ax.title.set_text('wtc')
         return fig
 
     @render.plot()
     def plot_frequencies():
         fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        ax.scatter(np.arange(len(wct_res.frequencies)), wct_res.frequencies, marker='.')
+        wtc_res = compute_coherence()
+        ax.scatter(np.arange(len(wtc_res.frequencies)), wtc_res.frequencies, marker='.')
         ax.title.set_text('frequencies')
         return fig
 
     @render.plot()
     def plot_scales():
         fig, ax = plt.subplots()
-        wct_res = compute_coherence()
-        ax.scatter(np.arange(len(wct_res.scales)), wct_res.scales, marker='.')
+        wtc_res = compute_coherence()
+        ax.scatter(np.arange(len(wtc_res.scales)), wtc_res.scales, marker='.')
         ax.title.set_text('scales')
         return fig
-
-
 
     @render.ui
     def ui_input_wavelet_type():
         options = []
         if input.wavelet_library() == 'pywavelets':
             options.append(ui.input_select(
-                    "wavelet_name",
-                    "",
-                    choices={
-                        'cmor': 'Complex Morlet',
-                        'cgau1': 'Complex Gaussian 1',
-                        'cgau2': 'Complex Gaussian 2',
-                        'cgau3': 'Complex Gaussian 3',
-                        'cgau4': 'Complex Gaussian 4',
-                        'cgau5': 'Complex Gaussian 5',
-                        'cgau6': 'Complex Gaussian 6',
-                        'cgau7': 'Complex Gaussian 7',
-                        'cgau8': 'Complex Gaussian 8',
-                        'fbsp': 'Fbsp',
-                    },
-                ))
+                "wavelet_name",
+                "",
+                choices={
+                    'cmor': 'Complex Morlet',
+                    'cgau1': 'Complex Gaussian 1',
+                    'cgau2': 'Complex Gaussian 2',
+                    'cgau3': 'Complex Gaussian 3',
+                    'cgau4': 'Complex Gaussian 4',
+                    'cgau5': 'Complex Gaussian 5',
+                    'cgau6': 'Complex Gaussian 6',
+                    'cgau7': 'Complex Gaussian 7',
+                    'cgau8': 'Complex Gaussian 8',
+                    'fbsp': 'Fbsp',
+                },
+            ))
         return options
 
 
@@ -690,40 +695,19 @@ def server(input: Inputs, output: Outputs, session: Session):
             return ui.card(
                 ui.tags.strong('Tracing of intermediary results'),
                 ui.row(
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_W1'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_W2'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_W12'),
-                    ),
+                    ui.column(4, ui.output_plot('plot_tracer_W1')),
+                    ui.column(4, ui.output_plot('plot_tracer_W2')),
+                    ui.column(4, ui.output_plot('plot_tracer_W12')),
                 ),
                 ui.row(
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_S1'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_S2'),
-                    ),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_S12'),
-                    ),
+                    ui.column(4, ui.output_plot('plot_tracer_S1')),
+                    ui.column(4, ui.output_plot('plot_tracer_S2')),
+                    ui.column(4, ui.output_plot('plot_tracer_S12')),
                 ),
                 ui.row(
                     ui.column(4),
                     ui.column(4),
-                    ui.column(
-                        4,
-                        ui.output_plot('plot_tracer_wct'),
-                    ),
+                    ui.column(4, ui.output_plot('plot_tracer_wtc')),
                 ),
             )
 

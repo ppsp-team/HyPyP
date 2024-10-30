@@ -71,10 +71,11 @@ def test_list_files():
     loader = DataLoaderFNIRS()
     assert len(loader.paths) > 0
     assert len(loader.list_fif_files()) > 0
-    assert loader.list_fif_files()[0].startswith('data')
+    # path should be absolute
+    assert loader.list_fif_files()[0].startswith('/')
     
 # Skip this test because it downloads data. We don't want this on the CI
-@pytest.skip
+@pytest.mark.skip(reason="Downloads data")
 def test_download_demos():
     loader = DataLoaderFNIRS()
     previous_count = len(loader.paths)

@@ -18,11 +18,11 @@ class CWT:
     def plot(self, **kwargs):
         return plot_cwt_weights(self.W, self.times, self.frequencies, self.coif)
 
-class WCT:
-    def __init__(self, wct, times, scales, frequencies, coif, sig=None, tracer=None):
-        self.wct = wct
+class WTC:
+    def __init__(self, wtc, times, scales, frequencies, coif, sig=None, tracer=None):
+        self.wtc = wtc
         # TODO: compute Region of Interest, something like this:
-        #roi = wct * (wct > coif[np.newaxis, :]).astype(int)
+        #roi = wtc * (wtc > coif[np.newaxis, :]).astype(int)
         self.times = times
         self.scales = scales
         self.frequencies = frequencies
@@ -32,7 +32,7 @@ class WCT:
         self.sig = sig
     
     def plot(self, **kwargs):
-        return plot_wavelet_coherence(self.wct, self.times, self.frequencies, self.coif, self.sig, **kwargs)
+        return plot_wavelet_coherence(self.wtc, self.times, self.frequencies, self.coif, self.sig, **kwargs)
 
 
 class BaseWavelet(ABC):
@@ -40,7 +40,7 @@ class BaseWavelet(ABC):
         self._wavelet = None
         self._psi_x = None
         self._psi = None
-        self._wct = None
+        self._wtc = None
 
         if evaluate:
             self.evaluate_psi()
@@ -73,7 +73,7 @@ class BaseWavelet(ABC):
     def cwt(self, y, dt, dj):
         pass
     
-    def wct(self, y1, y2, dt):
+    def wtc(self, y1, y2, dt):
         if len(y1) != len(y2):
             raise RuntimeError("Arrays not same size")
 
@@ -110,14 +110,14 @@ class BaseWavelet(ABC):
             dt=dt,
             dj=dj,
             scales=scales,
-            smooth_factor=self.wct_smoothing_smooth_factor,
-            boxcar_size=self.wct_smoothing_boxcar_size,
+            smooth_factor=self.wtc_smoothing_smooth_factor,
+            boxcar_size=self.wtc_smoothing_boxcar_size,
         )
         S1 = smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs)
         S2 = smoothing(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs)
 
         S12 = np.abs(smoothing(W12 / scaleMatrix, **smoothing_kwargs))
-        wct = S12 ** 2 / (S1 * S2)
+        wtc = S12 ** 2 / (S1 * S2)
 
         # Cone of influence calculations
         f0 = 2 * np.pi
@@ -135,6 +135,6 @@ class BaseWavelet(ABC):
         self.tracer['S2'] = S2
         self.tracer['S12'] = S12
 
-        return WCT(wct, times, scales, frequencies, coif, tracer=self.tracer)
+        return WTC(wtc, times, scales, frequencies, coif, tracer=self.tracer)
 
     

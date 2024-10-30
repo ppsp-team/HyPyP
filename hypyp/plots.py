@@ -69,7 +69,7 @@ def spectrogram_plot(z, times, frequencies, coif, cmap="viridis", norm=Normalize
     return ax
 
 def plot_wavelet_coherence(
-    wct,
+    wtc,
     times,
     frequencies,
     coif,
@@ -93,12 +93,12 @@ def plot_wavelet_coherence(
         factor = len(times) // 1000 + 1
         print(f"Downscaling for display by a factor of {factor}")
         times = block_reduce(times, block_size=factor, func=np.mean, cval=np.max(times))
-        wct = block_reduce(wct, block_size=(1,factor), func=np.mean, cval=np.mean(wct))
+        wtc = block_reduce(wtc, block_size=(1,factor), func=np.mean, cval=np.mean(wtc))
         coif = block_reduce(coif, block_size=factor, func=np.mean, cval=np.mean(coif))
     
     xx, yy = np.meshgrid(times, frequencies)
     
-    im = ax.pcolor(xx, yy, wct, norm=Normalize())
+    im = ax.pcolor(xx, yy, wtc, norm=Normalize())
     ax.set_yscale('log')
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Frequency (Hz)')
@@ -126,7 +126,7 @@ def plot_wavelet_coherence(
         fig.suptitle(title)
 
     if sig is not None:
-        ax.contour(xx, yy, wct, levels=sig, color='k')
+        ax.contour(xx, yy, wtc, levels=sig, color='k')
         
     return ax
 
@@ -192,10 +192,10 @@ def plot_spectrogram_periods(items, tracers):
     fig.suptitle('spectrogram periods')
     for i in range(len(items)):
         item = items[i]
-        print(f"shape of wct: {item['wct'].shape}")
-        print(item['wct'][55:77,:].mean())
+        print(f"shape of wtc: {item['wtc'].shape}")
+        print(item['wtc'][55:77,:].mean())
         spectrogram_plot_period(
-            np.abs(item['wct']),
+            np.abs(item['wtc']),
             item['times'],
             item['freq'],
             item['coif'],
