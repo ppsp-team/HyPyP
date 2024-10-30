@@ -37,23 +37,26 @@ HARDCODED_PRELOADED_COMMITTED_CHANNEL_B = "S7_D6 hbo"
 # This is to avoid having external windows launched
 matplotlib.use('Agg')
 
-def ui_option_row(label, ui_element, sizes=(6, 6)):
+def ui_option_row(label, ui_element, sizes=(6, 6), center=False):
+    label_style = ""
+    if center:
+        label_style += "text-align: right;"
     return ui.row(
-        ui.column(sizes[0], label),
+        ui.column(sizes[0], label, style=label_style),
         ui.column(sizes[1], ui_element),
-    ),
+    )
 
 # UI
 app_ui = ui.page_fluid(
     ui.page_navbar(
         ui.nav_spacer(),
         ui.nav_panel(
-            "Signals",
+            "Choice of signals",
             ui.row(
                 ui.column(
                     12,
                     ui.card(
-                        ui.tags.strong('Signals'),
+                        ui.tags.strong('Choice of signals'),
                         ui.output_ui('ui_input_signal_slider'),
                         ui.output_plot('plot_signals', height=default_plot_signal_height),
                         ui.output_plot('plot_signals_spectrum', height=default_plot_signal_height),
@@ -73,7 +76,7 @@ app_ui = ui.page_fluid(
                     ui.card(
                         ui.tags.strong('Wavelet'),
                         ui.output_plot('plot_mother_wavelet'),
-                        ui.output_plot('plot_daughter_wavelet'),
+                        ui.output_ui('ui_plot_daughter_wavelet'),
                         ui.row(
                             ui.column(6, ui.output_plot('plot_scales')),
                             ui.column(6, ui.output_plot('plot_frequencies')),
@@ -85,13 +88,14 @@ app_ui = ui.page_fluid(
                     ui.card(
                         ui.tags.strong('Wavelet Coherence'),
                         ui.output_plot('plot_wct'),
-                        ui.output_plot('plot_wct_half_time'),
+                        ui.output_ui('ui_plot_wct_at_time'),
                     ),
                 ),
             ),
             ui.output_ui('ui_card_tracer'),
         ),
-        selected='Signals',
+        ui.nav_spacer(),
+        selected='Choice of signals',
         id='main_nav',
         sidebar=ui.sidebar(
             ui.tags.strong('Signal parameters'),
@@ -100,6 +104,7 @@ app_ui = ui.page_fluid(
                 "",
                 choices={
                     'preloaded': 'Preloaded signals',
+                    'data_files': 'Local data files',
                     'testing': 'Test signals',
                 },
             ),
@@ -127,9 +132,6 @@ app_ui = ui.page_fluid(
 
             ui.tags.strong('Display parameters'),
             ui_option_row("Signal offset y", ui.input_checkbox("display_signal_offset_y", "", value=True), sizes=(8,4)),
-            ui_option_row("Daughter wavelet id", ui.input_numeric("display_daughter_wavelet_id", "", value=0)),
-            ui_option_row("Coherence at time (-1 for max)", ui.input_numeric("display_wct_frequencies_at_time", "", value=-1)),
-
             ui_option_row("Downsample", ui.input_checkbox("display_downsample", "", value=True), sizes=(8,4)),
             ui_option_row("Show COI", ui.input_checkbox("display_show_coif", "", value=True), sizes=(8,4)),
             ui_option_row("Show Nyquist", ui.input_checkbox("display_show_nyquist", "", value=True), sizes=(8,4)),
@@ -145,6 +147,7 @@ app_ui = ui.page_fluid(
                 },
             ),
             open="always",
+            width=400,
         ),
         title="Wavelet Explorer",
         fillable=True,
@@ -154,7 +157,7 @@ app_ui = ui.page_fluid(
 
 def server(input: Inputs, output: Outputs, session: Session):
     @reactive.calc()
-    def signals():
+    def get_signals():
         info_table1 = []
         info_table2 = []
         dyad = None
@@ -190,6 +193,51 @@ def server(input: Inputs, output: Outputs, session: Session):
             noise_level = input.signal_noise_level()
             y1 +=  noise_level * np.random.normal(0, 1, len(x))
             y2 +=  noise_level * np.random.normal(0, 1, len(x))
+
+        elif input.signal_type() == 'data_files':
+            # TODO: move this to a class
+            loader = DataLoaderFNIRS()
+            #set events
+            tmin = 0 
+            tmax = 300
+            baseline = (0, 0)
+
+            # select channels from csv of best channels
+            s1_selected_ch = loader.get_mne_channel(input.signal_data_files_s1_path(), input.signal_data_files_s1_channel())
+            s2_selected_ch = loader.get_mne_channel(input.signal_data_files_s2_path(), input.signal_data_files_s2_channel())
+
+            # get events
+            events1, event_dict1 = mne.events_from_annotations(s1_selected_ch)
+            events2, event_dict2 = mne.events_from_annotations(s2_selected_ch)
+            epo1 = mne.Epochs(
+                s1_selected_ch,
+                events1,
+                event_id=event_dict1,
+                tmin=tmin,
+                tmax=tmax,
+                baseline=baseline,
+                reject_by_annotation=False
+            )
+            epo2 = mne.Epochs(
+                s2_selected_ch,
+                events2,
+                event_id=event_dict2,
+                tmin=tmin,
+                tmax=tmax,
+                baseline=baseline,
+                reject_by_annotation=False
+            )
+            y1 = epo1.get_data()[0,0,:]
+            y2 = epo2.get_data()[0,0,:]
+            
+            # Force N for this signal
+            N = len(y1)
+            fs = epo1.info['sfreq']
+            x = np.linspace(0, N/fs, N)
+            info_table1 = [(k,epo1.info[k]) for k in epo1.info.keys()]
+            info_table2 = [(k,epo2.info[k]) for k in epo2.info.keys()]
+
+            
 
         elif input.signal_type() == 'preloaded':
             if input.signal_preloaded_choice() == 'preloaded_passport_disk':
@@ -254,6 +302,51 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         return dyad
 
+    @reactive.calc()
+    def get_wavelet():
+        if input.wavelet_library() == 'pywavelets':
+            wavelet_name = input.wavelet_name()
+            if input.wavelet_name() == 'cmor':
+                wavelet_name = f'cmor{input.wavelet_bandwidth()}, {input.wavelet_center_frequency()}'
+
+            wavelet = PywaveletsWavelet(
+                wavelet_name=wavelet_name,
+                precision=input.wavelet_precision(),
+                upper_bound=input.wavelet_upper_bound(),
+                lower_bound=-input.wavelet_upper_bound(),
+                wct_smoothing_smooth_factor=input.smoothing_smooth_factor(),
+                wct_smoothing_boxcar_size=input.smoothing_boxcar_size(),
+            )
+            # TODO: is this still implemented?
+            if input.wavelet_hack_compute_each_scale():
+                wavelet.cwt_params['hack_compute_each_scale'] = True
+
+        elif input.wavelet_library() == 'pycwt':
+            wavelet = PycwtWavelet(
+                precision=input.wavelet_precision(),
+                upper_bound=input.wavelet_upper_bound(),
+                lower_bound=-input.wavelet_upper_bound(),
+                compute_significance=input.wavelet_pycwt_significance(),
+            )
+
+        elif input.wavelet_library() == 'scipy':
+            wavelet = ScipyWavelet(
+                center_frequency=input.wavelet_scipy_center_frequency(),
+            )
+
+        elif input.wavelet_library() == 'matlab':
+            wavelet = MatlabWavelet()
+
+        else:
+            raise RuntimeError(f'Unknown wavelet library: {input.wavelet_library()}')
+
+        return wavelet
+
+    @reactive.event(input.button_action_compute_wct)
+    def compute_coherence():
+        dyad = get_signals()
+        return get_wavelet().wct(dyad.y1, dyad.y2, dyad.dt)
+
 
     @render.ui
     def ui_input_signal_choice():
@@ -270,6 +363,21 @@ def server(input: Inputs, output: Outputs, session: Session):
                     'sinusoid_dephased': 'Sinusoid dephased',
                 },
             ))
+        
+        elif input.signal_type() == 'data_files':
+            loader = DataLoaderFNIRS()
+            loader.download_demo_dataset()
+
+            choices.append(ui_option_row("Signal 1 file", ui.input_select(
+                "signal_data_files_s1_path",
+                "",
+                choices=loader.list_all_files(),
+            )))
+            choices.append(ui_option_row("Signal 2 file", ui.input_select(
+                "signal_data_files_s2_path",
+                "",
+                choices=loader.list_all_files(),
+            )))
         
         elif input.signal_type() == 'preloaded':
             choices.append(ui.input_select(
@@ -306,6 +414,25 @@ def server(input: Inputs, output: Outputs, session: Session):
             options.append(ui_option_row("Nb. points", ui.input_numeric("signal_n", "", value=2000))),
             options.append(ui_option_row("Noise level", ui.input_numeric("signal_noise_level", "", value=0.01))),
         
+        if input.signal_type() == 'data_files':
+            loader = DataLoaderFNIRS()
+            options.append(ui_option_row(
+                "Signal 1 channel",
+                ui.input_select(
+                    "signal_data_files_s1_channel",
+                    "",
+                    choices=loader.list_channels_for_file(input.signal_data_files_s1_path()),
+                )
+            ))
+            options.append(ui_option_row(
+                "Signal 2 channel",
+                ui.input_select(
+                    "signal_data_files_s2_channel",
+                    "",
+                    choices=loader.list_channels_for_file(input.signal_data_files_s2_path()),
+                )
+            ))
+
         return options
 
     @render.ui
@@ -318,57 +445,10 @@ def server(input: Inputs, output: Outputs, session: Session):
             
         return options
 
-    @reactive.calc()
-    def wavelet_name():
-        if input.wavelet_type() == 'cmor':
-            return f'cmor{input.wavelet_bandwidth()}, {input.wavelet_center_frequency()}'
-        else:
-            return input.wavelet_type()
-
-    @reactive.calc()
-    def wavelet():
-        if input.wavelet_library() == 'pywavelets':
-            wavelet = PywaveletsWavelet(
-                wavelet_name=wavelet_name(),
-                precision=input.wavelet_precision(),
-                upper_bound=input.wavelet_upper_bound(),
-                lower_bound=-input.wavelet_upper_bound(),
-                wct_smoothing_smooth_factor=input.smoothing_smooth_factor(),
-                wct_smoothing_boxcar_size=input.smoothing_boxcar_size(),
-            )
-            if input.wavelet_hack_compute_each_scale():
-                wavelet.cwt_params['hack_compute_each_scale'] = True
-
-        elif input.wavelet_library() == 'pycwt':
-            wavelet = PycwtWavelet(
-                precision=input.wavelet_precision(),
-                upper_bound=input.wavelet_upper_bound(),
-                lower_bound=-input.wavelet_upper_bound(),
-                compute_significance=input.wavelet_pycwt_significance(),
-            )
-
-        elif input.wavelet_library() == 'scipy':
-            wavelet = ScipyWavelet(
-                center_frequency=input.wavelet_scipy_center_frequency(),
-            )
-
-        elif input.wavelet_library() == 'matlab':
-            wavelet = MatlabWavelet()
-
-        else:
-            raise RuntimeError(f'Unknown wavelet library: {input.wavelet_library()}')
-
-        return wavelet
-
-    @reactive.event(input.button_action_compute_wct)
-    def compute_coherence():
-        dyad = signals()
-        return wavelet().wct(dyad.y1, dyad.y2, dyad.dt)
-
     @render.plot(height=default_plot_signal_height)
     def plot_signals():
         fig, ax = plt.subplots()
-        dyad = signals()
+        dyad = get_signals()
         offset = 0
         if input.display_signal_offset_y():
             offset = np.mean(np.abs(dyad.y1)) + np.mean(np.abs(dyad.y2))
@@ -378,17 +458,17 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     @render.table
     def table_info_s1():
-        return pd.DataFrame(signals().info_table1, columns=['Key', 'Value'])
+        return pd.DataFrame(get_signals().info_table1, columns=['Key', 'Value'])
         
     @render.table
     def table_info_s2():
-        return pd.DataFrame(signals().info_table2, columns=['Key', 'Value'])
+        return pd.DataFrame(get_signals().info_table2, columns=['Key', 'Value'])
         
 
     @render.plot(height=default_plot_signal_height)
     def plot_signals_spectrum():
         fig, ax = plt.subplots()
-        dyad = signals()
+        dyad = get_signals()
         N = dyad.n
 
         yf = fft.fft(dyad.y1)
@@ -405,7 +485,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.plot()
     def plot_mother_wavelet():
         fig, ax = plt.subplots()
-        wav = wavelet()
+        wav = get_wavelet()
         ax.plot(wav.psi_x, np.real(wav.psi))
         ax.plot(wav.psi_x, np.imag(wav.psi))
         ax.plot(wav.psi_x, np.abs(wav.psi))
@@ -427,6 +507,17 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.legend(['real', 'imag', 'abs'])
         return fig
 
+    @render.ui
+    def ui_plot_daughter_wavelet():
+        # block on this, so that we render only when ready
+        _ = compute_coherence()
+        
+        return [
+            ui.output_plot('plot_daughter_wavelet'),
+            ui_option_row("Plot daughter wavelet id", ui.input_numeric("display_daughter_wavelet_id", "", value=0), center=True),
+        ]
+        
+
     @render.plot()
     def plot_wct():
         fig, ax = plt.subplots()
@@ -439,6 +530,36 @@ def server(input: Inputs, output: Outputs, session: Session):
         )
         return fig
 
+    @render.plot()
+    def plot_wct_at_time():
+        fig, ax = plt.subplots()
+
+        dyad = get_signals()
+        wct_res  = compute_coherence()
+
+        if input.display_wct_frequencies_at_time() == -1:
+            # region of interest
+            roi = wct_res.wct * (wct_res.wct > wct_res.coif[np.newaxis, :]).astype(int)
+            col = np.argmax(np.sum(roi, axis=0))
+        else:
+            col = int(input.display_wct_frequencies_at_time() / dyad.dt)
+            
+        ax.plot(wct_res.frequencies, wct_res.wct[:,col])
+        ax.title.set_text(f'Coherence at t={wct_res.times[col]:.1f} (max found: {wct_res.frequencies[np.argmax(wct_res.wct[:,col])]:.2f}Hz)')
+        ax.set_xscale('log')
+        ax.set_xlabel('Frequency (Hz)')
+        return fig
+
+    @render.ui
+    def ui_plot_wct_at_time():
+        # block on this, so that we render only when ready
+        _ = compute_coherence()
+        
+        return [
+            ui.output_plot('plot_wct_at_time'),
+            ui_option_row("Plot coherence at time (-1 for max)", ui.input_numeric("display_wct_frequencies_at_time", "", value=-1), center=True),
+        ]
+        
     def ZZ_with_options(ZZ):
         if input.display_show_log_tracer():
             ZZ = np.log(ZZ)
@@ -511,32 +632,14 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.title.set_text('scales')
         return fig
 
-    @render.plot()
-    def plot_wct_half_time():
-        fig, ax = plt.subplots()
 
-        dyad = signals()
-        wct_res  = compute_coherence()
-
-        if input.display_wct_frequencies_at_time() == -1:
-            # region of interest
-            roi = wct_res.wct * (wct_res.wct > wct_res.coif[np.newaxis, :]).astype(int)
-            col = np.argmax(np.sum(roi, axis=0))
-        else:
-            col = int(input.display_wct_frequencies_at_time() / dyad.dt)
-            
-        ax.plot(wct_res.frequencies, wct_res.wct[:,col])
-        ax.title.set_text(f'Coherence at t={wct_res.times[col]:.1f} (max found: {wct_res.frequencies[np.argmax(wct_res.wct[:,col])]:.2f}Hz)')
-        ax.set_xscale('log')
-        ax.set_xlabel('Frequency (Hz)')
-        return fig
 
     @render.ui
     def ui_input_wavelet_type():
         options = []
         if input.wavelet_library() == 'pywavelets':
             options.append(ui.input_select(
-                    "wavelet_type",
+                    "wavelet_name",
                     "",
                     choices={
                         'cmor': 'Complex Morlet',
@@ -558,7 +661,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def ui_input_wavelet_options():
         options = []
         if input.wavelet_library() == 'pywavelets':
-            if input.wavelet_type() == 'cmor':
+            if input.wavelet_name() == 'cmor':
                 options.append(ui_option_row("Bandwidth", ui.input_numeric("wavelet_bandwidth", "", value=2)))
                 options.append(ui_option_row("Center frequency", ui.input_numeric("wavelet_center_frequency", "", value=1)))
 

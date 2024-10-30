@@ -13,7 +13,7 @@ ch_list_s1 = ["S4_D4 hbo"]
 ch_list_s2 = ["S7_D6 hbo"]
 
 fif_file = './data/sub-110_session-1_pre_raw.fif'
-snirf_file = './data/FNIRS/DCARE_02_sub1.snirf'
+snirf_file = './data/fNIRS/DCARE_02_sub1.snirf'
 
 def test_subject():
 
@@ -72,6 +72,15 @@ def test_list_files():
     assert len(loader.paths) > 0
     assert len(loader.list_fif_files()) > 0
     assert loader.list_fif_files()[0].startswith('data')
+    
+# Skip this test because it downloads data. We don't want this on the CI
+@pytest.skip
+def test_download_demos():
+    loader = DataLoaderFNIRS()
+    previous_count = len(loader.paths)
+    loader.download_demo_dataset()
+    new_paths = loader.paths
+    assert len(new_paths) == previous_count + 1
 
 def test_load_snirf():
     s1 = SubjectFNIRS()
