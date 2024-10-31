@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import sys
+import tempfile
 
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
 import scipy.io
@@ -13,6 +14,7 @@ import mne
 
 from hypyp.fnirs.pair_signals import PairSignals
 from hypyp.fnirs.data_loader_fnirs import DataLoaderFNIRS
+from hypyp.fnirs.subject_fnirs import SubjectFNIRS
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
@@ -52,12 +54,46 @@ app_ui = ui.page_fluid(
         ui.nav_spacer(),
         ui.nav_panel(
             "Local data browser",
+            ui.tags.h4(ui.output_text('text_s1_file_path')),
+            ui.input_slider("input_s1_mne_duration_slider", "", min=0, max=100, value=[0, 20], width='100%'),
             ui.navset_card_tab(  
                 ui.nav_panel(
-                    "File 1",
-                    ui.tags.strong("foo"),
+                    "Raw",
+                    ui.output_image('image_plot_s1_mne_raw'),
                 ),
-                ui.nav_panel("File 2", "Not implemented. Use 'File 1' for browsing"),
+                ui.nav_panel(
+                    "Optical density",
+                    ui.output_image('image_plot_s1_mne_raw_od'),
+                ),
+                ui.nav_panel(
+                    "Optical density clean",
+                    ui.output_image('image_plot_s1_mne_raw_od_clean'),
+                ),
+                ui.nav_panel(
+                    "Hemoglobin",
+                    ui.output_image('image_plot_s1_mne_raw_haemo'),
+                ),
+                ui.nav_panel(
+                    "Hemoglobin Filtered",
+                    ui.output_image('image_plot_s1_mne_raw_haemo_filtered'),
+                ),
+                ui.nav_panel(
+                    "Hemoglobin PSD",
+                    ui.output_image('image_plot_s1_mne_raw_haemo_psd'),
+                ),
+                ui.nav_panel(
+                    "Hemoglobin Filtered PSD",
+                    ui.output_image('image_plot_s1_mne_raw_haemo_filtered_psd'),
+                ),
+                ui.nav_panel(
+                    "Signal quality",
+                    ui.row(
+                        ui.column(3),
+                        ui.column(6, ui.output_plot('plot_s1_mne_sci')),
+                        ui.column(3),
+                    ),
+                ),
+                #selected="Optical density",
             ),
         ),
         ui.nav_panel(
@@ -202,48 +238,25 @@ def server(input: Inputs, output: Outputs, session: Session):
             y2 +=  noise_level * np.random.normal(0, 1, len(x))
 
         elif input.signal_type() == 'data_files':
-            # TODO: move this to a class
-            loader = DataLoaderFNIRS()
-            #set events
-            tmin = 0 
-            tmax = 300
-            baseline = (0, 0)
-
             # select channels from csv of best channels
-            s1_selected_ch = loader.get_mne_channel(input.signal_data_files_s1_path(), input.signal_data_files_s1_channel())
-            s2_selected_ch = loader.get_mne_channel(input.signal_data_files_s2_path(), input.signal_data_files_s2_channel())
+            s1 = get_subject1()
+            s2 = get_subject2()
 
-            # get events
-            events1, event_dict1 = mne.events_from_annotations(s1_selected_ch)
-            events2, event_dict2 = mne.events_from_annotations(s2_selected_ch)
-            epo1 = mne.Epochs(
-                s1_selected_ch,
-                events1,
-                event_id=event_dict1,
-                tmin=tmin,
-                tmax=tmax,
-                baseline=baseline,
-                reject_by_annotation=False
-            )
-            epo2 = mne.Epochs(
-                s2_selected_ch,
-                events2,
-                event_id=event_dict2,
-                tmin=tmin,
-                tmax=tmax,
-                baseline=baseline,
-                reject_by_annotation=False
-            )
-            y1 = epo1.get_data()[0,0,:]
-            y2 = epo2.get_data()[0,0,:]
+            s1_selected_ch = s1.__getattribute__(input.signal_data_files_analysis_property()).copy().pick(mne.pick_channels(s1.raw_haemo.ch_names, include = [input.signal_data_files_s1_channel()]))
+            s2_selected_ch = s2.__getattribute__(input.signal_data_files_analysis_property()).copy().pick(mne.pick_channels(s2.raw_haemo.ch_names, include = [input.signal_data_files_s2_channel()]))
+
+            y1 = s1_selected_ch.get_data()[0,:]
+            y2 = s2_selected_ch.get_data()[0,:]
+
+            # Crop signals
+            stop = min(len(y1), len(y2))
+            y1 = y1[:stop] 
+            y2 = y2[:stop] 
             
             # Force N for this signal
             N = len(y1)
-            fs = epo1.info['sfreq']
+            fs = s1_selected_ch.info['sfreq']
             x = np.linspace(0, N/fs, N)
-            info_table1 = [(k,epo1.info[k]) for k in epo1.info.keys()]
-            info_table2 = [(k,epo2.info[k]) for k in epo2.info.keys()]
-
             
 
         elif input.signal_type() == 'preloaded':
@@ -354,6 +367,92 @@ def server(input: Inputs, output: Outputs, session: Session):
         dyad = get_signals()
         return get_wavelet().wtc(dyad.y1, dyad.y2, dyad.dt)
 
+    @render.text
+    def text_s1_file_path():
+        return f"File: {input.signal_data_files_s1_path()}"
+
+    @reactive.calc()
+    def get_subject1():
+        loader = DataLoaderFNIRS()
+        return SubjectFNIRS().load_file(loader, input.signal_data_files_s1_path())
+
+    @reactive.calc()
+    def get_subject2():
+        loader = DataLoaderFNIRS()
+        return SubjectFNIRS().load_file(loader, input.signal_data_files_s2_path())
+
+    def get_mne_raw_plot_kwargs(raw, duration_percent_range):
+        range_start, range_end = duration_percent_range
+        range_start /= 100
+        range_end /= 100
+        start = range_start * raw.n_times / raw.info['sfreq']
+        duration = (range_end - range_start) * raw.n_times / raw.info['sfreq']
+        return dict(
+            n_channels=len(raw.ch_names),
+            start=start,
+            duration=duration,
+            scalings='auto',
+            show_scrollbars=False,
+            block=True,
+            show=False,
+        )
+
+    def mne_figure_as_image(fig):
+        temp_img_path = tempfile.NamedTemporaryFile(suffix=".png").name
+        fig.savefig(temp_img_path)
+        return {"src": temp_img_path, "alt": "MNE Plot"}
+
+    @render.image
+    def image_plot_s1_mne_raw():
+        subject = get_subject1()
+        fig = subject.raw.plot(**get_mne_raw_plot_kwargs(subject.raw, input.input_s1_mne_duration_slider()))
+        return mne_figure_as_image(fig)
+
+
+    @render.image
+    def image_plot_s1_mne_raw_od():
+        subject = get_subject1()
+        fig = subject.raw_od.plot(**get_mne_raw_plot_kwargs(subject.raw_od, input.input_s1_mne_duration_slider()))
+        return mne_figure_as_image(fig)
+
+    @render.image
+    def image_plot_s1_mne_raw_od_clean():
+        subject = get_subject1()
+        fig = subject.raw_od_clean.plot(**get_mne_raw_plot_kwargs(subject.raw_od_clean, input.input_s1_mne_duration_slider()))
+        return mne_figure_as_image(fig)
+    
+    @render.image
+    def image_plot_s1_mne_raw_haemo():
+        subject = get_subject1()
+        fig = subject.raw_haemo.plot(**get_mne_raw_plot_kwargs(subject.raw_haemo, input.input_s1_mne_duration_slider()), theme="light")
+        return mne_figure_as_image(fig)
+    
+    @render.image
+    def image_plot_s1_mne_raw_haemo_psd():
+        subject = get_subject1()
+        fig = subject.raw_haemo.compute_psd().plot()
+        return mne_figure_as_image(fig)
+    
+    @render.image
+    def image_plot_s1_mne_raw_haemo_filtered():
+        subject = get_subject1()
+        fig = subject.raw_haemo_filtered.plot(**get_mne_raw_plot_kwargs(subject.raw_haemo_filtered, input.input_s1_mne_duration_slider()), theme="light")
+        return mne_figure_as_image(fig)
+    
+    @render.image
+    def image_plot_s1_mne_raw_haemo_filtered_psd():
+        subject = get_subject1()
+        fig = subject.raw_haemo_filtered.compute_psd().plot()
+        return mne_figure_as_image(fig)
+    
+    @render.plot
+    def plot_s1_mne_sci():
+        subject = get_subject1()
+        fig, ax = plt.subplots()
+        ax.hist(subject.quality_sci)
+        ax.set(xlabel='Scalp Coupling Index', ylabel='Count', xlim=[0, 1])
+        ax.title.set_text('Scalp Coupling Index')
+        return fig
 
     @render.ui
     def ui_input_signal_choice():
@@ -379,6 +478,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "signal_data_files_s1_path",
                 "",
                 choices=loader.list_all_files(),
+                # for comparison with jupyter notebook
+                #selected="/home/patrice/work/ppsp/HyPyP-synchro/data/fNIRS/downloads/fathers/FCS28/parent/NIRS-2019-11-10_003.hdr",
             )))
             choices.append(ui_option_row("Signal 2 file", ui.input_select(
                 "signal_data_files_s2_path",
@@ -422,13 +523,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             options.append(ui_option_row("Noise level", ui.input_numeric("signal_noise_level", "", value=0.01))),
         
         if input.signal_type() == 'data_files':
-            loader = DataLoaderFNIRS()
             options.append(ui_option_row(
                 "Signal 1 channel",
                 ui.input_select(
                     "signal_data_files_s1_channel",
                     "",
-                    choices=loader.list_channels_for_file(input.signal_data_files_s1_path()),
+                    choices=get_subject1().raw_haemo.ch_names,
                 )
             ))
             options.append(ui_option_row(
@@ -436,7 +536,15 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.input_select(
                     "signal_data_files_s2_channel",
                     "",
-                    choices=loader.list_channels_for_file(input.signal_data_files_s2_path()),
+                    choices=get_subject2().raw_haemo.ch_names,
+                )
+            ))
+            options.append(ui_option_row(
+                "What signal to use",
+                ui.input_select(
+                    "signal_data_files_analysis_property",
+                    "",
+                    choices=get_subject1().get_analysis_properties(),
                 )
             ))
 
@@ -544,7 +652,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         dyad = get_signals()
         wtc_res  = compute_coherence()
 
-        if input.display_wtc_frequencies_at_time() == -1:
+        if input.display_wtc_frequencies_at_time() is None:
             # region of interest
             roi = wtc_res.wtc * (wtc_res.wtc > wtc_res.coif[np.newaxis, :]).astype(int)
             col = np.argmax(np.sum(roi, axis=0))
@@ -564,7 +672,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         return [
             ui.output_plot('plot_wtc_at_time'),
-            ui_option_row("Plot coherence at time (-1 for max)", ui.input_numeric("display_wtc_frequencies_at_time", "", value=-1), center=True),
+            ui_option_row("Plot coherence at time", ui.input_numeric("display_wtc_frequencies_at_time", "", value=None), center=True),
         ]
         
     def ZZ_with_options(ZZ):

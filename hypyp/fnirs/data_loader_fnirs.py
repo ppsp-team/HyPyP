@@ -26,14 +26,22 @@ class DataLoaderFNIRS:
     def add_source(self, path):
         self.paths.append(path)
 
+    def path_is_nirx(self, path):
+        return os.path.isfile(path) and path.endswith('.hdr')
+
+    def path_is_fif_raw(self, path):
+        return os.path.isfile(path) and path.endswith('_raw.fif')
+
     def list_all_files(self):
         file_paths = []
-        for path in self.paths:
-            for p in Path(path).rglob('*'):
-                if os.path.isdir(p):
-                    file_paths.append(str(p.absolute()))
-                elif str(p).endswith('.fif'):
-                    file_paths.append(str(p.absolute()))
+        for root_path in self.paths:
+            for path in Path(root_path).rglob('*'):
+                if self.path_is_nirx(str(path)):
+                    file_paths.append(str(path.absolute()))
+                elif self.path_is_fif_raw(str(path)):
+                    file_paths.append(str(path.absolute()))
+                # TODO: non-raw fif file
+                # TODO: snirf file
 
         # remove duplicates
         unique = list(set(file_paths))
@@ -62,14 +70,23 @@ class DataLoaderFNIRS:
         self.add_source(target_path)
         return target_path
     
-    def list_channels_for_file(self, file_path):
-        # use the same file for both
-        if file_path.endswith('_raw.fif'):
-            return mne.io.read_raw_fif(file_path).ch_names
+    # TODO should receive mne object
+    def list_channels_for_file(self, path):
+        if self.path_is_nirx(path):
+            return mne.io.read_raw_nirx(fname=path).ch_names
+        if self.path_is_fif_raw(path):
+            return mne.io.read_raw_fif(path).ch_names
         return []
     
+    def get_mne_raw(self, path):
+        if self.path_is_nirx(path):
+            return mne.io.read_raw_nirx(fname=path)
+        if self.path_is_fif_raw(path):
+            return mne.io.read_raw_fif(path)
+        return None
+    
     def get_mne_channel(self, file_path, channel_name):
-        s = mne.io.read_raw_fif(file_path, verbose=True)
+        s = self.get_mne_raw(file_path)
         return s.copy().pick(mne.pick_channels(s.ch_names, include = [channel_name]))
     
     def read_two_signals_from_mat(self, file_path, id1, id2):
