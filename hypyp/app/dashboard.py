@@ -177,6 +177,7 @@ app_ui = ui.page_fluid(
                 },
             ),
             ui.output_ui('ui_input_signal_choice'),
+            ui.output_ui('ui_input_signal_choice_property'),
             ui.output_ui('ui_input_signal_options'),
 
             ui.tags.strong('Wavelet parameters'),
@@ -263,7 +264,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             y2 +=  noise_level * np.random.normal(0, 1, len(x))
 
         elif input.signal_type() == 'data_files':
-            # select channels from csv of best channels
             s1_raw = get_subject1_raw().copy()
             s2_raw = get_subject2_raw().copy()
 
@@ -547,6 +547,20 @@ def server(input: Inputs, output: Outputs, session: Session):
         return choices
 
     @render.ui
+    def ui_input_signal_choice_property():
+        options = []
+        if input.signal_type() == 'data_files':
+            options.append(ui_option_row(
+                "Which step to use for analysis",
+                ui.input_select(
+                    "signal_data_files_analysis_property",
+                    "",
+                    choices=get_subject1().get_analysis_properties(),
+                )
+            ))
+        return options
+
+    @render.ui
     def ui_input_signal_options():
         options = []
         if input.signal_type() == 'testing':
@@ -575,6 +589,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.input_select(
                     "signal_data_files_s1_channel",
                     "",
+                    # use the property directly to avoid having the channel selection being reset when we change analysis property
                     choices=get_subject1().raw_haemo.ch_names,
                 )
             ))
@@ -584,14 +599,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                     "signal_data_files_s2_channel",
                     "",
                     choices=get_subject2().raw_haemo.ch_names,
-                )
-            ))
-            options.append(ui_option_row(
-                "Which step to use",
-                ui.input_select(
-                    "signal_data_files_analysis_property",
-                    "",
-                    choices=get_subject1().get_analysis_properties(),
                 )
             ))
 

@@ -26,9 +26,16 @@ class SubjectFNIRS:
         return {
             'raw_haemo_filtered': 'Hemoglobin filtered',
             'raw_haemo': 'Hemoglobin',
-            'raw_od_clean': 'Raw optical density cleaned',
-            'raw': 'Raw',
+            # Don't use them because they have different channel names
+            #'raw_od_clean': 'Raw optical density cleaned',
+            #'raw': 'Raw',
         }
+    
+    def get_ch_names_for_property(self, property_name):
+        if property_name.startswith('raw_haemo'):
+            return self.raw_haemo.ch_names
+        return self.raw.ch_names
+        
     
     # TODO: this is probably not necessary since we have self.load_file
     def load_fif_file(self, filepath):
