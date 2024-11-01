@@ -24,11 +24,10 @@ class SubjectFNIRS:
     
     def get_analysis_properties(self):
         return {
-            'raw': 'Raw',
-            'raw_od': 'Raw optical density',
-            'raw_od_clean': 'Raw optical density cleaned',
-            'raw_haemo': 'Hemoglobin',
             'raw_haemo_filtered': 'Hemoglobin filtered',
+            'raw_haemo': 'Hemoglobin',
+            'raw_od_clean': 'Raw optical density cleaned',
+            'raw': 'Raw',
         }
     
     # TODO: this is probably not necessary since we have self.load_file

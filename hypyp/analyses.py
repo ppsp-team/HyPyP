@@ -804,8 +804,8 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
     sfreq = sig1.info['sfreq']
     assert sig1.info['sfreq'] == sig2.info['sfreq'], "Sig1 et sig2 should have the same sfreq value."
 
-    n_epochs1, n_chans1, n_samples1 = sig1.get_data(copy=False).shape
-    n_epochs2, n_chans2, n_samples2 = sig2.get_data(copy=False).shape
+    n_epochs1, n_chans1, n_samples1 = sig1.get_data().shape
+    n_epochs2, n_chans2, n_samples2 = sig2.get_data().shape
 
     assert n_epochs1 == n_epochs2, "n_epochs1 and n_epochs2 should have the same number of epochs."
     assert n_chans1 == n_chans2, "n_chans1 and n_chans2 should have the same number of channels."

@@ -3,6 +3,7 @@ class PairSignals:
         self.x = x
         self.n = len(x)
         self.dt = x[1] - x[0]
+        self.fs = 1 / self.dt
         self.y1 = y1
         self.y2 = y2
         self.info_table1 = info_table1

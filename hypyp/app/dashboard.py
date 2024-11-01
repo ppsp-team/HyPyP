@@ -53,7 +53,7 @@ app_ui = ui.page_fluid(
     ui.page_navbar(
         ui.nav_spacer(),
         ui.nav_panel(
-            "Local data browser",
+            "Data Browser",
             ui.tags.h4(ui.output_text('text_s1_file_path')),
             ui.input_slider("input_s1_mne_duration_slider", "", min=0, max=100, value=[0, 20], width='100%'),
             ui.navset_card_tab(  
@@ -97,7 +97,7 @@ app_ui = ui.page_fluid(
             ),
         ),
         ui.nav_panel(
-            "Choice of signals",
+            "Choice of Signals",
             ui.row(
                 ui.column(12,
                     ui.card(
@@ -109,10 +109,35 @@ app_ui = ui.page_fluid(
                 ),
             ),
             ui.row(
-                ui.column(6, ui.card(ui.tags.strong('Signal 1'), ui.output_table('table_info_s1'))),
-                ui.column(6, ui.card(ui.tags.strong('Signal 2'), ui.output_table('table_info_s2'))),
+                ui.column(
+                    6,
+                    ui.card(
+                        ui.tags.strong('Signal 1'),
+                        ui.output_table('text_info_s1_file_path'),
+                        ui.output_table('table_info_s1'),
+                    )
+                ),
+                ui.column(
+                    6,
+                    ui.card(
+                        ui.tags.strong('Signal 2'),
+                        ui.output_table('text_info_s2_file_path'),
+                        ui.output_table('table_info_s2'),
+                    )
+                ),
             ),
         ),
+        #ui.nav_panel(
+        #    "Cross Wavelet Transform",
+        #    ui.row(
+        #        ui.column(12,
+        #            ui.card(
+        #                ui.tags.strong('Cross Wavelet Transform'),
+        #                ui.output_plot('plot_xwt'),
+        #            ),
+        #        ),
+        #    ),
+        #),
         ui.nav_panel(
             "Wavelet Coherence",
             ui.row(
@@ -138,7 +163,7 @@ app_ui = ui.page_fluid(
             ui.output_ui('ui_card_tracer'),
         ),
         ui.nav_spacer(),
-        selected='Local data browser',
+        selected='Data Browser',
         id='main_nav',
         sidebar=ui.sidebar(
             ui.tags.strong('Signal parameters'),
@@ -200,7 +225,7 @@ app_ui = ui.page_fluid(
 
 def server(input: Inputs, output: Outputs, session: Session):
     @reactive.calc()
-    def get_signals():
+    def get_signals() -> PairSignals:
         info_table1 = []
         info_table2 = []
         dyad = None
@@ -239,11 +264,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         elif input.signal_type() == 'data_files':
             # select channels from csv of best channels
-            s1 = get_subject1()
-            s2 = get_subject2()
+            s1_raw = get_subject1_raw().copy()
+            s2_raw = get_subject2_raw().copy()
 
-            s1_selected_ch = s1.__getattribute__(input.signal_data_files_analysis_property()).copy().pick(mne.pick_channels(s1.raw_haemo.ch_names, include = [input.signal_data_files_s1_channel()]))
-            s2_selected_ch = s2.__getattribute__(input.signal_data_files_analysis_property()).copy().pick(mne.pick_channels(s2.raw_haemo.ch_names, include = [input.signal_data_files_s2_channel()]))
+            s1_selected_ch = s1_raw.pick(mne.pick_channels(s1_raw.ch_names, include = [input.signal_data_files_s1_channel()]))
+            s2_selected_ch = s2_raw.pick(mne.pick_channels(s2_raw.ch_names, include = [input.signal_data_files_s2_channel()]))
 
             y1 = s1_selected_ch.get_data()[0,:]
             y2 = s2_selected_ch.get_data()[0,:]
@@ -257,6 +282,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             N = len(y1)
             fs = s1_selected_ch.info['sfreq']
             x = np.linspace(0, N/fs, N)
+            info_table1 = [(k, s1_raw.info[k]) for k in s1_raw.info.keys()]
+            info_table2 = [(k, s2_raw.info[k]) for k in s2_raw.info.keys()]
             
 
         elif input.signal_type() == 'preloaded':
@@ -371,6 +398,18 @@ def server(input: Inputs, output: Outputs, session: Session):
     def text_s1_file_path():
         return f"File: {input.signal_data_files_s1_path()}"
 
+    @render.text
+    def text_s2_file_path():
+        return f"File: {input.signal_data_files_s2_path()}"
+
+    @render.text
+    def text_info_s1_file_path():
+        return f"File: {input.signal_data_files_s1_path()}"
+
+    @render.text
+    def text_info_s2_file_path():
+        return f"File: {input.signal_data_files_s2_path()}"
+
     @reactive.calc()
     def get_subject1():
         loader = DataLoaderFNIRS()
@@ -380,6 +419,14 @@ def server(input: Inputs, output: Outputs, session: Session):
     def get_subject2():
         loader = DataLoaderFNIRS()
         return SubjectFNIRS().load_file(loader, input.signal_data_files_s2_path())
+
+    @reactive.calc()
+    def get_subject1_raw():
+        return getattr(get_subject1(), input.signal_data_files_analysis_property())
+
+    @reactive.calc()
+    def get_subject2_raw():
+        return getattr(get_subject2(), input.signal_data_files_analysis_property())
 
     def get_mne_raw_plot_kwargs(raw, duration_percent_range):
         range_start, range_end = duration_percent_range
@@ -474,14 +521,14 @@ def server(input: Inputs, output: Outputs, session: Session):
             loader = DataLoaderFNIRS()
             loader.download_demo_dataset()
 
-            choices.append(ui_option_row("Signal 1 file", ui.input_select(
+            choices.append(ui_option_row("Subject 1 file", ui.input_select(
                 "signal_data_files_s1_path",
                 "",
                 choices=loader.list_all_files(),
                 # for comparison with jupyter notebook
                 #selected="/home/patrice/work/ppsp/HyPyP-synchro/data/fNIRS/downloads/fathers/FCS28/parent/NIRS-2019-11-10_003.hdr",
             )))
-            choices.append(ui_option_row("Signal 2 file", ui.input_select(
+            choices.append(ui_option_row("Subject 2 file", ui.input_select(
                 "signal_data_files_s2_path",
                 "",
                 choices=loader.list_all_files(),
@@ -524,7 +571,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         if input.signal_type() == 'data_files':
             options.append(ui_option_row(
-                "Signal 1 channel",
+                "Subject 1 channel",
                 ui.input_select(
                     "signal_data_files_s1_channel",
                     "",
@@ -532,7 +579,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 )
             ))
             options.append(ui_option_row(
-                "Signal 2 channel",
+                "Subject 2 channel",
                 ui.input_select(
                     "signal_data_files_s2_channel",
                     "",
@@ -540,7 +587,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 )
             ))
             options.append(ui_option_row(
-                "What signal to use",
+                "Which step to use",
                 ui.input_select(
                     "signal_data_files_analysis_property",
                     "",
@@ -597,6 +644,61 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.grid()
         return fig
 
+#    @reactive.calc()
+#    def compute_xwt():
+#        s1_raw = get_subject1_raw()
+#        s2_raw = get_subject2_raw()
+#        freq_bins = 10
+#        freqs = np.linspace(0.05, 1.0, freq_bins)
+#        sfreq = s1_raw.info['sfreq']
+#        duration = min(s1_raw.times[-1], s2_raw.times[-1]) // 2 # have only 2 epoch
+#
+#        s1_epo = mne.make_fixed_length_epochs(s1_raw, duration=duration, preload=True)
+#        s2_epo = mne.make_fixed_length_epochs(s2_raw, duration=duration, preload=True)
+#
+#        xwt = hypyp.analyses.xwt(
+#            s1_epo,
+#            s2_epo,
+#            freqs=freqs,
+#            mode='wtc',
+#        )
+#
+#        return xwt, freq_bins, freqs, sfreq, duration
+#
+#    @render.plot
+#    def plot_xwt():
+#        fig, ax = plt.subplots()
+#        xwt, freq_bins, freqs, sfreq, duration = compute_xwt()
+#        
+#        ax.imshow(np.abs(xwt).mean(0).mean(0).mean(0),
+#                aspect='auto',
+#                cmap='plasma',
+#                interpolation='lanczos')
+#
+#        plt.gca().invert_yaxis()
+#        ax.set_ylabel('Frequencies (Hz)')
+#        ax.set_xlabel('Time (s)')
+#        ax.set_yticks(range(0, freq_bins, 2), 
+#                np.round(100*freqs[range(0, freq_bins, 2)])/100)
+#        ax.set_ylim([0, freq_bins-1])
+#
+#        smax = xwt.shape[-1]
+#        ax.set_xlim([0, smax])
+#        #ax.set_xticks(np.arange(0, smax+sfreq, sfreq), range(duration+1))
+#
+#        coi = 2.5*sfreq/freqs
+#        rev_coi = xwt.shape[-1]-coi
+#        idx = np.arange(len(freqs))
+#        ax.plot(coi, idx, 'w')
+#        ax.plot(xwt.shape[-1]-coi, idx, 'w')
+#        ax.fill_between(coi, idx, hatch='X', fc='w', alpha=0.3)
+#        ax.fill_between(rev_coi, idx, hatch='X', fc='w', alpha=0.3)
+#
+#        ax.axvspan(0, min(coi), hatch='X', fc='w', alpha=0.3)
+#        ax.axvspan(smax, max(rev_coi), hatch='X', fc='w', alpha=0.3)
+#
+#        return fig
+#
     @render.plot()
     def plot_mother_wavelet():
         fig, ax = plt.subplots()
