@@ -1,4 +1,5 @@
 import pytest
+import warnings
 
 from hypyp.fnirs.subject_fnirs import SubjectFNIRS
 from hypyp.fnirs.dyad_fnirs import DyadFNIRS
@@ -12,10 +13,13 @@ baseline = (0, 0)
 ch_list_s1 = ["S4_D4 hbo"] 
 ch_list_s2 = ["S7_D6 hbo"]
 
-fif_file = './data/sub-110_session-1_pre_raw.fif'
+fif_file = './data/sub-110_session-1_pre.fif'
 snirf_file = './data/fNIRS/DCARE_02_sub1.snirf'
 
 def test_subject():
+    # filename does not end with _raw.fif
+    # ignore the warning
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     s1 = SubjectFNIRS()
     s1.load_fif_file(fif_file)
@@ -31,6 +35,10 @@ def test_subject():
     assert len(s1.epochs.ch_names) == len(ch_list_s1)
 
 def test_instanciate():
+    # filename does not end with _raw.fif
+    # ignore the warning
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+
     s1 = SubjectFNIRS()
     s1.load_fif_file(fif_file)
     s1.set_best_ch_names(ch_list_s1)
@@ -85,10 +93,17 @@ def test_download_demos():
 
 def test_load_snirf():
     s1 = SubjectFNIRS()
+    # The included snirf file has very short distances listed, smaller than threshold. Ignore them
+    # TODO: this is not clean, we should find why this file has such small distances
+    s1.ignore_distances = True
     s1.load_snirf_file(snirf_file)
     #s1.set_best_ch_names(['S1_D1 760'])
     #s1.load_epochs(tmin=tmin, tmax=tmax, baseline=baseline)
     #print(s1.epochs)
     
+#def test_load_lionirs():
+
+
 
     
+

@@ -16,7 +16,7 @@ class PycwtWavelet(BaseWavelet):
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         self.compute_significance = compute_significance
-        self.tracer = dict(name='pycwt')
+        self.tracer = dict(name='pycwt', scales=[]) # TODO have a more strict structure for tracer
         self.wavelet_name = 'pycwt'
         super().__init__(evaluate)
 

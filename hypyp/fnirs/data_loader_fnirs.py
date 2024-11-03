@@ -29,8 +29,11 @@ class DataLoaderFNIRS:
     def path_is_nirx(self, path):
         return os.path.isfile(path) and path.endswith('.hdr')
 
-    def path_is_fif_raw(self, path):
-        return os.path.isfile(path) and path.endswith('_raw.fif')
+    def path_is_lionirs(self, path):
+        return os.path.isfile(path) and path.endswith('.nirs')
+
+    def path_is_fif(self, path):
+        return os.path.isfile(path) and path.endswith('.fif')
 
     def list_all_files(self):
         file_paths = []
@@ -38,7 +41,9 @@ class DataLoaderFNIRS:
             for path in Path(root_path).rglob('*'):
                 if self.path_is_nirx(str(path)):
                     file_paths.append(str(path.absolute()))
-                elif self.path_is_fif_raw(str(path)):
+                elif self.path_is_lionirs(str(path)):
+                    file_paths.append(str(path.absolute()))
+                elif self.path_is_fif(str(path)):
                     file_paths.append(str(path.absolute()))
                 # TODO: non-raw fif file
                 # TODO: snirf file
@@ -74,26 +79,28 @@ class DataLoaderFNIRS:
     def list_channels_for_file(self, path):
         if self.path_is_nirx(path):
             return mne.io.read_raw_nirx(fname=path).ch_names
-        if self.path_is_fif_raw(path):
+        if self.path_is_fif(path):
             return mne.io.read_raw_fif(path).ch_names
         return []
     
     def get_mne_raw(self, path):
         if self.path_is_nirx(path):
             return mne.io.read_raw_nirx(fname=path)
-        if self.path_is_fif_raw(path):
-            return mne.io.read_raw_fif(path)
+        if self.path_is_fif(path):
+            return mne.io.read_raw_fif(path, preload=True)
         return None
     
     def get_mne_channel(self, file_path, channel_name):
         s = self.get_mne_raw(file_path)
         return s.copy().pick(mne.pick_channels(s.ch_names, include = [channel_name]))
     
-    def read_two_signals_from_mat(self, file_path, id1, id2):
-        mat = scipy.io.loadmat(file_path)
+    def read_two_signals_from_mat_obj(self, mat, id1, id2):
         x = mat['t'].flatten().astype(np.float64, copy=True)
         y1 = mat['d'][:, id1].flatten().astype(np.complex128, copy=True)
         y2 = mat['d'][:, id2].flatten().astype(np.complex128, copy=True)
 
         return PairSignals(x, y1, y2)
+    
+    def read_two_signals_from_mat(self, file_path, id1, id2):
+        return self.read_two_signals_from_mat_obj(scipy.io.loadmat(file_path))
     

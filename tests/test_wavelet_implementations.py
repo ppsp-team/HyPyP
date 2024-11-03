@@ -2,9 +2,11 @@ import pytest
 import warnings
 
 from hypyp.signal import SynteticSignal
-from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.wavelet.scipy_wavelet import ScipyWavelet
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
 
 
 # TODO: test values with sinusoid signal
@@ -21,6 +23,7 @@ def test_pywavelets():
     res = wavelet.wtc(signal1.y, signal2.y, signal1.period)
 
 def test_pycwt():
+
     wavelet = PycwtWavelet()
     psi, x = wavelet.evaluate_psi()
     assert psi.dtype.kind == 'c'

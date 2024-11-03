@@ -32,7 +32,7 @@ HARDCODED_PRELOADED_EXTERNAL_CHANNEL_A = 0
 HARDCODED_PRELOADED_EXTERNAL_CHANNEL_B = 19
 
 HARDCODED_PRELOADED_COMMITTED_PATH = './data/'
-HARDCODED_PRELOADED_COMMITTED_FILENAME = 'sub-110_session-1_pre_raw.fif'
+HARDCODED_PRELOADED_COMMITTED_FILENAME = 'sub-110_session-1_pre.fif'
 HARDCODED_PRELOADED_COMMITTED_CHANNEL_A = "S4_D4 hbo"
 HARDCODED_PRELOADED_COMMITTED_CHANNEL_B = "S7_D6 hbo"
 
@@ -410,6 +410,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     def text_info_s2_file_path():
         return f"File: {input.signal_data_files_s2_path()}"
 
+    def get_data_loader():
+        loader = DataLoaderFNIRS()
+        loader.add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
+        return loader
+
     @reactive.calc()
     def get_subject1():
         loader = DataLoaderFNIRS()
@@ -518,7 +523,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             ))
         
         elif input.signal_type() == 'data_files':
-            loader = DataLoaderFNIRS()
+            loader = get_data_loader()
             loader.download_demo_dataset()
 
             choices.append(ui_option_row("Subject 1 file", ui.input_select(
