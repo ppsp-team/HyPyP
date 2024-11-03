@@ -26,16 +26,8 @@ import hypyp.plots
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 
 default_plot_signal_height = 150
+
 HARDCODED_PRELOADED_EXTERNAL_PATH = "/media/patrice/My Passport/DataNIRS/"
-HARDCODED_PRELOADED_EXTERNAL_FILENAME = "syn_ce05_001.nirs"
-HARDCODED_PRELOADED_EXTERNAL_CHANNEL_A = 0
-HARDCODED_PRELOADED_EXTERNAL_CHANNEL_B = 19
-
-HARDCODED_PRELOADED_COMMITTED_PATH = './data/'
-HARDCODED_PRELOADED_COMMITTED_FILENAME = 'sub-110_session-1_pre.fif'
-HARDCODED_PRELOADED_COMMITTED_CHANNEL_A = "S4_D4 hbo"
-HARDCODED_PRELOADED_COMMITTED_CHANNEL_B = "S7_D6 hbo"
-
 SAME_AS_SUBJECT_1 = 'Same as Subject 1'
 
 # This is to avoid having external windows launched
@@ -78,6 +70,14 @@ app_ui = ui.page_fluid(
                 ui.nav_panel(
                     "Hemoglobin Filtered",
                     ui.output_image('image_plot_s1_mne_raw_haemo_filtered'),
+                ),
+                ui.nav_panel(
+                    "Raw PSD",
+                    ui.output_image('image_plot_s1_mne_raw_psd'),
+                ),
+                ui.nav_panel(
+                    "Optical Density PSD",
+                    ui.output_image('image_plot_s1_mne_od_clean_psd'),
                 ),
                 ui.nav_panel(
                     "Hemoglobin PSD",
@@ -174,7 +174,6 @@ app_ui = ui.page_fluid(
                 "",
                 choices={
                     'data_files': 'Local data files',
-                    'preloaded': 'Preloaded signals',
                     'testing': 'Test signals',
                 },
             ),
@@ -286,59 +285,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             x = np.linspace(0, N/fs, N)
             info_table1 = [(k, s1_raw.info[k]) for k in s1_raw.info.keys()]
             info_table2 = [(k, s2_raw.info[k]) for k in s2_raw.info.keys()]
-            
-
-        elif input.signal_type() == 'preloaded':
-            if input.signal_preloaded_choice() == 'preloaded_passport_disk':
-                file_path = os.path.join(HARDCODED_PRELOADED_EXTERNAL_PATH, HARDCODED_PRELOADED_EXTERNAL_FILENAME)
-                dyad = DataLoaderFNIRS.read_two_signals_from_mat(file_path, HARDCODED_PRELOADED_EXTERNAL_CHANNEL_A, HARDCODED_PRELOADED_EXTERNAL_CHANNEL_B)
-        
-            elif input.signal_preloaded_choice() == 'preloaded_committed':
-                file_path = os.path.join(HARDCODED_PRELOADED_COMMITTED_PATH, HARDCODED_PRELOADED_COMMITTED_FILENAME)
-
-                #set events
-                tmin = 0 
-                tmax = 300
-                baseline = (0, 0)
-
-                # use the same file for both
-                s1 = mne.io.read_raw_fif(file_path, preload=True)
-                s2 = mne.io.read_raw_fif(file_path, preload=True)
-
-                # select channels from csv of best channels
-                s1_selected_ch = s1.copy().pick(mne.pick_channels(s1.ch_names, include = [HARDCODED_PRELOADED_COMMITTED_CHANNEL_A]))
-                s2_selected_ch = s2.copy().pick(mne.pick_channels(s2.ch_names, include = [HARDCODED_PRELOADED_COMMITTED_CHANNEL_B]))
-
-                # get events
-                events1, event_dict1 = mne.events_from_annotations(s1_selected_ch)
-                events2, event_dict2 = mne.events_from_annotations(s2_selected_ch)
-                epo1 = mne.Epochs(
-                    s1_selected_ch,
-                    events1,
-                    event_id=event_dict1,
-                    tmin=tmin,
-                    tmax=tmax,
-                    baseline=baseline,
-                    reject_by_annotation=False
-                )
-                epo2 = mne.Epochs(
-                    s2_selected_ch,
-                    events2,
-                    event_id=event_dict2,
-                    tmin=tmin,
-                    tmax=tmax,
-                    baseline=baseline,
-                    reject_by_annotation=False
-                )
-                y1 = epo1.get_data()[0,0,:]
-                y2 = epo2.get_data()[0,0,:]
-                
-                # Force N for this signal
-                N = len(y1)
-                fs = epo1.info['sfreq']
-                x = np.linspace(0, N/fs, N)
-                info_table1 = [(k,epo1.info[k]) for k in epo1.info.keys()]
-                info_table2 = [(k,epo2.info[k]) for k in epo2.info.keys()]
 
         if dyad is None:
             dyad = PairSignals(x, y1, y2, info_table1, info_table2)
@@ -469,45 +415,43 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.image
     def image_plot_s1_mne_raw():
         subject = get_subject1()
-        fig = subject.raw.plot(**get_mne_raw_plot_kwargs(subject.raw, input.input_s1_mne_duration_slider()))
-        return mne_figure_as_image(fig)
+        return mne_figure_as_image(subject.raw.plot(**get_mne_raw_plot_kwargs(subject.raw, input.input_s1_mne_duration_slider())))
 
+    @render.image
+    def image_plot_s1_mne_raw_psd():
+        return mne_figure_as_image(get_subject1().raw.compute_psd().plot())
 
     @render.image
     def image_plot_s1_mne_raw_od():
         subject = get_subject1()
-        fig = subject.raw_od.plot(**get_mne_raw_plot_kwargs(subject.raw_od, input.input_s1_mne_duration_slider()))
-        return mne_figure_as_image(fig)
+        return mne_figure_as_image(subject.raw_od.plot(**get_mne_raw_plot_kwargs(subject.raw_od, input.input_s1_mne_duration_slider())))
 
     @render.image
     def image_plot_s1_mne_raw_od_clean():
         subject = get_subject1()
-        fig = subject.raw_od_clean.plot(**get_mne_raw_plot_kwargs(subject.raw_od_clean, input.input_s1_mne_duration_slider()))
-        return mne_figure_as_image(fig)
+        return mne_figure_as_image(subject.raw_od_clean.plot(**get_mne_raw_plot_kwargs(subject.raw_od_clean, input.input_s1_mne_duration_slider())))
+    
+    @render.image
+    def image_plot_s1_mne_od_clean_psd():
+        return mne_figure_as_image(get_subject1().raw_od_clean.compute_psd().plot())
     
     @render.image
     def image_plot_s1_mne_raw_haemo():
         subject = get_subject1()
-        fig = subject.raw_haemo.plot(**get_mne_raw_plot_kwargs(subject.raw_haemo, input.input_s1_mne_duration_slider()), theme="light")
-        return mne_figure_as_image(fig)
+        return mne_figure_as_image(subject.raw_haemo.plot(**get_mne_raw_plot_kwargs(subject.raw_haemo, input.input_s1_mne_duration_slider()), theme="light"))
     
     @render.image
     def image_plot_s1_mne_raw_haemo_psd():
-        subject = get_subject1()
-        fig = subject.raw_haemo.compute_psd().plot()
-        return mne_figure_as_image(fig)
+        return mne_figure_as_image(get_subject1().raw_haemo.compute_psd().plot())
     
     @render.image
     def image_plot_s1_mne_raw_haemo_filtered():
         subject = get_subject1()
-        fig = subject.raw_haemo_filtered.plot(**get_mne_raw_plot_kwargs(subject.raw_haemo_filtered, input.input_s1_mne_duration_slider()), theme="light")
-        return mne_figure_as_image(fig)
+        return mne_figure_as_image(subject.raw_haemo_filtered.plot(**get_mne_raw_plot_kwargs(subject.raw_haemo_filtered, input.input_s1_mne_duration_slider()), theme="light"))
     
     @render.image
     def image_plot_s1_mne_raw_haemo_filtered_psd():
-        subject = get_subject1()
-        fig = subject.raw_haemo_filtered.compute_psd().plot()
-        return mne_figure_as_image(fig)
+        return mne_figure_as_image(get_subject1().raw_haemo_filtered.compute_psd().plot())
     
     @render.plot
     def plot_s1_mne_sci():
@@ -550,16 +494,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "",
                 choices=[SAME_AS_SUBJECT_1] + loader.list_all_files(),
             )))
-        
-        elif input.signal_type() == 'preloaded':
-            choices.append(ui.input_select(
-                "signal_preloaded_choice",
-                "",
-                choices={
-                    'preloaded_committed': 'fNIRS sub 110 session 1',
-                    'preloaded_passport_disk': 'fNIRS data from Passport Disk',
-                },
-            ))
         
         return choices
 
@@ -607,7 +541,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                     "signal_data_files_s1_channel",
                     "",
                     # use the property directly to avoid having the channel selection being reset when we change analysis property
-                    choices=get_subject1().raw_haemo.ch_names,
+                    #choices=get_subject1().raw_haemo.ch_names,
+                    choices=getattr(get_subject1(), list(get_subject1().get_analysis_properties().keys())[0]).ch_names
                 )
             ))
             options.append(ui_option_row(
@@ -615,7 +550,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.input_select(
                     "signal_data_files_s2_channel",
                     "",
-                    choices=get_subject2().raw_haemo.ch_names,
+                    #choices=get_subject2().raw_haemo.ch_names,
+                    choices=getattr(get_subject2(), list(get_subject2().get_analysis_properties().keys())[0]).ch_names
                 )
             ))
 
@@ -703,7 +639,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             ui_option_row("Plot daughter wavelet id", ui.input_numeric("display_daughter_wavelet_id", "", value=0), center=True),
         ]
         
-
     @render.plot()
     def plot_wtc():
         fig, ax = plt.subplots()

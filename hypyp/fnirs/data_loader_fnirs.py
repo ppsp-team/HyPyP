@@ -30,7 +30,7 @@ class DataLoaderFNIRS:
     def path_is_nirx(self, path):
         return os.path.isfile(path) and path.endswith('.hdr')
 
-    def path_is_lionirs(self, path):
+    def path_is_nirs(self, path):
         return os.path.isfile(path) and path.endswith('.nirs')
 
     def path_is_fif(self, path):
@@ -46,7 +46,7 @@ class DataLoaderFNIRS:
                 if self.path_is_fif(str(path)):
                     file_paths.append(str(path.absolute()))
 
-                elif self.path_is_lionirs(str(path)):
+                elif self.path_is_nirs(str(path)):
                     file_paths.append(str(path.absolute()))
 
                 elif self.path_is_nirx(str(path)):
@@ -87,7 +87,7 @@ class DataLoaderFNIRS:
         if self.path_is_fif(path):
             return mne.io.read_raw_fif(path).ch_names
 
-        if self.path_is_lionirs(path):
+        if self.path_is_nirs(path):
             raise Exception('Not implemented yet')
 
         if self.path_is_nirx(path):
@@ -98,12 +98,36 @@ class DataLoaderFNIRS:
 
         return []
     
+    def get_nirs_ch_names(self, meas_list, lambdas):
+        ret = []
+        for s, d, _, lmbda in meas_list:
+            ret.append(f"S{s}_D{d} {lambdas[lmbda-1][0]}")
+        return ret
+            
+    def get_info_nirs(self, x, mat):
+        sfreq = 1 / (x[1] - x[0])
+        n_channels = mat['d'].shape[1]
+        info = mne.create_info(
+            self.get_nirs_ch_names(mat['SD'][0,0][0], mat['SD'][0,0][1]),
+            sfreq,
+            ch_types=['fnirs_cw_amplitude']*n_channels)
+        return info
+        
+    
     def get_mne_raw(self, path):
         if self.path_is_fif(path):
             return mne.io.read_raw_fif(path, preload=True)
 
-        if self.path_is_lionirs(path):
-            raise Exception('Not implemented yet')
+        if self.path_is_nirs(path):
+            mat = scipy.io.loadmat(path)
+            x = mat['t'].flatten().astype(np.float64, copy=True)
+            n_channels = mat['d'].shape[1]
+            data = np.zeros((n_channels, len(x)))
+            for i in range(n_channels):
+                data[i, :] = mat['d'][:, i].flatten().astype(np.complex128, copy=True)
+
+            info = self.get_info_nirs(x, mat)
+            return mne.io.RawArray(data, info)
 
         if self.path_is_nirx(path):
             return mne.io.read_raw_nirx(fname=path, preload=True)

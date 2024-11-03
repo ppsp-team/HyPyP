@@ -2,6 +2,8 @@ import pytest
 import warnings
 import logging
 
+import numpy as np
+
 from hypyp.fnirs.subject_fnirs import SubjectFNIRS
 from hypyp.fnirs.dyad_fnirs import DyadFNIRS
 from hypyp.fnirs.data_loader_fnirs import DataLoaderFNIRS
@@ -29,6 +31,22 @@ def test_data_loader(file_path):
     assert raw.info['sfreq'] > 0
     assert len(raw.ch_names) > 0
     
+def test_nirs_ch_names():
+    meas_list = np.array([[1,1,1,1],
+                          [1,2,1,1],
+                          [2,1,1,1],
+                          [1,1,1,2],
+                          [1,2,1,2],
+                          [2,1,1,2]])
+
+    lambdas = np.array([760, 850]).reshape((-1,1))
+
+    loader = DataLoaderFNIRS()
+    ch_names = loader.get_nirs_ch_names(meas_list, lambdas)
+    assert len(ch_names) == meas_list.shape[0]
+    assert ch_names[0] == 'S1_D1 760'
+    assert ch_names[-1] == 'S2_D1 850'
+ 
 
 def test_subject():
     # filename does not end with _raw.fif
