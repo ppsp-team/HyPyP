@@ -18,7 +18,7 @@ class SubjectFNIRS:
         self.best_ch_names: List[str] | None
         self.events: any # we should know what type this is
         self.epochs: mne.Epochs
-        self.ignore_distances = False
+        self.ignore_distances = True
 
     def load_file(self, loader: DataLoaderFNIRS, filepath: str):
         self.filepath = filepath        
@@ -40,24 +40,10 @@ class SubjectFNIRS:
             return self.raw_haemo.ch_names
         return self.raw.ch_names
         
-    
-    # TODO: this is probably not necessary since we have self.load_file
-    def load_fif_file(self, filepath):
-        self.filepath = filepath        
-        self.raw = mne.io.read_raw_fif(filepath, verbose=True, preload=True)
-        self.preprocess()
-        return self
-    
-    # TODO: this is probably not necessary since we have self.load_file
-    def load_snirf_file(self, filepath):
-        self.filepath = filepath        
-        self.raw = mne.io.read_raw_snirf(filepath, verbose=True, preload=True)
-        self.preprocess()
-        return self
-    
     def preprocess(self):
         picks = mne.pick_types(self.raw.info, meg=False, fnirs=True)
 
+        # TODO: it seems that .snirf files have a different measurem
         if not self.ignore_distances:
             dists = mne.preprocessing.nirs.source_detector_distances(self.raw.info, picks=picks)
             self.raw.pick(picks[dists > 0.01])
@@ -78,7 +64,11 @@ class SubjectFNIRS:
             self.raw_haemo = mne.preprocessing.nirs.beer_lambert_law(self.raw_od_clean, ppf=0.1)
 
         # TODO: have these parameters exposed?
-        self.raw_haemo_filtered = self.raw_haemo.copy().filter(0.05, 0.7, h_trans_bandwidth=0.2, l_trans_bandwidth=0.02)
+        self.raw_haemo_filtered = self.raw_haemo.copy().filter(
+            0.05,
+            0.7,
+            h_trans_bandwidth=0.2,
+            l_trans_bandwidth=0.02)
 
     def set_best_ch_names(self, ch_names):
         self.best_ch_names = ch_names

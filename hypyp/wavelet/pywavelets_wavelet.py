@@ -46,6 +46,7 @@ class PywaveletsWavelet(BaseWavelet):
 
         # TODO: this is hardcoded, we have to check where this equation comes from
         # Cone of influence calculations
+        # TODO: this is probably only valid for morlet wavelet
         f0 = 2 * np.pi
         cmor_coi = 1.0 / np.sqrt(2)
         cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))

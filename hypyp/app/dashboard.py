@@ -36,6 +36,8 @@ HARDCODED_PRELOADED_COMMITTED_FILENAME = 'sub-110_session-1_pre.fif'
 HARDCODED_PRELOADED_COMMITTED_CHANNEL_A = "S4_D4 hbo"
 HARDCODED_PRELOADED_COMMITTED_CHANNEL_B = "S7_D6 hbo"
 
+SAME_AS_SUBJECT_1 = 'Same as Subject 1'
+
 # This is to avoid having external windows launched
 matplotlib.use('Agg')
 
@@ -300,8 +302,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 baseline = (0, 0)
 
                 # use the same file for both
-                s1 = mne.io.read_raw_fif(file_path, verbose=True, preload=True)
-                s2 = mne.io.read_raw_fif(file_path, verbose=True, preload=True)
+                s1 = mne.io.read_raw_fif(file_path, preload=True)
+                s2 = mne.io.read_raw_fif(file_path, preload=True)
 
                 # select channels from csv of best channels
                 s1_selected_ch = s1.copy().pick(mne.pick_channels(s1.ch_names, include = [HARDCODED_PRELOADED_COMMITTED_CHANNEL_A]))
@@ -394,21 +396,31 @@ def server(input: Inputs, output: Outputs, session: Session):
         dyad = get_signals()
         return get_wavelet().wtc(dyad.y1, dyad.y2, dyad.dt)
 
+    def get_signal_data_files_s1_path():
+        return input.signal_data_files_s1_path()
+        
+    def get_signal_data_files_s2_path():
+        value = input.signal_data_files_s2_path()
+        if value == SAME_AS_SUBJECT_1:
+            return input.signal_data_files_s1_path()
+        return value
+
     @render.text
     def text_s1_file_path():
-        return f"File: {input.signal_data_files_s1_path()}"
+        return f"File: {get_signal_data_files_s1_path()}"
 
     @render.text
     def text_s2_file_path():
-        return f"File: {input.signal_data_files_s2_path()}"
+        value = input.signal_data_files_s2_path()
+        return f"File: {get_signal_data_files_s2_path()}"
 
     @render.text
     def text_info_s1_file_path():
-        return f"File: {input.signal_data_files_s1_path()}"
+        return f"File: {get_signal_data_files_s1_path()}"
 
     @render.text
     def text_info_s2_file_path():
-        return f"File: {input.signal_data_files_s2_path()}"
+        return f"File: {get_signal_data_files_s2_path()}"
 
     def get_data_loader():
         loader = DataLoaderFNIRS()
@@ -418,12 +430,12 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.calc()
     def get_subject1():
         loader = DataLoaderFNIRS()
-        return SubjectFNIRS().load_file(loader, input.signal_data_files_s1_path())
+        return SubjectFNIRS().load_file(loader, get_signal_data_files_s1_path())
 
     @reactive.calc()
     def get_subject2():
         loader = DataLoaderFNIRS()
-        return SubjectFNIRS().load_file(loader, input.signal_data_files_s2_path())
+        return SubjectFNIRS().load_file(loader, get_signal_data_files_s2_path())
 
     @reactive.calc()
     def get_subject1_raw():
@@ -536,7 +548,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             choices.append(ui_option_row("Subject 2 file", ui.input_select(
                 "signal_data_files_s2_path",
                 "",
-                choices=loader.list_all_files(),
+                choices=[SAME_AS_SUBJECT_1] + loader.list_all_files(),
             )))
         
         elif input.signal_type() == 'preloaded':
@@ -656,61 +668,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.grid()
         return fig
 
-#    @reactive.calc()
-#    def compute_xwt():
-#        s1_raw = get_subject1_raw()
-#        s2_raw = get_subject2_raw()
-#        freq_bins = 10
-#        freqs = np.linspace(0.05, 1.0, freq_bins)
-#        sfreq = s1_raw.info['sfreq']
-#        duration = min(s1_raw.times[-1], s2_raw.times[-1]) // 2 # have only 2 epoch
-#
-#        s1_epo = mne.make_fixed_length_epochs(s1_raw, duration=duration, preload=True)
-#        s2_epo = mne.make_fixed_length_epochs(s2_raw, duration=duration, preload=True)
-#
-#        xwt = hypyp.analyses.xwt(
-#            s1_epo,
-#            s2_epo,
-#            freqs=freqs,
-#            mode='wtc',
-#        )
-#
-#        return xwt, freq_bins, freqs, sfreq, duration
-#
-#    @render.plot
-#    def plot_xwt():
-#        fig, ax = plt.subplots()
-#        xwt, freq_bins, freqs, sfreq, duration = compute_xwt()
-#        
-#        ax.imshow(np.abs(xwt).mean(0).mean(0).mean(0),
-#                aspect='auto',
-#                cmap='plasma',
-#                interpolation='lanczos')
-#
-#        plt.gca().invert_yaxis()
-#        ax.set_ylabel('Frequencies (Hz)')
-#        ax.set_xlabel('Time (s)')
-#        ax.set_yticks(range(0, freq_bins, 2), 
-#                np.round(100*freqs[range(0, freq_bins, 2)])/100)
-#        ax.set_ylim([0, freq_bins-1])
-#
-#        smax = xwt.shape[-1]
-#        ax.set_xlim([0, smax])
-#        #ax.set_xticks(np.arange(0, smax+sfreq, sfreq), range(duration+1))
-#
-#        coi = 2.5*sfreq/freqs
-#        rev_coi = xwt.shape[-1]-coi
-#        idx = np.arange(len(freqs))
-#        ax.plot(coi, idx, 'w')
-#        ax.plot(xwt.shape[-1]-coi, idx, 'w')
-#        ax.fill_between(coi, idx, hatch='X', fc='w', alpha=0.3)
-#        ax.fill_between(rev_coi, idx, hatch='X', fc='w', alpha=0.3)
-#
-#        ax.axvspan(0, min(coi), hatch='X', fc='w', alpha=0.3)
-#        ax.axvspan(smax, max(rev_coi), hatch='X', fc='w', alpha=0.3)
-#
-#        return fig
-#
     @render.plot()
     def plot_mother_wavelet():
         fig, ax = plt.subplots()
@@ -932,6 +889,5 @@ def server(input: Inputs, output: Outputs, session: Session):
                     ui.column(4, ui.output_plot('plot_tracer_wtc')),
                 ),
             )
-
 
 app = App(app_ui, server)

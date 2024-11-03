@@ -1,5 +1,6 @@
 import pytest
 import warnings
+import logging
 
 from hypyp.fnirs.subject_fnirs import SubjectFNIRS
 from hypyp.fnirs.dyad_fnirs import DyadFNIRS
@@ -14,7 +15,20 @@ ch_list_s1 = ["S4_D4 hbo"]
 ch_list_s2 = ["S7_D6 hbo"]
 
 fif_file = './data/sub-110_session-1_pre.fif'
-snirf_file = './data/fNIRS/DCARE_02_sub1.snirf'
+snirf_file1 = './data/fNIRS/DCARE_02_sub1.snirf'
+snirf_file2 = './data/fNIRS/DCARE_02_sub2.snirf'
+fnirs_files = [fif_file, snirf_file1, snirf_file2]
+
+logging.disable()
+
+# Try to load every file types we have
+@pytest.mark.parametrize("file_path", fnirs_files)
+def test_data_loader(file_path):
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+    raw = DataLoaderFNIRS().get_mne_raw(file_path)
+    assert raw.info['sfreq'] > 0
+    assert len(raw.ch_names) > 0
+    
 
 def test_subject():
     # filename does not end with _raw.fif
@@ -22,7 +36,7 @@ def test_subject():
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     s1 = SubjectFNIRS()
-    s1.load_fif_file(fif_file)
+    s1.load_file(DataLoaderFNIRS(), fif_file)
     assert s1.filepath == fif_file
     assert s1.raw is not None
 
@@ -38,13 +52,14 @@ def test_instanciate():
     # filename does not end with _raw.fif
     # ignore the warning
     warnings.filterwarnings("ignore", category=RuntimeWarning)
+    loader = DataLoaderFNIRS()
 
     s1 = SubjectFNIRS()
-    s1.load_fif_file(fif_file)
+    s1.load_file(loader, fif_file)
     s1.set_best_ch_names(ch_list_s1)
 
     s2 = SubjectFNIRS()
-    s2.load_fif_file(fif_file)
+    s2.load_file(loader, fif_file)
     s2.set_best_ch_names(ch_list_s2)
 
     dyad = DyadFNIRS(s1, s2)
@@ -91,16 +106,6 @@ def test_download_demos():
     new_paths = loader.paths
     assert len(new_paths) == previous_count + 1
 
-def test_load_snirf():
-    s1 = SubjectFNIRS()
-    # The included snirf file has very short distances listed, smaller than threshold. Ignore them
-    # TODO: this is not clean, we should find why this file has such small distances
-    s1.ignore_distances = True
-    s1.load_snirf_file(snirf_file)
-    #s1.set_best_ch_names(['S1_D1 760'])
-    #s1.load_epochs(tmin=tmin, tmax=tmax, baseline=baseline)
-    #print(s1.epochs)
-    
 #def test_load_lionirs():
 
 

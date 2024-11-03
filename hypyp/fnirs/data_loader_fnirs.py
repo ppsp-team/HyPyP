@@ -18,6 +18,7 @@ class DataLoaderFNIRS:
         self.paths = [
             self.absolute_path(os.path.join('data')),
             self.absolute_path(os.path.join('data', 'fNIRS')),
+            DOWNLOADS_RELATIVE_PATH,
         ]
     
     def absolute_path(self, relative_path):
@@ -35,18 +36,24 @@ class DataLoaderFNIRS:
     def path_is_fif(self, path):
         return os.path.isfile(path) and path.endswith('.fif')
 
+    def path_is_snirf(self, path):
+        return os.path.isfile(path) and path.endswith('.snirf')
+
     def list_all_files(self):
         file_paths = []
         for root_path in self.paths:
             for path in Path(root_path).rglob('*'):
-                if self.path_is_nirx(str(path)):
+                if self.path_is_fif(str(path)):
                     file_paths.append(str(path.absolute()))
+
                 elif self.path_is_lionirs(str(path)):
                     file_paths.append(str(path.absolute()))
-                elif self.path_is_fif(str(path)):
+
+                elif self.path_is_nirx(str(path)):
                     file_paths.append(str(path.absolute()))
-                # TODO: non-raw fif file
-                # TODO: snirf file
+
+                elif self.path_is_snirf(str(path)):
+                    file_paths.append(str(path.absolute()))
 
         # remove duplicates
         unique = list(set(file_paths))
@@ -77,17 +84,33 @@ class DataLoaderFNIRS:
     
     # TODO should receive mne object
     def list_channels_for_file(self, path):
-        if self.path_is_nirx(path):
-            return mne.io.read_raw_nirx(fname=path).ch_names
         if self.path_is_fif(path):
             return mne.io.read_raw_fif(path).ch_names
+
+        if self.path_is_lionirs(path):
+            raise Exception('Not implemented yet')
+
+        if self.path_is_nirx(path):
+            return mne.io.read_raw_nirx(fname=path).ch_names
+
+        if self.path_is_snirf(path):
+            raise Exception('Not implemented yet')
+
         return []
     
     def get_mne_raw(self, path):
-        if self.path_is_nirx(path):
-            return mne.io.read_raw_nirx(fname=path)
         if self.path_is_fif(path):
             return mne.io.read_raw_fif(path, preload=True)
+
+        if self.path_is_lionirs(path):
+            raise Exception('Not implemented yet')
+
+        if self.path_is_nirx(path):
+            return mne.io.read_raw_nirx(fname=path, preload=True)
+
+        if self.path_is_snirf(path):
+            return mne.io.read_raw_snirf(path, preload=True)
+
         return None
     
     def get_mne_channel(self, file_path, channel_name):
