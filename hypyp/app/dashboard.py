@@ -15,6 +15,8 @@ import mne
 from hypyp.fnirs.pair_signals import PairSignals
 from hypyp.fnirs.data_loader_fnirs import DataLoaderFNIRS
 from hypyp.fnirs.subject_fnirs import SubjectFNIRS
+from hypyp.fnirs.preprocessors.dummy_preprocessor_fnirs import DummyPreprocessorFNIRS
+from hypyp.fnirs.preprocessors.mne_preprocessor_fnirs import MnePreprocessorFNIRS
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
@@ -26,9 +28,10 @@ import hypyp.plots
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 
 default_plot_signal_height = 150
+default_plot_mne_height = 1200
 
 HARDCODED_PRELOADED_EXTERNAL_PATH = "/media/patrice/My Passport/DataNIRS/"
-SAME_AS_SUBJECT_1 = 'Same as Subject 1'
+SAME_AS_SUBJECT_1_STR = 'Same as Subject 1'
 
 # This is to avoid having external windows launched
 matplotlib.use('Agg')
@@ -50,53 +53,7 @@ app_ui = ui.page_fluid(
             "Data Browser",
             ui.tags.h4(ui.output_text('text_s1_file_path')),
             ui.input_slider("input_s1_mne_duration_slider", "", min=0, max=100, value=[0, 20], width='100%'),
-            ui.navset_card_tab(  
-                ui.nav_panel(
-                    "Raw",
-                    ui.output_image('image_plot_s1_mne_raw'),
-                ),
-                ui.nav_panel(
-                    "Optical density",
-                    ui.output_image('image_plot_s1_mne_raw_od'),
-                ),
-                ui.nav_panel(
-                    "Optical density clean",
-                    ui.output_image('image_plot_s1_mne_raw_od_clean'),
-                ),
-                ui.nav_panel(
-                    "Hemoglobin",
-                    ui.output_image('image_plot_s1_mne_raw_haemo'),
-                ),
-                ui.nav_panel(
-                    "Hemoglobin Filtered",
-                    ui.output_image('image_plot_s1_mne_raw_haemo_filtered'),
-                ),
-                ui.nav_panel(
-                    "Raw PSD",
-                    ui.output_image('image_plot_s1_mne_raw_psd'),
-                ),
-                ui.nav_panel(
-                    "Optical Density PSD",
-                    ui.output_image('image_plot_s1_mne_od_clean_psd'),
-                ),
-                ui.nav_panel(
-                    "Hemoglobin PSD",
-                    ui.output_image('image_plot_s1_mne_raw_haemo_psd'),
-                ),
-                ui.nav_panel(
-                    "Hemoglobin Filtered PSD",
-                    ui.output_image('image_plot_s1_mne_raw_haemo_filtered_psd'),
-                ),
-                ui.nav_panel(
-                    "Signal quality",
-                    ui.row(
-                        ui.column(3),
-                        ui.column(6, ui.output_plot('plot_s1_mne_sci')),
-                        ui.column(3),
-                    ),
-                ),
-                #selected="Optical density",
-            ),
+            ui.output_ui('ui_preprocess_steps'),
         ),
         ui.nav_panel(
             "Choice of Signals",
@@ -347,7 +304,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         
     def get_signal_data_files_s2_path():
         value = input.signal_data_files_s2_path()
-        if value == SAME_AS_SUBJECT_1:
+        if value == SAME_AS_SUBJECT_1_STR:
             return input.signal_data_files_s1_path()
         return value
 
@@ -376,20 +333,21 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.calc()
     def get_subject1():
         loader = DataLoaderFNIRS()
-        return SubjectFNIRS().load_file(loader, get_signal_data_files_s1_path())
+        #return SubjectFNIRS().load_file(loader, get_signal_data_files_s1_path()).preprocess(DummyPreprocessorFNIRS())
+        return SubjectFNIRS().load_file(loader, get_signal_data_files_s1_path()).preprocess(MnePreprocessorFNIRS())
 
     @reactive.calc()
     def get_subject2():
         loader = DataLoaderFNIRS()
-        return SubjectFNIRS().load_file(loader, get_signal_data_files_s2_path())
+        return SubjectFNIRS().load_file(loader, get_signal_data_files_s2_path()).preprocess(MnePreprocessorFNIRS())
 
     @reactive.calc()
     def get_subject1_raw():
-        return getattr(get_subject1(), input.signal_data_files_analysis_property())
+        return get_subject1().get_preprocess_step(input.signal_data_files_analysis_property()).raw
 
     @reactive.calc()
     def get_subject2_raw():
-        return getattr(get_subject2(), input.signal_data_files_analysis_property())
+        return get_subject2().get_preprocess_step(input.signal_data_files_analysis_property()).raw
 
     def get_mne_raw_plot_kwargs(raw, duration_percent_range):
         range_start, range_end = duration_percent_range
@@ -411,6 +369,86 @@ def server(input: Inputs, output: Outputs, session: Session):
         temp_img_path = tempfile.NamedTemporaryFile(suffix=".png").name
         fig.savefig(temp_img_path)
         return {"src": temp_img_path, "alt": "MNE Plot"}
+
+    @render.ui
+    def ui_preprocess_steps():
+        nav_panels = []
+
+        subject = get_subject1()
+        # Need to wrap the plot function to have dynamic display in shiny.
+        # Because of order of execution, this cannot be directly in the loop
+        def get_plot_mne_figure(step: int):
+            def plot_mne_figure():
+                return mne_figure_as_image(step.raw.plot(**get_mne_raw_plot_kwargs(step.raw, input.input_s1_mne_duration_slider())))
+            # need to rename the function because every "output plot" must have a unique name
+            plot_mne_figure.__name__ = f'{plot_mne_figure.__name__}_{step.key}'
+            renderer = render.image(plot_mne_figure)
+            # This is needed to avoid having the scrollbar on the right
+            renderer._auto_output_ui_kwargs = dict(height=f'{default_plot_mne_height}px')
+            return renderer
+
+        for step in subject.preprocess_steps:
+            nav_panels.append(
+                ui.nav_panel(
+                    step.desc,
+                    get_plot_mne_figure(step),
+                    #height=1000
+                )
+            )
+        
+        return ui.navset_card_tab(*nav_panels)
+
+            
+            #ui.navset_card_tab(  
+            #    ui.nav_panel(
+            #        "Raw",
+            #        ui.output_image('image_plot_s1_mne_raw'),
+            #    ),
+            #    ui.nav_panel(
+            #        "Optical density",
+            #        ui.output_image('image_plot_s1_mne_raw_od'),
+            #    ),
+            #    ui.nav_panel(
+            #        "Optical density clean",
+            #        ui.output_image('image_plot_s1_mne_raw_od_clean'),
+            #    ),
+            #    ui.nav_panel(
+            #        "Hemoglobin",
+            #        ui.output_image('image_plot_s1_mne_raw_haemo'),
+            #    ),
+            #    ui.nav_panel(
+            #        "Hemoglobin Filtered",
+            #        ui.output_image('image_plot_s1_mne_raw_haemo_filtered'),
+            #    ),
+            #    ui.nav_panel(
+            #        "Raw PSD",
+            #        ui.output_image('image_plot_s1_mne_raw_psd'),
+            #    ),
+            #    ui.nav_panel(
+            #        "Optical Density PSD",
+            #        ui.output_image('image_plot_s1_mne_od_clean_psd'),
+            #    ),
+            #    ui.nav_panel(
+            #        "Hemoglobin PSD",
+            #        ui.output_image('image_plot_s1_mne_raw_haemo_psd'),
+            #    ),
+            #    ui.nav_panel(
+            #        "Hemoglobin Filtered PSD",
+            #        ui.output_image('image_plot_s1_mne_raw_haemo_filtered_psd'),
+            #    ),
+            #    ui.nav_panel(
+            #        "Signal quality",
+            #        ui.row(
+            #            ui.column(3),
+            #            ui.column(6, ui.output_plot('plot_s1_mne_sci')),
+            #            ui.column(3),
+            #        ),
+            #    ),
+            #    #selected="Optical density",
+            #),
+            
+        
+    
 
     @render.image
     def image_plot_s1_mne_raw():
@@ -492,7 +530,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             choices.append(ui_option_row("Subject 2 file", ui.input_select(
                 "signal_data_files_s2_path",
                 "",
-                choices=[SAME_AS_SUBJECT_1] + loader.list_all_files(),
+                choices=[SAME_AS_SUBJECT_1_STR] + loader.list_all_files(),
             )))
         
         return choices
@@ -540,18 +578,16 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.input_select(
                     "signal_data_files_s1_channel",
                     "",
-                    # use the property directly to avoid having the channel selection being reset when we change analysis property
-                    #choices=get_subject1().raw_haemo.ch_names,
-                    choices=getattr(get_subject1(), list(get_subject1().get_analysis_properties().keys())[0]).ch_names
+                    choices=get_subject1().pre.ch_names
                 )
+                
             ))
             options.append(ui_option_row(
                 "Subject 2 channel",
                 ui.input_select(
                     "signal_data_files_s2_channel",
                     "",
-                    #choices=get_subject2().raw_haemo.ch_names,
-                    choices=getattr(get_subject2(), list(get_subject2().get_analysis_properties().keys())[0]).ch_names
+                    choices=get_subject2().pre.ch_names
                 )
             ))
 

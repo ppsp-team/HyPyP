@@ -1,90 +1,68 @@
 from typing import List, Tuple
-from itertools import compress
 from enum import Enum
 
 import numpy as np
 import mne
 import itertools as itertools
 
-from hypyp.fnirs.data_loader_fnirs import DataLoaderFNIRS
+from .data_loader_fnirs import DataLoaderFNIRS
+from .preprocessors.base_preprocessor_fnirs import BasePreprocessorFNIRS, PreprocessStep
 
 class SubjectFNIRS:
     def __init__(self):
         self.filepath: str | None
-        self.raw: mne.io.Raw
-        self.raw_od: mne.io.Raw
-        self.raw_od_clean: mne.io.Raw
-        self.quality_sci: np.ndarray
+        self.raw: mne.io.Raw = None
+        self.preprocess_steps: List[PreprocessStep] = None
+
         self.best_ch_names: List[str] | None
         self.events: any # we should know what type this is
         self.epochs: mne.Epochs
-        self.ignore_distances = True
+
+    def _assert_is_preprocessed(self):
+        if not self.is_preprocessed:
+            raise RuntimeError('Subject is not preprocessed')
+
+    @property
+    def is_preprocessed(self) -> bool:
+        return self.preprocess_steps is not None
+    
+    @property
+    def pre(self) -> mne.io.Raw:
+        self._assert_is_preprocessed()
+        # We want the last step of all the preprocessing
+        return self.preprocess_steps[-1].raw
 
     def load_file(self, loader: DataLoaderFNIRS, filepath: str):
         self.filepath = filepath        
         self.raw = loader.get_mne_raw(filepath)
-        self.preprocess()
         return self
     
+    def preprocess(self, preprocessor: BasePreprocessorFNIRS):
+        self.preprocess_steps = preprocessor.run(self.raw)
+        return self
+
     def get_analysis_properties(self):
-        if hasattr(self, 'raw_haemo'):
-            return {
-                'raw_haemo_filtered': 'Hemoglobin filtered',
-                'raw_haemo': 'Hemoglobin',
-                # Don't use them because they have different channel names
-                #'raw_od_clean': 'Raw optical density cleaned',
-                #'raw': 'Raw',
-            }
-        
-        return {
-            'raw': 'Raw',
-        }
+        self._assert_is_preprocessed()
+        ret = dict()
+        for i in range(len(self.preprocess_steps)-1, -1, -1):
+            step = self.preprocess_steps[i]
+            ret[step.key] = step.desc
+        return ret
     
-    def get_ch_names_for_property(self, property_name):
-        if property_name.startswith('raw_haemo'):
-            return self.raw_haemo.ch_names
-        return self.raw.ch_names
-        
-    def preprocess(self):
-        picks = mne.pick_types(self.raw.info, meg=False, fnirs=True)
+    def get_preprocess_step(self, key):
+        self._assert_is_preprocessed()
+        for step in self.preprocess_steps:
+            if step.key == key:
+                return step
 
-        # TODO: it seems that .snirf files have a different measurement unit
-        if not self.ignore_distances:
-            dists = mne.preprocessing.nirs.source_detector_distances(self.raw.info, picks=picks)
-            self.raw.pick(picks[dists > 0.01])
-
-        haemo_picks = mne.pick_types(self.raw.info, fnirs=['hbo', 'hbr'])
-
-        # If we have haemo_picks, it means it is already preprocessed
-        # TODO: this code flow if confusing
-        if len(haemo_picks) > 0:
-            self.raw_haemo = self.raw.copy().pick(haemo_picks)
-        else:
-            try:
-                self.raw_od = mne.preprocessing.nirs.optical_density(self.raw)
-                self.quality_sci = mne.preprocessing.nirs.scalp_coupling_index(self.raw_od)
-                self.raw_od.info['bads'] = list(compress(self.raw_od.ch_names, self.quality_sci < 0.1))
-                picks = mne.pick_types(self.raw_od.info, meg=False, fnirs=True, exclude='bads')
-                self.raw_od_clean = self.raw_od.copy().pick(picks)
-                # TODO: see if we want to expose parameters here
-                self.raw_haemo = mne.preprocessing.nirs.beer_lambert_law(self.raw_od_clean, ppf=0.1)
-            except:
-                # Need a try catch because some loaded data might not have all the required info
-                # TODO: see to have a real handling here
-                print('Failed to preprocess')
-
-        # TODO: have these parameters exposed?
-        if hasattr(self, 'raw_haemo'):
-            self.raw_haemo_filtered = self.raw_haemo.copy().filter(
-                0.05,
-                0.7,
-                h_trans_bandwidth=0.2,
-                l_trans_bandwidth=0.02)
-
+        raise RuntimeError(f'No preprocess step named "{key}"')
+    
+    # TODO: remove this
     def set_best_ch_names(self, ch_names):
         self.best_ch_names = ch_names
         return self
     
+    # TODO: check if we still want this
     def load_epochs(self, tmin: int, tmax: int, baseline: Tuple[int, int]):
         if self.raw is None:
             raise RuntimeError('Must load raw data first')
