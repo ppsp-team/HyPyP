@@ -325,21 +325,24 @@ def server(input: Inputs, output: Outputs, session: Session):
     def text_info_s2_file_path():
         return f"File: {get_signal_data_files_s2_path()}"
 
+    def get_preprocessor():
+        if input.subject_preprocessor() == 'mne':
+            return MnePreprocessorFNIRS()
+        if input.subject_preprocessor() == 'dummy':
+            return DummyPreprocessorFNIRS()
+        #if input.subject_preprocessor() == 'cedalion':
+        #    return CedalionPreprocessorFNIRS()
+
     def get_data_loader():
-        loader = DataLoaderFNIRS()
-        loader.add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
-        return loader
+        return DataLoaderFNIRS().add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
 
     @reactive.calc()
     def get_subject1():
-        loader = DataLoaderFNIRS()
-        #return SubjectFNIRS().load_file(loader, get_signal_data_files_s1_path()).preprocess(DummyPreprocessorFNIRS())
-        return SubjectFNIRS().load_file(loader, get_signal_data_files_s1_path()).preprocess(MnePreprocessorFNIRS())
+        return SubjectFNIRS().load_file(DataLoaderFNIRS(), get_signal_data_files_s1_path()).preprocess(get_preprocessor())
 
     @reactive.calc()
     def get_subject2():
-        loader = DataLoaderFNIRS()
-        return SubjectFNIRS().load_file(loader, get_signal_data_files_s2_path()).preprocess(MnePreprocessorFNIRS())
+        return SubjectFNIRS().load_file(DataLoaderFNIRS(), get_signal_data_files_s2_path()).preprocess(get_preprocessor())
 
     @reactive.calc()
     def get_subject1_raw():
@@ -372,12 +375,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @render.ui
     def ui_preprocess_steps():
-        nav_panels = []
-
-        subject = get_subject1()
         # Need to wrap the plot function to have dynamic display in shiny.
         # Because of order of execution, this cannot be directly in the loop
-        def get_plot_mne_figure(step: int):
+        def bind_plot_mne_figure(step: int):
             def plot_mne_figure():
                 return mne_figure_as_image(step.raw.plot(**get_mne_raw_plot_kwargs(step.raw, input.input_s1_mne_duration_slider())))
             # need to rename the function because every "output plot" must have a unique name
@@ -387,110 +387,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             renderer._auto_output_ui_kwargs = dict(height=f'{default_plot_mne_height}px')
             return renderer
 
+        nav_panels = []
+        subject = get_subject1()
         for step in subject.preprocess_steps:
-            nav_panels.append(
-                ui.nav_panel(
-                    step.desc,
-                    get_plot_mne_figure(step),
-                    #height=1000
-                )
-            )
-        
-        return ui.navset_card_tab(*nav_panels)
+            nav_panels.append(ui.nav_panel(step.desc, bind_plot_mne_figure(step)))
 
-            
-            #ui.navset_card_tab(  
-            #    ui.nav_panel(
-            #        "Raw",
-            #        ui.output_image('image_plot_s1_mne_raw'),
-            #    ),
-            #    ui.nav_panel(
-            #        "Optical density",
-            #        ui.output_image('image_plot_s1_mne_raw_od'),
-            #    ),
-            #    ui.nav_panel(
-            #        "Optical density clean",
-            #        ui.output_image('image_plot_s1_mne_raw_od_clean'),
-            #    ),
-            #    ui.nav_panel(
-            #        "Hemoglobin",
-            #        ui.output_image('image_plot_s1_mne_raw_haemo'),
-            #    ),
-            #    ui.nav_panel(
-            #        "Hemoglobin Filtered",
-            #        ui.output_image('image_plot_s1_mne_raw_haemo_filtered'),
-            #    ),
-            #    ui.nav_panel(
-            #        "Raw PSD",
-            #        ui.output_image('image_plot_s1_mne_raw_psd'),
-            #    ),
-            #    ui.nav_panel(
-            #        "Optical Density PSD",
-            #        ui.output_image('image_plot_s1_mne_od_clean_psd'),
-            #    ),
-            #    ui.nav_panel(
-            #        "Hemoglobin PSD",
-            #        ui.output_image('image_plot_s1_mne_raw_haemo_psd'),
-            #    ),
-            #    ui.nav_panel(
-            #        "Hemoglobin Filtered PSD",
-            #        ui.output_image('image_plot_s1_mne_raw_haemo_filtered_psd'),
-            #    ),
-            #    ui.nav_panel(
-            #        "Signal quality",
-            #        ui.row(
-            #            ui.column(3),
-            #            ui.column(6, ui.output_plot('plot_s1_mne_sci')),
-            #            ui.column(3),
-            #        ),
-            #    ),
-            #    #selected="Optical density",
-            #),
-            
-        
-    
+        return ui.navset_card_tab(*nav_panels, selected=subject.preprocess_steps[-1].desc)
 
-    @render.image
-    def image_plot_s1_mne_raw():
-        subject = get_subject1()
-        return mne_figure_as_image(subject.raw.plot(**get_mne_raw_plot_kwargs(subject.raw, input.input_s1_mne_duration_slider())))
-
-    @render.image
-    def image_plot_s1_mne_raw_psd():
-        return mne_figure_as_image(get_subject1().raw.compute_psd().plot())
-
-    @render.image
-    def image_plot_s1_mne_raw_od():
-        subject = get_subject1()
-        return mne_figure_as_image(subject.raw_od.plot(**get_mne_raw_plot_kwargs(subject.raw_od, input.input_s1_mne_duration_slider())))
-
-    @render.image
-    def image_plot_s1_mne_raw_od_clean():
-        subject = get_subject1()
-        return mne_figure_as_image(subject.raw_od_clean.plot(**get_mne_raw_plot_kwargs(subject.raw_od_clean, input.input_s1_mne_duration_slider())))
-    
-    @render.image
-    def image_plot_s1_mne_od_clean_psd():
-        return mne_figure_as_image(get_subject1().raw_od_clean.compute_psd().plot())
-    
-    @render.image
-    def image_plot_s1_mne_raw_haemo():
-        subject = get_subject1()
-        return mne_figure_as_image(subject.raw_haemo.plot(**get_mne_raw_plot_kwargs(subject.raw_haemo, input.input_s1_mne_duration_slider()), theme="light"))
-    
-    @render.image
-    def image_plot_s1_mne_raw_haemo_psd():
-        return mne_figure_as_image(get_subject1().raw_haemo.compute_psd().plot())
-    
-    @render.image
-    def image_plot_s1_mne_raw_haemo_filtered():
-        subject = get_subject1()
-        return mne_figure_as_image(subject.raw_haemo_filtered.plot(**get_mne_raw_plot_kwargs(subject.raw_haemo_filtered, input.input_s1_mne_duration_slider()), theme="light"))
-    
-    @render.image
-    def image_plot_s1_mne_raw_haemo_filtered_psd():
-        return mne_figure_as_image(get_subject1().raw_haemo_filtered.compute_psd().plot())
-    
     @render.plot
     def plot_s1_mne_sci():
         subject = get_subject1()
@@ -531,6 +434,15 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "signal_data_files_s2_path",
                 "",
                 choices=[SAME_AS_SUBJECT_1_STR] + loader.list_all_files(),
+            )))
+            choices.append(ui_option_row("Preprocessor", ui.input_select(
+                "subject_preprocessor",
+                "",
+                choices={
+                    'mne': 'MNE (basic fNIRS preprocessing)',
+                    'dummy': 'None (data already preprocessed)',
+                    'cedalion': 'cedalion',
+                }
             )))
         
         return choices
@@ -637,6 +549,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.plot(xf, 2.0/N * np.abs(yf2[0:N//2]))
         ax.set_xscale('log')
         ax.set_yscale('log')
+        ax.title.set_text('Spectrum')
         ax.grid()
         return fig
 
@@ -691,7 +604,6 @@ def server(input: Inputs, output: Outputs, session: Session):
     def plot_wtc_at_time():
         fig, ax = plt.subplots()
 
-        dyad = get_signals()
         wtc_res  = compute_coherence()
 
         if input.display_wtc_frequencies_at_time() is None:
@@ -699,7 +611,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             roi = wtc_res.wtc * (wtc_res.wtc > wtc_res.coif[np.newaxis, :]).astype(int)
             col = np.argmax(np.sum(roi, axis=0))
         else:
-            col = int(input.display_wtc_frequencies_at_time() / dyad.dt)
+            col = int(input.display_wtc_frequencies_at_time() / wtc_res.dt)
             
         ax.plot(wtc_res.frequencies, wtc_res.wtc[:,col])
         ax.title.set_text(f'Coherence at t={wtc_res.times[col]:.1f} (max found: {wtc_res.frequencies[np.argmax(wtc_res.wtc[:,col])]:.2f}Hz)')

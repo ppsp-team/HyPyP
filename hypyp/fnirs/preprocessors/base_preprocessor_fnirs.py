@@ -16,7 +16,7 @@ PREPROCESS_STEP_HAEMO_KEY = 'haemo'
 PREPROCESS_STEP_HAEMO_DESC = 'Hemoglobin'
 
 PREPROCESS_STEP_HAEMO_FILTERED_KEY = 'haemo_filtered'
-PREPROCESS_STEP_HAEMO_FILTERED_DESC = 'Hemoglobin Filtered'
+PREPROCESS_STEP_HAEMO_FILTERED_DESC = 'Hemoglobin Band-pass Filtered'
 
 class PreprocessStep:
     def __init__(self, raw: mne.io.Raw, key: str, desc: str = '', tracer: dict = None):

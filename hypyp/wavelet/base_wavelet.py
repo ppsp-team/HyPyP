@@ -9,6 +9,7 @@ class CWT:
     def __init__(self, weights, times, scales, frequencies, coif, tracer=None):
         self.W: np.ndarray = weights
         self.times: np.ndarray = times
+        self.dt = times[1] - times[0]
         self.scales: np.ndarray = scales
         self.frequencies: np.ndarray = frequencies
         self.coi: np.ndarray = 1 / coif # Cone of influence, in scales

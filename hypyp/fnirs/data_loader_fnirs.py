@@ -26,6 +26,7 @@ class DataLoaderFNIRS:
 
     def add_source(self, path):
         self.paths.append(path)
+        return self
 
     def path_is_nirx(self, path):
         return os.path.isfile(path) and path.endswith('.hdr')
