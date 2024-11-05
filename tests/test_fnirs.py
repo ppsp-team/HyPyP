@@ -94,21 +94,27 @@ def test_mne_preprocessor():
     assert subject.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
     assert subject.preprocess_steps[-1].key == PREPROCESS_STEP_HAEMO_FILTERED_KEY
     assert subject.pre is not None
-    assert list(subject.get_analysis_properties().keys())[0] == subject.preprocess_steps[-1].key
+    assert subject.preprocess_step_keys[0] == subject.preprocess_steps[-1].key
 
     # can get step by key
     assert subject.get_preprocess_step(PREPROCESS_STEP_BASE_KEY).key == PREPROCESS_STEP_BASE_KEY
     assert subject.get_preprocess_step(PREPROCESS_STEP_HAEMO_FILTERED_KEY).key == PREPROCESS_STEP_HAEMO_FILTERED_KEY
 
-def test_pipeline():
-    loader = DataLoaderFNIRS()
+def test_subject_dyad():
     # Use the same file for the 2 subjects
-    dyad = DyadFNIRS(
-        SubjectFNIRS().load_file(loader, snirf_file1), 
-        SubjectFNIRS().load_file(loader, snirf_file1))
-    
-    # TODO add the pipeline related stuff
-    
+    subject = SubjectFNIRS().load_file(DataLoaderFNIRS(), snirf_file1)
+    dyad = DyadFNIRS(subject, subject)
+    assert dyad.is_preprocessed == False
+
+    dyad.preprocess(DummyPreprocessorFNIRS())
+    assert dyad.is_preprocessed == True
+
+    pairs = dyad.get_pairs()
+    n_channels = len(subject.pre.ch_names)
+    assert len(pairs) == n_channels * n_channels
+    assert pairs[0].label is not None
+    assert pairs[0].ch_name1 == subject.pre.ch_names[0]
+    assert pairs[0].ch_name2 == subject.pre.ch_names[0]
     
 def test_list_paths():
     loader = DataLoaderFNIRS()
@@ -128,40 +134,6 @@ def test_list_files():
     assert len(loader.list_fif_files()) > 0
     # path should be absolute
     assert loader.list_fif_files()[0].startswith('/')
-    
-
-# TODO: check if we still want this feature
-def test_epochs():
-    # filename does not end with _raw.fif
-    # ignore the warning
-    warnings.filterwarnings("ignore", category=RuntimeWarning)
-    loader = DataLoaderFNIRS()
-
-    s1 = SubjectFNIRS()
-    s1.load_file(loader, fif_file)
-    s1.set_best_ch_names(ch_list_s1)
-
-    s2 = SubjectFNIRS()
-    s2.load_file(loader, fif_file)
-    s2.set_best_ch_names(ch_list_s2)
-
-    dyad = DyadFNIRS(s1, s2)
-    assert dyad.s1 is not None
-    assert dyad.s2 is not None
-
-    dyad.load_epochs(tmin, tmax, baseline)
-
-    assert dyad.s1.events is not None
-    assert dyad.s1.event_dict is not None
-    assert dyad.s1.epochs is not None
-    assert len(dyad.s1.epochs.ch_names) == len(ch_list_s1)
-
-    assert dyad.s2.events is not None
-    assert dyad.s2.event_dict is not None
-    assert dyad.s2.epochs is not None
-    assert len(dyad.s2.epochs.ch_names) == len(ch_list_s2)
-
-    
 
     
 # Skip this test because it downloads data. We don't want this on the CI

@@ -14,10 +14,6 @@ class SubjectFNIRS:
         self.raw: mne.io.Raw = None
         self.preprocess_steps: List[PreprocessStep] = None
 
-        self.best_ch_names: List[str] | None
-        self.events: any # we should know what type this is
-        self.epochs: mne.Epochs
-
     def _assert_is_preprocessed(self):
         if not self.is_preprocessed:
             raise RuntimeError('Subject is not preprocessed')
@@ -32,6 +28,24 @@ class SubjectFNIRS:
         # We want the last step of all the preprocessing
         return self.preprocess_steps[-1].raw
 
+    @property
+    def preprocess_step_keys(self):
+        self._assert_is_preprocessed()
+        # get in the reverse order so that the last step is first in list
+        keys = []
+        for i in range(len(self.preprocess_steps)-1, -1, -1):
+            keys.append(self.preprocess_steps[i].key)
+        return keys
+
+    @property
+    def preprocess_step_choices(self):
+        self._assert_is_preprocessed()
+        steps_dict = dict()
+        for i in range(len(self.preprocess_steps)-1, -1, -1):
+            step = self.preprocess_steps[i]
+            steps_dict[step.key] = step.desc
+        return steps_dict
+    
     def load_file(self, loader: DataLoaderFNIRS, filepath: str):
         self.filepath = filepath        
         self.raw = loader.get_mne_raw(filepath)
@@ -41,14 +55,6 @@ class SubjectFNIRS:
         self.preprocess_steps = preprocessor.run(self.raw)
         return self
 
-    def get_analysis_properties(self):
-        self._assert_is_preprocessed()
-        ret = dict()
-        for i in range(len(self.preprocess_steps)-1, -1, -1):
-            step = self.preprocess_steps[i]
-            ret[step.key] = step.desc
-        return ret
-    
     def get_preprocess_step(self, key):
         self._assert_is_preprocessed()
         for step in self.preprocess_steps:
@@ -56,29 +62,3 @@ class SubjectFNIRS:
                 return step
 
         raise RuntimeError(f'No preprocess step named "{key}"')
-    
-    # TODO: remove this
-    def set_best_ch_names(self, ch_names):
-        self.best_ch_names = ch_names
-        return self
-    
-    # TODO: check if we still want this
-    def load_epochs(self, tmin: int, tmax: int, baseline: Tuple[int, int]):
-        if self.raw is None:
-            raise RuntimeError('Must load raw data first')
-
-        if self.best_ch_names is None:
-            raise RuntimeError('No "best channels" has been set')
-
-        ch_picks = mne.pick_channels(self.raw.ch_names, include = self.best_ch_names)
-        best_channels = self.raw.copy().pick(ch_picks)
-        self.events, self.event_dict = mne.events_from_annotations(best_channels)
-        self.epochs = mne.Epochs(
-            best_channels,
-            self.events,
-            event_id = self.event_dict,
-            tmin = tmin,
-            tmax = tmax,
-            baseline = baseline,
-            reject_by_annotation=False)
-        return self

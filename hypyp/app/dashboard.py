@@ -30,7 +30,7 @@ from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 default_plot_signal_height = 150
 default_plot_mne_height = 1200
 
-HARDCODED_PRELOADED_EXTERNAL_PATH = "/media/patrice/My Passport/DataNIRS/"
+HARDCODED_PRELOADED_EXTERNAL_PATH = "/media/patrice/My Passport/"
 SAME_AS_SUBJECT_1_STR = 'Same as Subject 1'
 
 # This is to avoid having external windows launched
@@ -187,7 +187,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def get_signals() -> PairSignals:
         info_table1 = []
         info_table2 = []
-        dyad = None
+        pair = None
         if input.signal_type() == 'testing':
             fs = input.signal_sampling_frequency()
             N = input.signal_n()
@@ -243,16 +243,16 @@ def server(input: Inputs, output: Outputs, session: Session):
             info_table1 = [(k, s1_raw.info[k]) for k in s1_raw.info.keys()]
             info_table2 = [(k, s2_raw.info[k]) for k in s2_raw.info.keys()]
 
-        if dyad is None:
-            dyad = PairSignals(x, y1, y2, info_table1, info_table2)
+        if pair is None:
+            pair = PairSignals(x, y1, y2, info_table1, info_table2)
 
         try:
             if input.signal_range() is not None:
-                return dyad.sub_hundred(input.signal_range())
+                return pair.sub_hundred(input.signal_range())
         except:
             pass
         
-        return dyad
+        return pair
 
     @reactive.calc()
     def get_wavelet():
@@ -296,8 +296,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @reactive.event(input.button_action_compute_wtc)
     def compute_coherence():
-        dyad = get_signals()
-        return get_wavelet().wtc(dyad.y1, dyad.y2, dyad.dt)
+        pair = get_signals()
+        return get_wavelet().wtc(pair.y1, pair.y2, pair.dt)
 
     def get_signal_data_files_s1_path():
         return input.signal_data_files_s1_path()
@@ -456,7 +456,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.input_select(
                     "signal_data_files_analysis_property",
                     "",
-                    choices=get_subject1().get_analysis_properties(),
+                    choices=get_subject1().preprocess_step_choices,
                 )
             ))
         return options
@@ -518,12 +518,12 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.plot(height=default_plot_signal_height)
     def plot_signals():
         fig, ax = plt.subplots()
-        dyad = get_signals()
+        pair = get_signals()
         offset = 0
         if input.display_signal_offset_y():
-            offset = np.mean(np.abs(dyad.y1)) + np.mean(np.abs(dyad.y2))
-        ax.plot(dyad.x, dyad.y1 + offset)
-        ax.plot(dyad.x, dyad.y2 - offset)
+            offset = np.mean(np.abs(pair.y1)) + np.mean(np.abs(pair.y2))
+        ax.plot(pair.x, pair.y1 + offset)
+        ax.plot(pair.x, pair.y2 - offset)
         return fig
     
     @render.table
@@ -538,12 +538,12 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.plot(height=default_plot_signal_height)
     def plot_signals_spectrum():
         fig, ax = plt.subplots()
-        dyad = get_signals()
-        N = dyad.n
+        pair = get_signals()
+        N = pair.n
 
-        yf = fft.fft(dyad.y1)
-        xf = fft.fftfreq(N, dyad.dt)[:N//2]
-        yf2 = fft.fft(dyad.y2)
+        yf = fft.fft(pair.y1)
+        xf = fft.fftfreq(N, pair.dt)[:N//2]
+        yf2 = fft.fft(pair.y2)
 
         ax.plot(xf, 2.0/N * np.abs(yf[0:N//2]))
         ax.plot(xf, 2.0/N * np.abs(yf2[0:N//2]))
