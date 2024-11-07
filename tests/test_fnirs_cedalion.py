@@ -4,15 +4,14 @@ import xarray as xr
 import cedalion
 
 from hypyp.fnirs.preprocessors.base_preprocessor_fnirs import PREPROCESS_STEP_BASE_KEY
-from hypyp.fnirs.preprocessors.cedalion_preprocessor_fnirs import CedalionDataLoaderFNIRS, CedalionPreprocessorFNIRS
+from hypyp.fnirs.preprocessors.cedalion_preprocessor_fnirs import CedalionPreprocessorFNIRS
 
 snirf_file = './data/fNIRS/DCARE_02_sub1.snirf'
 
 def test_cedalion_preprocessor():
-    loader = CedalionDataLoaderFNIRS()
     preprocessor = CedalionPreprocessorFNIRS()
 
-    steps = preprocessor.run(loader.read_file(snirf_file))
+    steps = preprocessor.run(preprocessor.read_file(snirf_file))
     step = steps[0]
     assert step.key == PREPROCESS_STEP_BASE_KEY
     assert isinstance(step.obj, xr.DataArray)

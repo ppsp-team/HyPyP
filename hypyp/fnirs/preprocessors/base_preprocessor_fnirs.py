@@ -53,6 +53,10 @@ class BasePreprocessStep(ABC, Generic[T]):
 
 class BasePreprocessorFNIRS(ABC, Generic[T]):
     @abstractmethod
+    def read_file(self, path: str) -> T:
+        pass
+
+    @abstractmethod
     def run(self, raw: T) -> List[BasePreprocessStep[T]]:
         pass
 

@@ -1,7 +1,10 @@
 from itertools import compress
 
+import numpy as np
 import mne
+import scipy.io
 
+from ..data_loader_fnirs import DataBrowserFNIRS
 from .base_preprocessor_fnirs import *
 
 class MnePreprocessStep(BasePreprocessStep[mne.io.Raw]):
@@ -23,6 +26,49 @@ class MnePreprocessStep(BasePreprocessStep[mne.io.Raw]):
 class MnePreprocessorFNIRS(BasePreprocessorFNIRS[mne.io.Raw]):
     def __init__(self):
         super().__init__()
+    
+    def get_nirs_ch_names(self, meas_list, lambdas):
+        ret = []
+        for s, d, _, lmbda in meas_list:
+            ret.append(f"S{s}_D{d} {lambdas[lmbda-1][0]}")
+        return ret
+            
+    def get_info_nirs(self, x, mat):
+        sfreq = 1 / (x[1] - x[0])
+        n_channels = mat['d'].shape[1]
+        info = mne.create_info(
+            self.get_nirs_ch_names(mat['SD'][0,0][0], mat['SD'][0,0][1]),
+            sfreq,
+            ch_types=['fnirs_cw_amplitude']*n_channels)
+        return info
+        
+    
+    def read_file(self, path):
+        if DataBrowserFNIRS.path_is_fif(path):
+            return mne.io.read_raw_fif(path, preload=True)
+
+        if DataBrowserFNIRS.path_is_nirs(path):
+            mat = scipy.io.loadmat(path)
+            x = mat['t'].flatten().astype(np.float64, copy=True)
+            n_channels = mat['d'].shape[1]
+            data = np.zeros((n_channels, len(x)))
+            for i in range(n_channels):
+                data[i, :] = mat['d'][:, i].flatten().astype(np.complex128, copy=True)
+
+            info = self.get_info_nirs(x, mat)
+            return mne.io.RawArray(data, info)
+
+        if DataBrowserFNIRS.path_is_nirx(path):
+            return mne.io.read_raw_nirx(fname=path, preload=True)
+
+        if DataBrowserFNIRS.path_is_snirf(path):
+            return mne.io.read_raw_snirf(path, preload=True)
+
+        return None
+    
+    def get_mne_channel(self, file_path, channel_name):
+        s = self.read_file(file_path)
+        return s.copy().pick(mne.pick_channels(s.ch_names, include = [channel_name]))
     
     def run(self, raw: mne.io.Raw):
         steps = []

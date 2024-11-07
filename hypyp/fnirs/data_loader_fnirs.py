@@ -4,7 +4,6 @@ from zipfile import ZipFile
 
 import pooch
 import numpy as np
-import mne
 import scipy.io
 
 from .pair_signals import PairSignals
@@ -12,7 +11,7 @@ from .pair_signals import PairSignals
 DOWNLOADS_RELATIVE_PATH = os.path.join('data', 'fNIRS', 'downloads')
 
 
-class DataLoaderFNIRS:
+class DataBrowserFNIRS:
     def __init__(self):
         self.absolute_root_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.paths = [
@@ -28,32 +27,36 @@ class DataLoaderFNIRS:
         self.paths.append(path)
         return self
 
-    def path_is_nirx(self, path):
+    @staticmethod
+    def path_is_nirx(path):
         return os.path.isfile(path) and path.endswith('.hdr')
 
-    def path_is_nirs(self, path):
+    @staticmethod
+    def path_is_nirs(path):
         return os.path.isfile(path) and path.endswith('.nirs')
 
-    def path_is_fif(self, path):
+    @staticmethod
+    def path_is_fif(path):
         return os.path.isfile(path) and path.endswith('.fif')
 
-    def path_is_snirf(self, path):
+    @staticmethod
+    def path_is_snirf(path):
         return os.path.isfile(path) and path.endswith('.snirf')
 
     def list_all_files(self):
         file_paths = []
         for root_path in self.paths:
             for path in Path(root_path).rglob('*'):
-                if self.path_is_fif(str(path)):
+                if DataBrowserFNIRS.path_is_fif(str(path)):
                     file_paths.append(str(path.absolute()))
 
-                elif self.path_is_nirs(str(path)):
+                elif DataBrowserFNIRS.path_is_nirs(str(path)):
                     file_paths.append(str(path.absolute()))
 
-                elif self.path_is_nirx(str(path)):
+                elif DataBrowserFNIRS.path_is_nirx(str(path)):
                     file_paths.append(str(path.absolute()))
 
-                elif self.path_is_snirf(str(path)):
+                elif DataBrowserFNIRS.path_is_snirf(str(path)):
                     file_paths.append(str(path.absolute()))
 
         # remove duplicates
@@ -61,9 +64,6 @@ class DataLoaderFNIRS:
         unique.sort()
         return unique
 
-    def list_fif_files(self):
-        return [f for f in self.list_all_files() if f.endswith('.fif')]
-    
     def download_demo_dataset(self):
         extract_path = self.absolute_path(DOWNLOADS_RELATIVE_PATH)
         zip_path = pooch.retrieve(
@@ -82,65 +82,6 @@ class DataLoaderFNIRS:
 
         self.add_source(target_path)
         return target_path
-    
-    # TODO should receive mne object
-    def list_channels_for_file(self, path):
-        if self.path_is_fif(path):
-            return mne.io.read_raw_fif(path).ch_names
-
-        if self.path_is_nirs(path):
-            raise Exception('Not implemented yet')
-
-        if self.path_is_nirx(path):
-            return mne.io.read_raw_nirx(fname=path).ch_names
-
-        if self.path_is_snirf(path):
-            raise Exception('Not implemented yet')
-
-        return []
-    
-    def get_nirs_ch_names(self, meas_list, lambdas):
-        ret = []
-        for s, d, _, lmbda in meas_list:
-            ret.append(f"S{s}_D{d} {lambdas[lmbda-1][0]}")
-        return ret
-            
-    def get_info_nirs(self, x, mat):
-        sfreq = 1 / (x[1] - x[0])
-        n_channels = mat['d'].shape[1]
-        info = mne.create_info(
-            self.get_nirs_ch_names(mat['SD'][0,0][0], mat['SD'][0,0][1]),
-            sfreq,
-            ch_types=['fnirs_cw_amplitude']*n_channels)
-        return info
-        
-    
-    def read_file(self, path):
-        if self.path_is_fif(path):
-            return mne.io.read_raw_fif(path, preload=True)
-
-        if self.path_is_nirs(path):
-            mat = scipy.io.loadmat(path)
-            x = mat['t'].flatten().astype(np.float64, copy=True)
-            n_channels = mat['d'].shape[1]
-            data = np.zeros((n_channels, len(x)))
-            for i in range(n_channels):
-                data[i, :] = mat['d'][:, i].flatten().astype(np.complex128, copy=True)
-
-            info = self.get_info_nirs(x, mat)
-            return mne.io.RawArray(data, info)
-
-        if self.path_is_nirx(path):
-            return mne.io.read_raw_nirx(fname=path, preload=True)
-
-        if self.path_is_snirf(path):
-            return mne.io.read_raw_snirf(path, preload=True)
-
-        return None
-    
-    def get_mne_channel(self, file_path, channel_name):
-        s = self.read_file(file_path)
-        return s.copy().pick(mne.pick_channels(s.ch_names, include = [channel_name]))
     
     def read_two_signals_from_mat_obj(self, mat, id1, id2):
         x = mat['t'].flatten().astype(np.float64, copy=True)

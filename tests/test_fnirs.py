@@ -7,7 +7,7 @@ import mne
 
 from hypyp.fnirs.subject_fnirs import SubjectFNIRS
 from hypyp.fnirs.dyad_fnirs import DyadFNIRS
-from hypyp.fnirs.data_loader_fnirs import DataLoaderFNIRS
+from hypyp.fnirs.data_loader_fnirs import DataBrowserFNIRS
 from hypyp.fnirs.preprocessors.base_preprocessor_fnirs import PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_HAEMO_FILTERED_KEY
 from hypyp.fnirs.preprocessors.mne_preprocessor_fnirs import MnePreprocessStep, MnePreprocessorFNIRS, DummyPreprocessorFNIRS
 
@@ -27,11 +27,38 @@ fnirs_files = [fif_file, snirf_file1, snirf_file2]
 # avoid all the output from mne
 logging.disable()
 
+#
+# Data Browser
+#
+def test_list_paths():
+    loader = DataBrowserFNIRS()
+    paths = loader.paths
+    assert len(paths) > 0
+
+def test_list_paths():
+    loader = DataBrowserFNIRS()
+    previous_count = len(loader.paths)
+    loader.add_source('/foo')
+    new_paths = loader.paths
+    assert len(new_paths) == previous_count + 1
+
+def test_list_files():
+    loader = DataBrowserFNIRS()
+    assert len(loader.paths) > 0
+    assert len(loader.list_all_files()) > 0
+    # path should be absolute
+    assert loader.list_all_files()[0].startswith('/')
+
+
+#
+# Preprocessor
+#
+
 # Try to load every file types we have
 @pytest.mark.parametrize("file_path", fnirs_files)
 def test_data_loader_all_types(file_path):
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    raw = DataLoaderFNIRS().read_file(file_path)
+    raw = MnePreprocessorFNIRS().read_file(file_path)
     assert raw.info['sfreq'] > 0
     assert len(raw.ch_names) > 0
     
@@ -45,7 +72,7 @@ def test_nirs_ch_names():
                           [2,1,1,2]])
 
     lambdas = np.array([760, 850]).reshape((-1,1))
-    ch_names = DataLoaderFNIRS().get_nirs_ch_names(meas_list, lambdas)
+    ch_names = MnePreprocessorFNIRS().get_nirs_ch_names(meas_list, lambdas)
     assert len(ch_names) == meas_list.shape[0]
     assert ch_names[0] == 'S1_D1 760'
     assert ch_names[-1] == 'S2_D1 850'
@@ -72,21 +99,21 @@ def test_subject():
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     filepath = snirf_file1
     subject = SubjectFNIRS()
-    subject.load_file(DataLoaderFNIRS(), filepath)
+    subject.load_file(MnePreprocessorFNIRS(), filepath)
     assert subject.filepath == filepath
     assert subject.raw is not None
     assert subject.preprocess_steps is None
     assert subject.is_preprocessed == False
 
 def test_dummy_preprocessor():
-    subject = SubjectFNIRS().load_file(DataLoaderFNIRS(), snirf_file1)
+    subject = SubjectFNIRS().load_file(MnePreprocessorFNIRS(), snirf_file1)
     subject.preprocess(DummyPreprocessorFNIRS())
     assert len(subject.preprocess_steps) == 1
     assert subject.is_preprocessed == True
     assert subject.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
 
 def test_mne_preprocessor():
-    subject = SubjectFNIRS().load_file(DataLoaderFNIRS(), snirf_file1)
+    subject = SubjectFNIRS().load_file(MnePreprocessorFNIRS(), snirf_file1)
     subject.preprocess(MnePreprocessorFNIRS())
     assert len(subject.preprocess_steps) > 1
     assert subject.is_preprocessed == True
@@ -101,7 +128,7 @@ def test_mne_preprocessor():
 
 def test_subject_dyad():
     # Use the same file for the 2 subjects
-    subject = SubjectFNIRS().load_file(DataLoaderFNIRS(), snirf_file1)
+    subject = SubjectFNIRS().load_file(MnePreprocessorFNIRS(), snirf_file1)
     dyad = DyadFNIRS(subject, subject)
     assert dyad.is_preprocessed == False
 
@@ -115,30 +142,11 @@ def test_subject_dyad():
     assert pairs[0].ch_name1 == subject.pre.ch_names[0]
     assert pairs[0].ch_name2 == subject.pre.ch_names[0]
     
-def test_list_paths():
-    loader = DataLoaderFNIRS()
-    paths = loader.paths
-    assert len(paths) > 0
-
-def test_list_paths():
-    loader = DataLoaderFNIRS()
-    previous_count = len(loader.paths)
-    loader.add_source('/foo')
-    new_paths = loader.paths
-    assert len(new_paths) == previous_count + 1
-
-def test_list_files():
-    loader = DataLoaderFNIRS()
-    assert len(loader.paths) > 0
-    assert len(loader.list_fif_files()) > 0
-    # path should be absolute
-    assert loader.list_fif_files()[0].startswith('/')
-
     
 # Skip this test because it downloads data. We don't want this on the CI
 @pytest.mark.skip(reason="Downloads data")
 def test_download_demos():
-    loader = DataLoaderFNIRS()
+    loader = DataBrowserFNIRS()
     previous_count = len(loader.paths)
     loader.download_demo_dataset()
     new_paths = loader.paths

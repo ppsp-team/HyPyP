@@ -13,7 +13,7 @@ from scipy import fft
 import mne
 
 from hypyp.fnirs.pair_signals import PairSignals
-from hypyp.fnirs.data_loader_fnirs import DataLoaderFNIRS
+from hypyp.fnirs.data_loader_fnirs import DataBrowserFNIRS
 from hypyp.fnirs.subject_fnirs import SubjectFNIRS
 from hypyp.fnirs.preprocessors.mne_preprocessor_fnirs import MnePreprocessorFNIRS, DummyPreprocessorFNIRS
 from hypyp.signal import SynteticSignal
@@ -22,7 +22,6 @@ from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
 from hypyp.wavelet.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
 
 # TODO: Cedalion is optional, this import should be in a try-catch
-from hypyp.fnirs.preprocessors.cedalion_preprocessor_fnirs import CedalionDataLoaderFNIRS
 from hypyp.fnirs.preprocessors.cedalion_preprocessor_fnirs import CedalionPreprocessorFNIRS
 
 root = os.path.join(Path(__file__).parent, '..', '..')
@@ -328,6 +327,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     def text_info_s2_file_path():
         return f"File: {get_signal_data_files_s2_path()}"
 
+    def get_data_browser():
+        return DataBrowserFNIRS().add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
+
     def get_preprocessor():
         if input.subject_preprocessor() == 'mne':
             return MnePreprocessorFNIRS()
@@ -336,18 +338,13 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.subject_preprocessor() == 'cedalion':
             return CedalionPreprocessorFNIRS()
 
-    def get_data_loader():
-        if input.subject_preprocessor() == 'cedalion':
-            return CedalionDataLoaderFNIRS()
-        return DataLoaderFNIRS()
-
     @reactive.calc()
     def get_subject1():
-        return SubjectFNIRS().load_file(get_data_loader(), get_signal_data_files_s1_path()).preprocess(get_preprocessor())
+        return SubjectFNIRS().load_file(get_preprocessor(), get_signal_data_files_s1_path()).preprocess(get_preprocessor())
 
     @reactive.calc()
     def get_subject2():
-        return SubjectFNIRS().load_file(get_data_loader(), get_signal_data_files_s2_path()).preprocess(get_preprocessor())
+        return SubjectFNIRS().load_file(get_preprocessor(), get_signal_data_files_s2_path()).preprocess(get_preprocessor())
 
     @reactive.calc()
     def get_subject1_raw():
@@ -429,7 +426,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             ))
         
         elif input.signal_type() == 'data_files':
-            loader = DataLoaderFNIRS().add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
+            loader = get_data_browser()
             loader.download_demo_dataset()
 
             choices.append(ui_option_row("Subject 1 file", ui.input_select(
@@ -449,8 +446,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "",
                 choices={
                     'mne': 'MNE (basic fNIRS preprocessing)',
-                    'dummy': 'None (data already preprocessed)',
-                    'cedalion': 'Cedalion',
+                    'dummy': 'MNE (no preprocessing, load as-is)',
+                    'cedalion': 'Cedalion (proof of concept preprocessing)',
                 }
             )))
         

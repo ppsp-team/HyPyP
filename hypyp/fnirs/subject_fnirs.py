@@ -5,7 +5,7 @@ import numpy as np
 import mne
 import itertools as itertools
 
-from .data_loader_fnirs import DataLoaderFNIRS
+from .data_loader_fnirs import DataBrowserFNIRS
 from .preprocessors.base_preprocessor_fnirs import BasePreprocessorFNIRS, BasePreprocessStep
 
 class SubjectFNIRS:
@@ -46,7 +46,7 @@ class SubjectFNIRS:
             steps_dict[step.key] = step.desc
         return steps_dict
     
-    def load_file(self, loader: DataLoaderFNIRS, filepath: str):
+    def load_file(self, loader: DataBrowserFNIRS, filepath: str):
         self.filepath = filepath        
         self.raw = loader.read_file(filepath)
         return self

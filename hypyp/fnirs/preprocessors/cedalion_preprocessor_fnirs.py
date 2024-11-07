@@ -4,22 +4,9 @@ import cedalion.dataclasses as cdc
 from cedalion.typing import NDTimeSeries
 import matplotlib.pyplot as plt
 
-from ..data_loader_fnirs import DataLoaderFNIRS
+from ..data_loader_fnirs import DataBrowserFNIRS
 from .base_preprocessor_fnirs import *
 
-# We need a custom loader for cedalion
-class CedalionDataLoaderFNIRS(DataLoaderFNIRS):
-    def read_file(self, path) -> cdc.Recording:
-        # TODO raise exception if not a snirf file? Or implement other types?
-        recordings = cedalion.io.read_snirf(path)
-        rec: cdc.Recording  = recordings[0]
-
-        # TODO we should force units only if they are not set
-        rec['amp'] = rec['amp'].pint.dequantify().pint.quantify("V")
-        rec['amp']['time'] = rec['amp']['time'].pint.dequantify().pint.quantify("second")
-        return rec
-        
-# TODO we should not inherit a baseclass, it should be an interface
 class CedalionPreprocessStep(BasePreprocessStep[cdc.Recording]):
     @property
     def n_times(self):
@@ -59,6 +46,18 @@ class CedalionPreprocessStep(BasePreprocessStep[cdc.Recording]):
         return f
 
 class CedalionPreprocessorFNIRS(BasePreprocessorFNIRS):
+    def read_file(self, path) -> cdc.Recording:
+        if not DataBrowserFNIRS.path_is_snirf(path):
+            raise RuntimeError('Not implemented: only snirf file is supported for now')
+
+        recordings = cedalion.io.read_snirf(path)
+        rec: cdc.Recording  = recordings[0]
+
+        # TODO we should force units only if they are not set
+        rec['amp'] = rec['amp'].pint.dequantify().pint.quantify("V")
+        rec['amp']['time'] = rec['amp']['time'].pint.dequantify().pint.quantify("second")
+        return rec
+
     def run(self, rec) -> list[CedalionPreprocessStep]:
         steps = []
         amp = rec['amp']
