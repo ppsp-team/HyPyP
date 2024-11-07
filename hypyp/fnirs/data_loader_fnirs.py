@@ -115,7 +115,7 @@ class DataLoaderFNIRS:
         return info
         
     
-    def get_mne_raw(self, path):
+    def read_file(self, path):
         if self.path_is_fif(path):
             return mne.io.read_raw_fif(path, preload=True)
 
@@ -139,7 +139,7 @@ class DataLoaderFNIRS:
         return None
     
     def get_mne_channel(self, file_path, channel_name):
-        s = self.get_mne_raw(file_path)
+        s = self.read_file(file_path)
         return s.copy().pick(mne.pick_channels(s.ch_names, include = [channel_name]))
     
     def read_two_signals_from_mat_obj(self, mat, id1, id2):

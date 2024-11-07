@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Generic, TypeVar
 
 import mne
 
@@ -18,20 +18,41 @@ PREPROCESS_STEP_HAEMO_DESC = 'Hemoglobin'
 PREPROCESS_STEP_HAEMO_FILTERED_KEY = 'haemo_filtered'
 PREPROCESS_STEP_HAEMO_FILTERED_DESC = 'Hemoglobin Band-pass Filtered'
 
-class PreprocessStep:
-    def __init__(self, raw: mne.io.Raw, key: str, desc: str = '', tracer: dict = None):
-        self.raw = raw
-        self.key = key
+# Generic type for underlying fnirs implementation (mne raw / cedalion recording)
+T = TypeVar('T')
+
+class BasePreprocessStep(ABC, Generic[T]):
+    def __init__(self, obj: T, key: str, desc: str = '', tracer: dict = None):
+        self.obj: T = obj
+        self.key: str = key
+        self.desc: str
         if desc:
             self.desc = desc
         else:
             self.desc = key
-        self.tracer = tracer 
+        self.tracer: dict = tracer 
 
-class BasePreprocessorFNIRS(ABC):
-    def __init__(self):
+    @property
+    @abstractmethod
+    def n_times(self) -> int:
+        pass
+
+    @property
+    @abstractmethod
+    def sfreq(self) -> float:
+        pass
+
+    @property
+    @abstractmethod
+    def ch_names(self) -> List[str]:
         pass
 
     @abstractmethod
-    def run(self, raw: mne.io.Raw) -> List[PreprocessStep]:
+    def plot(self, **kwargs):
         pass
+
+class BasePreprocessorFNIRS(ABC, Generic[T]):
+    @abstractmethod
+    def run(self, raw: T) -> List[BasePreprocessStep[T]]:
+        pass
+

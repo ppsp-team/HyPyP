@@ -5,12 +5,11 @@ import logging
 import numpy as np
 import mne
 
-from hypyp.fnirs.subject_fnirs import PreprocessStep, SubjectFNIRS
+from hypyp.fnirs.subject_fnirs import SubjectFNIRS
 from hypyp.fnirs.dyad_fnirs import DyadFNIRS
 from hypyp.fnirs.data_loader_fnirs import DataLoaderFNIRS
 from hypyp.fnirs.preprocessors.base_preprocessor_fnirs import PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_HAEMO_FILTERED_KEY
-from hypyp.fnirs.preprocessors.dummy_preprocessor_fnirs import DummyPreprocessorFNIRS
-from hypyp.fnirs.preprocessors.mne_preprocessor_fnirs import MnePreprocessorFNIRS
+from hypyp.fnirs.preprocessors.mne_preprocessor_fnirs import MnePreprocessStep, MnePreprocessorFNIRS, DummyPreprocessorFNIRS
 
 #set events
 tmin = 0 
@@ -32,7 +31,7 @@ logging.disable()
 @pytest.mark.parametrize("file_path", fnirs_files)
 def test_data_loader_all_types(file_path):
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    raw = DataLoaderFNIRS().get_mne_raw(file_path)
+    raw = DataLoaderFNIRS().read_file(file_path)
     assert raw.info['sfreq'] > 0
     assert len(raw.ch_names) > 0
     
@@ -55,15 +54,15 @@ def test_preprocess_step():
     key = 'foo_key'
     desc = 'foo_description'
     raw = mne.io.RawArray(np.array([[1., 2.]]), mne.create_info(['foo'], 1))
-    pre_step = PreprocessStep(raw, key, desc)
-    assert pre_step.raw.get_data().shape[0] == 1
-    assert pre_step.raw.get_data().shape[1] == 2
+    pre_step = MnePreprocessStep(raw, key, desc)
+    assert pre_step.obj.get_data().shape[0] == 1
+    assert pre_step.obj.get_data().shape[1] == 2
     assert pre_step.key == key
     assert pre_step.desc == desc
     assert pre_step.tracer is None
 
     # With tracer
-    pre_step_with_tracer = PreprocessStep(raw, key, desc, tracer=dict(foo=np.zeros((2,2))))
+    pre_step_with_tracer = MnePreprocessStep(raw, key, desc, tracer=dict(foo=np.zeros((2,2))))
     assert pre_step_with_tracer.tracer is not None
     assert pre_step_with_tracer.tracer['foo'][0,0] == 0
 

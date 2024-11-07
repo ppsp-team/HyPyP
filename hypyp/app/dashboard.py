@@ -15,12 +15,15 @@ import mne
 from hypyp.fnirs.pair_signals import PairSignals
 from hypyp.fnirs.data_loader_fnirs import DataLoaderFNIRS
 from hypyp.fnirs.subject_fnirs import SubjectFNIRS
-from hypyp.fnirs.preprocessors.dummy_preprocessor_fnirs import DummyPreprocessorFNIRS
-from hypyp.fnirs.preprocessors.mne_preprocessor_fnirs import MnePreprocessorFNIRS
+from hypyp.fnirs.preprocessors.mne_preprocessor_fnirs import MnePreprocessorFNIRS, DummyPreprocessorFNIRS
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
 from hypyp.wavelet.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
+
+# TODO: Cedalion is optional, this import should be in a try-catch
+from hypyp.fnirs.preprocessors.cedalion_preprocessor_fnirs import CedalionDataLoaderFNIRS
+from hypyp.fnirs.preprocessors.cedalion_preprocessor_fnirs import CedalionPreprocessorFNIRS
 
 root = os.path.join(Path(__file__).parent, '..', '..')
 sys.path.append(root)
@@ -330,43 +333,49 @@ def server(input: Inputs, output: Outputs, session: Session):
             return MnePreprocessorFNIRS()
         if input.subject_preprocessor() == 'dummy':
             return DummyPreprocessorFNIRS()
-        #if input.subject_preprocessor() == 'cedalion':
-        #    return CedalionPreprocessorFNIRS()
+        if input.subject_preprocessor() == 'cedalion':
+            return CedalionPreprocessorFNIRS()
 
     def get_data_loader():
-        return DataLoaderFNIRS().add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
+        if input.subject_preprocessor() == 'cedalion':
+            return CedalionDataLoaderFNIRS()
+        return DataLoaderFNIRS()
 
     @reactive.calc()
     def get_subject1():
-        return SubjectFNIRS().load_file(DataLoaderFNIRS(), get_signal_data_files_s1_path()).preprocess(get_preprocessor())
+        return SubjectFNIRS().load_file(get_data_loader(), get_signal_data_files_s1_path()).preprocess(get_preprocessor())
 
     @reactive.calc()
     def get_subject2():
-        return SubjectFNIRS().load_file(DataLoaderFNIRS(), get_signal_data_files_s2_path()).preprocess(get_preprocessor())
+        return SubjectFNIRS().load_file(get_data_loader(), get_signal_data_files_s2_path()).preprocess(get_preprocessor())
 
     @reactive.calc()
     def get_subject1_raw():
-        return get_subject1().get_preprocess_step(input.signal_data_files_analysis_property()).raw
+        return get_subject1().get_preprocess_step(input.signal_data_files_analysis_property()).obj
 
     @reactive.calc()
     def get_subject2_raw():
-        return get_subject2().get_preprocess_step(input.signal_data_files_analysis_property()).raw
+        return get_subject2().get_preprocess_step(input.signal_data_files_analysis_property()).obj
 
-    def get_mne_raw_plot_kwargs(raw, duration_percent_range):
-        range_start, range_end = duration_percent_range
-        range_start /= 100
-        range_end /= 100
-        start = range_start * raw.n_times / raw.info['sfreq']
-        duration = (range_end - range_start) * raw.n_times / raw.info['sfreq']
-        return dict(
-            n_channels=len(raw.ch_names),
-            start=start,
-            duration=duration,
-            scalings='auto',
-            show_scrollbars=False,
-            block=True,
-            show=False,
-        )
+    def get_mne_raw_plot_kwargs(step, duration_percent_range):
+        try:
+            range_start, range_end = duration_percent_range
+            range_start /= 100
+            range_end /= 100
+            start = range_start * step.n_times / step.sfreq
+            duration = (range_end - range_start) * step.n_times / step.sfreq
+            return dict(
+                n_channels=len(step.ch_names),
+                start=start,
+                duration=duration,
+                scalings='auto',
+                show_scrollbars=False,
+                block=True,
+                show=False,
+            )
+        except:
+            # TODO this is here because of CedalionPreprocessingStep. This code flow is ugly
+            return dict()
 
     def mne_figure_as_image(fig):
         temp_img_path = tempfile.NamedTemporaryFile(suffix=".png").name
@@ -379,7 +388,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         # Because of order of execution, this cannot be directly in the loop
         def bind_plot_mne_figure(step: int):
             def plot_mne_figure():
-                return mne_figure_as_image(step.raw.plot(**get_mne_raw_plot_kwargs(step.raw, input.input_s1_mne_duration_slider())))
+                return mne_figure_as_image(step.plot(**get_mne_raw_plot_kwargs(step, input.input_s1_mne_duration_slider())))
             # need to rename the function because every "output plot" must have a unique name
             plot_mne_figure.__name__ = f'{plot_mne_figure.__name__}_{step.key}'
             renderer = render.image(plot_mne_figure)
@@ -420,7 +429,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             ))
         
         elif input.signal_type() == 'data_files':
-            loader = get_data_loader()
+            loader = DataLoaderFNIRS().add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
             loader.download_demo_dataset()
 
             choices.append(ui_option_row("Subject 1 file", ui.input_select(
@@ -441,7 +450,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 choices={
                     'mne': 'MNE (basic fNIRS preprocessing)',
                     'dummy': 'None (data already preprocessed)',
-                    'cedalion': 'cedalion',
+                    'cedalion': 'Cedalion',
                 }
             )))
         
@@ -485,12 +494,20 @@ def server(input: Inputs, output: Outputs, session: Session):
             options.append(ui_option_row("Noise level", ui.input_numeric("signal_noise_level", "", value=0.01))),
         
         if input.signal_type() == 'data_files':
+            # TODO this try-except is here to have a PoC of Cedalion integration
+            try:
+                ch_names1 = get_subject1().pre.ch_names
+                ch_names2 = get_subject2().pre.ch_names
+            except:
+                ch_names1 = []
+                ch_names2 = []
+
             options.append(ui_option_row(
                 "Subject 1 channel",
                 ui.input_select(
                     "signal_data_files_s1_channel",
                     "",
-                    choices=get_subject1().pre.ch_names
+                    choices=ch_names1
                 )
                 
             ))
@@ -499,7 +516,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.input_select(
                     "signal_data_files_s2_channel",
                     "",
-                    choices=get_subject2().pre.ch_names
+                    choices=ch_names2
                 )
             ))
 

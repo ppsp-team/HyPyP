@@ -6,13 +6,13 @@ import mne
 import itertools as itertools
 
 from .data_loader_fnirs import DataLoaderFNIRS
-from .preprocessors.base_preprocessor_fnirs import BasePreprocessorFNIRS, PreprocessStep
+from .preprocessors.base_preprocessor_fnirs import BasePreprocessorFNIRS, BasePreprocessStep
 
 class SubjectFNIRS:
     def __init__(self):
         self.filepath: str | None
         self.raw: mne.io.Raw = None
-        self.preprocess_steps: List[PreprocessStep] = None
+        self.preprocess_steps: List[BasePreprocessStep] = None
 
     def _assert_is_preprocessed(self):
         if not self.is_preprocessed:
@@ -26,7 +26,7 @@ class SubjectFNIRS:
     def pre(self) -> mne.io.Raw:
         self._assert_is_preprocessed()
         # We want the last step of all the preprocessing
-        return self.preprocess_steps[-1].raw
+        return self.preprocess_steps[-1].obj
 
     @property
     def preprocess_step_keys(self):
@@ -48,7 +48,7 @@ class SubjectFNIRS:
     
     def load_file(self, loader: DataLoaderFNIRS, filepath: str):
         self.filepath = filepath        
-        self.raw = loader.get_mne_raw(filepath)
+        self.raw = loader.read_file(filepath)
         return self
     
     def preprocess(self, preprocessor: BasePreprocessorFNIRS):
