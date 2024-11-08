@@ -3,8 +3,10 @@ import warnings
 import logging
 
 import numpy as np
+from numpy.testing import assert_array_almost_equal
 import mne
 
+from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.fnirs.subject_fnirs import SubjectFNIRS
 from hypyp.fnirs.dyad_fnirs import DyadFNIRS
 from hypyp.fnirs.data_loader_fnirs import DataBrowserFNIRS
@@ -81,17 +83,22 @@ def test_preprocess_step():
     key = 'foo_key'
     desc = 'foo_description'
     raw = mne.io.RawArray(np.array([[1., 2.]]), mne.create_info(['foo'], 1))
-    pre_step = MnePreprocessStep(raw, key, desc)
-    assert pre_step.obj.get_data().shape[0] == 1
-    assert pre_step.obj.get_data().shape[1] == 2
-    assert pre_step.key == key
-    assert pre_step.desc == desc
-    assert pre_step.tracer is None
+    step = MnePreprocessStep(raw, key, desc)
+    assert step.obj.get_data().shape[0] == 1
+    assert step.obj.get_data().shape[1] == 2
+    assert step.key == key
+    assert step.desc == desc
+    assert step.tracer is None
+    assert step.duration == 2
 
     # With tracer
     pre_step_with_tracer = MnePreprocessStep(raw, key, desc, tracer=dict(foo=np.zeros((2,2))))
     assert pre_step_with_tracer.tracer is not None
     assert pre_step_with_tracer.tracer['foo'][0,0] == 0
+
+#
+# Subject
+#
 
 def test_subject():
     # filename does not end with _raw.fif
@@ -126,6 +133,10 @@ def test_mne_preprocessor():
     assert subject.get_preprocess_step(PREPROCESS_STEP_BASE_KEY).key == PREPROCESS_STEP_BASE_KEY
     assert subject.get_preprocess_step(PREPROCESS_STEP_HAEMO_FILTERED_KEY).key == PREPROCESS_STEP_HAEMO_FILTERED_KEY
 
+#
+# Dyad
+#
+
 def test_subject_dyad():
     # Use the same file for the 2 subjects
     subject = SubjectFNIRS().load_file(MnePreprocessorFNIRS(), snirf_file1)
@@ -142,6 +153,30 @@ def test_subject_dyad():
     assert pairs[0].ch_name1 == subject.pre.ch_names[0]
     assert pairs[0].ch_name2 == subject.pre.ch_names[0]
     
+def test_dyad_compute_pair_wtc():
+    subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
+    dyad = DyadFNIRS(subject, subject)
+    pair = dyad.get_pairs()[0].sub((0, 10)) # Take 10% of the file
+    wtc = dyad.get_pair_wtc(pair, PywaveletsWavelet())
+    # Should have a mean of 1 since the first pair is the same signal
+    assert np.mean(wtc.wtc) == pytest.approx(1)
+
+def test_dyad_compute_all_wtc():
+    subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
+    dyad = DyadFNIRS(subject, subject)
+    assert dyad.is_wtc_computed == False
+    dyad.compute_wtcs(PywaveletsWavelet(), time_range=(0,5)) # TODO have a more simple wavelet for fast computing
+    assert dyad.is_wtc_computed == True
+    assert len(dyad.wtcs) == len(subject.pre.ch_names)**2
+    # Should have a mean of 1 since the first pair is the same signal
+    assert np.mean(dyad.wtcs[0].wtc) == pytest.approx(1)
+    
+def test_dyad_compute_hbo_wtc():
+    subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
+    dyad = DyadFNIRS(subject, subject)
+    dyad.compute_wtcs(PywaveletsWavelet(), match='760', time_range=(0,5))
+    assert dyad.is_wtc_computed == True
+    assert len(dyad.wtcs) == (len(subject.pre.ch_names)/2)**2
     
 # Skip this test because it downloads data. We don't want this on the CI
 @pytest.mark.skip(reason="Downloads data")

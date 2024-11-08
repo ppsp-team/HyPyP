@@ -1,7 +1,8 @@
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 
+from ..wavelet.base_wavelet import WTC, BaseWavelet
 from .pair_signals import PairSignals
 from .subject_fnirs import SubjectFNIRS
 from .preprocessors.base_preprocessor_fnirs import BasePreprocessorFNIRS
@@ -10,6 +11,7 @@ class DyadFNIRS:
     def __init__(self, s1: SubjectFNIRS, s2: SubjectFNIRS):
         self.s1: SubjectFNIRS = s1
         self.s2: SubjectFNIRS = s2
+        self.wtcs: List[WTC] = None
     
     @property 
     def subjects(self):
@@ -21,6 +23,10 @@ class DyadFNIRS:
             if not subject.is_preprocessed:
                 return False
         return True
+    
+    @property
+    def is_wtc_computed(self):
+        return self.wtcs is not None
 
     def preprocess(self, preprocessor: BasePreprocessorFNIRS):
         for subject in self.subjects:
@@ -28,7 +34,7 @@ class DyadFNIRS:
                 subject.preprocess(preprocessor)
         return self
     
-    def get_pairs(self):
+    def get_pairs(self) -> List[PairSignals]:
         pairs = []
         s1_data = self.s1.pre.get_data()
         s2_data = self.s2.pre.get_data()
@@ -57,7 +63,21 @@ class DyadFNIRS:
                 pairs.append(pair)
         
         return pairs
-
-
     
+    def get_pair_wtc(self, pair: PairSignals, wavelet: BaseWavelet) -> WTC: 
+        return wavelet.wtc(pair.y1, pair.y2, pair.dt)
+    
+    # TODO remove "range_hundred", this is only for testing
+    def compute_wtcs(self, wavelet: BaseWavelet, match:str=None, time_range:Tuple[float,float]=None, verbose=False):
+        self.wtcs = []
+        for pair in self.get_pairs():
+            if match is not None:
+                if not (match in pair.ch_name1 and match in pair.ch_name2):
+                    continue
+            if verbose:
+                print('Running on pair: ', pair.label)
+            if time_range is not None:
+                pair = pair.sub(time_range)
+            self.wtcs.append(wavelet.wtc(pair.y1, pair.y2, pair.dt))
+        return self
     

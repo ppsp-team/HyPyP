@@ -29,11 +29,12 @@ sys.path.append(root)
 import hypyp.plots
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 
-default_plot_signal_height = 150
-default_plot_mne_height = 1200
+DEFAULT_PLOT_SIGNAL_HEIGHT = 150 # px
+DEFAULT_PLOT_MNE_HEIGHT = 1200 # px
+DEFAULT_SIGNAL_DURATION_SELECTION = 60 # seconds
 
 HARDCODED_PRELOADED_EXTERNAL_PATH = "/media/patrice/My Passport/"
-SAME_AS_SUBJECT_1_STR = 'Same as Subject 1'
+STR_SAME_AS_SUBJECT_1 = 'Same as Subject 1'
 
 # This is to avoid having external windows launched
 matplotlib.use('Agg')
@@ -54,7 +55,7 @@ app_ui = ui.page_fluid(
         ui.nav_panel(
             "Data Browser",
             ui.tags.h4(ui.output_text('text_s1_file_path')),
-            ui.input_slider("input_s1_mne_duration_slider", "", min=0, max=100, value=[0, 20], width='100%'),
+            ui.output_ui('ui_input_s1_mne_duration_slider'),
             ui.output_ui('ui_preprocess_steps'),
         ),
         ui.nav_panel(
@@ -64,8 +65,8 @@ app_ui = ui.page_fluid(
                     ui.card(
                         ui.tags.strong('Choice of signals'),
                         ui.output_ui('ui_input_signal_slider'),
-                        ui.output_plot('plot_signals', height=default_plot_signal_height),
-                        ui.output_plot('plot_signals_spectrum', height=default_plot_signal_height),
+                        ui.output_plot('plot_signals', height=DEFAULT_PLOT_SIGNAL_HEIGHT),
+                        ui.output_plot('plot_signals_spectrum', height=DEFAULT_PLOT_SIGNAL_HEIGHT),
                     ),
                 ),
             ),
@@ -224,8 +225,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             y2 +=  noise_level * np.random.normal(0, 1, len(x))
 
         elif input.signal_type() == 'data_files':
-            s1_raw = get_subject1_raw().copy()
-            s2_raw = get_subject2_raw().copy()
+            # TODO this only works with MNE
+            s1_raw = get_subject1_step().obj.copy()
+            s2_raw = get_subject2_step().obj.copy()
 
             s1_selected_ch = s1_raw.pick(mne.pick_channels(s1_raw.ch_names, include = [input.signal_data_files_s1_channel()]))
             s2_selected_ch = s2_raw.pick(mne.pick_channels(s2_raw.ch_names, include = [input.signal_data_files_s2_channel()]))
@@ -250,11 +252,20 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         try:
             if input.signal_range() is not None:
-                return pair.sub_hundred(input.signal_range())
+                return pair.sub(input.signal_range())
         except:
             pass
         
         return pair
+
+    def get_signal_duration():
+        if input.signal_type() == 'testing':
+            fs = input.signal_sampling_frequency()
+            N = input.signal_n()
+            return N/fs
+        if input.signal_type() == 'data_files':
+            return min([get_subject1_step().duration, get_subject2_step().duration])
+            
 
     @reactive.calc()
     def get_wavelet():
@@ -306,7 +317,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         
     def get_signal_data_files_s2_path():
         value = input.signal_data_files_s2_path()
-        if value == SAME_AS_SUBJECT_1_STR:
+        if value == STR_SAME_AS_SUBJECT_1:
             return input.signal_data_files_s1_path()
         return value
 
@@ -347,20 +358,18 @@ def server(input: Inputs, output: Outputs, session: Session):
         return SubjectFNIRS().load_file(get_preprocessor(), get_signal_data_files_s2_path()).preprocess(get_preprocessor())
 
     @reactive.calc()
-    def get_subject1_raw():
-        return get_subject1().get_preprocess_step(input.signal_data_files_analysis_property()).obj
+    def get_subject1_step():
+        return get_subject1().get_preprocess_step(input.signal_data_files_analysis_property())
 
     @reactive.calc()
-    def get_subject2_raw():
-        return get_subject2().get_preprocess_step(input.signal_data_files_analysis_property()).obj
+    def get_subject2_step():
+        return get_subject2().get_preprocess_step(input.signal_data_files_analysis_property())
 
-    def get_mne_raw_plot_kwargs(step, duration_percent_range):
+    def get_mne_raw_plot_kwargs(step, duration_range):
         try:
-            range_start, range_end = duration_percent_range
-            range_start /= 100
-            range_end /= 100
-            start = range_start * step.n_times / step.sfreq
-            duration = (range_end - range_start) * step.n_times / step.sfreq
+            range_start, range_end = duration_range
+            start = range_start
+            duration = (range_end - range_start)
             return dict(
                 n_channels=len(step.ch_names),
                 start=start,
@@ -390,7 +399,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             plot_mne_figure.__name__ = f'{plot_mne_figure.__name__}_{step.key}'
             renderer = render.image(plot_mne_figure)
             # This is needed to avoid having the scrollbar on the right
-            renderer._auto_output_ui_kwargs = dict(height=f'{default_plot_mne_height}px')
+            renderer._auto_output_ui_kwargs = dict(height=f'{DEFAULT_PLOT_MNE_HEIGHT}px')
             return renderer
 
         nav_panels = []
@@ -439,7 +448,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             choices.append(ui_option_row("Subject 2 file", ui.input_select(
                 "signal_data_files_s2_path",
                 "",
-                choices=[SAME_AS_SUBJECT_1_STR] + loader.list_all_files(),
+                choices=[STR_SAME_AS_SUBJECT_1] + loader.list_all_files(),
             )))
             choices.append(ui_option_row("Preprocessor", ui.input_select(
                 "subject_preprocessor",
@@ -521,15 +530,17 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @render.ui
     def ui_input_signal_slider():
-        options = []
-        try:
-            options.append(ui.input_slider("signal_range", "", min=0, max=100, value=[0, 100], width='100%'))
-        except:
-            pass
-            
-        return options
+        duration = int(get_signal_duration())
+        default_duration = min([DEFAULT_SIGNAL_DURATION_SELECTION, duration])
+        return ui.input_slider("signal_range", "", min=0, max=duration, value=[0, default_duration], width='100%')
 
-    @render.plot(height=default_plot_signal_height)
+    @render.ui
+    def ui_input_s1_mne_duration_slider():
+        duration = int(get_signal_duration())
+        default_duration = min([DEFAULT_SIGNAL_DURATION_SELECTION, duration])
+        return ui.input_slider("input_s1_mne_duration_slider", "", min=0, max=duration, value=[0, default_duration], width='100%')
+
+    @render.plot(height=DEFAULT_PLOT_SIGNAL_HEIGHT)
     def plot_signals():
         fig, ax = plt.subplots()
         pair = get_signals()
@@ -549,7 +560,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         return pd.DataFrame(get_signals().info_table2, columns=['Key', 'Value'])
         
 
-    @render.plot(height=default_plot_signal_height)
+    @render.plot(height=DEFAULT_PLOT_SIGNAL_HEIGHT)
     def plot_signals_spectrum():
         fig, ax = plt.subplots()
         pair = get_signals()

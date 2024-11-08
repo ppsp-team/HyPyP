@@ -16,12 +16,12 @@ class PairSignals:
         self.info_table1 = info_table1
         self.info_table2 = info_table2
 
-    def sub_hundred(self, range):
-        if range[0] == 0 and range[1] == 100:
+    def sub(self, range):
+        if range[0] == 0 and range[1] == self.n/self.fs:
             return self
 
-        signal_from = self.n * range[0] // 100
-        signal_to = self.n * range[1] // 100
+        signal_from = int(self.fs * range[0])
+        signal_to = int(self.fs * range[1])
         
         return PairSignals(
             self.x[signal_from:signal_to],

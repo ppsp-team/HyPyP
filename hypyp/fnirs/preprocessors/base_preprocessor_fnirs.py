@@ -47,6 +47,10 @@ class BasePreprocessStep(ABC, Generic[T]):
     def ch_names(self) -> List[str]:
         pass
 
+    @property
+    def duration(self) -> float:
+        return self.n_times / self.sfreq
+
     @abstractmethod
     def plot(self, **kwargs):
         pass
