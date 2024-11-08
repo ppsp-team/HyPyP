@@ -1,4 +1,5 @@
 from typing import Tuple, List
+import re
 
 import numpy as np
 
@@ -68,16 +69,32 @@ class DyadFNIRS:
         return wavelet.wtc(pair.y1, pair.y2, pair.dt)
     
     # TODO remove "range_hundred", this is only for testing
-    def compute_wtcs(self, wavelet: BaseWavelet, match:str=None, time_range:Tuple[float,float]=None, verbose=False):
+    def compute_wtcs(
+        self,
+        wavelet: BaseWavelet,
+        match:re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]=None,
+        time_range:Tuple[float,float]=None,
+        verbose=False,
+    ):
         self.wtcs = []
+        # Force match in tuple for leaner code below
+        if match is not None and not isinstance(match, Tuple):
+            match = (match, match)
+
+        def check_match(ch_name, m):
+            if isinstance(m, re.Pattern):
+                return m.search(ch_name) is not None
+            return m in ch_name
+
         for pair in self.get_pairs():
             if match is not None:
-                if not (match in pair.ch_name1 and match in pair.ch_name2):
+                if not check_match(pair.ch_name1, match[0]) or not check_match(pair.ch_name2, match[1]):
                     continue
+                
             if verbose:
                 print('Running on pair: ', pair.label)
             if time_range is not None:
                 pair = pair.sub(time_range)
-            self.wtcs.append(wavelet.wtc(pair.y1, pair.y2, pair.dt))
+            self.wtcs.append(wavelet.wtc(pair.y1, pair.y2, pair.dt, label=pair.label))
         return self
     

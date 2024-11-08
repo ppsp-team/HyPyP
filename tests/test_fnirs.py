@@ -1,6 +1,7 @@
 import pytest
 import warnings
 import logging
+import re
 
 import numpy as np
 from numpy.testing import assert_array_almost_equal
@@ -171,12 +172,35 @@ def test_dyad_compute_all_wtc():
     # Should have a mean of 1 since the first pair is the same signal
     assert np.mean(dyad.wtcs[0].wtc) == pytest.approx(1)
     
-def test_dyad_compute_hbo_wtc():
+def test_dyad_compute_str_match_wtc():
     subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
     dyad = DyadFNIRS(subject, subject)
     dyad.compute_wtcs(PywaveletsWavelet(), match='760', time_range=(0,5))
     assert dyad.is_wtc_computed == True
     assert len(dyad.wtcs) == (len(subject.pre.ch_names)/2)**2
+
+def test_dyad_compute_regex_match_wtc():
+    subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
+    dyad = DyadFNIRS(subject, subject)
+    regex = re.compile(r'^S1.*760')
+    dyad.compute_wtcs(PywaveletsWavelet(), match=regex, time_range=(0,5))
+    assert len(dyad.wtcs) == 4
+    assert dyad.wtcs[0].label == dyad.get_pairs()[0].label
+
+def test_dyad_compute_tuple_match_wtc():
+    subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
+    dyad = DyadFNIRS(subject, subject)
+    regex1 = re.compile(r'^S1_D1.*760')
+    regex2 = re.compile(r'.*760')
+    dyad.compute_wtcs(PywaveletsWavelet(), match=(regex1, regex2), time_range=(0,5))
+    assert len(dyad.wtcs) == 16
+    #[print(wtc.label) for wtc in dyad.wtcs]
+
+#def test_dyad_connection_matrix():
+#    subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
+#    dyad = DyadFNIRS(subject, subject)
+#    dyad.compute_wtcs(PywaveletsWavelet(), match='760', time_range=(0,5))
+    
     
 # Skip this test because it downloads data. We don't want this on the CI
 @pytest.mark.skip(reason="Downloads data")

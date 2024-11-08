@@ -27,8 +27,9 @@ class PairSignals:
             self.x[signal_from:signal_to],
             self.y1[signal_from:signal_to],
             self.y2[signal_from:signal_to],
-            self.info_table1,
-            self.info_table2,
+            label=self.label,
+            info_table1=self.info_table1,
+            info_table2=self.info_table2,
         )
     
 
