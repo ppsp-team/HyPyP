@@ -12,6 +12,7 @@ Useful tools
 """
 
 
+from enum import Enum
 from typing import Tuple, List
 import numpy as np
 import pandas as pd
@@ -398,3 +399,66 @@ def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: flo
     simulation._data = np.transpose(np.reshape(eeg.T, [n_chan, n_epo, n_samp]), (1, 0, 2))
     
     return simulation
+
+# Constants for task description
+TASK_NEXT_EVENT = None
+TASK_BEGINNING = -1
+TASK_END = -1
+
+def epochs_from_tasks(raw: mne.io.Raw, tasks: List[Tuple[str,int,int]]) -> List[mne.Epochs]:
+    events, _ = mne.events_from_annotations(raw)
+    #print(events)
+
+    epochs_per_tasks = []
+    sfreq = raw.info['sfreq']
+
+    for task_key, event_id_task_start, event_id_task_end in tasks:
+        t_starts = []
+        t_durations = []
+        task_events = []
+
+        # To handle start of raw as "event" for task
+        if event_id_task_start == TASK_BEGINNING:
+            events_loop = [[0]]
+        else:
+            events_loop = events[events[:, 2] == event_id_task_start]
+
+        for event_start in events_loop:
+            t_start = event_start[0]
+
+            # Find end of task
+            if event_id_task_end == TASK_END:
+                t_end = raw.n_times - 1
+            else:
+                where_gt_start = events[:, 0] > t_start
+                if event_id_task_end == TASK_NEXT_EVENT:
+                    # until next event
+                    where = where_gt_start
+                else:
+                    where_task_end = events[:, 2] == event_id_task_end
+                    where = where_gt_start & where_task_end
+
+                event_end = events[where]
+                if len(event_end) == 0:
+                    raise RuntimeError(f'Cannot find end of task "{task_key}" with event_id "{event_id_task_end}"')
+                t_end = event_end[0, 0] # use the first
+
+            t_min = (t_start - raw.first_samp) / sfreq
+            t_max = (t_end - raw.first_samp) / sfreq
+            t_duration = t_max - t_min
+
+            t_starts.append(t_start)
+            t_durations.append(t_duration)
+            task_events.append([t_start, 0, event_id_task_start])
+
+        epochs_per_tasks.append(mne.Epochs(raw,
+            task_events,
+            event_id={ task_key: event_id_task_start},
+            tmin=0,
+            tmax=min(t_durations),
+            baseline=None,
+            preload=True,
+            event_repeated='merge',
+            ))
+
+    return epochs_per_tasks

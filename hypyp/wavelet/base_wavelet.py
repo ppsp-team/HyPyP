@@ -20,7 +20,7 @@ class CWT:
         return plot_cwt_weights(self.W, self.times, self.frequencies, self.coif)
 
 class WTC:
-    def __init__(self, wtc, times, scales, frequencies, coif, label=None, sig=None, tracer=None):
+    def __init__(self, wtc, times, scales, frequencies, coif, task=None, label=None, sig=None, tracer=None):
         self.wtc = wtc
         # TODO: compute Region of Interest, something like this:
         #roi = wtc * (wtc > coif[np.newaxis, :]).astype(int)
@@ -29,6 +29,7 @@ class WTC:
         self.frequencies = frequencies
         self.coi = 1 / coif
         self.coif = coif
+        self.task = task
         self.label = label
         self.tracer = tracer
         self.sig = sig
@@ -75,7 +76,7 @@ class BaseWavelet(ABC):
     def cwt(self, y, dt, dj):
         pass
     
-    def wtc(self, y1, y2, dt, label=None):
+    def wtc(self, y1, y2, dt, task=None, label=None):
         if len(y1) != len(y2):
             raise RuntimeError("Arrays not same size")
 
@@ -137,6 +138,6 @@ class BaseWavelet(ABC):
         self.tracer['S2'] = S2
         self.tracer['S12'] = S12
 
-        return WTC(wtc, times, scales, frequencies, coif, label=label, tracer=self.tracer)
+        return WTC(wtc, times, scales, frequencies, coif, task=task, label=label, tracer=self.tracer)
 
     
