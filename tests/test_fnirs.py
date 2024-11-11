@@ -7,6 +7,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 import mne
 
+from hypyp.fnirs.cohort_fnirs import CohortFNIRS
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.fnirs.subject_fnirs import SubjectFNIRS
 from hypyp.fnirs.dyad_fnirs import DyadFNIRS
@@ -249,6 +250,45 @@ def test_dyad_wtc_per_task():
     assert len(dyad.wtcs) == 2
     assert dyad.wtcs[0].wtc.shape[1] != dyad.wtcs[1].wtc.shape[1] # not the same duration
     assert 'task1' in [wtc.task for wtc in dyad.wtcs] # order may have changed because of task intersection
+
+def test_cohort_wtc():
+    subject1 = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True).populate_epochs_from_annotations()
+    dyad1 = DyadFNIRS(subject1, subject1)
+
+    subject2 = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file2, preprocess=True).populate_epochs_from_annotations()
+    dyad2 = DyadFNIRS(subject2, subject2)
+
+    dyad3 = DyadFNIRS(subject1, subject2)
+
+    # Add a bunch of "dyad3" to our list, so we have a number of "others" for our first dyad
+    dyads = [dyad1, dyad2, dyad3, dyad3, dyad3, dyad3]
+    cohort = CohortFNIRS(dyads)
+    assert len(cohort.dyads) == len(dyads)
+    assert len(cohort.dyads_shuffle) == len(dyads)*(len(dyads)-1)
+    assert cohort.is_wtc_computed == False
+
+    wtcs_kwargs = dict(match='S1_D1 760', time_range=(0,5))
+
+    cohort.compute_wtcs(PywaveletsWavelet(), **wtcs_kwargs)
+    assert cohort.is_wtc_computed == True
+    assert len(dyad1.wtcs) == 1
+    
+    # dyads shuffle are computed only when we want significance
+    assert cohort.is_wtc_shuffle_computed == False
+    assert cohort.dyads_shuffle[0].wtcs is None
+    assert cohort.dyads[0].wtcs[0].sig is None
+
+    cohort.compute_wtcs_shuffle(PywaveletsWavelet(), **wtcs_kwargs)
+
+    assert cohort.is_wtc_shuffle_computed == True
+    assert len(cohort.dyads_shuffle[0].wtcs) == 1
+
+    cohort.compute_wtcs_significance()
+    assert cohort.dyads[0].wtcs[0].sig_p_value > 0
+
+@pytest.mark.skip(reason="TODO: have significance comparison")
+def test_significance():
+    pass
 
 #def test_dyad_connection_matrix():
 #    subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)

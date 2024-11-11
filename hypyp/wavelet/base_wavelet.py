@@ -32,6 +32,9 @@ class WTC:
         self.task = task
         self.label = label
         self.tracer = tracer
+        self.sig_metric = np.mean(wtc) # TODO this is just a PoC
+        self.sig_p_value = None
+        self.sig_t_stat = None
         self.sig = sig
     
     def plot(self, **kwargs):

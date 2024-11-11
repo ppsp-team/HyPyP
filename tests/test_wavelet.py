@@ -54,6 +54,7 @@ def test_psi():
     assert np.sum(np.imag(wavelet.psi) * wavelet.psi_dx) != 0
     assert np.sum(np.abs(wavelet.psi) * wavelet.psi_dx) == pytest.approx(1)
 
+
 def test_cwt():
     wavelet = PywaveletsWavelet()
     signal = SynteticSignal().add_sin(1)
@@ -69,5 +70,9 @@ def test_wtc():
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
     res = wavelet.wtc(signal1.y, signal2.y, signal1.period)
+    # check that we have a metric for significance
+    assert res.sig_metric > 0
+    assert res.sig_metric < 1
+    
 
     
