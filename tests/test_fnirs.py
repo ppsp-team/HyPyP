@@ -205,7 +205,7 @@ def test_dyad_compute_all_wtc():
     subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True).populate_epochs_from_annotations()
     dyad = DyadFNIRS(subject, subject)
     assert dyad.is_wtc_computed == False
-    dyad.compute_wtcs(PywaveletsWavelet(), time_range=(0,5)) # TODO have a more simple wavelet for fast computing
+    dyad.compute_wtcs(time_range=(0,5)) # TODO have a more simple wavelet for fast computing
     assert dyad.is_wtc_computed == True
     assert len(dyad.wtcs) == len(subject.pre.ch_names)**2
     # Should have a mean of 1 since the first pair is the same signal
@@ -214,7 +214,7 @@ def test_dyad_compute_all_wtc():
 def test_dyad_compute_str_match_wtc():
     subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True).populate_epochs_from_annotations()
     dyad = DyadFNIRS(subject, subject)
-    dyad.compute_wtcs(PywaveletsWavelet(), match='760', time_range=(0,5))
+    dyad.compute_wtcs(match='760', time_range=(0,5))
     assert dyad.is_wtc_computed == True
     assert len(dyad.wtcs) == (len(subject.pre.ch_names)/2)**2
 
@@ -222,7 +222,7 @@ def test_dyad_compute_regex_match_wtc():
     subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True).populate_epochs_from_annotations()
     dyad = DyadFNIRS(subject, subject)
     regex = re.compile(r'^S1.*760')
-    dyad.compute_wtcs(PywaveletsWavelet(), match=regex, time_range=(0,5))
+    dyad.compute_wtcs(match=regex, time_range=(0,5))
     assert len(dyad.wtcs) == 4
     assert dyad.wtcs[0].label == dyad.get_pairs()[0].label
 
@@ -231,7 +231,7 @@ def test_dyad_compute_tuple_match_wtc():
     dyad = DyadFNIRS(subject, subject)
     regex1 = re.compile(r'^S1_D1.*760')
     regex2 = re.compile(r'.*760')
-    dyad.compute_wtcs(PywaveletsWavelet(), match=(regex1, regex2), time_range=(0,5))
+    dyad.compute_wtcs(match=(regex1, regex2), time_range=(0,5))
     assert len(dyad.wtcs) == 16
     #[print(wtc.label) for wtc in dyad.wtcs]
 
@@ -246,7 +246,7 @@ def test_dyad_wtc_per_task():
     ch_name = 'S1_D1 760'
     pairs = dyad.get_pairs(match=ch_name)
     assert len(pairs) == 2
-    dyad.compute_wtcs(PywaveletsWavelet(), match=ch_name, time_range=(0,5))
+    dyad.compute_wtcs(match=ch_name, time_range=(0,5))
     assert len(dyad.wtcs) == 2
     assert dyad.wtcs[0].wtc.shape[1] != dyad.wtcs[1].wtc.shape[1] # not the same duration
     assert 'task1' in [wtc.task for wtc in dyad.wtcs] # order may have changed because of task intersection
@@ -269,7 +269,7 @@ def test_cohort_wtc():
 
     wtcs_kwargs = dict(match='S1_D1 760', time_range=(0,5))
 
-    cohort.compute_wtcs(PywaveletsWavelet(), **wtcs_kwargs)
+    cohort.compute_wtcs(**wtcs_kwargs)
     assert cohort.is_wtc_computed == True
     assert len(dyad1.wtcs) == 1
     
@@ -278,7 +278,7 @@ def test_cohort_wtc():
     assert cohort.dyads_shuffle[0].wtcs is None
     assert cohort.dyads[0].wtcs[0].sig is None
 
-    cohort.compute_wtcs_shuffle(PywaveletsWavelet(), **wtcs_kwargs)
+    cohort.compute_wtcs_shuffle(**wtcs_kwargs)
 
     assert cohort.is_wtc_shuffle_computed == True
     assert len(cohort.dyads_shuffle[0].wtcs) == 1
@@ -289,7 +289,7 @@ def test_cohort_wtc():
 def test_dyad_computes_whole_record_by_default():
     subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
     dyad = DyadFNIRS(subject, subject)
-    dyad.compute_wtcs(PywaveletsWavelet(), match='S1_D1 760', time_range=(0,5))
+    dyad.compute_wtcs(match='S1_D1 760', time_range=(0,5))
     assert len(dyad.wtcs) == 1
 
 def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
@@ -297,13 +297,13 @@ def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
     dyad = DyadFNIRS(subject, subject)
     with pytest.raises(Exception):
         # This should raise an exception, since the epochs have not been loaded from annotations
-        dyad.compute_wtcs(PywaveletsWavelet(), match='S1_D1 760', time_range=(0,5))
+        dyad.compute_wtcs(match='S1_D1 760', time_range=(0,5))
 
 def test_dyad_connection_matrix():
     subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
     dyad = DyadFNIRS(subject, subject)
     match = re.compile(r'^S1_.*760')
-    dyad.compute_wtcs(PywaveletsWavelet(), match=match, time_range=(0,5))
+    dyad.compute_wtcs(match=match, time_range=(0,5))
     print(dyad.get_pairs(match=match))
     # channels detectors expected: D1-D1, D1-D2, D2-D1, D2-D2
     assert len(dyad.wtcs) == 4
@@ -315,11 +315,9 @@ def test_dyad_connection_matrix():
         ('task3', 3, TASK_NEXT_EVENT),
     ]
     subject = SubjectFNIRS(tasks=tasks).load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True).populate_epochs_from_annotations()
-    dyad = DyadFNIRS(subject, subject)
-    match = re.compile(r'^S1_.*760')
-    dyad.compute_wtcs(PywaveletsWavelet(), match=match, time_range=(0,5))
+    dyad = DyadFNIRS(subject, subject).compute_wtcs(match=re.compile(r'^S1_.*760'), time_range=(0,5))
     # channels detectors expected on 3 tasks: D1-D1, D1-D2, D2-D1, D2-D2
-    assert len(dyad.wtcs) == 4*3
+    assert len(dyad.wtcs) == 3*4
     conn_matrix, task_names, row_names, col_names = dyad.get_connection_matrix()
 
     assert len(conn_matrix.shape) == 3
@@ -337,16 +335,36 @@ def test_dyad_connection_matrix():
     assert conn_matrix[0,0,0] == pytest.approx(1)
     assert conn_matrix[0,1,1] == pytest.approx(1)
     assert conn_matrix[0,0,1] < 1
-    # Same subject so the matrix should be symetric
-    assert conn_matrix[0,0,1] == conn_matrix[0,1,0]
-    assert conn_matrix[1,0,1] == conn_matrix[1,1,0]
-    assert conn_matrix[2,0,1] == conn_matrix[2,1,0]
+    # Same subject so the matrix should be symetric on every task
+    assert np.all(conn_matrix[:,0,1] == conn_matrix[:,1,0])
 
-    assert conn_matrix[0,0,1] != conn_matrix[1,1,0]
+    # Make sure results for different tasks are not the same
+    assert conn_matrix[0,0,1] != conn_matrix[1,0,1]
 
-@pytest.mark.skip(reason="TODO")
-def test_dyad_connection_matrix_per_task():
-    pass
+def test_dyad_p_value_matrix():
+    tasks = [
+        ('task1', 1, TASK_NEXT_EVENT),
+        ('task2', 2, TASK_NEXT_EVENT),
+        ('task3', 3, TASK_NEXT_EVENT),
+    ]
+    match = re.compile(r'^S1_.*760')
+    subject1 = SubjectFNIRS(tasks=tasks).load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True).populate_epochs_from_annotations()
+    subject2 = SubjectFNIRS(tasks=tasks).load_file(DummyPreprocessorFNIRS(), snirf_file2, preprocess=True).populate_epochs_from_annotations()
+    dyad1 = DyadFNIRS(subject1, subject1)
+    dyad2 = DyadFNIRS(subject2, subject2)
+
+    # TODO we have too many methods to call, this should be much simpler
+    # Add a bunch of "dyad2" in the cohort to have a p-value
+    # TODO we should use synthetic data instead
+    kwargs = dict(match=match, time_range=(0,5))
+    CohortFNIRS([dyad1, dyad2, dyad2, dyad2, dyad2]).compute_wtcs(**kwargs, significance=True)
+
+    # We need a cohort to have a p-value
+    p_value_matrix = dyad1.get_p_value_matrix()[0]
+    assert len(p_value_matrix.shape) == 3
+
+    assert p_value_matrix[0,0,0] > 0
+    assert p_value_matrix[0,0,0] < 1
 
 @pytest.mark.skip(reason="TODO: have significance comparison")
 def test_significance():
@@ -356,12 +374,6 @@ def test_significance():
 def test_pair_indexing_in_matrix():
     pass
 
-#def test_dyad_connection_matrix():
-#    subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
-#    dyad = DyadFNIRS(subject, subject)
-#    dyad.compute_wtcs(PywaveletsWavelet(), match='760', time_range=(0,5))
-    
-    
 # Skip this test because it downloads data. We don't want this on the CI
 @pytest.mark.skip(reason="Downloads data")
 def test_download_demos():

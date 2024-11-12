@@ -34,9 +34,14 @@ class CohortFNIRS():
                 dyads_shuffle.append(DyadFNIRS(dyad1.s1, dyad2.s2))
         return dyads_shuffle
 
-    def compute_wtcs(self, *args, **kwargs):
+    def compute_wtcs(self, *args, significance=False, **kwargs):
         for dyad in self.dyads:
             dyad.compute_wtcs(*args, **kwargs)
+        
+        if significance:
+            self.compute_wtcs_shuffle(**kwargs)
+            self.compute_wtcs_significance()
+            
         return self
     
     def compute_wtcs_shuffle(self, *args, **kwargs):

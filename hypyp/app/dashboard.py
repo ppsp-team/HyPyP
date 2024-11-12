@@ -179,7 +179,7 @@ app_ui = ui.page_fluid(
             open="always",
             width=400,
         ),
-        title="Wavelet Explorer",
+        title="HyPyP fNIRS explorer",
         fillable=True,
         bg="transparent"
     )

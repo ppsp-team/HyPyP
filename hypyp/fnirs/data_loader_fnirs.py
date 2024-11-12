@@ -32,10 +32,6 @@ class DataBrowserFNIRS:
         return os.path.isfile(path) and path.endswith('.hdr')
 
     @staticmethod
-    def path_is_nirs(path):
-        return os.path.isfile(path) and path.endswith('.nirs')
-
-    @staticmethod
     def path_is_fif(path):
         return os.path.isfile(path) and path.endswith('.fif')
 
@@ -48,9 +44,6 @@ class DataBrowserFNIRS:
         for root_path in self.paths:
             for path in Path(root_path).rglob('*'):
                 if DataBrowserFNIRS.path_is_fif(str(path)):
-                    file_paths.append(str(path.absolute()))
-
-                elif DataBrowserFNIRS.path_is_nirs(str(path)):
                     file_paths.append(str(path.absolute()))
 
                 elif DataBrowserFNIRS.path_is_nirx(str(path)):

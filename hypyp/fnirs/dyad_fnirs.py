@@ -4,6 +4,8 @@ import re
 
 import numpy as np
 
+from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
+
 from ..wavelet.base_wavelet import WTC, BaseWavelet
 from ..wavelet.pair_signals import PairSignals
 from .subject_fnirs import SubjectFNIRS, TASK_NAME_WHOLE_RECORD
@@ -105,7 +107,7 @@ class DyadFNIRS:
     # TODO remove "time_range", this is only for testing
     def compute_wtcs(
         self,
-        wavelet: BaseWavelet,
+        wavelet:BaseWavelet=PywaveletsWavelet(),
         match:PairMatch=None,
         time_range:Tuple[float,float]=None,
         verbose=False,
@@ -122,7 +124,7 @@ class DyadFNIRS:
             self.pairs.append(pair)
         return self
     
-    def get_connection_matrix(self):
+    def get_wtc_property_matrix(self, property_name: str):
         task_map = OrderedDict()
         row_map = OrderedDict()
         col_map = OrderedDict()
@@ -146,6 +148,12 @@ class DyadFNIRS:
             i = task_map[wtc.task]
             j = row_map[wtc.ch_name1]
             k = col_map[wtc.ch_name2]
-            mat[i,j,k] = wtc.sig_metric
+            mat[i,j,k] = getattr(wtc, property_name)
 
         return mat, tasks, ch_names1, ch_names2
+    
+    def get_connection_matrix(self):
+        return self.get_wtc_property_matrix('sig_metric')
+
+    def get_p_value_matrix(self):
+        return self.get_wtc_property_matrix('sig_p_value')

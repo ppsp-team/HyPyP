@@ -27,6 +27,7 @@ class MnePreprocessorFNIRS(BasePreprocessorFNIRS[mne.io.Raw]):
     def __init__(self):
         super().__init__()
     
+    # TODO these 2 functions are no longer used
     def get_nirs_ch_names(self, meas_list, lambdas):
         ret = []
         for s, d, _, lmbda in meas_list:
@@ -41,22 +42,10 @@ class MnePreprocessorFNIRS(BasePreprocessorFNIRS[mne.io.Raw]):
             sfreq,
             ch_types=['fnirs_cw_amplitude']*n_channels)
         return info
-        
     
     def read_file(self, path):
         if DataBrowserFNIRS.path_is_fif(path):
             return mne.io.read_raw_fif(path, preload=True)
-
-        if DataBrowserFNIRS.path_is_nirs(path):
-            mat = scipy.io.loadmat(path)
-            x = mat['t'].flatten().astype(np.float64, copy=True)
-            n_channels = mat['d'].shape[1]
-            data = np.zeros((n_channels, len(x)))
-            for i in range(n_channels):
-                data[i, :] = mat['d'][:, i].flatten().astype(np.complex128, copy=True)
-
-            info = self.get_info_nirs(x, mat)
-            return mne.io.RawArray(data, info)
 
         if DataBrowserFNIRS.path_is_nirx(path):
             return mne.io.read_raw_nirx(fname=path, preload=True)
@@ -85,7 +74,7 @@ class MnePreprocessorFNIRS(BasePreprocessorFNIRS[mne.io.Raw]):
         # If we have haemo_picks, it means it is already preprocessed
         # TODO: this code flow if confusing
         if len(haemo_picks) > 0:
-            raw_haemo = self.raw.copy().pick(haemo_picks)
+            raw_haemo = raw.copy().pick(haemo_picks)
             steps.append(MnePreprocessStep(raw_haemo, PREPROCESS_STEP_HAEMO_FILTERED_KEY, PREPROCESS_STEP_HAEMO_DESC))
             return steps
 
