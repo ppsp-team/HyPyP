@@ -286,8 +286,74 @@ def test_cohort_wtc():
     cohort.compute_wtcs_significance()
     assert cohort.dyads[0].wtcs[0].sig_p_value > 0
 
+def test_dyad_computes_whole_record_by_default():
+    subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
+    dyad = DyadFNIRS(subject, subject)
+    dyad.compute_wtcs(PywaveletsWavelet(), match='S1_D1 760', time_range=(0,5))
+    assert len(dyad.wtcs) == 1
+
+def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
+    subject = SubjectFNIRS(tasks=[('task1', 1, TASK_NEXT_EVENT)]).load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
+    dyad = DyadFNIRS(subject, subject)
+    with pytest.raises(Exception):
+        # This should raise an exception, since the epochs have not been loaded from annotations
+        dyad.compute_wtcs(PywaveletsWavelet(), match='S1_D1 760', time_range=(0,5))
+
+def test_dyad_connection_matrix():
+    subject = SubjectFNIRS().load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True)
+    dyad = DyadFNIRS(subject, subject)
+    match = re.compile(r'^S1_.*760')
+    dyad.compute_wtcs(PywaveletsWavelet(), match=match, time_range=(0,5))
+    print(dyad.get_pairs(match=match))
+    # channels detectors expected: D1-D1, D1-D2, D2-D1, D2-D2
+    assert len(dyad.wtcs) == 4
+
+def test_dyad_connection_matrix():
+    tasks = [
+        ('task1', 1, TASK_NEXT_EVENT),
+        ('task2', 2, TASK_NEXT_EVENT),
+        ('task3', 3, TASK_NEXT_EVENT),
+    ]
+    subject = SubjectFNIRS(tasks=tasks).load_file(DummyPreprocessorFNIRS(), snirf_file1, preprocess=True).populate_epochs_from_annotations()
+    dyad = DyadFNIRS(subject, subject)
+    match = re.compile(r'^S1_.*760')
+    dyad.compute_wtcs(PywaveletsWavelet(), match=match, time_range=(0,5))
+    # channels detectors expected on 3 tasks: D1-D1, D1-D2, D2-D1, D2-D2
+    assert len(dyad.wtcs) == 4*3
+    conn_matrix, task_names, row_names, col_names = dyad.get_connection_matrix()
+
+    assert len(conn_matrix.shape) == 3
+    assert conn_matrix.shape[0] == 3 # 3 tasks
+    assert conn_matrix.shape[1] == 2
+    assert conn_matrix.shape[2] == 2
+
+    assert task_names[0] == 'task1'
+    assert row_names[0] == 'S1_D1 760'
+    assert row_names[-1] == 'S1_D2 760'
+    assert col_names[0] == 'S1_D1 760'
+    assert col_names[-1] == 'S1_D2 760'
+
+    # Since the dyad is twice the same subject, the diagonal should be 1
+    assert conn_matrix[0,0,0] == pytest.approx(1)
+    assert conn_matrix[0,1,1] == pytest.approx(1)
+    assert conn_matrix[0,0,1] < 1
+    # Same subject so the matrix should be symetric
+    assert conn_matrix[0,0,1] == conn_matrix[0,1,0]
+    assert conn_matrix[1,0,1] == conn_matrix[1,1,0]
+    assert conn_matrix[2,0,1] == conn_matrix[2,1,0]
+
+    assert conn_matrix[0,0,1] != conn_matrix[1,1,0]
+
+@pytest.mark.skip(reason="TODO")
+def test_dyad_connection_matrix_per_task():
+    pass
+
 @pytest.mark.skip(reason="TODO: have significance comparison")
 def test_significance():
+    pass
+
+@pytest.mark.skip(reason="TODO: optimisation")
+def test_pair_indexing_in_matrix():
     pass
 
 #def test_dyad_connection_matrix():

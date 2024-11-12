@@ -1,11 +1,12 @@
 from typing import Tuple, List
+from collections import OrderedDict
 import re
 
 import numpy as np
 
 from ..wavelet.base_wavelet import WTC, BaseWavelet
-from .pair_signals import PairSignals
-from .subject_fnirs import SubjectFNIRS
+from ..wavelet.pair_signals import PairSignals
+from .subject_fnirs import SubjectFNIRS, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor_fnirs import BasePreprocessorFNIRS
 
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
@@ -15,6 +16,7 @@ class DyadFNIRS:
         self.s1: SubjectFNIRS = s1
         self.s2: SubjectFNIRS = s2
         self.wtcs: List[WTC] = None
+        self.pairs: List[PairSignals] = None
         self.tasks = list(set(s1.tasks) & set(s2.tasks))
     
     @property 
@@ -70,11 +72,15 @@ class DyadFNIRS:
         ch_names2 = [ch_name for ch_name in self.s2.pre.ch_names if check_match(ch_name, match[1])]
 
         for task in self.tasks:
-            epochs1 = self.s1.get_epochs_for_task(task[0]).copy().pick(ch_names1)
-            epochs2 = self.s2.get_epochs_for_task(task[0]).copy().pick(ch_names2)
-            # TODO here we take only the first epoch per task. Should we take more
-            s1_data = epochs1.get_data()[0,:,:]
-            s2_data = epochs2.get_data()[0,:,:]
+            if task[0] == TASK_NAME_WHOLE_RECORD:
+                s1_data = self.s1.pre.copy().pick(ch_names1).get_data()
+                s2_data = self.s2.pre.copy().pick(ch_names2).get_data()
+            else:
+                epochs1 = self.s1.get_epochs_for_task(task[0]).copy().pick(ch_names1)
+                epochs2 = self.s2.get_epochs_for_task(task[0]).copy().pick(ch_names2)
+                # TODO here we take only the first epoch per task. Should we take more?
+                s1_data = epochs1.get_data(copy=False)[0,:,:]
+                s2_data = epochs2.get_data(copy=False)[0,:,:]
 
             n = s1_data.shape[1]
             x = np.linspace(0, n/self.s1.pre.info['sfreq'], n)
@@ -94,7 +100,7 @@ class DyadFNIRS:
         return pairs
     
     def get_pair_wtc(self, pair: PairSignals, wavelet: BaseWavelet) -> WTC: 
-        return wavelet.wtc(pair.y1, pair.y2, pair.dt, task=pair.task, label=pair.label)
+        return wavelet.wtc(pair)
     
     # TODO remove "time_range", this is only for testing
     def compute_wtcs(
@@ -105,6 +111,7 @@ class DyadFNIRS:
         verbose=False,
     ):
         self.wtcs = []
+        self.pairs = []
 
         for pair in self.get_pairs(match=match):
             if verbose:
@@ -112,5 +119,33 @@ class DyadFNIRS:
             if time_range is not None:
                 pair = pair.sub(time_range)
             self.wtcs.append(self.get_pair_wtc(pair, wavelet))
+            self.pairs.append(pair)
         return self
     
+    def get_connection_matrix(self):
+        task_map = OrderedDict()
+        row_map = OrderedDict()
+        col_map = OrderedDict()
+
+        tasks = sorted(list(set([wtc.task for wtc in self.wtcs])))
+        ch_names1 = sorted(list(set([wtc.ch_name1 for wtc in self.wtcs])))
+        ch_names2 = sorted(list(set([wtc.ch_name2 for wtc in self.wtcs])))
+
+        for i, task in enumerate(tasks):
+            task_map[task] = i
+
+        for j, ch_name1 in enumerate(ch_names1):
+            row_map[ch_name1] = j
+
+        for k, ch_name2 in enumerate(ch_names2):
+            col_map[ch_name2] = k
+
+        mat = np.zeros((len(tasks), len(ch_names1), len(ch_names2)))
+
+        for wtc in self.wtcs:
+            i = task_map[wtc.task]
+            j = row_map[wtc.ch_name1]
+            k = col_map[wtc.ch_name2]
+            mat[i,j,k] = wtc.sig_metric
+
+        return mat, tasks, ch_names1, ch_names2

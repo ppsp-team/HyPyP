@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 from skimage.measure import block_reduce
 
+from hypyp.wavelet.pair_signals import PairSignals
+
 from ..plots import plot_cwt_weights, plot_wavelet_coherence
 from .smooth import smoothing
 
@@ -20,7 +22,7 @@ class CWT:
         return plot_cwt_weights(self.W, self.times, self.frequencies, self.coif)
 
 class WTC:
-    def __init__(self, wtc, times, scales, frequencies, coif, task=None, label=None, sig=None, tracer=None):
+    def __init__(self, wtc, times, scales, frequencies, coif, pair: PairSignals, sig=None, tracer=None):
         self.wtc = wtc
         # TODO: compute Region of Interest, something like this:
         #roi = wtc * (wtc > coif[np.newaxis, :]).astype(int)
@@ -29,8 +31,10 @@ class WTC:
         self.frequencies = frequencies
         self.coi = 1 / coif
         self.coif = coif
-        self.task = task
-        self.label = label
+        self.task = pair.task
+        self.label = pair.label
+        self.ch_name1 = pair.ch_name1
+        self.ch_name2 = pair.ch_name2
         self.tracer = tracer
         self.sig_metric = np.mean(wtc) # TODO this is just a PoC
         self.sig_p_value = None
@@ -79,7 +83,10 @@ class BaseWavelet(ABC):
     def cwt(self, y, dt, dj):
         pass
     
-    def wtc(self, y1, y2, dt, task=None, label=None):
+    def wtc(self, pair: PairSignals):
+        y1 = pair.y1
+        y2 = pair.y2
+        dt = pair.dt
         if len(y1) != len(y2):
             raise RuntimeError("Arrays not same size")
 
@@ -141,6 +148,6 @@ class BaseWavelet(ABC):
         self.tracer['S2'] = S2
         self.tracer['S12'] = S12
 
-        return WTC(wtc, times, scales, frequencies, coif, task=task, label=label, tracer=self.tracer)
+        return WTC(wtc, times, scales, frequencies, coif, pair, tracer=self.tracer)
 
     

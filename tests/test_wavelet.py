@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 
 from hypyp.signal import SynteticSignal
+from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 
 def test_instanciate():
@@ -69,7 +70,7 @@ def test_wtc():
     wavelet = PywaveletsWavelet()
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
-    res = wavelet.wtc(signal1.y, signal2.y, signal1.period)
+    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     # check that we have a metric for significance
     assert res.sig_metric > 0
     assert res.sig_metric < 1

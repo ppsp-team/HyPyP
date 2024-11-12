@@ -1,10 +1,9 @@
-import pycwt
 import numpy as np
 
 import matlab.engine
 
-from hypyp.signal import SynteticSignal
-from .base_wavelet import CWT, BaseWavelet, WTC
+from .base_wavelet import BaseWavelet, WTC
+from .pair_signals import PairSignals
 
 # In order to work, python must know the location of matlab
 # Add something like this to ~/.bashrc
@@ -52,7 +51,10 @@ class MatlabWavelet(BaseWavelet):
     def cwt(self, y, dt, dj):
         pass
 
-    def wtc(self, y1, y2, dt):
+    def wtc(self, pair: PairSignals):
+        y1 = pair.y1
+        y2 = pair.y2
+        dt = pair.dt
         #self.eng.eval("times_vec = linspace(0, 200, 1000); ", nargout=0)
         #self.eng.eval("freq1 = 0.1; ", nargout=0)
         #self.eng.eval("freq2 = 0.2; ", nargout=0)
@@ -70,4 +72,4 @@ class MatlabWavelet(BaseWavelet):
         coif = 1 / np.array(self.eng.workspace['coi']).flatten()
         sig = np.array(self.eng.workspace['sig']).flatten()
         frequencies = 1 / periods
-        return WTC(wtc, times, scales, frequencies, coif, tracer=self.tracer)
+        return WTC(wtc, times, scales, frequencies, coif, pair, tracer=self.tracer)

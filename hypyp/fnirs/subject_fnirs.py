@@ -8,6 +8,8 @@ import itertools as itertools
 from .preprocessors.base_preprocessor_fnirs import BasePreprocessorFNIRS, BasePreprocessStep
 from ..utils import epochs_from_tasks, TASK_BEGINNING, TASK_END
 
+TASK_NAME_WHOLE_RECORD = 'whole_record'
+
 # typing
 Task = tuple[str, int, int|None]
 TaskList = list[Task]
@@ -25,7 +27,7 @@ class SubjectFNIRS:
                 assert len(task) == 3
             self.tasks: TaskList = tasks
         else:
-            self.tasks = [('whole_record', TASK_BEGINNING, TASK_END)]
+            self.tasks = [(TASK_NAME_WHOLE_RECORD, TASK_BEGINNING, TASK_END)]
 
     def _assert_is_preprocessed(self):
         if not self.is_preprocessed:

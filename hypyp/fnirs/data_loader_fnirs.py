@@ -6,7 +6,7 @@ import pooch
 import numpy as np
 import scipy.io
 
-from .pair_signals import PairSignals
+from ..wavelet.pair_signals import PairSignals
 
 DOWNLOADS_RELATIVE_PATH = os.path.join('data', 'fNIRS', 'downloads')
 

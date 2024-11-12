@@ -12,7 +12,7 @@ import pandas as pd
 from scipy import fft
 import mne
 
-from hypyp.fnirs.pair_signals import PairSignals
+from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.fnirs.data_loader_fnirs import DataBrowserFNIRS
 from hypyp.fnirs.subject_fnirs import SubjectFNIRS
 from hypyp.fnirs.preprocessors.mne_preprocessor_fnirs import MnePreprocessorFNIRS, DummyPreprocessorFNIRS

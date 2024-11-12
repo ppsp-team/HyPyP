@@ -2,6 +2,7 @@ import pycwt
 import numpy as np
 
 from .base_wavelet import CWT, BaseWavelet, WTC
+from .pair_signals import PairSignals
 
 class PycwtWavelet(BaseWavelet):
     def __init__(
@@ -31,7 +32,10 @@ class PycwtWavelet(BaseWavelet):
         times = np.arange(len(y)) * dt
         return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coif=coif)
 
-    def wtc(self, y1, y2, dt):
+    def wtc(self, pair: PairSignals):
+        y1 = pair.y1
+        y2 = pair.y2
+        dt = pair.dt
         assert (len(y1) == len(y2)), "error: arrays not same size"
         N = len(y1)
         times = np.arange(N) * dt
@@ -40,4 +44,4 @@ class PycwtWavelet(BaseWavelet):
         coif = 1 / coif_periods
         if not self.compute_significance:
             sig = None
-        return WTC(wtc, times, self.tracer['scales'], frequencies, coif, sig, tracer=self.tracer)
+        return WTC(wtc, times, self.tracer['scales'], frequencies, coif, pair, sig=sig, tracer=self.tracer)
