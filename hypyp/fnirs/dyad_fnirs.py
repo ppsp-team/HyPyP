@@ -19,7 +19,7 @@ class DyadFNIRS:
         self.s2: SubjectFNIRS = s2
         self.wtcs: List[WTC] = None
         self.pairs: List[PairSignals] = None
-        self.tasks = list(set(s1.tasks) & set(s2.tasks))
+        self.tasks = list(set(s1.tasks_annotations) & set(s2.tasks_annotations))
     
     @property 
     def subjects(self):
@@ -42,9 +42,9 @@ class DyadFNIRS:
                 subject.preprocess(preprocessor)
         return self
     
-    def populate_epochs_from_annotations(self, **kwargs):
+    def populate_epochs_from_tasks(self, **kwargs):
         for subject in self.subjects:
-            subject.populate_epochs_from_annotations(**kwargs)
+            subject.populate_epochs_from_tasks(**kwargs)
         return self
 
     def get_pairs(self, match:PairMatch=None) -> List[PairSignals]:

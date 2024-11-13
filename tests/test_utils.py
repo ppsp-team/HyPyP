@@ -33,7 +33,7 @@ def test_epochs_per_task():
         ('task2', 3, 4),
     ]
 
-    all_epochs = utils.epochs_from_tasks(raw, tasks)
+    all_epochs = utils.epochs_from_tasks_annotations(raw, tasks)
     assert len(all_epochs) == len(tasks)
     assert all_epochs[0].tmax == pytest.approx(3)
     assert all_epochs[2].tmax == pytest.approx(1)
@@ -49,7 +49,7 @@ def test_epochs_recurring_task():
         ('task1', 1, 2),
     ]
 
-    all_epochs = utils.epochs_from_tasks(raw, tasks)
+    all_epochs = utils.epochs_from_tasks_annotations(raw, tasks)
     assert len(all_epochs) == 1
     assert len(all_epochs[0]) == 2
 
@@ -64,7 +64,7 @@ def test_epochs_recurring_task_crop_time():
         ('task1', 1, 2),
     ]
 
-    all_epochs = utils.epochs_from_tasks(raw, tasks)
+    all_epochs = utils.epochs_from_tasks_annotations(raw, tasks)
     epochs = all_epochs[0]
     assert len(epochs.times) >= 200
     assert len(epochs.times) < 300
@@ -77,7 +77,19 @@ def test_task_start_end_combinaison():
     descriptions = np.arange(1, len(onsets)+1)
     raw.set_annotations(mne.Annotations(onset=onsets, duration=durations, description=descriptions))
 
-    assert utils.epochs_from_tasks(raw, [('task1', 1, utils.TASK_NEXT_EVENT)])[0].tmax == pytest.approx(3)
-    assert utils.epochs_from_tasks(raw, [('task1', 1, utils.TASK_END)])[0].tmax == pytest.approx(8, abs=0.01)
-    assert utils.epochs_from_tasks(raw, [('task1', utils.TASK_BEGINNING, utils.TASK_NEXT_EVENT)])[0].tmax == pytest.approx(2, abs=0.01)
-    assert utils.epochs_from_tasks(raw, [('task1', utils.TASK_BEGINNING, utils.TASK_END)])[0].tmax == pytest.approx(10, abs=0.01)
+    assert utils.epochs_from_tasks_annotations(raw, [('task1', 1, utils.TASK_NEXT_EVENT)])[0].tmax == pytest.approx(3)
+    assert utils.epochs_from_tasks_annotations(raw, [('task1', 1, utils.TASK_END)])[0].tmax == pytest.approx(8, abs=0.01)
+    assert utils.epochs_from_tasks_annotations(raw, [('task1', utils.TASK_BEGINNING, utils.TASK_NEXT_EVENT)])[0].tmax == pytest.approx(2, abs=0.01)
+    assert utils.epochs_from_tasks_annotations(raw, [('task1', utils.TASK_BEGINNING, utils.TASK_END)])[0].tmax == pytest.approx(10, abs=0.01)
+
+def test_task_from_time_range():
+    raw = get_fake_raw()
+    tasks = [
+        ('task1', 0, 1), # task from start to 1 second
+        ('task2', 3, 5), # task from 3 seconds to 5 seconds
+    ]
+
+    all_epochs = utils.epochs_from_tasks_time_range(raw, tasks)
+    print(all_epochs[0])
+    print(all_epochs[1])
+    assert len(all_epochs) == 2

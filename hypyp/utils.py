@@ -400,12 +400,42 @@ def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: flo
     
     return simulation
 
+# typing
+Task = tuple[str, int, int|None]
+TaskList = list[Task]
+
 # Constants for task description
 TASK_NEXT_EVENT = None
 TASK_BEGINNING = -1
 TASK_END = -1
 
-def epochs_from_tasks(raw: mne.io.Raw, tasks: List[Tuple[str,int,int]]) -> List[mne.Epochs]:
+def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList) -> List[mne.Epochs]:
+    all_epochs = []
+    for i, task in enumerate(tasks):
+        event_id = i + 1
+        duration = task[2] - task[1]
+        events = mne.make_fixed_length_events(raw,
+                                            id=event_id,
+                                            start=task[1],
+                                            stop=task[2],
+                                            duration=duration,
+                                            first_samp=True,
+                                            overlap=0.0)
+
+        event_id_map = {task[0]: event_id}
+        epochs = mne.Epochs(raw,
+                            events,
+                            event_id=event_id_map, # TODO this doesn't seem to work. The event_id is always 1
+                            tmin=0,
+                            tmax=duration,
+                            baseline=None,
+                            preload=True,
+                            reject=None,
+                            proj=True)
+        all_epochs.append(epochs)
+    return all_epochs
+
+def epochs_from_tasks_annotations(raw: mne.io.Raw, tasks: TaskList) -> List[mne.Epochs]:
     events, _ = mne.events_from_annotations(raw)
     #print(events)
 

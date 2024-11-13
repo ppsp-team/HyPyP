@@ -6,28 +6,32 @@ import mne
 import itertools as itertools
 
 from .preprocessors.base_preprocessor_fnirs import BasePreprocessorFNIRS, BasePreprocessStep
-from ..utils import epochs_from_tasks, TASK_BEGINNING, TASK_END
+from ..utils import epochs_from_tasks_annotations, TASK_BEGINNING, TASK_END, Task, TaskList, epochs_from_tasks_time_range
 
 TASK_NAME_WHOLE_RECORD = 'whole_record'
 
-# typing
-Task = tuple[str, int, int|None]
-TaskList = list[Task]
-
 class SubjectFNIRS:
-    def __init__(self, tasks:TaskList=[]):
+    def __init__(self, tasks_annotations:TaskList=[], tasks_time_range:TaskList=[]):
         self.filepath: str = None
         self.raw: mne.io.Raw = None
         self.epochs_per_task: List[mne.Epochs] = None
         self.preprocess_steps: List[BasePreprocessStep] = None
+        self.tasks_annotations: TaskList = []
+        self.tasks_time_range: TaskList = []
 
-        if len(tasks) > 0:
-            for task in tasks:
+        if len(tasks_annotations) > 0:
+            for task in tasks_annotations:
                 assert isinstance(task[0], str)
                 assert len(task) == 3
-            self.tasks: TaskList = tasks
+            self.tasks_annotations: TaskList = tasks_annotations
+        elif len(tasks_time_range) > 0:
+            for task in tasks_time_range:
+                assert isinstance(task[0], str)
+                assert len(task) == 3
+            self.tasks_time_range: TaskList = tasks_time_range
         else:
-            self.tasks = [(TASK_NAME_WHOLE_RECORD, TASK_BEGINNING, TASK_END)]
+            # TODO this should use tasks_time_range
+            self.tasks_annotations = [(TASK_NAME_WHOLE_RECORD, TASK_BEGINNING, TASK_END)]
 
     def _assert_is_preprocessed(self):
         if not self.is_preprocessed:
@@ -35,11 +39,11 @@ class SubjectFNIRS:
 
     def _assert_is_epochs_loaded(self):
         if not self.is_epochs_loaded:
-            raise RuntimeError('Subject does not have epochs loaded. Did you run populate_epochs_from_annotations() ?')
+            raise RuntimeError('Subject does not have epochs loaded. Did you run populate_epochs_from_tasks() ?')
 
     @property
     def task_keys(self):
-        return [task[0] for task in self.tasks]
+        return [task[0] for task in self.tasks_annotations]
 
     @property
     def is_preprocessed(self) -> bool:
@@ -92,15 +96,25 @@ class SubjectFNIRS:
 
         raise RuntimeError(f'No preprocess step named "{key}"')
     
-    def populate_epochs_from_annotations(self):
-        self.epochs_per_task = epochs_from_tasks(self.pre, self.tasks)
+    def populate_epochs_from_tasks(self):
+        if len(self.tasks_annotations) > 0:
+            self.epochs_per_task = epochs_from_tasks_annotations(self.pre, self.tasks_annotations)
+        if len(self.tasks_time_range) > 0:
+            self.epochs_per_task = epochs_from_tasks_time_range(self.pre, self.tasks_time_range)
         return self
     
     def get_epochs_for_task(self, task_name: str):
         self._assert_is_epochs_loaded()
-        id = [i for i in range(len(self.tasks)) if self.tasks[i][0] == task_name][0]
+        id = None
+        # TODO this try-except is ugly
+        try:
+            id = [i for i in range(len(self.tasks_annotations)) if self.tasks_annotations[i][0] == task_name][0]
+        except:
+            id = [i for i in range(len(self.tasks_time_range)) if self.tasks_time_range[i][0] == task_name][0]
+
         if id is None:
             raise RuntimeError(f'Cannot find epochs for task "{task_name}"')
+
         return self.epochs_per_task[id]
         
 #    def set_event_ids(self, foo):
