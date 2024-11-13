@@ -4,11 +4,11 @@ import numpy as np
 from scipy.stats import ttest_1samp
 
 
-from .dyad_fnirs import DyadFNIRS
+from .dyad import Dyad
 
-class CohortFNIRS():
-    def __init__(self, dyads: List[DyadFNIRS] = []):
-        self.dyads: List[DyadFNIRS] = dyads
+class Cohort():
+    def __init__(self, dyads: List[Dyad] = []):
+        self.dyads: List[Dyad] = dyads
         self.dyads_shuffle = self.get_dyads_shuffle()
 
     @property
@@ -25,13 +25,13 @@ class CohortFNIRS():
                 return False
         return True
 
-    def get_dyads_shuffle(self) -> List[DyadFNIRS]:
+    def get_dyads_shuffle(self) -> List[Dyad]:
         dyads_shuffle = []
         for i, dyad1 in enumerate(self.dyads):
             for j, dyad2 in enumerate(self.dyads):
                 if i == j:
                     continue
-                dyads_shuffle.append(DyadFNIRS(dyad1.s1, dyad2.s2))
+                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2))
         return dyads_shuffle
 
     def compute_wtcs(self, *args, significance=False, **kwargs):

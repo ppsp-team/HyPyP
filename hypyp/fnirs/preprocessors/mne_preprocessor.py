@@ -4,8 +4,8 @@ import numpy as np
 import mne
 import scipy.io
 
-from ..data_loader_fnirs import DataBrowserFNIRS
-from .base_preprocessor_fnirs import *
+from ..data_loader import DataBrowser
+from .base_preprocessor import *
 
 class MnePreprocessStep(BasePreprocessStep[mne.io.Raw]):
     @property
@@ -23,7 +23,7 @@ class MnePreprocessStep(BasePreprocessStep[mne.io.Raw]):
     def plot(self, **kwargs):
         return self.obj.plot(**kwargs)
 
-class MnePreprocessorFNIRS(BasePreprocessorFNIRS[mne.io.Raw]):
+class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
     def __init__(self):
         super().__init__()
     
@@ -44,13 +44,13 @@ class MnePreprocessorFNIRS(BasePreprocessorFNIRS[mne.io.Raw]):
         return info
     
     def read_file(self, path):
-        if DataBrowserFNIRS.path_is_fif(path):
+        if DataBrowser.path_is_fif(path):
             return mne.io.read_raw_fif(path, preload=True)
 
-        if DataBrowserFNIRS.path_is_nirx(path):
+        if DataBrowser.path_is_nirx(path):
             return mne.io.read_raw_nirx(fname=path, preload=True)
 
-        if DataBrowserFNIRS.path_is_snirf(path):
+        if DataBrowser.path_is_snirf(path):
             return mne.io.read_raw_snirf(path, preload=True)
 
         return None
@@ -116,7 +116,7 @@ class MnePreprocessorFNIRS(BasePreprocessorFNIRS[mne.io.Raw]):
         
 
 # This is the same as MnePreprocessor, but without the default pipeline
-class DummyPreprocessorFNIRS(MnePreprocessorFNIRS):
+class DummyPreprocessor(MnePreprocessor):
     def __init__(self):
         super().__init__()
     

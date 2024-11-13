@@ -13,16 +13,16 @@ from scipy import fft
 import mne
 
 from hypyp.wavelet.pair_signals import PairSignals
-from hypyp.fnirs.data_loader_fnirs import DataBrowserFNIRS
-from hypyp.fnirs.subject_fnirs import SubjectFNIRS
-from hypyp.fnirs.preprocessors.mne_preprocessor_fnirs import MnePreprocessorFNIRS, DummyPreprocessorFNIRS
+from hypyp.fnirs.data_loader import DataBrowser
+from hypyp.fnirs.subject import Subject
+from hypyp.fnirs.preprocessors.mne_preprocessor import MnePreprocessor, DummyPreprocessor
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
 from hypyp.wavelet.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
 
 # TODO: Cedalion is optional, this import should be in a try-catch
-from hypyp.fnirs.preprocessors.cedalion_preprocessor_fnirs import CedalionPreprocessorFNIRS
+from hypyp.fnirs.preprocessors.cedalion_preprocessor import CedalionPreprocessor
 
 root = os.path.join(Path(__file__).parent, '..', '..')
 sys.path.append(root)
@@ -339,23 +339,23 @@ def server(input: Inputs, output: Outputs, session: Session):
         return f"File: {get_signal_data_files_s2_path()}"
 
     def get_data_browser():
-        return DataBrowserFNIRS().add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
+        return DataBrowser().add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
 
     def get_preprocessor():
         if input.subject_preprocessor() == 'mne':
-            return MnePreprocessorFNIRS()
+            return MnePreprocessor()
         if input.subject_preprocessor() == 'dummy':
-            return DummyPreprocessorFNIRS()
+            return DummyPreprocessor()
         if input.subject_preprocessor() == 'cedalion':
-            return CedalionPreprocessorFNIRS()
+            return CedalionPreprocessor()
 
     @reactive.calc()
     def get_subject1():
-        return SubjectFNIRS().load_file(get_preprocessor(), get_signal_data_files_s1_path()).preprocess(get_preprocessor())
+        return Subject().load_file(get_preprocessor(), get_signal_data_files_s1_path()).preprocess(get_preprocessor())
 
     @reactive.calc()
     def get_subject2():
-        return SubjectFNIRS().load_file(get_preprocessor(), get_signal_data_files_s2_path()).preprocess(get_preprocessor())
+        return Subject().load_file(get_preprocessor(), get_signal_data_files_s2_path()).preprocess(get_preprocessor())
 
     @reactive.calc()
     def get_subject1_step():

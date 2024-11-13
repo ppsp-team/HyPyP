@@ -8,15 +8,15 @@ from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 
 from ..wavelet.base_wavelet import WTC, BaseWavelet
 from ..wavelet.pair_signals import PairSignals
-from .subject_fnirs import SubjectFNIRS, TASK_NAME_WHOLE_RECORD
-from .preprocessors.base_preprocessor_fnirs import BasePreprocessorFNIRS
+from .subject import Subject, TASK_NAME_WHOLE_RECORD
+from .preprocessors.base_preprocessor import BasePreprocessor
 
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
 
-class DyadFNIRS:
-    def __init__(self, s1: SubjectFNIRS, s2: SubjectFNIRS):
-        self.s1: SubjectFNIRS = s1
-        self.s2: SubjectFNIRS = s2
+class Dyad:
+    def __init__(self, s1: Subject, s2: Subject):
+        self.s1: Subject = s1
+        self.s2: Subject = s2
         self.wtcs: List[WTC] = None
         self.pairs: List[PairSignals] = None
         self.tasks = list(set(s1.tasks_annotations) & set(s2.tasks_annotations))
@@ -36,7 +36,7 @@ class DyadFNIRS:
     def is_wtc_computed(self):
         return self.wtcs is not None
 
-    def preprocess(self, preprocessor: BasePreprocessorFNIRS):
+    def preprocess(self, preprocessor: BasePreprocessor):
         for subject in self.subjects:
             if not subject.is_preprocessed:
                 subject.preprocess(preprocessor)

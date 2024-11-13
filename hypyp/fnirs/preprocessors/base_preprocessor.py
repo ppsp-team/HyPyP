@@ -55,7 +55,7 @@ class BasePreprocessStep(ABC, Generic[T]):
     def plot(self, **kwargs):
         pass
 
-class BasePreprocessorFNIRS(ABC, Generic[T]):
+class BasePreprocessor(ABC, Generic[T]):
     @abstractmethod
     def read_file(self, path: str) -> T:
         pass

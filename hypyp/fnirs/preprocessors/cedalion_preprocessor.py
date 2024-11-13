@@ -4,8 +4,8 @@ import cedalion.dataclasses as cdc
 from cedalion.typing import NDTimeSeries
 import matplotlib.pyplot as plt
 
-from ..data_loader_fnirs import DataBrowserFNIRS
-from .base_preprocessor_fnirs import *
+from ..data_loader import DataBrowser
+from .base_preprocessor import *
 
 class CedalionPreprocessStep(BasePreprocessStep[cdc.Recording]):
     @property
@@ -45,9 +45,9 @@ class CedalionPreprocessStep(BasePreprocessStep[cdc.Recording]):
         #plt.tight_layout()
         return f
 
-class CedalionPreprocessorFNIRS(BasePreprocessorFNIRS):
+class CedalionPreprocessor(BasePreprocessor):
     def read_file(self, path) -> cdc.Recording:
-        if not DataBrowserFNIRS.path_is_snirf(path):
+        if not DataBrowser.path_is_snirf(path):
             raise RuntimeError('Not implemented: only snirf file is supported for now')
 
         recordings = cedalion.io.read_snirf(path)

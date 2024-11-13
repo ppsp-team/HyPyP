@@ -5,12 +5,12 @@ import numpy as np
 import mne
 import itertools as itertools
 
-from .preprocessors.base_preprocessor_fnirs import BasePreprocessorFNIRS, BasePreprocessStep
+from .preprocessors.base_preprocessor import BasePreprocessor, BasePreprocessStep
 from ..utils import epochs_from_tasks_annotations, TASK_BEGINNING, TASK_END, Task, TaskList, epochs_from_tasks_time_range
 
 TASK_NAME_WHOLE_RECORD = 'whole_record'
 
-class SubjectFNIRS:
+class Subject:
     def __init__(self, tasks_annotations:TaskList=[], tasks_time_range:TaskList=[]):
         self.filepath: str = None
         self.raw: mne.io.Raw = None
@@ -77,14 +77,14 @@ class SubjectFNIRS:
             steps_dict[step.key] = step.desc
         return steps_dict
     
-    def load_file(self, preprocessor: BasePreprocessorFNIRS, filepath: str, preprocess=False):
+    def load_file(self, preprocessor: BasePreprocessor, filepath: str, preprocess=False):
         self.filepath = filepath        
         self.raw = preprocessor.read_file(filepath)
         if preprocess:
             self.preprocess(preprocessor)
         return self
     
-    def preprocess(self, preprocessor: BasePreprocessorFNIRS):
+    def preprocess(self, preprocessor: BasePreprocessor):
         self.preprocess_steps = preprocessor.run(self.raw)
         return self
 

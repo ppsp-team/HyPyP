@@ -11,7 +11,7 @@ from ..wavelet.pair_signals import PairSignals
 DOWNLOADS_RELATIVE_PATH = os.path.join('data', 'fNIRS', 'downloads')
 
 
-class DataBrowserFNIRS:
+class DataBrowser:
     def __init__(self):
         self.absolute_root_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.paths = [
@@ -43,13 +43,13 @@ class DataBrowserFNIRS:
         file_paths = []
         for root_path in self.paths:
             for path in Path(root_path).rglob('*'):
-                if DataBrowserFNIRS.path_is_fif(str(path)):
+                if DataBrowser.path_is_fif(str(path)):
                     file_paths.append(str(path.absolute()))
 
-                elif DataBrowserFNIRS.path_is_nirx(str(path)):
+                elif DataBrowser.path_is_nirx(str(path)):
                     file_paths.append(str(path.absolute()))
 
-                elif DataBrowserFNIRS.path_is_snirf(str(path)):
+                elif DataBrowser.path_is_snirf(str(path)):
                     file_paths.append(str(path.absolute()))
 
         # remove duplicates
