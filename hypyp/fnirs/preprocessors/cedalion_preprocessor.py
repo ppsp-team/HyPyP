@@ -4,7 +4,7 @@ import cedalion.dataclasses as cdc
 from cedalion.typing import NDTimeSeries
 import matplotlib.pyplot as plt
 
-from ..data_loader import DataBrowser
+from ..data_browser import DataBrowser
 from .base_preprocessor import *
 
 class CedalionPreprocessStep(BasePreprocessStep[cdc.Recording]):

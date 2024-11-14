@@ -11,7 +11,7 @@ from hypyp.fnirs.cohort import Cohort
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.fnirs.subject import Subject
 from hypyp.fnirs.dyad import Dyad
-from hypyp.fnirs.data_loader import DataBrowser
+from hypyp.fnirs.data_browser import DataBrowser
 from hypyp.fnirs.preprocessors.base_preprocessor import PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_HAEMO_FILTERED_KEY
 from hypyp.fnirs.preprocessors.mne_preprocessor import MnePreprocessStep, MnePreprocessor, DummyPreprocessor
 from hypyp.utils import TASK_NEXT_EVENT
@@ -105,8 +105,9 @@ def test_preprocess_step():
 
 def test_subject():
     filepath = snirf_file1
-    subject = Subject()
+    subject = Subject(label='my_subject')
     subject.load_file(MnePreprocessor(), filepath)
+    assert subject.label == 'my_subject'
     assert subject.filepath == filepath
     assert subject.raw is not None
     assert len(subject.tasks_annotations) == 1 # default task, which is the complete record

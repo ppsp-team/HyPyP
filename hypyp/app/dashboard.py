@@ -13,7 +13,7 @@ from scipy import fft
 import mne
 
 from hypyp.wavelet.pair_signals import PairSignals
-from hypyp.fnirs.data_loader import DataBrowser
+from hypyp.fnirs.data_browser import DataBrowser
 from hypyp.fnirs.subject import Subject
 from hypyp.fnirs.preprocessors.mne_preprocessor import MnePreprocessor, DummyPreprocessor
 from hypyp.signal import SynteticSignal

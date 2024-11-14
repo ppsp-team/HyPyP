@@ -415,14 +415,14 @@ def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList) -> List[mne.E
         event_id = i + 1
         duration = task[2] - task[1]
         events = mne.make_fixed_length_events(raw,
-                                            id=event_id,
+                                            id=1,
                                             start=task[1],
                                             stop=task[2],
                                             duration=duration,
                                             first_samp=True,
                                             overlap=0.0)
 
-        event_id_map = {task[0]: event_id}
+        event_id_map = {task[0]: 1}
         epochs = mne.Epochs(raw,
                             events,
                             event_id=event_id_map, # TODO this doesn't seem to work. The event_id is always 1

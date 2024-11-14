@@ -14,12 +14,14 @@ from .preprocessors.base_preprocessor import BasePreprocessor
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
 
 class Dyad:
-    def __init__(self, s1: Subject, s2: Subject):
+    def __init__(self, s1: Subject, s2: Subject, label:str=''):
         self.s1: Subject = s1
         self.s2: Subject = s2
         self.wtcs: List[WTC] = None
         self.pairs: List[PairSignals] = None
-        self.tasks = list(set(s1.tasks_annotations) & set(s2.tasks_annotations))
+        # TODO: this merging of the 2 tasks arrays is ugly, prone to bugs and untested
+        self.tasks = list(set(s1.tasks_annotations) & set(s2.tasks_annotations)) + list(set(s1.tasks_time_range) & set(s2.tasks_time_range))
+        self.label = label
     
     @property 
     def subjects(self):
@@ -40,6 +42,7 @@ class Dyad:
         for subject in self.subjects:
             if not subject.is_preprocessed:
                 subject.preprocess(preprocessor)
+                subject.populate_epochs_from_tasks()
         return self
     
     def populate_epochs_from_tasks(self, **kwargs):
@@ -117,7 +120,7 @@ class Dyad:
 
         for pair in self.get_pairs(match=match):
             if verbose:
-                print('Running Wavelet Coherence on pair: ', pair.label)
+                print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
             if time_range is not None:
                 pair = pair.sub(time_range)
             self.wtcs.append(self.get_pair_wtc(pair, wavelet))

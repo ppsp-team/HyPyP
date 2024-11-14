@@ -3,6 +3,8 @@ from typing import List
 import numpy as np
 from scipy.stats import ttest_1samp
 
+from hypyp.fnirs.preprocessors.base_preprocessor import BasePreprocessor
+
 
 from .dyad import Dyad
 
@@ -25,13 +27,19 @@ class Cohort():
                 return False
         return True
 
+    def preprocess(self, preprocessor: BasePreprocessor):
+        for dyad in self.dyads:
+            if not dyad.is_preprocessed:
+                dyad.preprocess(preprocessor)
+        return self
+    
     def get_dyads_shuffle(self) -> List[Dyad]:
         dyads_shuffle = []
         for i, dyad1 in enumerate(self.dyads):
             for j, dyad2 in enumerate(self.dyads):
                 if i == j:
                     continue
-                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2))
+                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}'))
         return dyads_shuffle
 
     def compute_wtcs(self, *args, significance=False, **kwargs):

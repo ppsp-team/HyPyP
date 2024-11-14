@@ -4,7 +4,7 @@ import numpy as np
 import mne
 import scipy.io
 
-from ..data_loader import DataBrowser
+from ..data_browser import DataBrowser
 from .base_preprocessor import *
 
 class MnePreprocessStep(BasePreprocessStep[mne.io.Raw]):
@@ -44,6 +44,7 @@ class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
         return info
     
     def read_file(self, path):
+        # TODO maybe we should not have "preload" hardcoded here
         if DataBrowser.path_is_fif(path):
             return mne.io.read_raw_fif(path, preload=True)
 

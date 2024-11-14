@@ -11,8 +11,9 @@ from ..utils import epochs_from_tasks_annotations, TASK_BEGINNING, TASK_END, Tas
 TASK_NAME_WHOLE_RECORD = 'whole_record'
 
 class Subject:
-    def __init__(self, tasks_annotations:TaskList=[], tasks_time_range:TaskList=[]):
+    def __init__(self, label:str='', tasks_annotations:TaskList=[], tasks_time_range:TaskList=[]):
         self.filepath: str = None
+        self.label = label
         self.raw: mne.io.Raw = None
         self.epochs_per_task: List[mne.Epochs] = None
         self.preprocess_steps: List[BasePreprocessStep] = None
