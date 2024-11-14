@@ -14,7 +14,7 @@ from .preprocessors.base_preprocessor import BasePreprocessor
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
 
 class Dyad:
-    def __init__(self, s1: Subject, s2: Subject, label:str=''):
+    def __init__(self, s1: Subject, s2: Subject, label:str='', cache_dict:dict=None):
         self.s1: Subject = s1
         self.s2: Subject = s2
         self.wtcs: List[WTC] = None
@@ -22,6 +22,7 @@ class Dyad:
         # TODO: this merging of the 2 tasks arrays is ugly, prone to bugs and untested
         self.tasks = list(set(s1.tasks_annotations) & set(s2.tasks_annotations)) + list(set(s1.tasks_time_range) & set(s2.tasks_time_range))
         self.label = label
+        self.cache_dict = cache_dict
     
     @property 
     def subjects(self):
@@ -104,8 +105,34 @@ class Dyad:
 
         return pairs
     
+    @property
+    def use_caching(self):
+        return self.cache_dict is not None
+    
     def get_pair_wtc(self, pair: PairSignals, wavelet: BaseWavelet) -> WTC: 
-        return wavelet.wtc(pair)
+        if not self.use_caching:
+            return wavelet.wtc(pair)
+        
+        s1_cwt_key = self.get_cache_key(pair, 0)
+        s2_cwt_key = self.get_cache_key(pair, 1)
+
+        s1_cwt = self.get_cache_item(s1_cwt_key)
+        s2_cwt = self.get_cache_item(s2_cwt_key)
+
+        # TODO add verbose option
+        #if s1_cwt is not None:
+        #    print(f'Reusing cache for key "{s1_cwt_key}"')
+        #if s2_cwt is not None:
+        #    print(f'Reusing cache for key "{s2_cwt_key}"')
+
+        res = wavelet.wtc(pair, cwt1_cache=s1_cwt, cwt2_cache=s2_cwt)
+
+        if s1_cwt is None:
+            self.add_cache_item(s1_cwt_key, wavelet.tracer['cwt1'])
+        if s2_cwt is None:
+            self.add_cache_item(s2_cwt_key, wavelet.tracer['cwt2'])
+
+        return res
     
     # TODO remove "time_range", this is only for testing
     def compute_wtcs(
@@ -118,12 +145,15 @@ class Dyad:
         self.wtcs = []
         self.pairs = []
 
+        self.cwt_cache = dict()
+
         for pair in self.get_pairs(match=match):
             if verbose:
                 print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
             if time_range is not None:
                 pair = pair.sub(time_range)
-            self.wtcs.append(self.get_pair_wtc(pair, wavelet))
+            wtc = self.get_pair_wtc(pair, wavelet)
+            self.wtcs.append(wtc)
             self.pairs.append(pair)
         return self
     
@@ -160,3 +190,35 @@ class Dyad:
 
     def get_p_value_matrix(self):
         return self.get_wtc_property_matrix('sig_p_value')
+    
+    def get_cache_item(self, key):
+        try:
+            return self.cache_dict[key]
+        except:
+            return None
+    
+    def add_cache_item(self, key, value):
+        self.cache_dict[key] = value
+
+    def clear_cache(self):
+        self.cache_dict = dict()
+
+    def get_cache_key(self, pair: PairSignals, subject_id: int):
+        # IMPORTANT: if you change the wavelet, clear the cache
+        if subject_id == 0:
+            subject = self.s1
+            ch_name = pair.ch_name1
+        elif subject_id == 1:
+            subject = self.s2
+            ch_name = pair.ch_name2
+        else:
+            raise RuntimeError(f'subject_id must be 0 or 1')
+        
+        if subject.label == '':
+            raise RuntimeError(f'subjects must have labels to use caching')
+
+        if pair.task == '':
+            raise RuntimeError(f'must have task to have unique identifiers in caching')
+
+        return f'{subject.label}-{ch_name}-{pair.task}-{str(pair.range)}'
+    

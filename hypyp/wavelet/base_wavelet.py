@@ -35,7 +35,12 @@ class WTC:
         self.label = pair.label
         self.ch_name1 = pair.ch_name1
         self.ch_name2 = pair.ch_name2
-        self.tracer = tracer
+
+        if tracer:
+            self.tracer = tracer
+        else:
+            self.tracer = dict()
+
         self.sig_metric = np.mean(wtc) # TODO this is just a PoC
         self.sig_p_value = None
         self.sig_t_stat = None
@@ -83,7 +88,7 @@ class BaseWavelet(ABC):
     def cwt(self, y, dt, dj):
         pass
     
-    def wtc(self, pair: PairSignals):
+    def wtc(self, pair: PairSignals, cwt1_cache=None, cwt2_cache=None):
         y1 = pair.y1
         y2 = pair.y2
         dt = pair.dt
@@ -99,8 +104,15 @@ class BaseWavelet(ABC):
         y1 = (y1 - y1.mean()) / y1.std()
         y2 = (y2 - y2.mean()) / y2.std()
     
-        cwt1 = self.cwt(y1, dt, dj)
-        cwt2 = self.cwt(y2, dt, dj)
+        if cwt1_cache is not None:
+            cwt1 = cwt1_cache
+        else:
+            cwt1 = self.cwt(y1, dt, dj)
+        
+        if cwt2_cache is not None:
+            cwt2 = cwt2_cache
+        else:
+            cwt2 = self.cwt(y2, dt, dj)
 
         if (cwt1.scales != cwt2.scales).any():
             raise RuntimeError('The two CWT have different scales')
@@ -141,6 +153,8 @@ class BaseWavelet(ABC):
         coi = cmor_flambda * cmor_coi * dt * coi
         coif = 1.0 / coi
     
+        self.tracer['cwt1'] = cwt1
+        self.tracer['cwt2'] = cwt2
         self.tracer['W1'] = W1
         self.tracer['W2'] = W2
         self.tracer['W12'] = W12
