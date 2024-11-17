@@ -219,42 +219,12 @@ def test_dyad_compute_pair_wtc():
     # Should have a mean of 1 since the first pair is the same signal
     assert np.mean(wtc.wtc) == pytest.approx(1)
 
-def test_dyad_cache_keys():
-    subject = Subject(label='my_test_subject').load_file(DummyPreprocessor(), snirf_file1)
-    dyad = Dyad(subject, subject, cache_dict=dict())
-    assert len(list(dyad.cache_dict.keys())) == 0
-    dyad.add_cache_item('foo', 'bar')
-    assert len(list(dyad.cache_dict.keys())) == 1
-    assert dyad.get_cache_item('foo') == 'bar'
-    dyad.clear_cache()
-    assert len(list(dyad.cache_dict.keys())) == 0
-    assert dyad.get_cache_item('foo') == None
-
-    time_range = (0,1)
-    other_time_range = (0,2)
-    zeros = np.zeros((10,))
-    pair1 = PairSignals(zeros, zeros, zeros, ch_name1='ch1', ch_name2='ch2', task='my_task', range=time_range)
-    pair2 = PairSignals(zeros, zeros, zeros, ch_name1='ch1', ch_name2='ch2', task='my_task', range=other_time_range)
-    pair3 = PairSignals(zeros, zeros, zeros, ch_name1='ch1', ch_name2='ch2', task='my_other_task', range=time_range)
-    pair4 = PairSignals(zeros, zeros, zeros, ch_name1='ch3', ch_name2='ch4', task='my_task', range=time_range)
-    # add all the keys to a list, then use a set to remove duplicates and make sure we still have the same count
-    keys = []
-    keys.append(dyad.get_cache_key(pair1, 0))
-    keys.append(dyad.get_cache_key(pair1, 1))
-    keys.append(dyad.get_cache_key(pair2, 0))
-    keys.append(dyad.get_cache_key(pair3, 0))
-    keys.append(dyad.get_cache_key(pair4, 0))
-    #print(keys)
-    assert len(keys) == len(set(keys))
-
-
 def test_dyad_cwt_cache_during_wtc():
     subject1 = Subject(label='subject1').load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
     subject2 = Subject(label='subject2').load_file(DummyPreprocessor(), snirf_file2, preprocess=True).populate_epochs_from_tasks()
-    cache_dict = dict()
-    dyad = Dyad(subject1, subject2, cache_dict=cache_dict)
+    dyad = Dyad(subject1, subject2)
     pair = dyad.get_pairs()[0].sub((0, 10)) # Take 10% of the file
-    wavelet = PywaveletsWavelet()
+    wavelet = PywaveletsWavelet(cache_dict=dict())
     with patch.object(wavelet, 'cwt', wraps=wavelet.cwt) as spy_method:
         wtc_no_cache = dyad.get_pair_wtc(pair, wavelet)
         assert spy_method.call_count == 2
@@ -262,7 +232,7 @@ def test_dyad_cwt_cache_during_wtc():
         assert spy_method.call_count == 2
         assert np.all(wtc_no_cache.wtc == wtc_with_cache.wtc)
         # make sure we can clear the cache
-        dyad.clear_cache()
+        wavelet.clear_cache()
         dyad.get_pair_wtc(pair, wavelet)
         assert spy_method.call_count == 4
 

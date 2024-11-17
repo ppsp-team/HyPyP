@@ -51,11 +51,12 @@ class WTC:
 
 
 class BaseWavelet(ABC):
-    def __init__(self, evaluate):
+    def __init__(self, evaluate=False, cache_dict=None):
         self._wavelet = None
         self._psi_x = None
         self._psi = None
         self._wtc = None
+        self.cache_dict = cache_dict
 
         if evaluate:
             self.evaluate_psi()
@@ -80,6 +81,10 @@ class BaseWavelet(ABC):
             raise RuntimeError('Wavelet not evaluated yet')
         return self._psi_x[0], self._psi_x[-1]
 
+    @property
+    def use_caching(self):
+        return self.cache_dict is not None
+    
     @abstractmethod
     def evaluate_psi(self):
         pass
@@ -164,4 +169,35 @@ class BaseWavelet(ABC):
 
         return WTC(wtc, times, scales, frequencies, coif, pair, tracer=self.tracer)
 
+    def get_cache_item(self, key):
+        try:
+            return self.cache_dict[key]
+        except:
+            return None
+    
+    def add_cache_item(self, key, value):
+        self.cache_dict[key] = value
+
+    def clear_cache(self):
+        self.cache_dict = dict()
+
+    def get_cache_key(self, pair: PairSignals, subject_id: int):
+        # IMPORTANT: if you change the wavelet, clear the cache
+        if subject_id == 0:
+            subject_label = pair.label_s1
+            ch_name = pair.ch_name1
+        elif subject_id == 1:
+            subject_label = pair.label_s2
+            ch_name = pair.ch_name2
+        else:
+            raise RuntimeError(f'subject_id must be 0 or 1')
+        
+        if len(subject_label) < 1:
+            raise RuntimeError(f'subjects must have labels to use caching')
+
+        if pair.task == '':
+            raise RuntimeError(f'must have task to have unique identifiers in caching')
+
+        return f'{subject_label}-{ch_name}-{pair.task}-{str(pair.range)}'
+    
     

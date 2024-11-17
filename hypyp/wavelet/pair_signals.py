@@ -1,7 +1,19 @@
 from typing import Tuple
 
 class PairSignals:
-    def __init__(self, x, y1, y2, ch_name1='', ch_name2='', task='', info_table1=[], info_table2=[], range:Tuple[float,float]|None=None):
+    def __init__(self,
+                 x,
+                 y1,
+                 y2,
+                 ch_name1='',
+                 ch_name2='',
+                 label_s1='', # TODO be more consistent in argument names
+                 label_s2='',
+                 task='',
+                 info_table1=[],
+                 info_table2=[],
+                 range:Tuple[float, float]|None=None,
+        ):
         self.x = x
         self.n = len(x)
         self.dt = x[1] - x[0]
@@ -17,6 +29,9 @@ class PairSignals:
 
         self.info_table1 = info_table1
         self.info_table2 = info_table2
+
+        self.label_s1 = label_s1
+        self.label_s2 = label_s2
 
         self.range = range
     
@@ -43,6 +58,8 @@ class PairSignals:
             task=self.task,
             info_table1=self.info_table1,
             info_table2=self.info_table2,
+            label_s1=self.label_s1,
+            label_s2=self.label_s2,
             range=range, # keep track that this is a range in an original PairSignals
         )
     

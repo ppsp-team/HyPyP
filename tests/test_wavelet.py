@@ -75,5 +75,35 @@ def test_wtc():
     assert res.sig_metric > 0
     assert res.sig_metric < 1
     
+def test_cache():
+    wavelet = PywaveletsWavelet(cache_dict=dict())
+    assert len(list(wavelet.cache_dict.keys())) == 0
+    wavelet.add_cache_item('foo', 'bar')
+    assert len(list(wavelet.cache_dict.keys())) == 1
+    assert wavelet.get_cache_item('foo') == 'bar'
+    wavelet.clear_cache()
+    assert len(list(wavelet.cache_dict.keys())) == 0
+    assert wavelet.get_cache_item('foo') == None
+
+    time_range = (0,1)
+    other_time_range = (0,2)
+    zeros = np.zeros((10,))
+    pair1 = PairSignals(zeros, zeros, zeros, ch_name1='ch1', ch_name2='ch2', label_s1='subject1', label_s2='subject2', task='my_task', range=time_range)
+    pair2 = PairSignals(zeros, zeros, zeros, ch_name1='ch1', ch_name2='ch2', label_s1='subject1', label_s2='subject2', task='my_task', range=other_time_range)
+    pair3 = PairSignals(zeros, zeros, zeros, ch_name1='ch1', ch_name2='ch2', label_s1='subject1', label_s2='subject2', task='my_other_task', range=time_range)
+    pair4 = PairSignals(zeros, zeros, zeros, ch_name1='ch3', ch_name2='ch4', label_s1='subject1', label_s2='subject2', task='my_task', range=time_range)
+    pair5 = PairSignals(zeros, zeros, zeros, ch_name1='ch1', ch_name2='ch2', label_s1='subject5.1', label_s2='subject5.2', task='my_task', range=time_range)
+    # add all the keys to a list, then use a set to remove duplicates and make sure we still have the same count
+    keys = []
+    keys.append(wavelet.get_cache_key(pair1, 0))
+    keys.append(wavelet.get_cache_key(pair1, 1))
+    keys.append(wavelet.get_cache_key(pair2, 0))
+    keys.append(wavelet.get_cache_key(pair3, 0))
+    keys.append(wavelet.get_cache_key(pair4, 0))
+    keys.append(wavelet.get_cache_key(pair5, 0))
+    keys.append(wavelet.get_cache_key(pair5, 1))
+    #print(keys)
+    assert len(keys) == len(set(keys))
+
 
     

@@ -9,9 +9,8 @@ from hypyp.fnirs.preprocessors.base_preprocessor import BasePreprocessor
 from .dyad import Dyad
 
 class Cohort():
-    def __init__(self, dyads: List[Dyad] = [], cache_dict:dict=None):
+    def __init__(self, dyads: List[Dyad] = []):
         self.dyads: List[Dyad] = dyads
-        self.cache_dict = cache_dict
         self.dyads_shuffle = self.get_dyads_shuffle()
 
     @property
@@ -40,7 +39,7 @@ class Cohort():
             for j, dyad2 in enumerate(self.dyads):
                 if i == j:
                     continue
-                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}', cache_dict=self.cache_dict))
+                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}'))
         return dyads_shuffle
 
     def compute_wtcs(self, *args, significance=False, **kwargs):
