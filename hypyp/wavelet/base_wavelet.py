@@ -93,7 +93,14 @@ class BaseWavelet(ABC):
     def cwt(self, y, dt, dj):
         pass
     
-    def wtc(self, pair: PairSignals, cwt1_cache=None, cwt2_cache=None):
+    def wtc(self, pair: PairSignals, cwt1_cached=None, cwt2_cached=None):
+        
+        # TODO add verbose option
+        #if s1_cwt is not None:
+        #    print(f'Reusing cache for key "{s1_cwt_key}"')
+        #if s2_cwt is not None:
+        #    print(f'Reusing cache for key "{s2_cwt_key}"')
+
         y1 = pair.y1
         y2 = pair.y2
         dt = pair.dt
@@ -109,14 +116,24 @@ class BaseWavelet(ABC):
         y1 = (y1 - y1.mean()) / y1.std()
         y2 = (y2 - y2.mean()) / y2.std()
     
-        if cwt1_cache is not None:
-            cwt1 = cwt1_cache
-        else:
+        # TODO add caching of smoothed transform
+        # TODO add 'cwt' to cache key arguments
+        cwt1_cached = None
+        cwt2_cached = None
+        S1_cached = None
+        S2_cached = None
+        if self.use_caching:
+            cwt1_cached = self.get_cache_item(self.get_cache_key(pair, 0, 'cwt'))
+            cwt2_cached = self.get_cache_item(self.get_cache_key(pair, 1, 'cwt'))
+            S1_cached = self.get_cache_item(self.get_cache_key(pair, 0, 'smooth'))
+            S2_cached = self.get_cache_item(self.get_cache_key(pair, 1, 'smooth'))
+
+        cwt1 = cwt1_cached
+        if cwt1 is None:
             cwt1 = self.cwt(y1, dt, dj)
         
-        if cwt2_cache is not None:
-            cwt2 = cwt2_cache
-        else:
+        cwt2 = cwt2_cached
+        if cwt2 is None:
             cwt2 = self.cwt(y2, dt, dj)
 
         if (cwt1.scales != cwt2.scales).any():
@@ -143,12 +160,18 @@ class BaseWavelet(ABC):
             smooth_factor=self.wtc_smoothing_smooth_factor,
             boxcar_size=self.wtc_smoothing_boxcar_size,
         )
-        S1 = smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs)
-        S2 = smoothing(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs)
+
+        S1 = S1_cached
+        S2 = S2_cached
+        if S1 is None:
+            S1 = smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs)
+        if S2 is None:
+            S2 = smoothing(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs)
 
         S12 = np.abs(smoothing(W12 / scaleMatrix, **smoothing_kwargs))
         wtc = S12 ** 2 / (S1 * S2)
 
+        # TODO this result is the same for every pair. It should be cached
         # Cone of influence calculations
         f0 = 2 * np.pi
         cmor_coi = 1.0 / np.sqrt(2)
@@ -158,6 +181,16 @@ class BaseWavelet(ABC):
         coi = cmor_flambda * cmor_coi * dt * coi
         coif = 1.0 / coi
     
+        if self.use_caching:
+            if cwt1_cached is None:
+                self.add_cache_item(self.get_cache_key(pair, 0, 'cwt'), cwt1)
+            if cwt2_cached is None:
+                self.add_cache_item(self.get_cache_key(pair, 1, 'cwt'), cwt2)
+            if S1_cached is None:
+                self.add_cache_item(self.get_cache_key(pair, 0, 'smooth'), S1)
+            if S2_cached is None:
+                self.add_cache_item(self.get_cache_key(pair, 1, 'smooth'), S2)
+
         self.tracer['cwt1'] = cwt1
         self.tracer['cwt2'] = cwt2
         self.tracer['W1'] = W1
@@ -170,6 +203,8 @@ class BaseWavelet(ABC):
         return WTC(wtc, times, scales, frequencies, coif, pair, tracer=self.tracer)
 
     def get_cache_item(self, key):
+        if not self.use_caching:
+            return None
         try:
             return self.cache_dict[key]
         except:
@@ -181,8 +216,7 @@ class BaseWavelet(ABC):
     def clear_cache(self):
         self.cache_dict = dict()
 
-    def get_cache_key(self, pair: PairSignals, subject_id: int):
-        # IMPORTANT: if you change the wavelet, clear the cache
+    def get_cache_key(self, pair: PairSignals, subject_id: int, obj_id: str):
         if subject_id == 0:
             subject_label = pair.label_s1
             ch_name = pair.ch_name1
@@ -198,6 +232,6 @@ class BaseWavelet(ABC):
         if pair.task == '':
             raise RuntimeError(f'must have task to have unique identifiers in caching')
 
-        return f'{subject_label}-{ch_name}-{pair.task}-{str(pair.range)}'
+        return f'{subject_label}-{ch_name}-{pair.task}-{str(pair.range)}-{obj_id}'
     
     

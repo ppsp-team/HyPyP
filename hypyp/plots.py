@@ -96,27 +96,33 @@ def plot_wavelet_coherence(
         wtc = block_reduce(wtc, block_size=(1,factor), func=np.mean, cval=np.mean(wtc))
         coif = block_reduce(coif, block_size=factor, func=np.mean, cval=np.mean(coif))
     
-    xx, yy = np.meshgrid(times, frequencies)
+    periods = 1 / frequencies
+    xx, yy = np.meshgrid(times, periods)
     
     im = ax.pcolor(xx, yy, wtc, norm=Normalize())
     ax.set_yscale('log')
     ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Frequency (Hz)')
+    ax.set_ylabel('Period (seconds#)')
 
     # Cone of influence
     if show_coif:
-        ax.plot(times, coif, color=color_shaded)
-        ax.fill_between(times,coif, step="mid", color=color_shaded, alpha=0.4)
+        # TODO use "coi" instead of doing back and forth between frequency and period values
+        ax.plot(times, 1/coif, color=color_shaded)
+        ax.fill_between(times, 1/coif, y2=1000, step="mid", color=color_shaded, alpha=0.4)
 
-    # Nyquist frequency
-    if show_nyquist:
-        y_nyquist = np.ones((len(times),)) * 1 / np.diff(times_orig).mean() / 2
-        y_top = np.ones((len(times),)) * frequencies[0]
-        ax.plot(times, y_nyquist, color=color_shaded)
-        ax.fill_between(times, y_nyquist, y_top, step="mid", color=color_shaded, alpha=0.4)
+    ## Nyquist frequency
+    #if show_nyquist:
+    #    y_nyquist = np.ones((len(times),)) * 1 / np.diff(times_orig).mean() / 2
+    #    y_top = np.ones((len(times),)) * periods[0]
+    #    ax.plot(times, y_nyquist, color=color_shaded)
+    #    ax.fill_between(times, y_nyquist, y_top, step="mid", color=color_shaded, alpha=0.4)
     
     ax.set_xlim(times.min(), times.max())
-    ax.set_ylim(frequencies.min(), frequencies.max())
+    ax.set_ylim(periods.min(), periods.max())
+    ax.invert_yaxis()
+
+    #steps = np.arange(0, len(periods), 10)
+    #ax.set_yticks(np.round(periods[steps], 2), np.round(2**(periods[steps]), 2))
 
     if colorbar:
         cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
@@ -128,6 +134,27 @@ def plot_wavelet_coherence(
     if sig is not None:
         ax.contour(xx, yy, wtc, levels=sig, color='k')
         
+    return ax
+
+def plot_connectivity_matrix(z, ch_names1, ch_names2, label1, label2, title='Connectivity matrix', ax=None):
+    # create the figure if needed
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = plt.gcf()
+
+    im = ax.imshow(z)
+    if title != '':
+        ax.set_title(title)
+    #fig.colorbar(im)
+
+    # Set x and y ticks
+    ax.set_yticks(ticks=np.arange(len(ch_names1)), labels=ch_names1)
+    ax.set_xticks(ticks=np.arange(len(ch_names2)), labels=ch_names2, rotation=90)
+
+    ax.set_ylabel(label1)
+    ax.set_xlabel(label2)
+
     return ax
 
 def spectrogram_plot_period(

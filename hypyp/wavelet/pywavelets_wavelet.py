@@ -43,7 +43,13 @@ class PywaveletsWavelet(BaseWavelet):
         # TODO: find the right s0
         scales = 2 ** np.arange(1, nOctaves, dj)
 
-        W, freqs = pywt_copy_cwt(y, scales, self._wavelet, sampling_period=dt, method='conv', tracer=self.tracer, **self.cwt_params)
+        # TODO clean this
+        # Only have scales in a range that make sense for our use case
+        f = pywt.scale2frequency(self._wavelet, scales) / dt
+        periods = 1 / f
+        scales = scales[(periods > 2) & (periods < 20)]
+
+        W, freqs = pywt_copy_cwt(y, scales, self._wavelet, sampling_period=dt, method='fft', tracer=self.tracer, **self.cwt_params)
 
         # TODO: this is hardcoded, we have to check where this equation comes from
         # Cone of influence calculations

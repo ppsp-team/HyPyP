@@ -1,5 +1,3 @@
-from hypyp.fnirs import *
-
 from .preprocessors.base_preprocessor import BasePreprocessor, BasePreprocessStep
 from .preprocessors.mne_preprocessor import DummyPreprocessor, MnePreprocessor, MnePreprocessStep
 from .data_browser import DataBrowser

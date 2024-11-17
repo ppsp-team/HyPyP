@@ -3,13 +3,14 @@ from collections import OrderedDict
 import re
 
 import numpy as np
+import matplotlib.pyplot as plt
 
-from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
-
+from ..wavelet.pywavelets_wavelet import PywaveletsWavelet
 from ..wavelet.base_wavelet import WTC, BaseWavelet
 from ..wavelet.pair_signals import PairSignals
 from .subject import Subject, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor import BasePreprocessor
+from ..plots import plot_connectivity_matrix, plot_wavelet_coherence
 
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
 
@@ -107,30 +108,7 @@ class Dyad:
         return pairs
     
     def get_pair_wtc(self, pair: PairSignals, wavelet: BaseWavelet) -> WTC: 
-        if not wavelet.use_caching:
-            return wavelet.wtc(pair)
-        
-        # TODO add caching of smoothed transform
-        s1_cwt_key = wavelet.get_cache_key(pair, 0)
-        s2_cwt_key = wavelet.get_cache_key(pair, 1)
-
-        s1_cwt = wavelet.get_cache_item(s1_cwt_key)
-        s2_cwt = wavelet.get_cache_item(s2_cwt_key)
-
-        # TODO add verbose option
-        #if s1_cwt is not None:
-        #    print(f'Reusing cache for key "{s1_cwt_key}"')
-        #if s2_cwt is not None:
-        #    print(f'Reusing cache for key "{s2_cwt_key}"')
-
-        res = wavelet.wtc(pair, cwt1_cache=s1_cwt, cwt2_cache=s2_cwt)
-
-        if s1_cwt is None:
-            wavelet.add_cache_item(s1_cwt_key, wavelet.tracer['cwt1'])
-        if s2_cwt is None:
-            wavelet.add_cache_item(s2_cwt_key, wavelet.tracer['cwt2'])
-
-        return res
+        return wavelet.wtc(pair)
     
     # TODO remove "time_range", this is only for testing
     def compute_wtcs(
@@ -183,8 +161,28 @@ class Dyad:
 
         return mat, tasks, ch_names1, ch_names2
     
-    def get_connection_matrix(self):
+    def get_connectivity_matrix(self):
         return self.get_wtc_property_matrix('sig_metric')
 
     def get_p_value_matrix(self):
         return self.get_wtc_property_matrix('sig_p_value')
+    
+    #
+    # Plots
+    # 
+    def plot_connectivity_matrices(self):
+        mat, tasks, ch_names1, ch_names2 = self.get_connectivity_matrix()
+        fig, axes = plt.subplots(ncols=len(tasks), sharex=True, sharey=True, figsize=(10, 6))
+        axes = np.atleast_1d(axes)
+        for i, task in enumerate(tasks):
+            plot_connectivity_matrix(mat[i,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, title=task, ax=axes[i])
+        fig.suptitle(self.label)
+
+    def plot_wtc(self, wtc: WTC):
+        plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
+
+    def plot_wtc_by_id(self, id: int):
+        wtc = self.wtcs[id]
+        plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
+
+        

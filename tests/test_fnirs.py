@@ -353,7 +353,7 @@ def test_dyad_connection_matrix():
     dyad = Dyad(subject, subject).compute_wtcs(match=re.compile(r'^S1_.*760'), time_range=(0,5))
     # channels detectors expected on 3 tasks: D1-D1, D1-D2, D2-D1, D2-D2
     assert len(dyad.wtcs) == 3*4
-    conn_matrix, task_names, row_names, col_names = dyad.get_connection_matrix()
+    conn_matrix, task_names, row_names, col_names = dyad.get_connectivity_matrix()
 
     assert len(conn_matrix.shape) == 3
     assert conn_matrix.shape[0] == 3 # 3 tasks

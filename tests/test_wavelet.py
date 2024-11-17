@@ -95,13 +95,14 @@ def test_cache():
     pair5 = PairSignals(zeros, zeros, zeros, ch_name1='ch1', ch_name2='ch2', label_s1='subject5.1', label_s2='subject5.2', task='my_task', range=time_range)
     # add all the keys to a list, then use a set to remove duplicates and make sure we still have the same count
     keys = []
-    keys.append(wavelet.get_cache_key(pair1, 0))
-    keys.append(wavelet.get_cache_key(pair1, 1))
-    keys.append(wavelet.get_cache_key(pair2, 0))
-    keys.append(wavelet.get_cache_key(pair3, 0))
-    keys.append(wavelet.get_cache_key(pair4, 0))
-    keys.append(wavelet.get_cache_key(pair5, 0))
-    keys.append(wavelet.get_cache_key(pair5, 1))
+    keys.append(wavelet.get_cache_key(pair1, 0, 'cwt'))
+    keys.append(wavelet.get_cache_key(pair1, 1, 'cwt'))
+    keys.append(wavelet.get_cache_key(pair2, 0, 'cwt'))
+    keys.append(wavelet.get_cache_key(pair3, 0, 'cwt'))
+    keys.append(wavelet.get_cache_key(pair4, 0, 'cwt'))
+    keys.append(wavelet.get_cache_key(pair5, 0, 'cwt'))
+    keys.append(wavelet.get_cache_key(pair5, 1, 'cwt'))
+    keys.append(wavelet.get_cache_key(pair5, 1, 'something_else'))
     #print(keys)
     assert len(keys) == len(set(keys))
 
