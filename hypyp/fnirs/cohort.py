@@ -1,4 +1,5 @@
 from typing import List
+import pickle
 
 import numpy as np
 from scipy.stats import ttest_1samp
@@ -88,3 +89,15 @@ class Cohort():
         return self
         
     
+    #
+    # Disk serialisation
+    #
+    @staticmethod
+    def from_pickle(file_path):
+        with open(file_path, 'rb') as f:
+            return pickle.load(f)
+
+    def save_pickle(self, file_path):
+        # Serialize the object to the temporary file
+        with open(file_path, 'wb') as f:
+            pickle.dump(self, f)

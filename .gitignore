@@ -133,3 +133,6 @@ dmypy.json
 
 # ReadTheDocs
 _build/
+
+# Preprocessed and results data
+data/results

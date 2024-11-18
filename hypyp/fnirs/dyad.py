@@ -178,6 +178,12 @@ class Dyad:
             plot_connectivity_matrix(mat[i,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, title=task, ax=axes[i])
         fig.suptitle(self.label)
 
+    def plot_connectivity_matrix_for_task(self, task_name):
+        mat, tasks, ch_names1, ch_names2 = self.get_connectivity_matrix()
+        # TODO deal with id not found
+        id = [i for i, task in enumerate(self.tasks) if task[0] == task_name][0]
+        plot_connectivity_matrix(mat[id,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, title=self.tasks[id][0])
+
     def plot_wtc(self, wtc: WTC):
         plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
 

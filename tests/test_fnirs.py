@@ -3,6 +3,7 @@ from unittest.mock import patch
 import warnings
 import logging
 import re
+import tempfile
 
 import numpy as np
 from numpy.testing import assert_array_almost_equal
@@ -400,6 +401,18 @@ def test_dyad_p_value_matrix():
 
     assert p_value_matrix[0,0,0] > 0
     assert p_value_matrix[0,0,0] < 1
+
+def test_save_cohort_to_disk():
+    subject = Subject(tasks_time_range=[('first_5_seconds', 0, 5)]).load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    dyad = Dyad(subject, subject)
+    cohort = Cohort([dyad])
+
+    with tempfile.NamedTemporaryFile() as temp_file:
+        file_path = temp_file.name
+        cohort.save_pickle(file_path)
+        cohort_reloaded = Cohort.from_pickle(file_path)
+    
+    assert len(cohort_reloaded.dyads) == len(cohort.dyads)
 
 @pytest.mark.skip(reason="TODO: have significance comparison")
 def test_significance():

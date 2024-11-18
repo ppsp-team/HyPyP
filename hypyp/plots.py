@@ -86,7 +86,7 @@ def plot_wavelet_coherence(
     if ax is None:
         fig, ax = plt.subplots()
     else:
-        fig = plt.gcf()
+        fig = ax.get_figure()
     
     times_orig = times
     if downsample:
@@ -99,7 +99,8 @@ def plot_wavelet_coherence(
     periods = 1 / frequencies
     xx, yy = np.meshgrid(times, periods)
     
-    im = ax.pcolor(xx, yy, wtc, norm=Normalize())
+    #im = ax.pcolor(xx, yy, wtc, norm=Normalize())
+    im = ax.pcolor(xx, yy, wtc, vmin=0, vmax=1)
     ax.set_yscale('log')
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Period (seconds#)')
@@ -125,8 +126,9 @@ def plot_wavelet_coherence(
     #ax.set_yticks(np.round(periods[steps], 2), np.round(2**(periods[steps]), 2))
 
     if colorbar:
-        cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
-        fig.colorbar(im,cax=cbaxes, orientation='vertical')
+        #cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
+        #fig.colorbar(im, cax=cbaxes, orientation='vertical')
+        fig.colorbar(im)
 
     if title is not None:
         fig.suptitle(title)
@@ -141,12 +143,13 @@ def plot_connectivity_matrix(z, ch_names1, ch_names2, label1, label2, title='Con
     if ax is None:
         fig, ax = plt.subplots()
     else:
-        fig = plt.gcf()
+        fig = ax.get_figure()
 
     im = ax.imshow(z)
     if title != '':
         ax.set_title(title)
-    #fig.colorbar(im)
+
+    fig.colorbar(im)
 
     # Set x and y ticks
     ax.set_yticks(ticks=np.arange(len(ch_names1)), labels=ch_names1)

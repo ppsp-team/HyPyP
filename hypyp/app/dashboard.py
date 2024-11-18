@@ -89,17 +89,6 @@ app_ui = ui.page_fluid(
                 ),
             ),
         ),
-        #ui.nav_panel(
-        #    "Cross Wavelet Transform",
-        #    ui.row(
-        #        ui.column(12,
-        #            ui.card(
-        #                ui.tags.strong('Cross Wavelet Transform'),
-        #                ui.output_plot('plot_xwt'),
-        #            ),
-        #        ),
-        #    ),
-        #),
         ui.nav_panel(
             "Wavelet Coherence",
             ui.row(
