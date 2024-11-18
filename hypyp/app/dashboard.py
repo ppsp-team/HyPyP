@@ -299,7 +299,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.button_action_compute_wtc)
     def compute_coherence():
         pair = get_signals()
-        return get_wavelet().wtc(pair.y1, pair.y2, pair.dt)
+        return get_wavelet().wtc(pair)
 
     def get_signal_data_files_s1_path():
         return input.signal_data_files_s1_path()

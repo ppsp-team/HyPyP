@@ -93,7 +93,7 @@ class BaseWavelet(ABC):
     def cwt(self, y, dt, dj):
         pass
     
-    def wtc(self, pair: PairSignals, cwt1_cached=None, cwt2_cached=None):
+    def wtc(self, pair: PairSignals, tracer=None):
         
         # TODO add verbose option
         #if s1_cwt is not None:
@@ -191,16 +191,17 @@ class BaseWavelet(ABC):
             if S2_cached is None:
                 self.add_cache_item(self.get_cache_key(pair, 1, 'smooth'), S2)
 
-        self.tracer['cwt1'] = cwt1
-        self.tracer['cwt2'] = cwt2
-        self.tracer['W1'] = W1
-        self.tracer['W2'] = W2
-        self.tracer['W12'] = W12
-        self.tracer['S1'] = S1
-        self.tracer['S2'] = S2
-        self.tracer['S12'] = S12
+        if tracer is not None:
+            tracer['cwt1'] = cwt1
+            tracer['cwt2'] = cwt2
+            tracer['W1'] = W1
+            tracer['W2'] = W2
+            tracer['W12'] = W12
+            tracer['S1'] = S1
+            tracer['S2'] = S2
+            tracer['S12'] = S12
 
-        return WTC(wtc, times, scales, frequencies, coif, pair, tracer=self.tracer)
+        return WTC(wtc, times, scales, frequencies, coif, pair, tracer=tracer)
 
     def get_cache_item(self, key):
         if not self.use_caching:
