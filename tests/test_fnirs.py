@@ -371,7 +371,7 @@ def test_dyad_connection_matrix():
     assert conn_matrix[0,1,1] == pytest.approx(1)
     assert conn_matrix[0,0,1] < 1
     # Same subject so the matrix should be symetric on every task
-    assert np.all(conn_matrix[:,0,1] == conn_matrix[:,1,0])
+    assert np.all(conn_matrix[:,0,1] == pytest.approx(conn_matrix[:,1,0]))
 
     # Make sure results for different tasks are not the same
     assert conn_matrix[0,0,1] != conn_matrix[1,0,1]

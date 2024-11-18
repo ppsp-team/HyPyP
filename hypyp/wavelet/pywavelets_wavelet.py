@@ -48,7 +48,7 @@ class PywaveletsWavelet(BaseWavelet):
         f = pywt.scale2frequency(self._wavelet, scales) / dt
         periods = 1 / f
         # TODO unhardcode values here
-        scales = scales[(periods >= 5) & (periods <= 60)]
+        scales = scales[(periods >= 1) & (periods <= 60)]
 
         W, freqs = pywt_copy_cwt(y, scales, self._wavelet, sampling_period=dt, method='fft', tracer=self.tracer, **self.cwt_params)
 
