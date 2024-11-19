@@ -12,7 +12,7 @@ from .dyad import Dyad
 class Cohort():
     def __init__(self, dyads: List[Dyad] = []):
         self.dyads: List[Dyad] = dyads
-        self.dyads_shuffle = self.get_dyads_shuffle()
+        self.dyads_shuffle = None
 
     @property
     def is_wtc_computed(self):
@@ -23,6 +23,8 @@ class Cohort():
 
     @property
     def is_wtc_shuffle_computed(self):
+        if self.dyads_shuffle is None:
+            return False
         for dyad in self.dyads_shuffle:
             if not dyad.is_wtc_computed:
                 return False
@@ -34,15 +36,6 @@ class Cohort():
                 dyad.preprocess(preprocessor)
         return self
     
-    def get_dyads_shuffle(self) -> List[Dyad]:
-        dyads_shuffle = []
-        for i, dyad1 in enumerate(self.dyads):
-            for j, dyad2 in enumerate(self.dyads):
-                if i == j:
-                    continue
-                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}'))
-        return dyads_shuffle
-
     def compute_wtcs(self, *args, significance=False, **kwargs):
         for dyad in self.dyads:
             dyad.compute_wtcs(*args, **kwargs)
@@ -53,7 +46,23 @@ class Cohort():
             
         return self
     
+    def clear_dyads_shuffle(self):
+        self.dyads_shuffle = None
+        # TODO Garbage collect?
+        #for dyad in self.dyads_shuffle:
+        #    del dyad
+    
+    def get_dyads_shuffle(self) -> List[Dyad]:
+        dyads_shuffle = []
+        for i, dyad1 in enumerate(self.dyads):
+            for j, dyad2 in enumerate(self.dyads):
+                if i == j:
+                    continue
+                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}'))
+        return dyads_shuffle
+
     def compute_wtcs_shuffle(self, *args, **kwargs):
+        self.dyads_shuffle = self.get_dyads_shuffle()
         for dyad in self.dyads_shuffle:
             dyad.compute_wtcs(*args, **kwargs)
         return self
@@ -86,6 +95,7 @@ class Cohort():
                     # TODO: this should be better than this
                     wtc.sig_t_stat, wtc.sig_p_value = ttest_1samp(others, wtc.sig_metric)
         
+        self.clear_dyads_shuffle()
         return self
         
     

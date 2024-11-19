@@ -300,7 +300,6 @@ def test_cohort_wtc():
     dyads = [dyad1, dyad2, dyad3, dyad3, dyad3, dyad3]
     cohort = Cohort(dyads)
     assert len(cohort.dyads) == len(dyads)
-    assert len(cohort.dyads_shuffle) == len(dyads)*(len(dyads)-1)
     assert cohort.is_wtc_computed == False
 
     wtcs_kwargs = dict(match='S1_D1 760', time_range=(0,5))
@@ -311,16 +310,19 @@ def test_cohort_wtc():
     
     # dyads shuffle are computed only when we want significance
     assert cohort.is_wtc_shuffle_computed == False
-    assert cohort.dyads_shuffle[0].wtcs is None
     assert cohort.dyads[0].wtcs[0].sig is None
 
+    assert cohort.dyads_shuffle is None
     cohort.compute_wtcs_shuffle(**wtcs_kwargs)
+    assert len(cohort.dyads_shuffle) == len(dyads)*(len(dyads)-1)
 
     assert cohort.is_wtc_shuffle_computed == True
     assert len(cohort.dyads_shuffle[0].wtcs) == 1
 
     cohort.compute_wtcs_significance()
     assert cohort.dyads[0].wtcs[0].sig_p_value > 0
+    # Memory should be freed after significance has been computed
+    assert cohort.dyads_shuffle is None
 
 def test_dyad_computes_whole_record_by_default():
     subject = Subject().load_file(DummyPreprocessor(), snirf_file1, preprocess=True)
@@ -432,8 +434,4 @@ def test_download_demos():
     assert len(new_paths) == previous_count + 1
 
 #def test_load_lionirs():
-
-
-
-    
 

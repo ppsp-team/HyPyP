@@ -19,7 +19,6 @@ class Dyad:
         self.s1: Subject = s1
         self.s2: Subject = s2
         self.wtcs: List[WTC] = None
-        self.pairs: List[PairSignals] = None
         # TODO: this merging of the 2 tasks arrays is ugly, prone to bugs and untested
         self.tasks = list(set(s1.tasks_annotations) & set(s2.tasks_annotations)) + list(set(s1.tasks_time_range) & set(s2.tasks_time_range))
         self.label = label
@@ -119,7 +118,6 @@ class Dyad:
         verbose=False,
     ):
         self.wtcs = []
-        self.pairs = []
 
         self.cwt_cache = dict()
 
@@ -130,7 +128,6 @@ class Dyad:
                 pair = pair.sub(time_range)
             wtc = self.get_pair_wtc(pair, wavelet)
             self.wtcs.append(wtc)
-            self.pairs.append(pair)
         return self
     
     def get_wtc_property_matrix(self, property_name: str):

@@ -65,9 +65,9 @@ app_ui = ui.page_fluid(
             #ui.output_ui('ui_wtc_tracer'),
         ),
         ui.nav_spacer(),
-        #selected='Cohort Info',
+        selected='Cohort Info',
         #selected='Dyad connectivity',
-        selected='Wavelet Transform Coherence',
+        #selected='Wavelet Transform Coherence',
         id='main_nav',
         sidebar=ui.sidebar(
             ui.output_ui('ui_input_cohort_file'),
