@@ -237,6 +237,24 @@ def test_dyad_cwt_cache_during_wtc():
         dyad.get_pair_wtc(pair, wavelet)
         assert spy_method.call_count == 4
 
+def test_dyad_coi_cache_during_wtc():
+    subject = Subject(label='subject1').load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    dyad = Dyad(subject, subject)
+    pair = dyad.get_pairs()[0].sub((0, 10)) # Take 10% of the file
+    wavelet = PywaveletsWavelet(cache_dict=dict())
+    with patch.object(wavelet, 'get_cone_of_influence', wraps=wavelet.get_cone_of_influence) as spy_method:
+        wtc_no_cache = dyad.get_pair_wtc(pair, wavelet)
+        assert spy_method.call_count == 1
+        wtc_with_cache = dyad.get_pair_wtc(pair, wavelet)
+        assert spy_method.call_count == 1
+        assert np.all(wtc_no_cache.coi == wtc_with_cache.coi)
+        assert np.all(wtc_no_cache.coif == wtc_with_cache.coif)
+        # make sure we can clear the cache
+        wavelet.clear_cache()
+        dyad.get_pair_wtc(pair, wavelet)
+        assert spy_method.call_count == 2
+
+
 def test_dyad_compute_all_wtc():
     subject = Subject().load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
@@ -252,7 +270,7 @@ def test_dyad_compute_str_match_wtc():
     dyad = Dyad(subject, subject)
     dyad.compute_wtcs(match='760', time_range=(0,5))
     assert dyad.is_wtc_computed == True
-    assert len(dyad.wtcs) == (len(subject.pre.ch_names)/2)**2
+    assert len(dyad.wtcs) == (len(subject.pre.pick('all').ch_names)/2)**2
 
 def test_dyad_compute_regex_match_wtc():
     subject = Subject().load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()

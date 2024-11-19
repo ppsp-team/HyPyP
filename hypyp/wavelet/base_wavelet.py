@@ -123,10 +123,10 @@ class BaseWavelet(ABC):
         S1_cached = None
         S2_cached = None
         if self.use_caching:
-            cwt1_cached = self.get_cache_item(self.get_cache_key(pair, 0, 'cwt'))
-            cwt2_cached = self.get_cache_item(self.get_cache_key(pair, 1, 'cwt'))
-            S1_cached = self.get_cache_item(self.get_cache_key(pair, 0, 'smooth'))
-            S2_cached = self.get_cache_item(self.get_cache_key(pair, 1, 'smooth'))
+            cwt1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'cwt'))
+            cwt2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'cwt'))
+            S1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'smooth'))
+            S2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'smooth'))
 
         cwt1 = cwt1_cached
         if cwt1 is None:
@@ -171,25 +171,32 @@ class BaseWavelet(ABC):
         S12 = np.abs(smoothing(W12 / scaleMatrix, **smoothing_kwargs))
         wtc = S12 ** 2 / (S1 * S2)
 
-        # TODO this result is the same for every pair. It should be cached
-        # Cone of influence calculations
-        f0 = 2 * np.pi
-        cmor_coi = 1.0 / np.sqrt(2)
-        # TODO: this is hardcoded, we have to check where this equation comes from
-        cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
-        coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
-        coi = cmor_flambda * cmor_coi * dt * coi
-        coif = 1.0 / coi
-    
+        coi_cached = None
+        coif_cached = None
+        if self.use_caching:
+            coi_cached = self.get_cache_item(self.get_cache_key_coi(N, dt))
+            coif_cached = self.get_cache_item(self.get_cache_key_coif(N, dt))
+        
+        if coi_cached is not None and coif_cached is not None:
+            coi = coi_cached
+            coif = coif_cached
+        else:
+            coi, coif = self.get_cone_of_influence(N, dt)
+
         if self.use_caching:
             if cwt1_cached is None:
-                self.add_cache_item(self.get_cache_key(pair, 0, 'cwt'), cwt1)
+                self.add_cache_item(self.get_cache_key_pair(pair, 0, 'cwt'), cwt1)
             if cwt2_cached is None:
-                self.add_cache_item(self.get_cache_key(pair, 1, 'cwt'), cwt2)
+                self.add_cache_item(self.get_cache_key_pair(pair, 1, 'cwt'), cwt2)
             if S1_cached is None:
-                self.add_cache_item(self.get_cache_key(pair, 0, 'smooth'), S1)
+                self.add_cache_item(self.get_cache_key_pair(pair, 0, 'smooth'), S1)
             if S2_cached is None:
-                self.add_cache_item(self.get_cache_key(pair, 1, 'smooth'), S2)
+                self.add_cache_item(self.get_cache_key_pair(pair, 1, 'smooth'), S2)
+            if coi_cached is None:
+                self.add_cache_item(self.get_cache_key_coi(N, dt), coi)
+            if coif_cached is None:
+                self.add_cache_item(self.get_cache_key_coif(N, dt), coif)
+
 
         if tracer is not None:
             tracer['cwt1'] = cwt1
@@ -202,6 +209,20 @@ class BaseWavelet(ABC):
             tracer['S12'] = S12
 
         return WTC(wtc, times, scales, frequencies, coif, pair, tracer=tracer)
+
+    def get_cone_of_influence(self, N, dt):
+        # TODO this result is the same for every pair. It should be cached
+        # Cone of influence calculations
+        f0 = 2 * np.pi
+        cmor_coi = 1.0 / np.sqrt(2)
+        # TODO: this is hardcoded, we have to check where this equation comes from
+        cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+        coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
+        coi = cmor_flambda * cmor_coi * dt * coi
+        coif = 1.0 / coi
+        return coi, coif
+    
+        
 
     def get_cache_item(self, key):
         if not self.use_caching:
@@ -217,7 +238,7 @@ class BaseWavelet(ABC):
     def clear_cache(self):
         self.cache_dict = dict()
 
-    def get_cache_key(self, pair: PairSignals, subject_id: int, obj_id: str):
+    def get_cache_key_pair(self, pair: PairSignals, subject_id: int, obj_id: str):
         if subject_id == 0:
             subject_label = pair.label_s1
             ch_name = pair.ch_name1
@@ -234,5 +255,11 @@ class BaseWavelet(ABC):
             raise RuntimeError(f'must have task to have unique identifiers in caching')
 
         return f'{subject_label}-{ch_name}-{pair.task}-{str(pair.range)}-{obj_id}'
+    
+    def get_cache_key_coi(self, N, dt):
+        return f'coi_{N}_{dt}'
+    
+    def get_cache_key_coif(self, N, dt):
+        return f'coif_{N}_{dt}'
     
     

@@ -436,41 +436,41 @@ def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList) -> List[mne.E
     return all_epochs
 
 def epochs_from_tasks_annotations(raw: mne.io.Raw, tasks: TaskList) -> List[mne.Epochs]:
-    events, _ = mne.events_from_annotations(raw)
+    events, events_map = mne.events_from_annotations(raw)
     #print(events)
 
     epochs_per_tasks = []
     sfreq = raw.info['sfreq']
 
-    for task_key, event_id_task_start, event_id_task_end in tasks:
+    for task_key, trigger_id_task_start, trigger_id_task_end in tasks:
         t_starts = []
         t_durations = []
         task_events = []
 
         # To handle start of raw as "event" for task
-        if event_id_task_start == TASK_BEGINNING:
+        if trigger_id_task_start == TASK_BEGINNING:
             events_loop = [[0]]
         else:
-            events_loop = events[events[:, 2] == event_id_task_start]
+            events_loop = events[events[:, 2] == events_map[str(trigger_id_task_start)]]
 
         for event_start in events_loop:
             t_start = event_start[0]
 
             # Find end of task
-            if event_id_task_end == TASK_END:
+            if trigger_id_task_end == TASK_END:
                 t_end = raw.n_times - 1
             else:
                 where_gt_start = events[:, 0] > t_start
-                if event_id_task_end == TASK_NEXT_EVENT:
+                if trigger_id_task_end == TASK_NEXT_EVENT:
                     # until next event
                     where = where_gt_start
                 else:
-                    where_task_end = events[:, 2] == event_id_task_end
+                    where_task_end = events[:, 2] == events_map[str(trigger_id_task_end)]
                     where = where_gt_start & where_task_end
 
                 event_end = events[where]
                 if len(event_end) == 0:
-                    raise RuntimeError(f'Cannot find end of task "{task_key}" with event_id "{event_id_task_end}"')
+                    raise RuntimeError(f'Cannot find end of task "{task_key}" with trigger_id "{trigger_id_task_end}" (event_id "{events_map[str(trigger_id_task_end)]}")')
                 t_end = event_end[0, 0] # use the first
 
             t_min = (t_start - raw.first_samp) / sfreq
@@ -479,11 +479,11 @@ def epochs_from_tasks_annotations(raw: mne.io.Raw, tasks: TaskList) -> List[mne.
 
             t_starts.append(t_start)
             t_durations.append(t_duration)
-            task_events.append([t_start, 0, event_id_task_start])
+            task_events.append([t_start, 0, trigger_id_task_start])
 
         epochs_per_tasks.append(mne.Epochs(raw,
             task_events,
-            event_id={ task_key: event_id_task_start},
+            event_id={ task_key: trigger_id_task_start},
             tmin=0,
             tmax=min(t_durations),
             baseline=None,

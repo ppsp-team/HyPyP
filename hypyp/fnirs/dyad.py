@@ -19,9 +19,16 @@ class Dyad:
         self.s1: Subject = s1
         self.s2: Subject = s2
         self.wtcs: List[WTC] = None
-        # TODO: this merging of the 2 tasks arrays is ugly, prone to bugs and untested
-        self.tasks = list(set(s1.tasks_annotations) & set(s2.tasks_annotations)) + list(set(s1.tasks_time_range) & set(s2.tasks_time_range))
         self.label = label
+
+        # Intersect the tasks
+        self.tasks = []
+        s1_tasks = s1.tasks_annotations + s1.tasks_time_range
+        s2_tasks = s2.tasks_annotations + s2.tasks_time_range
+
+        for task in s1_tasks:
+            if task in s2_tasks:
+                self.tasks.append(task)
     
     @property 
     def subjects(self):
@@ -76,18 +83,19 @@ class Dyad:
         ch_names1 = [ch_name for ch_name in self.s1.pre.ch_names if check_match(ch_name, match[0])]
         ch_names2 = [ch_name for ch_name in self.s2.pre.ch_names if check_match(ch_name, match[1])]
 
-        for task in self.tasks:
-            if task[0] == TASK_NAME_WHOLE_RECORD:
-                s1_data = self.s1.pre.copy().pick(ch_names1).get_data()
+        for task_name, _, _ in self.tasks:
+            if task_name == TASK_NAME_WHOLE_RECORD:
+                # TODO see if copy() slows down our computation or takes memory
+                s1_task_data = self.s1.pre.copy().pick(ch_names1).get_data()
                 s2_data = self.s2.pre.copy().pick(ch_names2).get_data()
             else:
-                epochs1 = self.s1.get_epochs_for_task(task[0]).copy().pick(ch_names1)
-                epochs2 = self.s2.get_epochs_for_task(task[0]).copy().pick(ch_names2)
+                epochs1 = self.s1.get_epochs_for_task(task_name).copy().pick(ch_names1)
+                epochs2 = self.s2.get_epochs_for_task(task_name).copy().pick(ch_names2)
                 # TODO here we take only the first epoch per task. Should we take more?
-                s1_data = epochs1.get_data(copy=False)[0,:,:]
+                s1_task_data = epochs1.get_data(copy=False)[0,:,:]
                 s2_data = epochs2.get_data(copy=False)[0,:,:]
 
-            n = s1_data.shape[1]
+            n = s1_task_data.shape[1]
             x = np.linspace(0, n/self.s1.pre.info['sfreq'], n)
 
             for s1_i, s1_ch_name in enumerate(ch_names1):
@@ -95,13 +103,13 @@ class Dyad:
                     # TODO check if we want info_table
                     pairs.append(PairSignals(
                         x,
-                        s1_data[s1_i,:],
+                        s1_task_data[s1_i,:],
                         s2_data[s2_i,:],
                         ch_name1=s1_ch_name,
                         ch_name2=s2_ch_name,
                         label_s1=self.s1.label,
                         label_s2=self.s2.label,
-                        task=task[0],
+                        task=task_name,
                     ))
 
         return pairs
@@ -116,10 +124,9 @@ class Dyad:
         match:PairMatch=None,
         time_range:Tuple[float,float]=None,
         verbose=False,
+        save_wtcs=True,
     ):
         self.wtcs = []
-
-        self.cwt_cache = dict()
 
         for pair in self.get_pairs(match=match):
             if verbose:
@@ -127,7 +134,8 @@ class Dyad:
             if time_range is not None:
                 pair = pair.sub(time_range)
             wtc = self.get_pair_wtc(pair, wavelet)
-            self.wtcs.append(wtc)
+            if save_wtcs:
+                self.wtcs.append(wtc)
         return self
     
     def get_wtc_property_matrix(self, property_name: str):

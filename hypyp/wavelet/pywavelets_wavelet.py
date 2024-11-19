@@ -17,6 +17,7 @@ class PywaveletsWavelet(BaseWavelet):
         cwt_params=dict(),
         evaluate=True,
         cache_dict=None,
+        periods_range=(5, 60),
     ):
         self.wtc_smoothing_smooth_factor = wtc_smoothing_smooth_factor
         self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
@@ -26,6 +27,7 @@ class PywaveletsWavelet(BaseWavelet):
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         self.tracer = dict(name='pywt')
+        self.periods_range = periods_range
         super().__init__(evaluate, cache_dict)
 
     def evaluate_psi(self):
@@ -39,16 +41,15 @@ class PywaveletsWavelet(BaseWavelet):
     def cwt(self, y, dt, dj=1/12) -> CWT:
         N = len(y)
         times = np.arange(N) * dt
-        nOctaves = int(np.log2(np.floor(N / 2.0)))
+        #nOctaves = int(np.log2(np.floor(N / 2.0)))
         # TODO: find the right s0
-        scales = 2 ** np.arange(1, nOctaves, dj)
+        # scales = 2 ** np.arange(1, nOctaves, dj)
 
-        # TODO clean this
-        # Only have scales in a range that make sense for our use case
-        f = pywt.scale2frequency(self._wavelet, scales) / dt
-        periods = 1 / f
-        # TODO unhardcode values here
-        scales = scales[(periods >= 1) & (periods <= 60)]
+        # TODO unhardcode the number of periods
+        # TODO see what kind of logspace we want (probably not 10)
+        periods = np.logspace(np.log10(self.periods_range[0]), np.log10(self.periods_range[1]), 40)
+        frequencies = 1 / periods
+        scales = pywt.frequency2scale(self._wavelet, frequencies*dt)
 
         W, freqs = pywt_copy_cwt(y, scales, self._wavelet, sampling_period=dt, method='fft', tracer=self.tracer, **self.cwt_params)
 
