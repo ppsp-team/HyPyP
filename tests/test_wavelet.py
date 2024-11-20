@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 
 from hypyp.signal import SynteticSignal
+from hypyp.wavelet.base_wavelet import WTC
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 
@@ -104,5 +105,15 @@ def test_cache():
     #print(keys)
     assert len(keys) == len(set(keys))
 
+def test_wtc_coi_masked():
+    wavelet = PywaveletsWavelet()
+    signal = SynteticSignal().add_noise()
+    res = wavelet.wtc(PairSignals(signal.x, signal.y, signal.y))
+    assert res.wtc_masked is not None
+    assert res.wtc_masked.mask[0,0] == True
+    assert res.wtc_masked.mask[0,len(signal.x)//2] == False
+
+    
+    
 
     

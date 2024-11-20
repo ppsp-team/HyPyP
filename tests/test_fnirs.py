@@ -259,7 +259,7 @@ def test_dyad_compute_all_wtc():
     subject = Subject().load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     assert dyad.is_wtc_computed == False
-    dyad.compute_wtcs(time_range=(0,5)) # TODO have a more simple wavelet for fast computing
+    dyad.compute_wtcs(time_range=(0,10)) # TODO have a more simple wavelet for fast computing
     assert dyad.is_wtc_computed == True
     assert len(dyad.wtcs) == len(subject.pre.ch_names)**2
     # Should have a mean of 1 since the first pair is the same signal
@@ -306,10 +306,11 @@ def test_dyad_wtc_per_task():
     assert 'task1' in [wtc.task for wtc in dyad.wtcs] # order may have changed because of task intersection
 
 def test_cohort_wtc():
-    subject1 = Subject().load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    tasks = [('task1', 0, 10)]
+    subject1 = Subject(tasks_time_range=tasks).load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
     dyad1 = Dyad(subject1, subject1)
 
-    subject2 = Subject().load_file(DummyPreprocessor(), snirf_file2, preprocess=True).populate_epochs_from_tasks()
+    subject2 = Subject(tasks_time_range=tasks).load_file(DummyPreprocessor(), snirf_file2, preprocess=True).populate_epochs_from_tasks()
     dyad2 = Dyad(subject2, subject2)
 
     dyad3 = Dyad(subject1, subject2)
@@ -320,7 +321,7 @@ def test_cohort_wtc():
     assert len(cohort.dyads) == len(dyads)
     assert cohort.is_wtc_computed == False
 
-    wtcs_kwargs = dict(match='S1_D1 760', time_range=(0,5))
+    wtcs_kwargs = dict(match='S1_D1 760')
 
     cohort.compute_wtcs(**wtcs_kwargs)
     assert cohort.is_wtc_computed == True
@@ -345,7 +346,7 @@ def test_cohort_wtc():
 def test_dyad_computes_whole_record_by_default():
     subject = Subject().load_file(DummyPreprocessor(), snirf_file1, preprocess=True)
     dyad = Dyad(subject, subject)
-    dyad.compute_wtcs(match='S1_D1 760', time_range=(0,5))
+    dyad.compute_wtcs(match='S1_D1 760', time_range=(0,10))
     assert len(dyad.wtcs) == 1
 
 def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
@@ -366,12 +367,12 @@ def test_dyad_connection_matrix():
 
 def test_dyad_connection_matrix():
     tasks = [
-        ('task1', 1, TASK_NEXT_EVENT),
-        ('task2', 2, TASK_NEXT_EVENT),
-        ('task3', 3, TASK_NEXT_EVENT),
+        ('task1', 0, 10),
+        ('task2', 10, 20),
+        ('task3', 20, 30),
     ]
-    subject = Subject(tasks_annotations=tasks).load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
-    dyad = Dyad(subject, subject).compute_wtcs(match=re.compile(r'^S1_.*760'), time_range=(0,5))
+    subject = Subject(tasks_time_range=tasks).load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    dyad = Dyad(subject, subject).compute_wtcs(match=re.compile(r'^S1_.*760'))
     # channels detectors expected on 3 tasks: D1-D1, D1-D2, D2-D1, D2-D2
     assert len(dyad.wtcs) == 3*4
     conn_matrix, task_names, row_names, col_names = dyad.get_connectivity_matrix()
@@ -399,21 +400,19 @@ def test_dyad_connection_matrix():
 
 def test_dyad_p_value_matrix():
     tasks = [
-        ('task1', 1, TASK_NEXT_EVENT),
-        ('task2', 2, TASK_NEXT_EVENT),
-        ('task3', 3, TASK_NEXT_EVENT),
+        ('task1', 0, 10),
+        ('task2', 10, 20),
     ]
     match = re.compile(r'^S1_.*760')
-    subject1 = Subject(tasks_annotations=tasks).load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
-    subject2 = Subject(tasks_annotations=tasks).load_file(DummyPreprocessor(), snirf_file2, preprocess=True).populate_epochs_from_tasks()
+    subject1 = Subject(tasks_time_range=tasks).load_file(DummyPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject2 = Subject(tasks_time_range=tasks).load_file(DummyPreprocessor(), snirf_file2, preprocess=True).populate_epochs_from_tasks()
     dyad1 = Dyad(subject1, subject1)
-    dyad2 = Dyad(subject2, subject2)
+    dyad2 = Dyad(subject1, subject2)
 
     # TODO we have too many methods to call, this should be much simpler
     # Add a bunch of "dyad2" in the cohort to have a p-value
     # TODO we should use synthetic data instead
-    kwargs = dict(match=match, time_range=(0,5))
-    Cohort([dyad1, dyad2, dyad2, dyad2, dyad2]).compute_wtcs(**kwargs, significance=True)
+    Cohort([dyad1, dyad2, dyad2, dyad2, dyad2]).compute_wtcs(match=match, significance=True)
 
     # We need a cohort to have a p-value
     p_value_matrix = dyad1.get_p_value_matrix()[0]

@@ -86,10 +86,12 @@ def test_task_from_time_range():
     raw = get_fake_raw()
     tasks = [
         ('task1', 0, 1), # task from start to 1 second
-        ('task2', 3, 5), # task from 3 seconds to 5 seconds
+        ('task2', 3, 10), # task from 3 seconds to 5 seconds
     ]
 
     all_epochs = utils.epochs_from_tasks_time_range(raw, tasks)
     print(all_epochs[0])
     print(all_epochs[1])
     assert len(all_epochs) == 2
+    duration = all_epochs[1].times[-1] - all_epochs[1].times[0]
+    assert duration == tasks[1][2] - tasks[1][1]

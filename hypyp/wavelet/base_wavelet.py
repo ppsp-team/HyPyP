@@ -36,18 +36,19 @@ class WTC:
         self.ch_name1 = pair.ch_name1
         self.ch_name2 = pair.ch_name2
 
-        if tracer:
-            self.tracer = tracer
-        else:
-            self.tracer = dict()
+        self.tracer = tracer
 
-        self.sig_metric = np.mean(wtc) # TODO this is just a PoC
+        frequencies_indices = frequencies[:, np.newaxis]
+        mask = frequencies[:, np.newaxis] < coif
+        self.wtc_masked = np.ma.masked_array(wtc, mask)
+
+        self.sig_metric = np.mean(self.wtc_masked) # TODO this is just a PoC
         self.sig_p_value = None
         self.sig_t_stat = None
         self.sig = sig
     
     def plot(self, **kwargs):
-        return plot_wavelet_coherence(self.wtc, self.times, self.frequencies, self.coif, self.sig, **kwargs)
+        return plot_wavelet_coherence(self.wtc_masked, self.times, self.frequencies, self.coif, self.sig, **kwargs)
 
 
 class BaseWavelet(ABC):

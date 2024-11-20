@@ -124,7 +124,6 @@ class Dyad:
         match:PairMatch=None,
         time_range:Tuple[float,float]=None,
         verbose=False,
-        save_wtcs=True,
     ):
         self.wtcs = []
 
@@ -134,8 +133,7 @@ class Dyad:
             if time_range is not None:
                 pair = pair.sub(time_range)
             wtc = self.get_pair_wtc(pair, wavelet)
-            if save_wtcs:
-                self.wtcs.append(wtc)
+            self.wtcs.append(wtc)
         return self
     
     def get_wtc_property_matrix(self, property_name: str):
