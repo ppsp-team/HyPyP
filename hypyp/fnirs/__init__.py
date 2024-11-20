@@ -1,5 +1,6 @@
 from .preprocessors.base_preprocessor import BasePreprocessor, BasePreprocessStep
-from .preprocessors.mne_preprocessor import DummyPreprocessor, MnePreprocessor, MnePreprocessStep
+from .preprocessors.mne_preprocessor import MnePreprocessor, MnePreprocessStep
+from .preprocessors.upstream_preprocessor import UpstreamPreprocessor
 from .data_browser import DataBrowser
 from .subject import Subject
 from .dyad import Dyad
@@ -11,7 +12,7 @@ __all__ = ['Subject',
            'DataBrowser',
            'BasePreprocessor',
            'BasePreprocessStep',
-           'DummyPreprocessor',
+           'UpstreamPreprocessor',
            'MnePreprocessor',
            'MnePreprocessStep',
 ]

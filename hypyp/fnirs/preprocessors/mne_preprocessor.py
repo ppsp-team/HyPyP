@@ -115,14 +115,3 @@ class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
 
         return steps
         
-
-# This is the same as MnePreprocessor, but without the default pipeline
-class DummyPreprocessor(MnePreprocessor):
-    def __init__(self):
-        super().__init__()
-    
-    def run(self, raw: mne.io.Raw):
-        return [
-            MnePreprocessStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC)
-        ]
-        

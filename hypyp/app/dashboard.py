@@ -15,7 +15,8 @@ import mne
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.fnirs.data_browser import DataBrowser
 from hypyp.fnirs.subject import Subject
-from hypyp.fnirs.preprocessors.mne_preprocessor import MnePreprocessor, DummyPreprocessor
+from hypyp.fnirs.preprocessors.mne_preprocessor import MnePreprocessor
+from hypyp.fnirs.preprocessors.upstream_preprocessor import UpstreamPreprocessor
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
@@ -333,8 +334,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     def get_preprocessor():
         if input.subject_preprocessor() == 'mne':
             return MnePreprocessor()
-        if input.subject_preprocessor() == 'dummy':
-            return DummyPreprocessor()
+        if input.subject_preprocessor() == 'upstream':
+            return UpstreamPreprocessor()
         if input.subject_preprocessor() == 'cedalion':
             return CedalionPreprocessor()
 
@@ -444,7 +445,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "",
                 choices={
                     'mne': 'MNE (basic fNIRS preprocessing)',
-                    'dummy': 'MNE (no preprocessing, load as-is)',
+                    'upstream': 'MNE (no preprocessing, load as-is)',
                     'cedalion': 'Cedalion (proof of concept preprocessing)',
                 }
             )))

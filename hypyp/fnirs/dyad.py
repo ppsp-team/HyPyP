@@ -87,13 +87,13 @@ class Dyad:
             if task_name == TASK_NAME_WHOLE_RECORD:
                 # TODO see if copy() slows down our computation or takes memory
                 s1_task_data = self.s1.pre.copy().pick(ch_names1).get_data()
-                s2_data = self.s2.pre.copy().pick(ch_names2).get_data()
+                s2_task_data = self.s2.pre.copy().pick(ch_names2).get_data()
             else:
                 epochs1 = self.s1.get_epochs_for_task(task_name).copy().pick(ch_names1)
                 epochs2 = self.s2.get_epochs_for_task(task_name).copy().pick(ch_names2)
                 # TODO here we take only the first epoch per task. Should we take more?
                 s1_task_data = epochs1.get_data(copy=False)[0,:,:]
-                s2_data = epochs2.get_data(copy=False)[0,:,:]
+                s2_task_data = epochs2.get_data(copy=False)[0,:,:]
 
             n = s1_task_data.shape[1]
             x = np.linspace(0, n/self.s1.pre.info['sfreq'], n)
@@ -104,7 +104,7 @@ class Dyad:
                     pairs.append(PairSignals(
                         x,
                         s1_task_data[s1_i,:],
-                        s2_data[s2_i,:],
+                        s2_task_data[s2_i,:],
                         ch_name1=s1_ch_name,
                         ch_name2=s2_ch_name,
                         label_s1=self.s1.label,
