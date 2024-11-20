@@ -75,13 +75,13 @@ def test_wtc():
     assert res.sig_metric < 1
     
 def test_cache():
-    wavelet = PywaveletsWavelet(cache_dict=dict())
-    assert len(list(wavelet.cache_dict.keys())) == 0
+    wavelet = PywaveletsWavelet(cache=dict())
+    assert len(list(wavelet.cache.keys())) == 0
     wavelet.add_cache_item('foo', 'bar')
-    assert len(list(wavelet.cache_dict.keys())) == 1
+    assert len(list(wavelet.cache.keys())) == 1
     assert wavelet.get_cache_item('foo') == 'bar'
     wavelet.clear_cache()
-    assert len(list(wavelet.cache_dict.keys())) == 0
+    assert len(list(wavelet.cache.keys())) == 0
     assert wavelet.get_cache_item('foo') == None
 
     time_range = (0,1)
@@ -109,9 +109,9 @@ def test_wtc_coi_masked():
     wavelet = PywaveletsWavelet()
     signal = SynteticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal.x, signal.y, signal.y))
-    assert res.wtc_masked is not None
-    assert res.wtc_masked.mask[0,0] == True
-    assert res.wtc_masked.mask[0,len(signal.x)//2] == False
+    assert res.wtc_roi is not None
+    assert res.wtc_roi.mask[0,0] == True
+    assert res.wtc_roi.mask[0,len(signal.x)//2] == False
 
     
     

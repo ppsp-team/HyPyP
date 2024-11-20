@@ -6,6 +6,7 @@ from matplotlib.colors import Normalize
 import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from skimage.measure import block_reduce
+from matplotlib.ticker import FuncFormatter, ScalarFormatter
 
 def downsample_in_time(*args, t=1000):
     ret = []
@@ -90,7 +91,7 @@ def plot_wavelet_coherence(
     
     times_orig = times
     if downsample:
-        factor = len(times) // 1000 + 1
+        factor = len(times) // 500 + 1
         print(f"Downscaling for display by a factor of {factor}")
         times = block_reduce(times, block_size=factor, func=np.mean, cval=np.max(times))
         wtc = block_reduce(wtc, block_size=(1,factor), func=np.mean, cval=np.mean(wtc))
@@ -103,7 +104,7 @@ def plot_wavelet_coherence(
     im = ax.pcolor(xx, yy, wtc, vmin=0, vmax=1)
     ax.set_yscale('log')
     ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Period (seconds#)')
+    ax.set_ylabel('Period (seconds)')
 
     # Cone of influence
     if show_coif:
@@ -120,10 +121,26 @@ def plot_wavelet_coherence(
     
     ax.set_xlim(times.min(), times.max())
     ax.set_ylim(periods.min(), periods.max())
+
+    # Define a custom locator and formatter
+    def custom_locator(ymin, ymax):
+        ticks = []
+        ticks.extend(range(math.ceil(ymin), 11))
+        ticks.extend(range(12, 21, 2))
+        ticks.extend(range(25, int(ymax) + 1, 5))
+        return ticks
+    
+    def custom_formatter(y, _):
+        return f"{int(y)}" if y >= 1 else ""
+
+    # Dynamically set ticks based on the current range
+    ymin, ymax = ax.get_ylim()  # Get the y-axis limits
+    ax.set_yticks(custom_locator(ymin, ymax))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y,_: f"{int(y)}" if y >= 1 else ""))
+    #ax.yaxis.get_major_formatter().set_scientific(False)  # Disable scientific notation
+
     ax.invert_yaxis()
 
-    #steps = np.arange(0, len(periods), 10)
-    #ax.set_yticks(np.round(periods[steps], 2), np.round(2**(periods[steps]), 2))
 
     if colorbar:
         #cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 

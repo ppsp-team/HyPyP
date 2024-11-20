@@ -1,7 +1,6 @@
-from typing import List, Tuple
-from enum import Enum
+from typing import List
+from pathlib import Path
 
-import numpy as np
 import mne
 import itertools as itertools
 
@@ -25,12 +24,14 @@ class Subject:
                 assert isinstance(task[0], str)
                 assert len(task) == 3
             self.tasks_annotations: TaskList = tasks_annotations
-        elif len(tasks_time_range) > 0:
+
+        if len(tasks_time_range) > 0:
             for task in tasks_time_range:
                 assert isinstance(task[0], str)
                 assert len(task) == 3
             self.tasks_time_range: TaskList = tasks_time_range
-        else:
+
+        if len(tasks_annotations) == 0 and len(tasks_time_range) == 0:
             # TODO this should use tasks_time_range
             self.tasks_annotations = [(TASK_NAME_WHOLE_RECORD, TASK_BEGINNING, TASK_END)]
 
@@ -44,7 +45,7 @@ class Subject:
 
     @property
     def task_keys(self):
-        return [task[0] for task in self.tasks_annotations]
+        return [task[0] for task in self.tasks_annotations + self.tasks_time_range]
 
     @property
     def is_preprocessed(self) -> bool:
@@ -78,7 +79,10 @@ class Subject:
             steps_dict[step.key] = step.desc
         return steps_dict
     
-    def load_file(self, preprocessor: BasePreprocessor, filepath: str, preprocess=False):
+    def load_file(self, preprocessor: BasePreprocessor, filepath: str, preprocess=True):
+        if not Path(filepath).is_file():
+            raise RuntimeError(f'Cannot find file {filepath}')
+
         self.filepath = filepath        
         self.raw = preprocessor.read_file(filepath)
         if preprocess:
@@ -98,20 +102,20 @@ class Subject:
         raise RuntimeError(f'No preprocess step named "{key}"')
     
     def populate_epochs_from_tasks(self):
+        self.epochs_per_task = []
         if len(self.tasks_annotations) > 0:
-            self.epochs_per_task = epochs_from_tasks_annotations(self.pre, self.tasks_annotations)
+            self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_annotations(self.pre, self.tasks_annotations)
         if len(self.tasks_time_range) > 0:
-            self.epochs_per_task = epochs_from_tasks_time_range(self.pre, self.tasks_time_range)
+            self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_time_range(self.pre, self.tasks_time_range)
         return self
     
     def get_epochs_for_task(self, task_name: str):
         self._assert_is_epochs_loaded()
         id = None
-        # TODO this try-except is ugly
         try:
-            id = [i for i in range(len(self.tasks_annotations)) if self.tasks_annotations[i][0] == task_name][0]
+            id = [i for i in range(len(self.task_keys)) if self.task_keys[i] == task_name][0]
         except:
-            id = [i for i in range(len(self.tasks_time_range)) if self.tasks_time_range[i][0] == task_name][0]
+            pass
 
         if id is None:
             raise RuntimeError(f'Cannot find epochs for task "{task_name}"')

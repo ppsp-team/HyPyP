@@ -38,26 +38,25 @@ class WTC:
 
         self.tracer = tracer
 
-        frequencies_indices = frequencies[:, np.newaxis]
         mask = frequencies[:, np.newaxis] < coif
-        self.wtc_masked = np.ma.masked_array(wtc, mask)
+        self.wtc_roi = np.ma.masked_array(wtc, mask)
 
-        self.sig_metric = np.mean(self.wtc_masked) # TODO this is just a PoC
+        self.sig_metric = np.mean(self.wtc_roi) # TODO this is just a PoC
         self.sig_p_value = None
         self.sig_t_stat = None
         self.sig = sig
     
     def plot(self, **kwargs):
-        return plot_wavelet_coherence(self.wtc_masked, self.times, self.frequencies, self.coif, self.sig, **kwargs)
+        return plot_wavelet_coherence(self.wtc_roi, self.times, self.frequencies, self.coif, self.sig, **kwargs)
 
 
 class BaseWavelet(ABC):
-    def __init__(self, evaluate=False, cache_dict=None):
+    def __init__(self, evaluate=False, cache=None):
         self._wavelet = None
         self._psi_x = None
         self._psi = None
         self._wtc = None
-        self.cache_dict = cache_dict
+        self.cache = cache
 
         if evaluate:
             self.evaluate_psi()
@@ -84,7 +83,7 @@ class BaseWavelet(ABC):
 
     @property
     def use_caching(self):
-        return self.cache_dict is not None
+        return self.cache is not None
     
     @abstractmethod
     def evaluate_psi(self):
@@ -229,15 +228,15 @@ class BaseWavelet(ABC):
         if not self.use_caching:
             return None
         try:
-            return self.cache_dict[key]
+            return self.cache[key]
         except:
             return None
     
     def add_cache_item(self, key, value):
-        self.cache_dict[key] = value
+        self.cache[key] = value
 
     def clear_cache(self):
-        self.cache_dict = dict()
+        self.cache = dict()
 
     def get_cache_key_pair(self, pair: PairSignals, subject_id: int, obj_id: str):
         if subject_id == 0:

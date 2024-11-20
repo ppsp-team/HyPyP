@@ -110,7 +110,7 @@ def test_preprocess_step():
 def test_subject():
     filepath = snirf_file1
     subject = Subject(label='my_subject')
-    subject.load_file(MnePreprocessor(), filepath)
+    subject.load_file(MnePreprocessor(), filepath, preprocess=False)
     assert subject.label == 'my_subject'
     assert subject.filepath == filepath
     assert subject.raw is not None
@@ -119,10 +119,22 @@ def test_subject():
     assert subject.is_preprocessed == False
     assert subject.epochs_per_task is None # need preprocessing to extract epochs
 
-def test_subject_tasks():
+def test_subject_tasks_annotations():
     subject = Subject(tasks_annotations=[('my_task', 1, 2)])
     assert len(subject.tasks_annotations) == 1
-    subject.task_keys[0] == 'my_task'
+    assert subject.task_keys[0] == 'my_task'
+
+def test_subject_tasks_time_range():
+    subject = Subject(tasks_time_range=[('my_task_in_time', 1, 2)])
+    assert len(subject.tasks_time_range) == 1
+    assert subject.task_keys[0] == 'my_task_in_time'
+
+def test_subject_tasks_combined():
+    subject = Subject(
+        tasks_annotations=[('my_task', 1, 2)],
+        tasks_time_range=[('my_task_in_time', 1, 2)]
+    )
+    assert len(subject.task_keys) == 2
 
 def test_subject_epochs():
     tasks = [
@@ -131,7 +143,7 @@ def test_subject_epochs():
     ]
     subject = Subject(tasks_annotations=tasks)
     preprocessor = MnePreprocessor()
-    subject.load_file(preprocessor, snirf_file1, preprocess=True)
+    subject.load_file(preprocessor, snirf_file1)
     subject.populate_epochs_from_tasks()
     assert len(subject.get_epochs_for_task('task1')) == 2
     n_events = subject.get_epochs_for_task('task1').events.shape[0]
@@ -145,7 +157,7 @@ def test_subject_force_task():
     ]
     subject = Subject(tasks_time_range=tasks)
     preprocessor = MnePreprocessor()
-    subject.load_file(preprocessor, snirf_file1, preprocess=True)
+    subject.load_file(preprocessor, snirf_file1)
     subject.populate_epochs_from_tasks()
     assert len(subject.get_epochs_for_task('task1')) == 1
     #n_events = subject.get_epochs_for_task('task1').events.shape[0]
@@ -164,7 +176,7 @@ def test_dummy_preprocessor():
     assert len(subject.epochs_per_task) > 0
 
 def test_mne_preprocessor():
-    subject = Subject().load_file(MnePreprocessor(), snirf_file1)
+    subject = Subject().load_file(MnePreprocessor(), snirf_file1, preprocess=False)
     subject.preprocess(MnePreprocessor())
     assert len(subject.preprocess_steps) > 1
     assert subject.is_preprocessed == True
@@ -184,7 +196,7 @@ def test_mne_preprocessor():
 def test_subject_dyad():
     # Use the same file for the 2 subjects
     preprocessor = MnePreprocessor()
-    subject = Subject().load_file(preprocessor, snirf_file1)
+    subject = Subject().load_file(preprocessor, snirf_file1, preprocess=False)
     dyad = Dyad(subject, subject)
     assert dyad.is_preprocessed == False
 
@@ -214,7 +226,7 @@ def test_dyad_tasks_intersection():
     
     
 def test_dyad_compute_pair_wtc():
-    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     pair = dyad.get_pairs()[0].sub((0, 10)) # Take 10% of the file
     wtc = dyad.get_pair_wtc(pair, PywaveletsWavelet())
@@ -222,11 +234,11 @@ def test_dyad_compute_pair_wtc():
     assert np.mean(wtc.wtc) == pytest.approx(1)
 
 def test_dyad_cwt_cache_during_wtc():
-    subject1 = Subject(label='subject1').load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
-    subject2 = Subject(label='subject2').load_file(UpstreamPreprocessor(), snirf_file2, preprocess=True).populate_epochs_from_tasks()
+    subject1 = Subject(label='subject1').load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
+    subject2 = Subject(label='subject2').load_file(UpstreamPreprocessor(), snirf_file2).populate_epochs_from_tasks()
     dyad = Dyad(subject1, subject2)
     pair = dyad.get_pairs()[0].sub((0, 10)) # Take 10% of the file
-    wavelet = PywaveletsWavelet(cache_dict=dict())
+    wavelet = PywaveletsWavelet(cache=dict())
     with patch.object(wavelet, 'cwt', wraps=wavelet.cwt) as spy_method:
         wtc_no_cache = dyad.get_pair_wtc(pair, wavelet)
         assert spy_method.call_count == 2
@@ -239,10 +251,10 @@ def test_dyad_cwt_cache_during_wtc():
         assert spy_method.call_count == 4
 
 def test_dyad_coi_cache_during_wtc():
-    subject = Subject(label='subject1').load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject = Subject(label='subject1').load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     pair = dyad.get_pairs()[0].sub((0, 10)) # Take 10% of the file
-    wavelet = PywaveletsWavelet(cache_dict=dict())
+    wavelet = PywaveletsWavelet(cache=dict())
     with patch.object(wavelet, 'get_cone_of_influence', wraps=wavelet.get_cone_of_influence) as spy_method:
         wtc_no_cache = dyad.get_pair_wtc(pair, wavelet)
         assert spy_method.call_count == 1
@@ -257,7 +269,7 @@ def test_dyad_coi_cache_during_wtc():
 
 
 def test_dyad_compute_all_wtc():
-    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     assert dyad.is_wtc_computed == False
     dyad.compute_wtcs(time_range=(0,10)) # TODO have a more simple wavelet for fast computing
@@ -267,14 +279,14 @@ def test_dyad_compute_all_wtc():
     assert np.mean(dyad.wtcs[0].wtc) == pytest.approx(1)
     
 def test_dyad_compute_str_match_wtc():
-    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     dyad.compute_wtcs(match='760', time_range=(0,10))
     assert dyad.is_wtc_computed == True
     assert len(dyad.wtcs) == (len(subject.pre.pick('all').ch_names)/2)**2
 
 def test_dyad_compute_regex_match_wtc():
-    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     regex = re.compile(r'^S1.*760')
     dyad.compute_wtcs(match=regex, time_range=(0,10))
@@ -282,7 +294,7 @@ def test_dyad_compute_regex_match_wtc():
     assert dyad.wtcs[0].label == dyad.get_pairs()[0].label
 
 def test_dyad_compute_tuple_match_wtc():
-    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     regex1 = re.compile(r'^S1_D1.*760')
     regex2 = re.compile(r'.*760')
@@ -295,7 +307,7 @@ def test_dyad_wtc_per_task():
         ('task1', 1, TASK_NEXT_EVENT), # these 2 events have different duration
         ('task3', 3, TASK_NEXT_EVENT),
     ]
-    subject = Subject(tasks_annotations=tasks).load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject = Subject(tasks_annotations=tasks).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     subject.populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     ch_name = 'S1_D1 760'
@@ -306,12 +318,34 @@ def test_dyad_wtc_per_task():
     assert dyad.wtcs[0].wtc.shape[1] != dyad.wtcs[1].wtc.shape[1] # not the same duration
     assert 'task1' in [wtc.task for wtc in dyad.wtcs] # order may have changed because of task intersection
 
+def test_dyad_task_annotations_and_time_range_combined():
+    tasks_annotations = [
+        ('task_annotation1', 1, TASK_NEXT_EVENT),
+        ('task_annotation2', 3, TASK_NEXT_EVENT),
+    ]
+    tasks_time_range = [
+        ('task_time_range', 10, 20),
+    ]
+    subject = Subject(tasks_annotations=tasks_annotations, tasks_time_range=tasks_time_range)
+    subject.load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
+    subject.populate_epochs_from_tasks()
+    dyad = Dyad(subject, subject)
+    ch_name = 'S1_D1 760'
+    pairs = dyad.get_pairs(match=ch_name)
+    assert len(pairs) == 3
+    dyad.compute_wtcs(match=ch_name)
+    assert len(dyad.wtcs) == 3
+    found_tasks = [wtc.task for wtc in dyad.wtcs]
+    assert 'task_annotation1' in found_tasks
+    assert 'task_annotation2' in found_tasks
+    assert 'task_time_range' in found_tasks
+
 def test_cohort_wtc():
     tasks = [('task1', 0, 10)]
-    subject1 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject1 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad1 = Dyad(subject1, subject1)
 
-    subject2 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file2, preprocess=True).populate_epochs_from_tasks()
+    subject2 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file2).populate_epochs_from_tasks()
     dyad2 = Dyad(subject2, subject2)
 
     dyad3 = Dyad(subject1, subject2)
@@ -345,20 +379,20 @@ def test_cohort_wtc():
     assert cohort.dyads_shuffle is None
 
 def test_dyad_computes_whole_record_by_default():
-    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True)
+    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1)
     dyad = Dyad(subject, subject)
     dyad.compute_wtcs(match='S1_D1 760', time_range=(0,10))
     assert len(dyad.wtcs) == 1
 
 def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
-    subject = Subject(tasks_annotations=[('task1', 1, TASK_NEXT_EVENT)]).load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True)
+    subject = Subject(tasks_annotations=[('task1', 1, TASK_NEXT_EVENT)]).load_file(UpstreamPreprocessor(), snirf_file1)
     dyad = Dyad(subject, subject)
     with pytest.raises(Exception):
         # This should raise an exception, since the epochs have not been loaded from annotations
         dyad.compute_wtcs(match='S1_D1 760', time_range=(0,10))
 
 def test_dyad_connection_matrix():
-    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True)
+    subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1)
     dyad = Dyad(subject, subject)
     match = re.compile(r'^S1_.*760')
     dyad.compute_wtcs(match=match, time_range=(0,10))
@@ -372,7 +406,7 @@ def test_dyad_connection_matrix():
         ('task2', 10, 20),
         ('task3', 20, 30),
     ]
-    subject = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject).compute_wtcs(match=re.compile(r'^S1_.*760'))
     # channels detectors expected on 3 tasks: D1-D1, D1-D2, D2-D1, D2-D2
     assert len(dyad.wtcs) == 3*4
@@ -405,8 +439,8 @@ def test_dyad_p_value_matrix():
         ('task2', 10, 20),
     ]
     match = re.compile(r'^S1_.*760')
-    subject1 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
-    subject2 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file2, preprocess=True).populate_epochs_from_tasks()
+    subject1 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
+    subject2 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file2).populate_epochs_from_tasks()
     dyad1 = Dyad(subject1, subject1)
     dyad2 = Dyad(subject1, subject2)
 
@@ -423,7 +457,7 @@ def test_dyad_p_value_matrix():
     assert p_value_matrix[0,0,0] < 1
 
 def test_save_cohort_to_disk():
-    subject = Subject(tasks_time_range=[('first_5_seconds', 0, 5)]).load_file(UpstreamPreprocessor(), snirf_file1, preprocess=True).populate_epochs_from_tasks()
+    subject = Subject(tasks_time_range=[('first_5_seconds', 0, 5)]).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     cohort = Cohort([dyad])
 

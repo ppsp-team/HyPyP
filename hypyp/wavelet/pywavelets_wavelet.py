@@ -16,7 +16,7 @@ class PywaveletsWavelet(BaseWavelet):
         wtc_smoothing_boxcar_size=1,
         cwt_params=dict(),
         evaluate=True,
-        cache_dict=None,
+        cache=None,
         periods_range=(3, 50),
     ):
         self.wtc_smoothing_smooth_factor = wtc_smoothing_smooth_factor
@@ -28,7 +28,7 @@ class PywaveletsWavelet(BaseWavelet):
         self.upper_bound = upper_bound
         self.tracer = dict(name='pywt')
         self.periods_range = periods_range
-        super().__init__(evaluate, cache_dict)
+        super().__init__(evaluate, cache)
 
     def evaluate_psi(self):
         wavelet = pywt.ContinuousWavelet(self.wavelet_name)

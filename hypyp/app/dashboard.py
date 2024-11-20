@@ -341,11 +341,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @reactive.calc()
     def get_subject1():
-        return Subject().load_file(get_preprocessor(), get_signal_data_files_s1_path()).preprocess(get_preprocessor())
+        return Subject().load_file(get_preprocessor(), get_signal_data_files_s1_path())
 
     @reactive.calc()
     def get_subject2():
-        return Subject().load_file(get_preprocessor(), get_signal_data_files_s2_path()).preprocess(get_preprocessor())
+        return Subject().load_file(get_preprocessor(), get_signal_data_files_s2_path())
 
     @reactive.calc()
     def get_subject1_step():
@@ -623,6 +623,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         if input.display_wtc_frequencies_at_time() is None:
             # region of interest
+            # TODO this computation is wrong. Use wtc_masked
             roi = wtc_res.wtc * (wtc_res.wtc > wtc_res.coif[np.newaxis, :]).astype(int)
             col = np.argmax(np.sum(roi, axis=0))
         else:

@@ -7,7 +7,7 @@ class UpstreamPreprocessor(MnePreprocessor):
         super().__init__()
     
     def run(self, raw: mne.io.Raw):
-        return [
-            MnePreprocessStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC)
-        ]
+        step = MnePreprocessStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC)
+        steps = [step]
+        return steps
         

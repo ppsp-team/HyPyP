@@ -135,4 +135,5 @@ dmypy.json
 _build/
 
 # Preprocessed and results data
-data/results
+data/results/
+lionlab/
