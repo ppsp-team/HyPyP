@@ -65,8 +65,8 @@ app_ui = ui.page_fluid(
             #ui.output_ui('ui_wtc_tracer'),
         ),
         ui.nav_spacer(),
-        selected='Cohort Info',
-        #selected='Dyad connectivity',
+        #selected='Cohort Info',
+        selected='Dyad connectivity',
         #selected='Wavelet Transform Coherence',
         id='main_nav',
         sidebar=ui.sidebar(
@@ -121,6 +121,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             "select_cohort_file",
             f"Cohort file ({HARDCODED_RESULTS_PATH})",
             choices=my_list,
+            selected="fnirs_cohort_lionlab_small.pickle",
         )
     
     @render.ui
@@ -186,7 +187,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         wtc.plot(
             ax=ax,
             colorbar=True,
-            downsample=True,
+            downsample=False, # downsampling is already done
             show_coif=True,
             show_nyquist=True,
         )

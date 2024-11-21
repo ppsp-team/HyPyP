@@ -13,6 +13,7 @@ from hypyp.fnirs.cohort import Cohort
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.fnirs.subject import Subject
+from hypyp.fnirs.channel_roi import ChannelROI
 from hypyp.fnirs.dyad import Dyad
 from hypyp.fnirs.data_browser import DataBrowser
 from hypyp.fnirs.preprocessors.base_preprocessor import PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_HAEMO_FILTERED_KEY
@@ -40,23 +41,23 @@ logging.disable()
 # Data Browser
 #
 def test_list_paths():
-    loader = DataBrowser()
-    paths = loader.paths
+    browser = DataBrowser()
+    paths = browser.paths
     assert len(paths) > 0
 
 def test_list_paths():
-    loader = DataBrowser()
-    previous_count = len(loader.paths)
-    loader.add_source('/foo')
-    new_paths = loader.paths
+    browser = DataBrowser()
+    previous_count = len(browser.paths)
+    browser.add_source('/foo')
+    new_paths = browser.paths
     assert len(new_paths) == previous_count + 1
 
 def test_list_files():
-    loader = DataBrowser()
-    assert len(loader.paths) > 0
-    assert len(loader.list_all_files()) > 0
+    browser = DataBrowser()
+    assert len(browser.paths) > 0
+    assert len(browser.list_all_files()) > 0
     # path should be absolute
-    assert loader.list_all_files()[0].startswith('/')
+    assert browser.list_all_files()[0].startswith('/')
 
 
 #
@@ -204,7 +205,7 @@ def test_subject_dyad():
     dyad.populate_epochs_from_tasks()
     assert dyad.is_preprocessed == True
 
-    pairs = dyad.get_pairs()
+    pairs = dyad.get_pairs(dyad.s1, dyad.s2)
     n_channels = len(subject.pre.ch_names)
     #assert len(pairs) == n_channels * n_channels * n_epochs # TODO this is the test we with, with epochs
     assert len(pairs) == n_channels * n_channels
@@ -228,7 +229,7 @@ def test_dyad_tasks_intersection():
 def test_dyad_compute_pair_wtc():
     subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
-    pair = dyad.get_pairs()[0].sub((0, 10)) # Take 10% of the file
+    pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
     wtc = dyad.get_pair_wtc(pair, PywaveletsWavelet())
     # Should have a mean of 1 since the first pair is the same signal
     assert np.mean(wtc.wtc) == pytest.approx(1)
@@ -237,7 +238,7 @@ def test_dyad_cwt_cache_during_wtc():
     subject1 = Subject(label='subject1').load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     subject2 = Subject(label='subject2').load_file(UpstreamPreprocessor(), snirf_file2).populate_epochs_from_tasks()
     dyad = Dyad(subject1, subject2)
-    pair = dyad.get_pairs()[0].sub((0, 10)) # Take 10% of the file
+    pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
     wavelet = PywaveletsWavelet(cache=dict())
     with patch.object(wavelet, 'cwt', wraps=wavelet.cwt) as spy_method:
         wtc_no_cache = dyad.get_pair_wtc(pair, wavelet)
@@ -253,7 +254,7 @@ def test_dyad_cwt_cache_during_wtc():
 def test_dyad_coi_cache_during_wtc():
     subject = Subject(label='subject1').load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
-    pair = dyad.get_pairs()[0].sub((0, 10)) # Take 10% of the file
+    pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
     wavelet = PywaveletsWavelet(cache=dict())
     with patch.object(wavelet, 'get_cone_of_influence', wraps=wavelet.get_cone_of_influence) as spy_method:
         wtc_no_cache = dyad.get_pair_wtc(pair, wavelet)
@@ -267,17 +268,39 @@ def test_dyad_coi_cache_during_wtc():
         dyad.get_pair_wtc(pair, wavelet)
         assert spy_method.call_count == 2
 
+def test_dyad_cwt_cache_with_different_times():
+    # When computing intra-subject, we cannot re-use the cache since the cwt might have been computed cropped to match lenght of both signal
+    # We would have this error if the cache is not invalidated and we have different length
+    #   "ValueError: operands could not be broadcast together with shapes (40,79) (40,157)"
+    # This can happen for annotation based tasks. Here we force a different task by changing the 2nd subject
+    subject1 = Subject(label='subject1', tasks_time_range=[('my_task', 0, 10)]).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
+    subject2 = Subject(label='subject2', tasks_time_range=[('my_task', 0, 20)]).load_file(UpstreamPreprocessor(), snirf_file2).populate_epochs_from_tasks()
+    # Force a different task length for subject2 to have a different lenght
+    dyad = Dyad(subject1, subject1)
+    dyad.s2 = subject2 # hack for the test
+    dyad.compute_wtcs(match='S1_D1 760', intra_subject=True)
 
 def test_dyad_compute_all_wtc():
     subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     assert dyad.is_wtc_computed == False
-    dyad.compute_wtcs(time_range=(0,10)) # TODO have a more simple wavelet for fast computing
+    dyad.compute_wtcs(time_range=(0,10))
     assert dyad.is_wtc_computed == True
     assert len(dyad.wtcs) == len(subject.pre.ch_names)**2
     # Should have a mean of 1 since the first pair is the same signal
     assert np.mean(dyad.wtcs[0].wtc) == pytest.approx(1)
     
+def test_dyad_computes_intra_subject():
+    subject1 = Subject().load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
+    subject2 = Subject().load_file(UpstreamPreprocessor(), snirf_file2).populate_epochs_from_tasks()
+    dyad = Dyad(subject1, subject2)
+    dyad.compute_wtcs(time_range=(0,10), intra_subject=True)
+    assert subject1.is_wtc_computed == True
+    assert subject2.is_wtc_computed == True
+    assert len(dyad.wtcs) == len(subject1.wtcs)
+    assert len(dyad.wtcs) == len(subject2.wtcs)
+    
+
 def test_dyad_compute_str_match_wtc():
     subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
@@ -291,7 +314,7 @@ def test_dyad_compute_regex_match_wtc():
     regex = re.compile(r'^S1.*760')
     dyad.compute_wtcs(match=regex, time_range=(0,10))
     assert len(dyad.wtcs) == 4
-    assert dyad.wtcs[0].label == dyad.get_pairs()[0].label
+    assert dyad.wtcs[0].label == dyad.get_pairs(dyad.s1, dyad.s2)[0].label
 
 def test_dyad_compute_tuple_match_wtc():
     subject = Subject().load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
@@ -311,7 +334,7 @@ def test_dyad_wtc_per_task():
     subject.populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     ch_name = 'S1_D1 760'
-    pairs = dyad.get_pairs(match=ch_name)
+    pairs = dyad.get_pairs(dyad.s1, dyad.s2, match=ch_name)
     assert len(pairs) == 2
     dyad.compute_wtcs(match=ch_name)
     assert len(dyad.wtcs) == 2
@@ -331,7 +354,7 @@ def test_dyad_task_annotations_and_time_range_combined():
     subject.populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
     ch_name = 'S1_D1 760'
-    pairs = dyad.get_pairs(match=ch_name)
+    pairs = dyad.get_pairs(dyad.s1, dyad.s2, match=ch_name)
     assert len(pairs) == 3
     dyad.compute_wtcs(match=ch_name)
     assert len(dyad.wtcs) == 3
@@ -396,7 +419,7 @@ def test_dyad_connection_matrix():
     dyad = Dyad(subject, subject)
     match = re.compile(r'^S1_.*760')
     dyad.compute_wtcs(match=match, time_range=(0,10))
-    print(dyad.get_pairs(match=match))
+    print(dyad.get_pairs(dyad.s1, dyad.s2, match=match))
     # channels detectors expected: D1-D1, D1-D2, D2-D1, D2-D2
     assert len(dyad.wtcs) == 4
 
@@ -433,6 +456,28 @@ def test_dyad_connection_matrix():
     # Make sure results for different tasks are not the same
     assert conn_matrix[0,0,1] != conn_matrix[1,0,1]
 
+def test_dyad_connection_matrix_intra_subject():
+    tasks = [
+        ('task1', 0, 10),
+        ('task2', 10, 20),
+    ]
+    subject1 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
+    subject2 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file2).populate_epochs_from_tasks()
+    dyad = Dyad(subject1, subject2).compute_wtcs(match=re.compile(r'^S1_.*760'), intra_subject=True)
+    conn_matrix, task_names, row_names, col_names = dyad.get_connectivity_matrix_with_intra()
+
+    assert len(conn_matrix.shape) == 3
+    assert conn_matrix.shape[0] == 2 # 3 tasks
+    assert conn_matrix.shape[1] == 4 # 2 intra + 2 inter
+    assert conn_matrix.shape[2] == 4
+
+    assert task_names[0] == 'task1'
+    
+    # names are duplicated
+    ch_names = ['S1_D1 760', 'S1_D2 760']
+    assert row_names == ch_names + ch_names
+    assert col_names == ch_names + ch_names
+
 def test_dyad_p_value_matrix():
     tasks = [
         ('task1', 0, 10),
@@ -456,6 +501,16 @@ def test_dyad_p_value_matrix():
     assert p_value_matrix[0,0,0] > 0
     assert p_value_matrix[0,0,0] < 1
 
+def test_wtc_downsampling():
+    tasks = [('task1', 0, 25)]
+    match = 'S1_D1 760'
+    subject = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
+    dyad = Dyad(subject, subject)
+    n = 100
+    Cohort([dyad]).compute_wtcs(match=match, downsample=n)
+    assert len(dyad.wtcs[0].times) <= n
+    
+
 def test_save_cohort_to_disk():
     subject = Subject(tasks_time_range=[('first_5_seconds', 0, 5)]).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     dyad = Dyad(subject, subject)
@@ -468,6 +523,37 @@ def test_save_cohort_to_disk():
     
     assert len(cohort_reloaded.dyads) == len(cohort.dyads)
 
+def test_lionirs_channel_grouping():
+    roi_file_path = 'data/lionirs/channel_grouping_7ROI.mat'
+    croi = ChannelROI.from_lionirs(roi_file_path)
+    assert len(croi.rois.keys()) == 14
+
+    key1 = list(croi.rois.keys())[0]
+    roi1 = croi.rois[key1]
+    ch1 = roi1[0]
+    assert key1 == 'PreFr_L'
+    assert len(roi1) == 5
+    assert ch1 == 'S1_D9'
+
+    assert len(croi.ordered_channel_names) == 50
+    # Actual ordering:
+    # ['S1_D9', 'S2_D9', 'S2_D2', 'S1_D2', 'S2_D1', 'S3_D1', 'S3_D2', ...]
+
+    unordered_names = ['S1_D2 hbo', 'S1_D2 hbr', 'S1_D9 hbo', 'S1_D9 hbr', 'whatever']
+    ordered_names = croi.get_names_in_order(unordered_names)
+    assert ordered_names[0] == 'S1_D9 hbo'
+    assert ordered_names[1] == 'S1_D9 hbr'
+    assert ordered_names[2] == 'S1_D2 hbo'
+    assert ordered_names[3] == 'S1_D2 hbr'
+    assert ordered_names[4] == 'whatever'
+
+def test_ordered_subject_ch_names():
+    roi_file_path = 'data/lionirs/channel_grouping_7ROI.mat'
+    croi = ChannelROI.from_lionirs(roi_file_path)
+    subject = Subject(channel_roi=croi).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
+    ch_names = subject.ordered_ch_names
+    assert ch_names[0] == 'S2_D2 760'
+
 @pytest.mark.skip(reason="TODO: have significance comparison")
 def test_significance():
     pass
@@ -479,10 +565,10 @@ def test_pair_indexing_in_matrix():
 # Skip this test because it downloads data. We don't want this on the CI
 @pytest.mark.skip(reason="Downloads data")
 def test_download_demos():
-    loader = DataBrowser()
-    previous_count = len(loader.paths)
-    loader.download_demo_dataset()
-    new_paths = loader.paths
+    browser = DataBrowser()
+    previous_count = len(browser.paths)
+    browser.download_demo_dataset()
+    new_paths = browser.paths
     assert len(new_paths) == previous_count + 1
 
 #def test_load_lionirs():

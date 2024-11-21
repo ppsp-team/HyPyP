@@ -16,7 +16,7 @@ class PywaveletsWavelet(BaseWavelet):
         wtc_smoothing_boxcar_size=1,
         cwt_params=dict(),
         evaluate=True,
-        cache=None,
+        cache=dict(), # Set to None to disable caching
         periods_range=(3, 50),
     ):
         self.wtc_smoothing_smooth_factor = wtc_smoothing_smooth_factor

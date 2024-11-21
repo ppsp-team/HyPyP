@@ -5,6 +5,7 @@ from .data_browser import DataBrowser
 from .subject import Subject
 from .dyad import Dyad
 from .cohort import Cohort
+from .channel_roi import ChannelROI
 
 __all__ = ['Subject',
            'Dyad',
@@ -15,4 +16,5 @@ __all__ = ['Subject',
            'UpstreamPreprocessor',
            'MnePreprocessor',
            'MnePreprocessStep',
+           'ChannelROI',
 ]

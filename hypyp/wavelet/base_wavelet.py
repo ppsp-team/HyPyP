@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import math
 import numpy as np
 from skimage.measure import block_reduce
 
@@ -7,6 +8,29 @@ from hypyp.wavelet.pair_signals import PairSignals
 from ..plots import plot_cwt_weights, plot_wavelet_coherence
 from .smooth import smoothing
 
+def downsample_in_time(times, *args, bins=500):
+    ret = []
+    # We assume time is always the last column
+    factor = math.ceil(times.shape[0] / bins)
+
+    if factor == 1:
+        return [times, *args, 1]
+    
+    # First deal with times. Need to pad (cval) with max value, we don't want to "go back in time" for the last values
+    ret.append(block_reduce(times, block_size=factor, func=np.min, cval=np.max(times)))
+    
+    for item in args:
+        if len(item.shape) == 1:
+            ret.append(block_reduce(item, block_size=factor, func=np.mean, cval=np.mean(item)))
+        elif len(item.shape) == 2:
+            ret.append(block_reduce(item, block_size=(1,factor), func=np.mean, cval=np.mean(item)))
+        else:
+            raise RuntimeError(f'Unsupported number of column for downsampling: {len(item)}')
+    
+    ret.append(factor)
+
+    return ret
+        
 class CWT:
     def __init__(self, weights, times, scales, frequencies, coif, tracer=None):
         self.W: np.ndarray = weights
@@ -38,13 +62,24 @@ class WTC:
 
         self.tracer = tracer
 
-        mask = frequencies[:, np.newaxis] < coif
-        self.wtc_roi = np.ma.masked_array(wtc, mask)
+        self.wtc_roi: np.ma.MaskedArray
+        self.sig_metric: float
 
-        self.sig_metric = np.mean(self.wtc_roi) # TODO this is just a PoC
         self.sig_p_value = None
         self.sig_t_stat = None
         self.sig = sig
+
+        self.compute_roi()
+    
+    def compute_roi(self):
+        mask = self.frequencies[:, np.newaxis] < self.coif
+        self.wtc_roi = np.ma.masked_array(self.wtc, mask)
+        self.sig_metric = np.mean(self.wtc_roi) # TODO this is just a PoC
+    
+    def downsample_in_time(self, bins):
+        self.times, self.wtc, self.coi, self.coif, _factor = downsample_in_time(self.times, self.wtc, self.coi, self.coif, bins=bins)
+        # must recompute region of interest
+        self.compute_roi()
     
     def plot(self, **kwargs):
         return plot_wavelet_coherence(self.wtc_roi, self.times, self.frequencies, self.coif, self.sig, **kwargs)
@@ -93,7 +128,7 @@ class BaseWavelet(ABC):
     def cwt(self, y, dt, dj):
         pass
     
-    def wtc(self, pair: PairSignals, tracer=None):
+    def wtc(self, pair: PairSignals, cache_suffix='', tracer=None):
         
         # TODO add verbose option
         #if s1_cwt is not None:
@@ -123,10 +158,10 @@ class BaseWavelet(ABC):
         S1_cached = None
         S2_cached = None
         if self.use_caching:
-            cwt1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'cwt'))
-            cwt2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'cwt'))
-            S1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'smooth'))
-            S2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'smooth'))
+            cwt1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'cwt', cache_suffix))
+            cwt2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'cwt', cache_suffix))
+            S1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'smooth', cache_suffix))
+            S2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'smooth', cache_suffix))
 
         cwt1 = cwt1_cached
         if cwt1 is None:
@@ -185,13 +220,13 @@ class BaseWavelet(ABC):
 
         if self.use_caching:
             if cwt1_cached is None:
-                self.add_cache_item(self.get_cache_key_pair(pair, 0, 'cwt'), cwt1)
+                self.add_cache_item(self.get_cache_key_pair(pair, 0, 'cwt', cache_suffix), cwt1)
             if cwt2_cached is None:
-                self.add_cache_item(self.get_cache_key_pair(pair, 1, 'cwt'), cwt2)
+                self.add_cache_item(self.get_cache_key_pair(pair, 1, 'cwt', cache_suffix), cwt2)
             if S1_cached is None:
-                self.add_cache_item(self.get_cache_key_pair(pair, 0, 'smooth'), S1)
+                self.add_cache_item(self.get_cache_key_pair(pair, 0, 'smooth', cache_suffix), S1)
             if S2_cached is None:
-                self.add_cache_item(self.get_cache_key_pair(pair, 1, 'smooth'), S2)
+                self.add_cache_item(self.get_cache_key_pair(pair, 1, 'smooth', cache_suffix), S2)
             if coi_cached is None:
                 self.add_cache_item(self.get_cache_key_coi(N, dt), coi)
             if coif_cached is None:
@@ -238,7 +273,7 @@ class BaseWavelet(ABC):
     def clear_cache(self):
         self.cache = dict()
 
-    def get_cache_key_pair(self, pair: PairSignals, subject_id: int, obj_id: str):
+    def get_cache_key_pair(self, pair: PairSignals, subject_id: int, obj_id: str, cache_suffix: str = ''):
         if subject_id == 0:
             subject_label = pair.label_s1
             ch_name = pair.ch_name1
@@ -254,7 +289,11 @@ class BaseWavelet(ABC):
         if pair.task == '':
             raise RuntimeError(f'must have task to have unique identifiers in caching')
 
-        return f'{subject_label}-{ch_name}-{pair.task}-{str(pair.range)}-{obj_id}'
+        key = f'{subject_label}-{ch_name}-{pair.task}-{str(pair.range)}-{obj_id}'
+        if cache_suffix != '':
+            key += f'f{cache_suffix}'
+        
+        return key
     
     def get_cache_key_coi(self, N, dt):
         return f'coi_{N}_{dt}'

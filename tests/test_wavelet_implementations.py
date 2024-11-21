@@ -13,7 +13,7 @@ from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
 # TODO: test values with sinusoid signal
 
 def test_pywavelets():
-    wavelet = PywaveletsWavelet()
+    wavelet = PywaveletsWavelet(cache=None)
     psi, x = wavelet.evaluate_psi()
     assert psi.dtype.kind == 'c'
     assert min(x) == wavelet.lower_bound

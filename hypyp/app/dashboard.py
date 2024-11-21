@@ -425,20 +425,20 @@ def server(input: Inputs, output: Outputs, session: Session):
             ))
         
         elif input.signal_type() == 'data_files':
-            loader = get_data_browser()
-            loader.download_demo_dataset()
+            browser = get_data_browser()
+            browser.download_demo_dataset()
 
             choices.append(ui_option_row("Subject 1 file", ui.input_select(
                 "signal_data_files_s1_path",
                 "",
-                choices=loader.list_all_files(),
+                choices=browser.list_all_files(),
                 # for comparison with jupyter notebook
                 #selected="/home/patrice/work/ppsp/HyPyP-synchro/data/fNIRS/downloads/fathers/FCS28/parent/NIRS-2019-11-10_003.hdr",
             )))
             choices.append(ui_option_row("Subject 2 file", ui.input_select(
                 "signal_data_files_s2_path",
                 "",
-                choices=[STR_SAME_AS_SUBJECT_1] + loader.list_all_files(),
+                choices=[STR_SAME_AS_SUBJECT_1] + browser.list_all_files(),
             )))
             choices.append(ui_option_row("Preprocessor", ui.input_select(
                 "subject_preprocessor",

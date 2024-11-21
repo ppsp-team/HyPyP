@@ -1,19 +1,29 @@
+import random
+import string
 from typing import List
 from pathlib import Path
 
 import mne
 import itertools as itertools
 
+from ..wavelet.base_wavelet import WTC
 from .preprocessors.base_preprocessor import BasePreprocessor, BasePreprocessStep
 from ..utils import epochs_from_tasks_annotations, TASK_BEGINNING, TASK_END, Task, TaskList, epochs_from_tasks_time_range
+from .channel_roi import ChannelROI
 
 TASK_NAME_WHOLE_RECORD = 'whole_record'
 
+def random_label(length):
+   letters = string.ascii_lowercase
+   return ''.join(random.choice(letters) for i in range(length))
+
 class Subject:
-    def __init__(self, label:str='', tasks_annotations:TaskList=[], tasks_time_range:TaskList=[]):
+    def __init__(self, label:str='', tasks_annotations:TaskList=[], tasks_time_range:TaskList=[], channel_roi:ChannelROI=None):
         self.filepath: str = None
-        self.label = label
+        self.label = label if label != '' else random_label(10)
+        self.channel_roi: ChannelROI|None = channel_roi
         self.raw: mne.io.Raw = None
+        self.wtcs: List[WTC] = None # intra-subject wtc
         self.epochs_per_task: List[mne.Epochs] = None
         self.preprocess_steps: List[BasePreprocessStep] = None
         self.tasks_annotations: TaskList = []
@@ -56,10 +66,20 @@ class Subject:
         return self.epochs_per_task is not None
     
     @property
+    def is_wtc_computed(self):
+        return self.wtcs is not None
+
+    @property
     def pre(self) -> mne.io.Raw:
         self._assert_is_preprocessed()
         # We want the last step of all the preprocessing
         return self.preprocess_steps[-1].obj
+    
+    @property
+    def ordered_ch_names(self) -> List[str]:
+        if self.channel_roi is None:
+            return self.pre.ch_names
+        return self.channel_roi.get_names_in_order(self.pre.ch_names)
 
     @property
     def preprocess_step_keys(self):

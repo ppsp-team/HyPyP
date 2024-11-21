@@ -8,27 +8,6 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from skimage.measure import block_reduce
 from matplotlib.ticker import FuncFormatter, ScalarFormatter
 
-def downsample_in_time(*args, t=1000):
-    ret = []
-    # We assume time is always the last column
-    factor = math.ceil(args[0].shape[-1] / t)
-
-    if factor == 1:
-        return [*args, 1]
-
-    for item in args:
-        if len(item.shape) == 1:
-            ret.append(block_reduce(item, block_size=factor, func=np.mean, cval=np.mean(item)))
-        elif len(item.shape) == 2:
-            ret.append(block_reduce(item, block_size=(1,factor), func=np.mean, cval=np.mean(item)))
-        else:
-            raise RuntimeError(f'Unsupported number of column for downsampling: {len(item)}')
-    
-    ret.append(factor)
-
-    return ret
-        
-    
 
 def spectrogram_plot(z, times, frequencies, coif, cmap="viridis", norm=Normalize(), ax=None, colorbar=True):
     ###########################################################################
@@ -155,7 +134,14 @@ def plot_wavelet_coherence(
         
     return ax
 
-def plot_connectivity_matrix(z, ch_names1, ch_names2, label1, label2, title='Connectivity matrix', ax=None):
+def plot_connectivity_matrix(
+        z,
+        ch_names1,
+        ch_names2,
+        label1,
+        label2,
+        title='Connectivity matrix',
+        ax=None):
     # create the figure if needed
     if ax is None:
         fig, ax = plt.subplots()
@@ -169,8 +155,8 @@ def plot_connectivity_matrix(z, ch_names1, ch_names2, label1, label2, title='Con
     fig.colorbar(im)
 
     # Set x and y ticks
-    ax.set_yticks(ticks=np.arange(len(ch_names1)), labels=ch_names1)
-    ax.set_xticks(ticks=np.arange(len(ch_names2)), labels=ch_names2, rotation=90)
+    ax.set_yticks(ticks=np.arange(len(ch_names1)), labels=ch_names1, fontsize=6)
+    ax.set_xticks(ticks=np.arange(len(ch_names2)), labels=ch_names2, fontsize=6, rotation=90)
 
     ax.set_ylabel(label1)
     ax.set_xlabel(label2)
