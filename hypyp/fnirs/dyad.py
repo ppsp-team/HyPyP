@@ -49,14 +49,8 @@ class Dyad:
         for subject in self.subjects:
             if not subject.is_preprocessed:
                 subject.preprocess(preprocessor)
-                subject.populate_epochs_from_tasks()
         return self
     
-    def populate_epochs_from_tasks(self, **kwargs):
-        for subject in self.subjects:
-            subject.populate_epochs_from_tasks(**kwargs)
-        return self
-
     def get_pairs(self, s1: Subject, s2: Subject, match:PairMatch=None) -> List[PairSignals]:
         pairs = []
 

@@ -8,6 +8,7 @@ import itertools as itertools
 
 from ..wavelet.base_wavelet import WTC
 from .preprocessors.base_preprocessor import BasePreprocessor, BasePreprocessStep
+from .preprocessors.upstream_preprocessor import UpstreamPreprocessor
 from ..utils import epochs_from_tasks_annotations, TASK_BEGINNING, TASK_END, Task, TaskList, epochs_from_tasks_time_range
 from .channel_roi import ChannelROI
 
@@ -99,7 +100,7 @@ class Subject:
             steps_dict[step.key] = step.desc
         return steps_dict
     
-    def load_file(self, preprocessor: BasePreprocessor, filepath: str, preprocess=True):
+    def load_file(self, filepath: str, preprocessor:BasePreprocessor=UpstreamPreprocessor(), preprocess=True):
         if not Path(filepath).is_file():
             raise RuntimeError(f'Cannot find file {filepath}')
 
@@ -111,6 +112,7 @@ class Subject:
     
     def preprocess(self, preprocessor: BasePreprocessor):
         self.preprocess_steps = preprocessor.run(self.raw)
+        self.populate_epochs_from_tasks()
         return self
 
     def get_preprocess_step(self, key):

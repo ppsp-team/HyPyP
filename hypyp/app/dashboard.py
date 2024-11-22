@@ -341,11 +341,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @reactive.calc()
     def get_subject1():
-        return Subject().load_file(get_preprocessor(), get_signal_data_files_s1_path())
+        return Subject().load_file(get_signal_data_files_s1_path(), get_preprocessor())
 
     @reactive.calc()
     def get_subject2():
-        return Subject().load_file(get_preprocessor(), get_signal_data_files_s2_path())
+        return Subject().load_file(get_signal_data_files_s2_path(), get_preprocessor())
 
     @reactive.calc()
     def get_subject1_step():
