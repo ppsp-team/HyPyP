@@ -42,6 +42,14 @@ class ChannelROI:
         for channel_names_roi in self.rois.values():
             channel_names = channel_names + channel_names_roi
         return channel_names
+    
+    @property
+    def group_boundaries(self):
+        boundaries = [0]
+        for values in self.rois.values():
+            boundaries.append(len(values) + boundaries[-1])
+        boundaries.append(len(self.ordered_channel_names))
+        return boundaries
 
     def get_names_in_order(self, names):
         all_names_found = []

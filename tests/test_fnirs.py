@@ -547,12 +547,18 @@ def test_lionirs_channel_grouping():
     assert ordered_names[3] == 'S1_D2 hbr'
     assert ordered_names[4] == 'whatever'
 
+    assert croi.group_boundaries[:2] == [0, 5]
+    assert croi.group_boundaries[-1] == len(croi.ordered_channel_names)
+
 def test_ordered_subject_ch_names():
     roi_file_path = 'data/lionirs/channel_grouping_7ROI.mat'
     croi = ChannelROI.from_lionirs(roi_file_path)
     subject = Subject(channel_roi=croi).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     ch_names = subject.ordered_ch_names
     assert ch_names[0] == 'S2_D2 760'
+
+#def test_connectivity_pandas():
+    
 
 @pytest.mark.skip(reason="TODO: have significance comparison")
 def test_significance():

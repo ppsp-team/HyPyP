@@ -160,7 +160,7 @@ class Dyad:
         return self
     
     # TODO Maybe having wtcs as optional (and default to self.wtcs) is confusing
-    def get_wtc_property_matrix(self, property_name: str, wtcs:List[WTC]=None):
+    def get_wtc_property_matrix(self, property_name: str, wtcs:List[WTC]=None, reverse=False):
         if wtcs is None:
             wtcs = self.wtcs
 
@@ -192,7 +192,10 @@ class Dyad:
             i = task_map[wtc.task]
             j = row_map[wtc.ch_name1]
             k = col_map[wtc.ch_name2]
-            mat[i,j,k] = getattr(wtc, property_name)
+            if reverse:
+                mat[i,k,j] = getattr(wtc, property_name)
+            else:
+                mat[i,j,k] = getattr(wtc, property_name)
 
         return mat, tasks, ch_names1, ch_names2
     
@@ -201,18 +204,19 @@ class Dyad:
 
     def get_connectivity_matrix_with_intra(self):
         dyadic = self.get_wtc_property_matrix('sig_metric')
+        dyadic_T = self.get_wtc_property_matrix('sig_metric', reverse=True)
         s1 = self.get_wtc_property_matrix('sig_metric', self.s1.wtcs)
         s2 = self.get_wtc_property_matrix('sig_metric', self.s2.wtcs)
 
         if dyadic[1] != s1[1] or dyadic[1] != s2[1] :
             raise RuntimeError('Tasks list do not match, cannot concatenate matrices')
 
-        left = np.concatenate((s1[0], dyadic[0]), axis=1)
+        left = np.concatenate((s1[0], dyadic_T[0]), axis=1)
         right = np.concatenate((dyadic[0], s2[0]), axis=1)
         mat = np.concatenate((left, right), axis=2)
 
         # for intra-subject ch_names1==ch_names2, so it does not matter which one we take
-        ch_names1 = s1[2] + dyadic[2]
+        ch_names1 = s1[2] + dyadic_T[2]
         ch_names2 = dyadic[3] + s2[3]
 
         return mat, dyadic[1], ch_names1, ch_names2
