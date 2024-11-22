@@ -18,7 +18,7 @@ from hypyp.wavelet.base_wavelet import WTC
 HARDCODED_RESULTS_PATH = "./data/results"
 
 SIDEBAR_WIDTH = 400 # px
-DEFAULT_PLOT_CONNECTIVITY_HEIGHT = 1000 # px
+DEFAULT_PLOT_COHERENCE_HEIGHT = 1000 # px
 
 # This is to avoid having external windows launched
 matplotlib.use('Agg')
@@ -46,12 +46,16 @@ app_ui = ui.page_fluid(
             ),
         ),
         ui.nav_panel(
-            "Dyad connectivity",
+            "Dyad coherence",
             ui.row(
                 ui.column(
-                    12,
-                    ui.output_plot('plot_connectivity', height=DEFAULT_PLOT_CONNECTIVITY_HEIGHT)
-                )
+                    10,
+                    ui.output_plot('plot_coherence', height=DEFAULT_PLOT_COHERENCE_HEIGHT)
+                ),
+                ui.column(
+                    2,
+                    ui.input_switch("coherence_with_intra", "Show with intra subject", True),   
+                ),
             ),
         ),
         ui.nav_panel(
@@ -59,14 +63,14 @@ app_ui = ui.page_fluid(
             ui.row(
                 ui.column(
                     12,
-                    ui.output_plot('plot_wtc', height=DEFAULT_PLOT_CONNECTIVITY_HEIGHT)
+                    ui.output_plot('plot_wtc', height=DEFAULT_PLOT_COHERENCE_HEIGHT)
                 )
             ),
             #ui.output_ui('ui_wtc_tracer'),
         ),
         ui.nav_spacer(),
         #selected='Cohort Info',
-        selected='Dyad connectivity',
+        selected='Dyad coherence',
         #selected='Wavelet Transform Coherence',
         id='main_nav',
         sidebar=ui.sidebar(
@@ -171,11 +175,11 @@ def server(input: Inputs, output: Outputs, session: Session):
         })
     
     @render.plot
-    def plot_connectivity():
+    def plot_coherence():
         dyad = get_dyad()
         if dyad is None:
             return None
-        return dyad.plot_coherence_matrix_for_task(input.select_task())
+        return dyad.plot_coherence_matrix_for_task(input.select_task(), with_intra=input.coherence_with_intra())
         
     @render.plot
     def plot_wtc():

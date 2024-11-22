@@ -238,12 +238,16 @@ class Dyad:
             plot_coherence_matrix(mat[i,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, title=task, ax=axes[i])
         fig.suptitle(self.label)
 
-    def plot_coherence_matrix_for_task(self, task_name):
+    def plot_coherence_matrix_for_task(self, task_name, with_intra=False):
         # TODO we should not load the whole matrix if we only want one task
-        mat, tasks, ch_names1, ch_names2 = self.get_coherence_matrix_with_intra()
+        if with_intra:
+            mat, tasks, ch_names1, ch_names2 = self.get_coherence_matrix_with_intra()
+        else:
+            mat, tasks, ch_names1, ch_names2 = self.get_coherence_matrix()
+
         # TODO deal with id not found
         id = [i for i, task in enumerate(self.tasks) if task[0] == task_name][0]
-        plot_coherence_matrix(mat[id,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, title=self.tasks[id][0])
+        plot_coherence_matrix(mat[id,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, with_intra=with_intra, title=self.tasks[id][0])
 
     def plot_wtc(self, wtc: WTC):
         plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)

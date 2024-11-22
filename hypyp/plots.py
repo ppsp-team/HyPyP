@@ -141,19 +141,14 @@ def plot_coherence_matrix(
         ch_names2,
         label1,
         label2,
-        title='Connectivity matrix',
+        title='Coherence matrix',
+        with_intra=False,
         ax=None):
     # create the figure if needed
     if ax is None:
         _, ax = plt.subplots()
 
-    x_quadrant_labels = [label2, label1]
-    y_quadrant_labels = [label2, label1]
-
-    x_quadrant_boundaries = [0, len(ch_names1)//2, len(ch_names1)]
-    y_quadrant_boundaries = [0, len(ch_names1)//2, len(ch_names1)]
-
-    sns.heatmap(z, cmap='viridis', cbar=True, ax=ax)
+    sns.heatmap(z, cmap='viridis', cbar=True, ax=ax, vmin=0, vmax=1)
 
     if title != '':
         ax.set_title(title)
@@ -162,13 +157,24 @@ def plot_coherence_matrix(
     ax.set_yticks(ticks=np.arange(len(ch_names1)), labels=ch_names1, fontsize=6, rotation=0)
     ax.set_xticks(ticks=np.arange(len(ch_names2)), labels=ch_names2, fontsize=6, rotation=90)
 
-    x_quadrant_positions = [(x_quadrant_boundaries[i] + x_quadrant_boundaries[i+1]) / 2 for i in range(len(x_quadrant_boundaries) - 1)]
-    for pos, label in zip(x_quadrant_positions, x_quadrant_labels):
-        ax.text(pos, -0.2, label, ha='center', va='center', fontsize=12, transform=ax.get_xaxis_transform())
+    if with_intra:
+        x_quadrant_labels = [label2, label1]
+        y_quadrant_labels = [label2, label1]
 
-    y_quadrant_positions = [(y_quadrant_boundaries[i] + y_quadrant_boundaries[i+1]) / 2 for i in range(len(y_quadrant_boundaries) - 1)]
-    for pos, label in zip(y_quadrant_positions, y_quadrant_labels):
-        ax.text(-0.2, pos, label, ha='center', va='center', fontsize=12, rotation=90, transform=ax.get_yaxis_transform())
+        x_quadrant_boundaries = [0, len(ch_names1)//2, len(ch_names1)]
+        y_quadrant_boundaries = [0, len(ch_names1)//2, len(ch_names1)]
+
+        x_quadrant_positions = [(x_quadrant_boundaries[i] + x_quadrant_boundaries[i+1]) / 2 for i in range(len(x_quadrant_boundaries) - 1)]
+        for pos, label in zip(x_quadrant_positions, x_quadrant_labels):
+            ax.text(pos, -0.2, label, ha='center', va='center', fontsize=12, transform=ax.get_xaxis_transform())
+
+        y_quadrant_positions = [(y_quadrant_boundaries[i] + y_quadrant_boundaries[i+1]) / 2 for i in range(len(y_quadrant_boundaries) - 1)]
+        for pos, label in zip(y_quadrant_positions, y_quadrant_labels):
+            ax.text(-0.2, pos, label, ha='center', va='center', fontsize=12, rotation=90, transform=ax.get_yaxis_transform())
+    
+    else:
+        ax.set_xlabel(label2)
+        ax.set_ylabel(label1)
 
     return ax
 
