@@ -397,7 +397,7 @@ def test_cohort_wtc():
     assert len(cohort.dyads_shuffle[0].wtcs) == 1
 
     cohort.compute_wtcs_significance()
-    assert cohort.dyads[0].wtcs[0].sig_p_value > 0
+    assert cohort.dyads[0].wtcs[0].coherence_p_value > 0
     # Memory should be freed after significance has been computed
     assert cohort.dyads_shuffle is None
 
@@ -433,7 +433,7 @@ def test_dyad_connection_matrix():
     dyad = Dyad(subject, subject).compute_wtcs(match=re.compile(r'^S1_.*760'))
     # channels detectors expected on 3 tasks: D1-D1, D1-D2, D2-D1, D2-D2
     assert len(dyad.wtcs) == 3*4
-    conn_matrix, task_names, row_names, col_names = dyad.get_connectivity_matrix()
+    conn_matrix, task_names, row_names, col_names = dyad.get_coherence_matrix()
 
     assert len(conn_matrix.shape) == 3
     assert conn_matrix.shape[0] == 3 # 3 tasks
@@ -464,7 +464,7 @@ def test_dyad_connection_matrix_intra_subject():
     subject1 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file1).populate_epochs_from_tasks()
     subject2 = Subject(tasks_time_range=tasks).load_file(UpstreamPreprocessor(), snirf_file2).populate_epochs_from_tasks()
     dyad = Dyad(subject1, subject2).compute_wtcs(match=re.compile(r'^S1_.*760'), intra_subject=True)
-    conn_matrix, task_names, row_names, col_names = dyad.get_connectivity_matrix_with_intra()
+    conn_matrix, task_names, row_names, col_names = dyad.get_coherence_matrix_with_intra()
 
     assert len(conn_matrix.shape) == 3
     assert conn_matrix.shape[0] == 2 # 3 tasks

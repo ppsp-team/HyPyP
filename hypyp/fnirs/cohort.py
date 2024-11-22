@@ -78,7 +78,7 @@ class Cohort():
         # TODO better looping, with dictionaries to have direct access to dyads channels
         for i, dyad in enumerate(self.dyads):
             for j, wtc in enumerate(dyad.wtcs):
-                sig_metrics = []
+                coherence_metrics = []
                 # get the same pair for each dyad_shuffle
                 for k, dyad_shuffle in enumerate(self.dyads_shuffle):
                     # don't include the real dyad
@@ -86,14 +86,14 @@ class Cohort():
                         continue
                     for l, wtc_shuffle in enumerate(dyad_shuffle.wtcs):
                         if wtc_shuffle.label == wtc.label:
-                            sig_metrics.append(wtc_shuffle.sig_metric)
+                            coherence_metrics.append(wtc_shuffle.coherence_metric)
 
-                others = np.array(sig_metrics)
+                others = np.array(coherence_metrics)
                 n = len(others)
                 if n > 0:
                     # p-value
                     # TODO: this should be better than this
-                    wtc.sig_t_stat, wtc.sig_p_value = ttest_1samp(others, wtc.sig_metric)
+                    wtc.coherence_t_stat, wtc.coherence_p_value = ttest_1samp(others, wtc.coherence_metric)
         
         self.clear_dyads_shuffle()
         return self

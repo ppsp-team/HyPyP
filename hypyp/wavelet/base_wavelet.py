@@ -63,10 +63,10 @@ class WTC:
         self.tracer = tracer
 
         self.wtc_roi: np.ma.MaskedArray
-        self.sig_metric: float
+        self.coherence_metric: float
 
-        self.sig_p_value = None
-        self.sig_t_stat = None
+        self.coherence_p_value = None
+        self.coherence_t_stat = None
         self.sig = sig
 
         self.compute_roi()
@@ -74,7 +74,7 @@ class WTC:
     def compute_roi(self):
         mask = self.frequencies[:, np.newaxis] < self.coif
         self.wtc_roi = np.ma.masked_array(self.wtc, mask)
-        self.sig_metric = np.mean(self.wtc_roi) # TODO this is just a PoC
+        self.coherence_metric = np.mean(self.wtc_roi) # TODO this is just a PoC
     
     def downsample_in_time(self, bins):
         self.times, self.wtc, self.coi, self.coif, _factor = downsample_in_time(self.times, self.wtc, self.coi, self.coif, bins=bins)

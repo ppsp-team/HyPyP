@@ -175,7 +175,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         dyad = get_dyad()
         if dyad is None:
             return None
-        return dyad.plot_connectivity_matrix_for_task(input.select_task())
+        return dyad.plot_coherence_matrix_for_task(input.select_task())
         
     @render.plot
     def plot_wtc():

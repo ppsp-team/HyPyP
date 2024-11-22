@@ -5,6 +5,9 @@ from .base_wavelet import CWT, WTC, BaseWavelet
 import pywt
 import scipy
 
+
+DEFAULT_PERIODS_RANGE = (2, 20)
+
 class PywaveletsWavelet(BaseWavelet):
     def __init__(
         self,
@@ -17,7 +20,8 @@ class PywaveletsWavelet(BaseWavelet):
         cwt_params=dict(),
         evaluate=True,
         cache=dict(), # Set to None to disable caching
-        periods_range=(3, 50),
+        periods_range=None,
+        frequencies_range=None,
     ):
         self.wtc_smoothing_smooth_factor = wtc_smoothing_smooth_factor
         self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
@@ -27,7 +31,17 @@ class PywaveletsWavelet(BaseWavelet):
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         self.tracer = dict(name='pywt')
-        self.periods_range = periods_range
+
+        if periods_range is not None and frequencies_range is not None:
+            raise RuntimeError('Cannot specify both periods_range and frequencies_range')
+
+        if periods_range is not None:
+            self.periods_range = periods_range
+        elif frequencies_range is not None:
+            self.periods_range = (1 / frequencies_range[0], 1 / frequencies_range[1])
+        else:
+            self.periods_range = DEFAULT_PERIODS_RANGE
+
         super().__init__(evaluate, cache)
 
     def evaluate_psi(self):

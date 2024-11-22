@@ -135,7 +135,7 @@ def plot_wavelet_coherence(
         
     return ax
 
-def plot_connectivity_matrix(
+def plot_coherence_matrix(
         z,
         ch_names1,
         ch_names2,

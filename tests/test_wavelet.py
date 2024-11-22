@@ -71,8 +71,8 @@ def test_wtc():
     signal2 = SynteticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     # check that we have a metric for significance
-    assert res.sig_metric > 0
-    assert res.sig_metric < 1
+    assert res.coherence_metric > 0
+    assert res.coherence_metric < 1
     
 def test_cache():
     wavelet = PywaveletsWavelet(cache=dict())
@@ -154,8 +154,19 @@ def test_downsampling_threshold():
     assert len(coif) == expected_len
     assert W.shape[1] == expected_len
     
-    
-    
+def test_periods_frequencies_range():    
+    frequencies_range = np.array([1., 5.])
+    periods_range = 1 / frequencies_range
+    signal1 = SynteticSignal().add_noise()
+    signal2 = SynteticSignal().add_noise()
+
+    wavelet1 = PywaveletsWavelet(periods_range=tuple(periods_range), cache=None)
+    res1 = wavelet1.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
+    assert np.all(res1.frequencies[[0,-1]] == pytest.approx(frequencies_range))
+
+    wavelet2 = PywaveletsWavelet(frequencies_range=tuple(frequencies_range), cache=None)
+    res2 = wavelet1.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
+    assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
     
 
     
