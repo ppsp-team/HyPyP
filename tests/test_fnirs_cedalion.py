@@ -1,8 +1,5 @@
 import pytest
 
-import xarray as xr
-import cedalion
-
 from hypyp.fnirs.preprocessors.base_preprocessor import PREPROCESS_STEP_BASE_KEY
 from hypyp.fnirs.preprocessors.cedalion_preprocessor import CedalionPreprocessor
 
@@ -12,6 +9,8 @@ def test_cedalion_preprocessor():
     if CedalionPreprocessor is None:
         pytest.skip("Optional dependency Cedalion is not installed")
         
+    import xarray as xr
+
     preprocessor = CedalionPreprocessor()
 
     steps = preprocessor.run(preprocessor.read_file(snirf_file))
