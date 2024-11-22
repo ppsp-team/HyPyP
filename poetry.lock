@@ -1922,16 +1922,6 @@ files = [
 ]
 
 [[package]]
-name = "matlabengine"
-version = "23.2.3"
-description = "A module to call MATLAB from Python"
-optional = false
-python-versions = ">=3.9, <3.12"
-files = [
-    {file = "matlabengine-23.2.3.tar.gz", hash = "sha256:b38d40faec42be5bb8e9413585fba990fb471ddfb1a81d2782342dabeadf0770"},
-]
-
-[[package]]
 name = "matplotlib"
 version = "3.9.2"
 description = "Python plotting package"
@@ -2936,23 +2926,6 @@ files = [
     {file = "pycparser-2.22-py3-none-any.whl", hash = "sha256:c3702b6d3dd8c7abc1afa565d7e63d53a1d0bd86cdc24edd75470f4de499cfcc"},
     {file = "pycparser-2.22.tar.gz", hash = "sha256:491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6"},
 ]
-
-[[package]]
-name = "pycwt"
-version = "0.4.0b0"
-description = "Continuous wavelet transform module for Python."
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "pycwt-0.4.0b0-py3-none-any.whl", hash = "sha256:a8b8b9bfbd87f5c2e9eec54cf71a845eb42f9a22831141bf2c49ff01a3d459f0"},
-    {file = "pycwt-0.4.0b0.tar.gz", hash = "sha256:f337cd28531f5b49a62b5f3ba5657cbc3e2f69e15a12ee3d309a2aa5ca1b8e86"},
-]
-
-[package.dependencies]
-matplotlib = ">=3.7,<4"
-numpy = ">=1.24,<2"
-scipy = ">=1.10,<2"
-tqdm = ">=4.65,<5"
 
 [[package]]
 name = "pyerfa"
@@ -4932,4 +4905,4 @@ test = ["mypy", "pre-commit", "pytest", "pytest-asyncio", "websockets (>=10.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "abd7311bf9f67b788f7984ed4c0598eac172849fa5934da4017849ccb7eab4b9"
+content-hash = "9df4921831a4f9d807f8433770ce9c2d644be398d6c29bf16b5755168cf32417"

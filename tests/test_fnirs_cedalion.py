@@ -9,6 +9,9 @@ from hypyp.fnirs.preprocessors.cedalion_preprocessor import CedalionPreprocessor
 snirf_file = './data/fNIRS/DCARE_02_sub1.snirf'
 
 def test_cedalion_preprocessor():
+    if CedalionPreprocessor is None:
+        pytest.skip("Optional dependency Cedalion is not installed")
+        
     preprocessor = CedalionPreprocessor()
 
     steps = preprocessor.run(preprocessor.read_file(snirf_file))
