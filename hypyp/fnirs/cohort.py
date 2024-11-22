@@ -48,9 +48,6 @@ class Cohort():
     
     def clear_dyads_shuffle(self):
         self.dyads_shuffle = None
-        # TODO Garbage collect?
-        #for dyad in self.dyads_shuffle:
-        #    del dyad
     
     def get_dyads_shuffle(self) -> List[Dyad]:
         dyads_shuffle = []

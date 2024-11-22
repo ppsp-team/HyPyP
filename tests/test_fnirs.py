@@ -21,14 +21,6 @@ from hypyp.fnirs.preprocessors.mne_preprocessor import MnePreprocessStep, MnePre
 from hypyp.fnirs.preprocessors.upstream_preprocessor import UpstreamPreprocessor
 from hypyp.utils import TASK_NEXT_EVENT
 
-#set events
-tmin = 0 
-tmax = 300
-baseline = (0, 0)
-
-ch_list_s1 = ["S4_D4 hbo"] 
-ch_list_s2 = ["S7_D6 hbo"]
-
 fif_file = './data/sub-110_session-1_pre.fif'
 snirf_file1 = './data/fNIRS/DCARE_02_sub1.snirf'
 snirf_file2 = './data/fNIRS/DCARE_02_sub2.snirf'
@@ -37,7 +29,7 @@ fnirs_files = [fif_file, snirf_file1, snirf_file2]
 # avoid all the output from mne
 logging.disable()
 
-# Helpers
+# Test helpers
 def get_test_subject():
     tasks = [('task1', 0, 20)]
     return Subject(tasks_time_range=tasks).load_file(snirf_file1)
@@ -47,6 +39,12 @@ def get_test_subjects():
     subject1 = Subject(tasks_time_range=tasks).load_file(snirf_file1)
     subject2 = Subject(tasks_time_range=tasks).load_file(snirf_file2)
     return subject1, subject2
+
+def get_test_ch_match_one():
+    return 'S1_D1 760'
+
+def get_test_ch_match_few():
+    return re.compile(r'^S1_.*760')
 
 #
 # Data Browser
@@ -281,7 +279,7 @@ def test_dyad_cwt_cache_with_different_times():
     # Force a different task length for subject2 to have a different lenght
     dyad = Dyad(subject1, subject1)
     dyad.s2 = subject2 # hack for the test
-    dyad.compute_wtcs(match='S1_D1 760', intra_subject=True)
+    dyad.compute_wtcs(ch_match=get_test_ch_match_one(), intra_subject=True)
 
 def test_dyad_compute_all_wtc():
     subject = Subject().load_file(snirf_file1)
@@ -307,15 +305,14 @@ def test_dyad_computes_intra_subject():
 def test_dyad_compute_str_match_wtc():
     subject = Subject().load_file(snirf_file1)
     dyad = Dyad(subject, subject)
-    dyad.compute_wtcs(match='760', time_range=(0,10))
+    dyad.compute_wtcs(ch_match='760', time_range=(0,10))
     assert dyad.is_wtc_computed == True
     assert len(dyad.wtcs) == (len(subject.pre.pick('all').ch_names)/2)**2
 
 def test_dyad_compute_regex_match_wtc():
     subject = Subject().load_file(snirf_file1)
     dyad = Dyad(subject, subject)
-    regex = re.compile(r'^S1.*760')
-    dyad.compute_wtcs(match=regex, time_range=(0,10))
+    dyad.compute_wtcs(ch_match=get_test_ch_match_few(), time_range=(0,10))
     assert len(dyad.wtcs) == 4
     assert dyad.wtcs[0].label == dyad.get_pairs(dyad.s1, dyad.s2)[0].label
 
@@ -324,7 +321,7 @@ def test_dyad_compute_tuple_match_wtc():
     dyad = Dyad(subject, subject)
     regex1 = re.compile(r'^S1_D1.*760')
     regex2 = re.compile(r'.*760')
-    dyad.compute_wtcs(match=(regex1, regex2), time_range=(0,10))
+    dyad.compute_wtcs(ch_match=(regex1, regex2), time_range=(0,10))
     assert len(dyad.wtcs) == 16
     #[print(wtc.label) for wtc in dyad.wtcs]
 
@@ -335,10 +332,10 @@ def test_dyad_wtc_per_task():
     ]
     subject = Subject(tasks_annotations=tasks).load_file(snirf_file1)
     dyad = Dyad(subject, subject)
-    ch_name = 'S1_D1 760'
+    ch_name = get_test_ch_match_one()
     pairs = dyad.get_pairs(dyad.s1, dyad.s2, match=ch_name)
     assert len(pairs) == 2
-    dyad.compute_wtcs(match=ch_name)
+    dyad.compute_wtcs(ch_match=ch_name)
     assert len(dyad.wtcs) == 2
     assert dyad.wtcs[0].wtc.shape[1] != dyad.wtcs[1].wtc.shape[1] # not the same duration
     assert 'task1' in [wtc.task for wtc in dyad.wtcs] # order may have changed because of task intersection
@@ -354,10 +351,10 @@ def test_dyad_task_annotations_and_time_range_combined():
     subject = Subject(tasks_annotations=tasks_annotations, tasks_time_range=tasks_time_range)
     subject.load_file(snirf_file1)
     dyad = Dyad(subject, subject)
-    ch_name = 'S1_D1 760'
+    ch_name = get_test_ch_match_one()
     pairs = dyad.get_pairs(dyad.s1, dyad.s2, match=ch_name)
     assert len(pairs) == 3
-    dyad.compute_wtcs(match=ch_name)
+    dyad.compute_wtcs(ch_match=ch_name)
     assert len(dyad.wtcs) == 3
     found_tasks = [wtc.task for wtc in dyad.wtcs]
     assert 'task_annotation1' in found_tasks
@@ -365,7 +362,6 @@ def test_dyad_task_annotations_and_time_range_combined():
     assert 'task_time_range' in found_tasks
 
 def test_cohort_wtc():
-    tasks = [('task1', 0, 10)]
     subject1, subject2 = get_test_subjects()
     dyad1 = Dyad(subject1, subject1)
     dyad2 = Dyad(subject2, subject2)
@@ -377,7 +373,7 @@ def test_cohort_wtc():
     assert len(cohort.dyads) == len(dyads)
     assert cohort.is_wtc_computed == False
 
-    wtcs_kwargs = dict(match='S1_D1 760')
+    wtcs_kwargs = dict(ch_match=get_test_ch_match_one())
 
     cohort.compute_wtcs(**wtcs_kwargs)
     assert cohort.is_wtc_computed == True
@@ -402,7 +398,7 @@ def test_cohort_wtc():
 def test_dyad_computes_whole_record_by_default():
     subject = get_test_subject()
     dyad = Dyad(subject, subject)
-    dyad.compute_wtcs(match='S1_D1 760')
+    dyad.compute_wtcs(ch_match=get_test_ch_match_one())
     assert len(dyad.wtcs) == 1
 
 def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
@@ -411,16 +407,7 @@ def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
     dyad = Dyad(subject, subject)
     with pytest.raises(Exception):
         # This should raise an exception, since the epochs have not been loaded from annotations
-        dyad.compute_wtcs(match='S1_D1 760', time_range=(0,10))
-
-def test_dyad_coherence_matrix():
-    subject = get_test_subject()
-    dyad = Dyad(subject, subject)
-    match = re.compile(r'^S1_.*760')
-    dyad.compute_wtcs(match=match)
-    #print(dyad.get_pairs(dyad.s1, dyad.s2, match=match))
-    # channels detectors expected: D1-D1, D1-D2, D2-D1, D2-D2
-    assert len(dyad.wtcs) == 4
+        dyad.compute_wtcs(ch_match=get_test_ch_match_one(), time_range=(0,10))
 
 def test_dyad_coherence_matrix():
     tasks = [
@@ -429,7 +416,7 @@ def test_dyad_coherence_matrix():
         ('task3', 20, 30),
     ]
     subject = Subject(tasks_time_range=tasks).load_file(snirf_file1)
-    dyad = Dyad(subject, subject).compute_wtcs(match=re.compile(r'^S1_.*760'))
+    dyad = Dyad(subject, subject).compute_wtcs(ch_match=get_test_ch_match_few())
     # channels detectors expected on 3 tasks: D1-D1, D1-D2, D2-D1, D2-D2
     assert len(dyad.wtcs) == 3*4
     conn_matrix, task_names, row_names, col_names = dyad.get_coherence_matrix()
@@ -455,6 +442,16 @@ def test_dyad_coherence_matrix():
     # Make sure results for different tasks are not the same
     assert conn_matrix[0,0,1] != conn_matrix[1,0,1]
 
+def test_coherence_pandas():
+    subject1, subject2 = get_test_subjects()
+    dyad = Dyad(subject1, subject2)
+    dyad.compute_wtcs(ch_match=get_test_ch_match_few())
+    #print(dyad.get_pairs(dyad.s1, dyad.s2, match=match))
+    # channels detectors expected: D1-D1, D1-D2, D2-D1, D2-D2
+    assert len(dyad.wtcs) == 4
+
+    
+
 def test_dyad_connection_matrix_intra_subject():
     tasks = [
         ('task1', 0, 10),
@@ -462,7 +459,7 @@ def test_dyad_connection_matrix_intra_subject():
     ]
     subject1 = Subject(tasks_time_range=tasks).load_file(snirf_file1)
     subject2 = Subject(tasks_time_range=tasks).load_file(snirf_file2)
-    dyad = Dyad(subject1, subject2).compute_wtcs(match=re.compile(r'^S1_.*760'), intra_subject=True)
+    dyad = Dyad(subject1, subject2).compute_wtcs(ch_match=get_test_ch_match_few(), intra_subject=True)
     conn_matrix, task_names, row_names, col_names = dyad.get_coherence_matrix_with_intra()
 
     assert len(conn_matrix.shape) == 3
@@ -481,12 +478,11 @@ def test_dyad_p_value_matrix():
     subject1, subject2 = get_test_subjects()
     dyad1 = Dyad(subject1, subject1)
     dyad2 = Dyad(subject1, subject2)
-    match = re.compile(r'^S1_.*760')
 
     # TODO we have too many methods to call, this should be much simpler
     # Add a bunch of "dyad2" in the cohort to have a p-value
     # TODO we should use synthetic data instead
-    Cohort([dyad1, dyad2, dyad2, dyad2, dyad2]).compute_wtcs(match=match, significance=True)
+    Cohort([dyad1, dyad2, dyad2, dyad2, dyad2]).compute_wtcs(ch_match=get_test_ch_match_few(), significance=True)
 
     # We need a cohort to have a p-value
     p_value_matrix = dyad1.get_p_value_matrix()[0]
@@ -496,12 +492,10 @@ def test_dyad_p_value_matrix():
     assert p_value_matrix[0,0,0] < 1
 
 def test_wtc_downsampling():
-    tasks = [('task1', 0, 25)]
-    match = 'S1_D1 760'
     subject = get_test_subject()
     dyad = Dyad(subject, subject)
     n = 100
-    Cohort([dyad]).compute_wtcs(match=match, downsample=n)
+    Cohort([dyad]).compute_wtcs(ch_match=get_test_ch_match_one(), downsample=n)
     assert len(dyad.wtcs[0].times) <= n
     
 
@@ -550,10 +544,6 @@ def test_ordered_subject_ch_names():
     subject = Subject(channel_roi=croi).load_file(snirf_file1)
     ch_names = subject.ordered_ch_names
     assert ch_names[0] == 'S2_D2 760'
-
-def test_coherence_pandas():
-    subject1, subject2 = get_test_subjects()
-    
 
 @pytest.mark.skip(reason="TODO: have significance comparison")
 def test_significance():

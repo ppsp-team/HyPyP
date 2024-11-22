@@ -116,7 +116,7 @@ class Dyad:
     def compute_wtcs(
         self,
         wavelet:BaseWavelet=PywaveletsWavelet(),
-        match:PairMatch=None,
+        ch_match:PairMatch=None,
         time_range:Tuple[float,float]=None,
         verbose=False,
         intra_subject=False,
@@ -124,7 +124,7 @@ class Dyad:
     ):
         self.wtcs = []
 
-        for pair in self.get_pairs(self.s1, self.s2, match=match):
+        for pair in self.get_pairs(self.s1, self.s2, match=ch_match):
             if verbose:
                 print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
             if time_range is not None:
@@ -141,7 +141,7 @@ class Dyad:
             # TODO see if we are computing more than once
             #if not self.s1.is_wtc_computed:
             for subject in [self.s1, self.s2]:
-                for pair in self.get_pairs(subject, subject, match=match):
+                for pair in self.get_pairs(subject, subject, match=ch_match):
                     if verbose:
                         print(f'Running Wavelet Coherence intra-subject "{subject.label}" on pair "{pair.label}"')
                     if time_range is not None:
