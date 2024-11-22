@@ -1,6 +1,5 @@
-import xarray as xr
-
 try:
+    import xarray as xr
     import cedalion
     import cedalion.dataclasses as cdc
     from cedalion.typing import NDTimeSeries
