@@ -166,8 +166,6 @@ def test_periods_frequencies_range():
     assert np.all(res1.frequencies[[0,-1]] == pytest.approx(frequencies_range))
 
     wavelet2 = PywaveletsWavelet(frequencies_range=tuple(frequencies_range), cache=None)
-    res2 = wavelet1.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
+    res2 = wavelet2.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
-    
-
     

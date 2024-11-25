@@ -57,8 +57,13 @@ class WTC:
         self.coif = coif
         self.task = pair.task
         self.label = pair.label
+        self.label_subject1 = pair.label_s1
+        self.label_subject2 = pair.label_s2
+        self.roi1 = pair.roi1
+        self.roi2 = pair.roi2
         self.ch_name1 = pair.ch_name1
         self.ch_name2 = pair.ch_name2
+        self.label_dyad = pair.label_dyad
 
         self.tracer = tracer
 

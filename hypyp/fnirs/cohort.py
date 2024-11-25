@@ -3,6 +3,7 @@ import pickle
 
 import numpy as np
 from scipy.stats import ttest_1samp
+import pandas as pd
 
 from hypyp.fnirs.preprocessors.base_preprocessor import BasePreprocessor
 
@@ -95,6 +96,12 @@ class Cohort():
         self.clear_dyads_shuffle()
         return self
         
+    def get_coherence_df(self, with_intra=False) -> pd.DataFrame:
+        df = pd.DataFrame()
+        for dyad in self.dyads:
+            df = pd.concat([df, dyad.get_coherence_df(with_intra)], ignore_index=True)
+        return df
+    
     
     #
     # Disk serialisation

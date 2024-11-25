@@ -4,13 +4,14 @@ import re
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from ..wavelet.pywavelets_wavelet import PywaveletsWavelet
 from ..wavelet.base_wavelet import WTC, BaseWavelet, downsample_in_time
 from ..wavelet.pair_signals import PairSignals
 from .subject import Subject, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor import BasePreprocessor
-from ..plots import plot_coherence_matrix, plot_wavelet_coherence
+from ..plots import plot_coherence_matrix, plot_wavelet_coherence, plot_coherence_df
 
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
 
@@ -19,7 +20,11 @@ class Dyad:
         self.s1: Subject = s1
         self.s2: Subject = s2
         self.wtcs: List[WTC] = None
-        self.label = label
+
+        if label == '':
+            self.label = Dyad.get_label(s1, s2)
+        else:
+            self.label = label
 
         # Intersect the tasks
         self.tasks = []
@@ -44,6 +49,10 @@ class Dyad:
     @property
     def is_wtc_computed(self):
         return self.wtcs is not None
+
+    @staticmethod
+    def get_label(s1: Subject, s2: Subject):
+        return f'{s1.label}-{s2.label}'
 
     def preprocess(self, preprocessor: BasePreprocessor):
         for subject in self.subjects:
@@ -104,6 +113,9 @@ class Dyad:
                         ch_name2=s2_ch_name,
                         label_s1=s1.label,
                         label_s2=s2.label,
+                        roi1=s1.get_roi_from_channel(s1_ch_name),
+                        roi2=s2.get_roi_from_channel(s2_ch_name),
+                        label_dyad=Dyad.get_label(s1, s2),
                         task=task_name,
                     ))
 
@@ -216,10 +228,39 @@ class Dyad:
 
         return mat, dyadic[1], ch_names1, ch_names2
 
-
-
     def get_p_value_matrix(self):
         return self.get_wtc_property_matrix('coherence_p_value')
+    
+    def get_coherence_df(self, with_intra=False) -> pd.DataFrame:
+        if with_intra:
+            if not self.s1.is_wtc_computed or not self.s2.is_wtc_computed:
+                raise RuntimeError('Intra subject WTCs are not computed. Please check "compute_wtcs" arguments')
+            wtcs = self.wtcs + self.s1.wtcs + self.s2.wtcs
+        else:
+            wtcs = self.wtcs
+
+        df = pd.DataFrame(columns=['dyad',
+                                   'task',
+                                   'subject1',
+                                   'subject2',
+                                   'roi1',
+                                   'roi2',
+                                   'channel1',
+                                   'channel2',
+                                   'coherence'])
+
+        for wtc in wtcs:
+            df.loc[len(df)] = [wtc.label_dyad,
+                               wtc.task,
+                               wtc.label_subject1,
+                               wtc.label_subject2,
+                               wtc.roi1,
+                               wtc.roi2,
+                               wtc.ch_name1,
+                               wtc.ch_name2,
+                               getattr(wtc, 'coherence_metric')]
+
+        return df
     
     #
     # Plots
@@ -231,6 +272,7 @@ class Dyad:
         for i, task in enumerate(tasks):
             plot_coherence_matrix(mat[i,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, title=task, ax=axes[i])
         fig.suptitle(self.label)
+        return fig
 
     def plot_coherence_matrix_for_task(self, task_name, with_intra=False):
         # TODO we should not load the whole matrix if we only want one task
@@ -241,13 +283,32 @@ class Dyad:
 
         # TODO deal with id not found
         id = [i for i, task in enumerate(self.tasks) if task[0] == task_name][0]
-        plot_coherence_matrix(mat[id,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, with_intra=with_intra, title=self.tasks[id][0])
+        return plot_coherence_matrix(mat[id,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, with_intra=with_intra, title=self.tasks[id][0])
 
     def plot_wtc(self, wtc: WTC):
-        plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
+        return plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
 
     def plot_wtc_by_id(self, id: int):
         wtc = self.wtcs[id]
-        plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
+        return plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
 
+    def plot_coherence_for_task(self, task):
+        df = self.get_coherence_df(with_intra=True)
+        df = df[df['task']==task]
+        return plot_coherence_df(df,
+            self.s1.label,
+            self.s2.label,
+            'channel1',
+            'channel2',
+            self.s1.ordered_ch_names)
+        
+    def plot_coherence_roi_for_task(self, task):
+        df = self.get_coherence_df(with_intra=True)
+        df = df[df['task']==task]
+        return plot_coherence_df(df,
+            self.s1.label,
+            self.s2.label,
+            'roi1',
+            'roi2',
+            self.s1.ordered_roi)
         

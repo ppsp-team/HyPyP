@@ -200,20 +200,21 @@ def test_mne_preprocessor():
 
 def test_subject_dyad():
     # Use the same file for the 2 subjects
-    subject = Subject().load_file(snirf_file1, preprocess=False)
-    dyad = Dyad(subject, subject)
+    subject1 = Subject().load_file(snirf_file1, preprocess=False)
+    subject2 = Subject().load_file(snirf_file2, preprocess=False)
+    dyad = Dyad(subject1, subject2)
     assert dyad.is_preprocessed == False
 
     dyad.preprocess(MnePreprocessor())
     assert dyad.is_preprocessed == True
 
     pairs = dyad.get_pairs(dyad.s1, dyad.s2)
-    n_channels = len(subject.pre.ch_names)
     #assert len(pairs) == n_channels * n_channels * n_epochs # TODO this is the test we with, with epochs
-    assert len(pairs) == n_channels * n_channels
+    assert len(pairs) == len(subject1.pre.ch_names) * len(subject2.pre.ch_names)
     assert pairs[0].label is not None
-    assert pairs[0].ch_name1 == subject.pre.ch_names[0]
-    assert pairs[0].ch_name2 == subject.pre.ch_names[0]
+    assert pairs[0].ch_name1 == subject1.pre.ch_names[0]
+    assert pairs[0].ch_name2 == subject2.pre.ch_names[0]
+    assert subject1.label in dyad.label
 
 def test_dyad_tasks_intersection():
     tasks = [
@@ -229,12 +230,14 @@ def test_dyad_tasks_intersection():
     
     
 def test_dyad_compute_pair_wtc():
-    subject = Subject().load_file(snirf_file1)
+    # test with the same subject, so we can check we have a high coherence
+    subject = get_test_subject()
     dyad = Dyad(subject, subject)
     pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
     wtc = dyad.get_pair_wtc(pair, PywaveletsWavelet())
     # Should have a mean of 1 since the first pair is the same signal
     assert np.mean(wtc.wtc) == pytest.approx(1)
+    assert wtc.label_dyad == dyad.label
 
 def test_dyad_cwt_cache_during_wtc():
     subject1, subject2 = get_test_subjects()
@@ -442,15 +445,53 @@ def test_dyad_coherence_matrix():
     # Make sure results for different tasks are not the same
     assert conn_matrix[0,0,1] != conn_matrix[1,0,1]
 
-def test_coherence_pandas():
+def test_dyad_coherence_pandas():
     subject1, subject2 = get_test_subjects()
     dyad = Dyad(subject1, subject2)
     dyad.compute_wtcs(ch_match=get_test_ch_match_few())
-    #print(dyad.get_pairs(dyad.s1, dyad.s2, match=match))
-    # channels detectors expected: D1-D1, D1-D2, D2-D1, D2-D2
-    assert len(dyad.wtcs) == 4
+    df = dyad.get_coherence_df()
+    assert len(df['task'].unique()) == len(dyad.s1.task_keys)
+    assert len(df['channel1'].unique()) == 2
+    assert len(df['channel2'].unique()) == 2
+    assert len(df['dyad'].unique()) == 1
+    assert df['subject1'].unique()[0] == subject1.label
+    assert df['subject2'].unique()[0] == subject2.label
 
-    
+def test_dyad_coherence_pandas_with_intra():
+    subject1, subject2 = get_test_subjects()
+    dyad = Dyad(subject1, subject2)
+
+    with pytest.raises(Exception):
+        dyad.compute_wtcs(ch_match=get_test_ch_match_few())
+        # Since intra subject is not computed, it should raise
+        dyad.get_coherence_df(with_intra=True)
+
+    dyad.compute_wtcs(ch_match=get_test_ch_match_few(), intra_subject=True)
+    df = dyad.get_coherence_df(with_intra=True)
+    assert len(df['task'].unique()) == len(dyad.s1.task_keys)
+    assert len(df['dyad'].unique()) == 3
+    print(df['dyad'].unique())
+
+def test_cohort_coherence_pandas():
+    subject1, subject2 = get_test_subjects()
+    dyad1 = Dyad(subject1, subject1, label='dyad1')
+    dyad2 = Dyad(subject1, subject2, label='dyad2')
+    dyad3 = Dyad(subject2, subject2, label='dyad3')
+    cohort = Cohort([dyad1, dyad2, dyad3])
+    cohort.compute_wtcs(ch_match=get_test_ch_match_few())
+    df = cohort.get_coherence_df()
+    assert len(df['task'].unique()) == len(dyad1.s1.task_keys)
+    assert len(df['channel1'].unique()) == 2
+    assert len(df['channel2'].unique()) == 2
+    assert len(df['dyad'].unique()) == 3
+
+def test_dyad_coherence_pandas_on_roi():
+    subject1, subject2 = get_test_subjects()
+    dyad = Dyad(subject1, subject2)
+    dyad.compute_wtcs(ch_match=get_test_ch_match_few())
+    df = dyad.get_coherence_df()
+    assert len(df['roi1']) == 4
+    assert len(df['roi2']) == 4
 
 def test_dyad_connection_matrix_intra_subject():
     tasks = [
@@ -537,6 +578,8 @@ def test_lionirs_channel_grouping():
 
     assert croi.group_boundaries[:2] == [0, 5]
     assert croi.group_boundaries[-1] == len(croi.ordered_channel_names)
+
+    assert croi.get_roi_from_channel(ordered_names[0]) == 'PreFr_L'
 
 def test_ordered_subject_ch_names():
     roi_file_path = 'data/lionirs/channel_grouping_7ROI.mat'

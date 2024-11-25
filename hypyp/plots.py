@@ -178,6 +178,48 @@ def plot_coherence_matrix(
 
     return ax
 
+def plot_coherence_df(
+    df,
+    s1_label,
+    s2_label,
+    field1,
+    field2,
+    ordered_fields,
+):
+    fig, axes = plt.subplots(2, 2, figsize=(8, 8), sharex=True, sharey=True)
+
+    def heatmap_from_pivot(pivot, ax):
+        index_order = [i for i in ordered_fields if i in pivot.index]
+        column_order = [c for c in ordered_fields if c in pivot.columns]
+        pivot_reordered = pivot.reindex(index=index_order, columns=column_order)
+        heatmap = sns.heatmap(pivot_reordered, cmap='viridis', vmin=0, vmax=1, cbar=False, ax=ax)
+        ax.set_xticks(ticks=range(len(pivot_reordered.columns)))
+        ax.set_xticklabels(pivot_reordered.columns, rotation=90, ha='left')
+        ax.set_yticks(ticks=range(len(pivot_reordered.index)))
+        ax.set_yticklabels(pivot_reordered.index, rotation=0, va='top')
+        ax.tick_params(axis='both', which='both', length=0)
+        return heatmap
+
+    dyad_selector = (df['subject1']==s1_label) & (df['subject2']==s2_label)
+    s1_selector = (df['subject1']==s1_label) & (df['subject2']==s1_label)
+    s2_selector = (df['subject1']==s2_label) & (df['subject2']==s2_label)
+    df_dyad = df[dyad_selector]
+    df_s1 = df[s1_selector]
+    df_s2 = df[s2_selector]
+
+    pivot_s1 = df_s1.pivot_table(index=field1, columns=field2, values='coherence', aggfunc='mean')
+    pivot_s2 = df_s2.pivot_table(index=field2, columns=field1, values='coherence', aggfunc='mean')
+    pivot_dyad = df_dyad.pivot_table(index=field1, columns=field2, values='coherence', aggfunc='mean')
+    
+    heatmap_from_pivot(pivot_s1.rename_axis(index=s1_label, columns=s1_label), ax=axes[0,0])
+    heatmap_from_pivot(pivot_dyad.rename_axis(index=s1_label, columns=s2_label), ax=axes[0,1])
+    heatmap_from_pivot(pivot_dyad.T.rename_axis(index=s2_label, columns=s1_label), ax=axes[1,0])
+    heatmap_from_pivot(pivot_s2.rename_axis(index=s2_label, columns=s2_label), ax=axes[1,1])
+
+    fig.subplots_adjust(wspace=0.1, hspace=0.1)
+    return fig
+    
+
 def spectrogram_plot_period(
     z,
     times,

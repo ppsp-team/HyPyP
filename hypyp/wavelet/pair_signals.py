@@ -9,6 +9,9 @@ class PairSignals:
                  ch_name2='',
                  label_s1='', # TODO be more consistent in argument names
                  label_s2='',
+                 roi1='',
+                 roi2='',
+                 label_dyad='',
                  task='',
                  info_table1=[],
                  info_table2=[],
@@ -32,6 +35,9 @@ class PairSignals:
 
         self.label_s1 = label_s1
         self.label_s2 = label_s2
+        self.roi1 = roi1
+        self.roi2 = roi2
+        self.label_dyad = label_dyad
 
         self.range = range
     
@@ -60,6 +66,9 @@ class PairSignals:
             info_table2=self.info_table2,
             label_s1=self.label_s1,
             label_s2=self.label_s2,
+            roi1=self.roi1,
+            roi2=self.roi2,
+            label_dyad=self.label_dyad,
             range=range, # keep track that this is a range in an original PairSignals
         )
     

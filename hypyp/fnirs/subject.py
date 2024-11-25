@@ -83,6 +83,12 @@ class Subject:
         return self.channel_roi.get_names_in_order(self.pre.ch_names)
 
     @property
+    def ordered_roi(self) -> List[str]:
+        if self.channel_roi is None:
+            return []
+        return list(self.channel_roi.rois.keys())
+
+    @property
     def preprocess_step_keys(self):
         self._assert_is_preprocessed()
         # get in the reverse order so that the last step is first in list
@@ -143,6 +149,11 @@ class Subject:
             raise RuntimeError(f'Cannot find epochs for task "{task_name}"')
 
         return self.epochs_per_task[id]
+    
+    def get_roi_from_channel(self, ch_name):
+        if self.channel_roi is None:
+            return ''
+        return self.channel_roi.get_roi_from_channel(ch_name)
         
 #    def set_event_ids(self, foo):
 #        pass

@@ -67,4 +67,12 @@ class ChannelROI:
         
         return all_names_found
 
+    def get_roi_from_channel(self, ch_name):
+        for k, v in self.rois.items():
+            # TODO this is inefficient
+            names_found = [name for name in v if ch_name.startswith(name)]
+            if len(names_found) > 0:
+                return k
+        return ''
+        
 
