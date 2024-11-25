@@ -472,7 +472,7 @@ def test_dyad_coherence_pandas_with_intra():
     df = dyad.get_coherence_df(with_intra=True)
     assert len(df['task'].unique()) == len(dyad.s1.task_keys)
     assert len(df['dyad'].unique()) == 3
-    print(df['dyad'].unique())
+    assert len(df['is_intra'].unique()) == 2
 
 def test_cohort_coherence_pandas():
     subject1, subject2 = get_test_subjects()

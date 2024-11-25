@@ -11,7 +11,7 @@ from ..wavelet.base_wavelet import WTC, BaseWavelet, downsample_in_time, FRAME_C
 from ..wavelet.pair_signals import PairSignals
 from .subject import Subject, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor import BasePreprocessor
-from ..plots import plot_coherence_matrix, plot_wavelet_coherence, plot_coherence_df
+from ..plots import plot_coherence_matrix, plot_wavelet_coherence, plot_coherence_df, plot_coherence_per_task_bars
 
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
 
@@ -279,23 +279,22 @@ class Dyad:
         wtc = self.wtcs[id]
         return plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
 
-    def plot_coherence_for_task(self, task):
+    def plot_coherence_for_task(self, task, field1, field2):
         df = self.df
         df = df[df['task']==task]
         return plot_coherence_df(df,
             self.s1.label,
             self.s2.label,
-            'channel1',
-            'channel2',
+            field1,
+            field2,
             self.s1.ordered_ch_names)
         
+    def plot_coherence_channel_for_task(self, task):
+        return self.plot_coherence_for_task(task, 'channel1', 'channel2')
+        
     def plot_coherence_roi_for_task(self, task):
-        df = self.df
-        df = df[df['task']==task]
-        return plot_coherence_df(df,
-            self.s1.label,
-            self.s2.label,
-            'roi1',
-            'roi2',
-            self.s1.ordered_roi)
+        return self.plot_coherence_for_task(task, 'roi1', 'roi2')
+    
+    def plot_coherence_per_task_bars(self, is_intra=False):
+        return plot_coherence_per_task_bars(self.df, is_intra=is_intra)
         

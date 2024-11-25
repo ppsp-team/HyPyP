@@ -186,18 +186,29 @@ def plot_coherence_df(
     field2,
     ordered_fields,
 ):
-    fig, axes = plt.subplots(2, 2, figsize=(8, 8), sharex=True, sharey=True)
+    # We don't sharex and sharey because the list of channels might be different in the 2 subjects
+    fig, axes = plt.subplots(2, 2, figsize=(8, 8), sharex=False, sharey=False)
 
     def heatmap_from_pivot(pivot, ax):
         index_order = [i for i in ordered_fields if i in pivot.index]
+        # Append indices not in ordered_fields
+        for i in pivot.index:
+            if i not in index_order:
+                index_order.append(i)
         column_order = [c for c in ordered_fields if c in pivot.columns]
+        for c in pivot.columns:
+            if c not in column_order:
+                column_order.append(c)
+
         pivot_reordered = pivot.reindex(index=index_order, columns=column_order)
         heatmap = sns.heatmap(pivot_reordered, cmap='viridis', vmin=0, vmax=1, cbar=False, ax=ax)
+
         ax.set_xticks(ticks=range(len(pivot_reordered.columns)))
-        ax.set_xticklabels(pivot_reordered.columns, rotation=90, ha='left', fontsize=6 if len(column_order)>15 else 10)
+        ax.set_xticklabels(pivot_reordered.columns, rotation=45, ha='left', fontsize=6 if len(column_order)>15 else 10)
         ax.set_yticks(ticks=range(len(pivot_reordered.index)))
         ax.set_yticklabels(pivot_reordered.index, rotation=0, va='top', fontsize=6 if len(index_order)>15 else 10)
         ax.tick_params(axis='both', which='both', length=0)
+
         return heatmap
 
     dyad_selector = (df['subject1']==s1_label) & (df['subject2']==s2_label)
@@ -219,6 +230,25 @@ def plot_coherence_df(
     fig.subplots_adjust(wspace=0.1, hspace=0.1)
     return fig
     
+
+def plot_coherence_per_task_bars(df, is_intra=False):
+    filtered_df = df[(df['roi1'] == df['roi2']) & (df['is_intra'] == is_intra)]
+
+    # Draw a nested barplot by species and sex
+    p = sns.catplot(
+        data=filtered_df, kind="bar",
+        x="roi1", y="coherence", hue="task",
+        #palette="dark", alpha=.6, height=6
+    )
+    p.despine(left=True)
+    p.set_axis_labels("", "Coherence")
+    p.set_xticklabels(rotation=45)
+    p.set(ylim=(0, 1))
+
+    p.legend.set_title("Task")
+    plt.subplots_adjust(bottom=0.5)
+    return p
+
 
 def spectrogram_plot_period(
     z,

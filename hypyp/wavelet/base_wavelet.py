@@ -10,6 +10,7 @@ from ..plots import plot_cwt_weights, plot_wavelet_coherence
 from .smooth import smoothing
 
 FRAME_COLUMNS = ['dyad',
+                 'is_intra',
                  'task',
                  'subject1',
                  'subject2',
@@ -101,6 +102,7 @@ class WTC:
     def as_frame_row(self) -> list:
         return [
             self.label_dyad,
+            self.label_subject1 == self.label_subject2,
             self.task,
             self.label_subject1,
             self.label_subject2,

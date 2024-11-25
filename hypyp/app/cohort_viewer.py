@@ -18,8 +18,9 @@ from hypyp.wavelet.base_wavelet import WTC
 HARDCODED_RESULTS_PATH = "./data/results"
 
 SIDEBAR_WIDTH = 400 # px
-DEFAULT_PLOT_COHERENCE_HEIGHT = 1000 # px
-DEFAULT_PLOT_WTC_HEIGHT = 600 # px
+DEFAULT_PLOT_COHERENCE_HEIGHT = 1000
+DEFAULT_PLOT_COHERENCE_PER_TASK_HEIGHT = 600
+DEFAULT_PLOT_WTC_HEIGHT = 600
 
 # This is to avoid having external windows launched
 matplotlib.use('Agg')
@@ -47,7 +48,7 @@ app_ui = ui.page_fluid(
             ),
         ),
         ui.nav_panel(
-            "Dyad coherence",
+            "Dyad Coherence Matrix",
             ui.row(
                 ui.column(
                     10,
@@ -55,7 +56,35 @@ app_ui = ui.page_fluid(
                 ),
                 ui.column(
                     2,
-                    ui.input_select('coherence_select_grouping', 'Coherence grouping', choices={'channel': 'Individual Channels', 'roi': 'Region of Interest'})
+                    ui.output_ui('ui_input_select_task'),
+                    ui.input_select(
+                        'coherence_select_grouping',
+                        'Coherence grouping',
+                        choices={
+                            'roi': 'Region of Interest',
+                            'channel': 'Individual Channels',
+                            'channel_roi': 'Channel-ROI',
+                            'roi_channel': 'ROI-Channel',
+                        })
+                ),
+            ),
+        ),
+        ui.nav_panel(
+            "Coherence Per Task",
+            ui.row(
+                ui.column(
+                    10,
+                    ui.output_plot('plot_coherence_per_task', height=DEFAULT_PLOT_COHERENCE_PER_TASK_HEIGHT)
+                ),
+                ui.column(
+                    2,
+                    ui.input_select(
+                        'coherence_per_task_select_is_intra',
+                        'View intra/inter subject',
+                        choices={
+                            'is_intra': 'Intra subject',
+                            'is_not_intra': 'Inter subject (IBS)',
+                        }),
                 ),
             ),
         ),
@@ -74,13 +103,12 @@ app_ui = ui.page_fluid(
         ),
         ui.nav_spacer(),
         #selected='Cohort Info',
-        selected='Dyad coherence',
+        selected='Coherence Per Task',
         #selected='Wavelet Transform Coherence',
         id='main_nav',
         sidebar=ui.sidebar(
             ui.output_ui('ui_input_cohort_file'),
             ui.output_ui('ui_input_select_dyad'),
-            ui.output_ui('ui_input_select_task'),
             width=SIDEBAR_WIDTH,
         ),
         title="HyPyP fNIRS results viewer",
@@ -183,12 +211,24 @@ def server(input: Inputs, output: Outputs, session: Session):
         if dyad is None:
             return None
         grouping = input.coherence_select_grouping()
-        if grouping == 'channel':
-            return dyad.plot_coherence_for_task(input.select_task())
-        elif grouping == 'roi':
+        if grouping == 'roi':
             return dyad.plot_coherence_roi_for_task(input.select_task())
+        elif grouping == 'channel':
+            return dyad.plot_coherence_channel_for_task(input.select_task())
+        elif grouping == 'roi_channel':
+            return dyad.plot_coherence_for_task(input.select_task(), 'roi1', 'channel2')
+        elif grouping == 'channel_roi':
+            return dyad.plot_coherence_for_task(input.select_task(), 'channel1', 'roi2')
         else:
             raise RuntimeError(f'Unknown grouping {grouping}')
+        
+    @render.plot
+    def plot_coherence_per_task():
+        dyad = get_dyad()
+        if dyad is None:
+            return None
+        is_intra = input.coherence_per_task_select_is_intra() == 'is_intra'
+        return dyad.plot_coherence_per_task_bars(is_intra=is_intra)
         
     @render.plot
     def plot_wtc():
