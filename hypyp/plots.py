@@ -204,7 +204,7 @@ def plot_coherence_df(
         heatmap = sns.heatmap(pivot_reordered, cmap='viridis', vmin=0, vmax=1, cbar=False, ax=ax)
 
         ax.set_xticks(ticks=range(len(pivot_reordered.columns)))
-        ax.set_xticklabels(pivot_reordered.columns, rotation=45, ha='left', fontsize=6 if len(column_order)>15 else 10)
+        ax.set_xticklabels(pivot_reordered.columns, rotation=90, ha='left', fontsize=6 if len(column_order)>15 else 10)
         ax.set_yticks(ticks=range(len(pivot_reordered.index)))
         ax.set_yticklabels(pivot_reordered.index, rotation=0, va='top', fontsize=6 if len(index_order)>15 else 10)
         ax.tick_params(axis='both', which='both', length=0)
