@@ -99,9 +99,6 @@ def plot_wavelet_coherence(
     #    ax.plot(times, y_nyquist, color=color_shaded)
     #    ax.fill_between(times, y_nyquist, y_top, step="mid", color=color_shaded, alpha=0.4)
     
-    ax.set_xlim(times.min(), times.max())
-    ax.set_ylim(periods.min(), periods.max())
-
     # Define a custom locator and formatter
     def custom_locator(ymin, ymax):
         ticks = []
@@ -118,6 +115,9 @@ def plot_wavelet_coherence(
     ax.set_yticks(custom_locator(ymin, ymax))
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y,_: f"{int(y)}" if y >= 1 else ""))
     #ax.yaxis.get_major_formatter().set_scientific(False)  # Disable scientific notation
+
+    ax.set_xlim(times.min(), times.max())
+    ax.set_ylim(periods.min(), periods.max())
 
     ax.invert_yaxis()
 
@@ -194,9 +194,9 @@ def plot_coherence_df(
         pivot_reordered = pivot.reindex(index=index_order, columns=column_order)
         heatmap = sns.heatmap(pivot_reordered, cmap='viridis', vmin=0, vmax=1, cbar=False, ax=ax)
         ax.set_xticks(ticks=range(len(pivot_reordered.columns)))
-        ax.set_xticklabels(pivot_reordered.columns, rotation=90, ha='left')
+        ax.set_xticklabels(pivot_reordered.columns, rotation=90, ha='left', fontsize=6 if len(column_order)>15 else 10)
         ax.set_yticks(ticks=range(len(pivot_reordered.index)))
-        ax.set_yticklabels(pivot_reordered.index, rotation=0, va='top')
+        ax.set_yticklabels(pivot_reordered.index, rotation=0, va='top', fontsize=6 if len(index_order)>15 else 10)
         ax.tick_params(axis='both', which='both', length=0)
         return heatmap
 

@@ -1,12 +1,23 @@
 from abc import ABC, abstractmethod
 import math
 import numpy as np
+import pandas as pd
 from skimage.measure import block_reduce
 
 from hypyp.wavelet.pair_signals import PairSignals
 
 from ..plots import plot_cwt_weights, plot_wavelet_coherence
 from .smooth import smoothing
+
+FRAME_COLUMNS = ['dyad',
+                 'task',
+                 'subject1',
+                 'subject2',
+                 'roi1',
+                 'roi2',
+                 'channel1',
+                 'channel2',
+                 'coherence']
 
 def downsample_in_time(times, *args, bins=500):
     ret = []
@@ -86,6 +97,25 @@ class WTC:
         # must recompute region of interest
         self.compute_roi()
     
+    @property
+    def as_frame_row(self) -> list:
+        return [
+            self.label_dyad,
+            self.task,
+            self.label_subject1,
+            self.label_subject2,
+            self.roi1,
+            self.roi2,
+            self.ch_name1,
+            self.ch_name2,
+            self.coherence_metric,
+        ]
+    
+    def to_frame(self) -> pd.DataFrame:
+        df = pd.DataFrame([self.as_frame_row], columns=FRAME_COLUMNS)
+        return df
+
+
     def plot(self, **kwargs):
         return plot_wavelet_coherence(self.wtc_roi, self.times, self.frequencies, self.coif, self.sig, **kwargs)
 

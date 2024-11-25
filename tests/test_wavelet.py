@@ -169,3 +169,13 @@ def test_periods_frequencies_range():
     res2 = wavelet2.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
     
+def test_to_pandas_df():
+    signal1 = SynteticSignal().add_noise()
+    signal2 = SynteticSignal().add_noise()
+    wavelet = PywaveletsWavelet(cache=None)
+    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
+    df = res.to_frame()
+    assert df['coherence'][0] > 0
+
+
+    

@@ -282,7 +282,7 @@ def test_dyad_cwt_cache_with_different_times():
     # Force a different task length for subject2 to have a different lenght
     dyad = Dyad(subject1, subject1)
     dyad.s2 = subject2 # hack for the test
-    dyad.compute_wtcs(ch_match=get_test_ch_match_one(), intra_subject=True)
+    dyad.compute_wtcs(ch_match=get_test_ch_match_one(), with_intra=True)
 
 def test_dyad_compute_all_wtc():
     subject = Subject().load_file(snirf_file1)
@@ -293,12 +293,14 @@ def test_dyad_compute_all_wtc():
     assert len(dyad.wtcs) == len(subject.pre.ch_names)**2
     # Should have a mean of 1 since the first pair is the same signal
     assert np.mean(dyad.wtcs[0].wtc) == pytest.approx(1)
+
+    assert len(dyad.df['channel1'].unique()) == 32
     
 def test_dyad_computes_intra_subject():
     subject1 = Subject().load_file(snirf_file1)
     subject2 = Subject().load_file(snirf_file2)
     dyad = Dyad(subject1, subject2)
-    dyad.compute_wtcs(time_range=(0,10), intra_subject=True)
+    dyad.compute_wtcs(time_range=(0,10), with_intra=True)
     assert subject1.is_wtc_computed == True
     assert subject2.is_wtc_computed == True
     assert len(dyad.wtcs) == len(subject1.wtcs)
@@ -466,7 +468,7 @@ def test_dyad_coherence_pandas_with_intra():
         # Since intra subject is not computed, it should raise
         dyad.get_coherence_df(with_intra=True)
 
-    dyad.compute_wtcs(ch_match=get_test_ch_match_few(), intra_subject=True)
+    dyad.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True)
     df = dyad.get_coherence_df(with_intra=True)
     assert len(df['task'].unique()) == len(dyad.s1.task_keys)
     assert len(df['dyad'].unique()) == 3
@@ -500,7 +502,7 @@ def test_dyad_connection_matrix_intra_subject():
     ]
     subject1 = Subject(tasks_time_range=tasks).load_file(snirf_file1)
     subject2 = Subject(tasks_time_range=tasks).load_file(snirf_file2)
-    dyad = Dyad(subject1, subject2).compute_wtcs(ch_match=get_test_ch_match_few(), intra_subject=True)
+    dyad = Dyad(subject1, subject2).compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True)
     conn_matrix, task_names, row_names, col_names = dyad.get_coherence_matrix_with_intra()
 
     assert len(conn_matrix.shape) == 3

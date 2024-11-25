@@ -19,6 +19,7 @@ HARDCODED_RESULTS_PATH = "./data/results"
 
 SIDEBAR_WIDTH = 400 # px
 DEFAULT_PLOT_COHERENCE_HEIGHT = 1000 # px
+DEFAULT_PLOT_WTC_HEIGHT = 600 # px
 
 # This is to avoid having external windows launched
 matplotlib.use('Agg')
@@ -54,7 +55,7 @@ app_ui = ui.page_fluid(
                 ),
                 ui.column(
                     2,
-                    ui.input_switch("coherence_with_intra", "Show with intra subject", True),   
+                    ui.input_select('coherence_select_grouping', 'Coherence grouping', choices={'channel': 'Individual Channels', 'roi': 'Region of Interest'})
                 ),
             ),
         ),
@@ -62,11 +63,14 @@ app_ui = ui.page_fluid(
             "Wavelet Transform Coherence",
             ui.row(
                 ui.column(
-                    12,
-                    ui.output_plot('plot_wtc', height=DEFAULT_PLOT_COHERENCE_HEIGHT)
-                )
+                    10,
+                    ui.output_plot('plot_wtc', height=DEFAULT_PLOT_WTC_HEIGHT)
+                ),
+                ui.column(
+                    2,
+                    ui.output_ui('ui_input_select_wtc'),
+                ),
             ),
-            #ui.output_ui('ui_wtc_tracer'),
         ),
         ui.nav_spacer(),
         #selected='Cohort Info',
@@ -77,7 +81,6 @@ app_ui = ui.page_fluid(
             ui.output_ui('ui_input_cohort_file'),
             ui.output_ui('ui_input_select_dyad'),
             ui.output_ui('ui_input_select_task'),
-            ui.output_ui('ui_input_select_wtc'),
             width=SIDEBAR_WIDTH,
         ),
         title="HyPyP fNIRS results viewer",
@@ -179,7 +182,13 @@ def server(input: Inputs, output: Outputs, session: Session):
         dyad = get_dyad()
         if dyad is None:
             return None
-        return dyad.plot_coherence_matrix_for_task(input.select_task(), with_intra=input.coherence_with_intra())
+        grouping = input.coherence_select_grouping()
+        if grouping == 'channel':
+            return dyad.plot_coherence_for_task(input.select_task())
+        elif grouping == 'roi':
+            return dyad.plot_coherence_roi_for_task(input.select_task())
+        else:
+            raise RuntimeError(f'Unknown grouping {grouping}')
         
     @render.plot
     def plot_wtc():

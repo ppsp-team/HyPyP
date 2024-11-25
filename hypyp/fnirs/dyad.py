@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from ..wavelet.pywavelets_wavelet import PywaveletsWavelet
-from ..wavelet.base_wavelet import WTC, BaseWavelet, downsample_in_time
+from ..wavelet.base_wavelet import WTC, BaseWavelet, downsample_in_time, FRAME_COLUMNS
 from ..wavelet.pair_signals import PairSignals
 from .subject import Subject, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor import BasePreprocessor
@@ -20,6 +20,7 @@ class Dyad:
         self.s1: Subject = s1
         self.s2: Subject = s2
         self.wtcs: List[WTC] = None
+        self.df: pd.DataFrame = None
 
         if label == '':
             self.label = Dyad.get_label(s1, s2)
@@ -131,7 +132,7 @@ class Dyad:
         ch_match:PairMatch=None,
         time_range:Tuple[float,float]=None,
         verbose=False,
-        intra_subject=False,
+        with_intra=False,
         downsample=None
     ):
         self.wtcs = []
@@ -147,7 +148,7 @@ class Dyad:
 
             self.wtcs.append(wtc)
 
-        if intra_subject:
+        if with_intra:
             self.s1.wtcs = []
             self.s2.wtcs = []
             # TODO see if we are computing more than once
@@ -162,6 +163,8 @@ class Dyad:
                     if downsample is not None:
                         wtc.downsample_in_time(downsample)
                     subject.wtcs.append(wtc)
+
+        self.df = self.get_coherence_df(with_intra=with_intra)
 
         return self
     
@@ -239,28 +242,12 @@ class Dyad:
         else:
             wtcs = self.wtcs
 
-        df = pd.DataFrame(columns=['dyad',
-                                   'task',
-                                   'subject1',
-                                   'subject2',
-                                   'roi1',
-                                   'roi2',
-                                   'channel1',
-                                   'channel2',
-                                   'coherence'])
+        df_data = []
 
         for wtc in wtcs:
-            df.loc[len(df)] = [wtc.label_dyad,
-                               wtc.task,
-                               wtc.label_subject1,
-                               wtc.label_subject2,
-                               wtc.roi1,
-                               wtc.roi2,
-                               wtc.ch_name1,
-                               wtc.ch_name2,
-                               getattr(wtc, 'coherence_metric')]
+            df_data.append(wtc.as_frame_row)
 
-        return df
+        return pd.DataFrame(df_data, columns=FRAME_COLUMNS)
     
     #
     # Plots
@@ -293,7 +280,7 @@ class Dyad:
         return plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
 
     def plot_coherence_for_task(self, task):
-        df = self.get_coherence_df(with_intra=True)
+        df = self.df
         df = df[df['task']==task]
         return plot_coherence_df(df,
             self.s1.label,
@@ -303,7 +290,7 @@ class Dyad:
             self.s1.ordered_ch_names)
         
     def plot_coherence_roi_for_task(self, task):
-        df = self.get_coherence_df(with_intra=True)
+        df = self.df
         df = df[df['task']==task]
         return plot_coherence_df(df,
             self.s1.label,
