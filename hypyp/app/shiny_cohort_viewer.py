@@ -103,7 +103,8 @@ app_ui = ui.page_fluid(
         ),
         ui.nav_spacer(),
         #selected='Cohort Info',
-        selected='Coherence Per Task',
+        selected='Dyad Coherence Matrix',
+        #selected='Coherence Per Task',
         #selected='Wavelet Transform Coherence',
         id='main_nav',
         sidebar=ui.sidebar(
@@ -246,33 +247,5 @@ def server(input: Inputs, output: Outputs, session: Session):
         )
         return fig
     
-    #@render.ui
-    #def ui_wtc_tracer():
-    #    wtc = get_wtc()
-    #    if wtc is None or wtc.tracer is None:
-    #        return None
-
-    #    fig, axes = plt.subplots(nrows=2, ncols=2)
-
-    #    times, ZZ, _ = hypyp.plots.downsample_in_time(wtc.times, wtc.tracer['W1'], t=500)
-    #    axes[0,0].pcolormesh(times, wtc.frequencies, ZZ)
-    #    axes[0,0].set_title('Subject 1 CWT')
-    #    axes[0,0].set_yscale('log')
-
-    #    times, ZZ, _ = hypyp.plots.downsample_in_time(wtc.times, wtc.tracer['W2'], t=500)
-    #    axes[0,1].pcolormesh(times, wtc.frequencies, ZZ)
-    #    axes[0,1].set_title('Subject 2 CWT')
-    #    axes[0,1].set_yscale('log')
-
-    #    times, ZZ, _ = hypyp.plots.downsample_in_time(wtc.times, wtc.tracer['S1'], t=500)
-    #    axes[1,0].pcolormesh(times, wtc.frequencies, ZZ)
-    #    axes[1,0].set_title('Subject 1 CWT Smoothed')
-    #    axes[1,0].set_yscale('log')
-
-    #    times, ZZ, _ = hypyp.plots.downsample_in_time(wtc.times, wtc.tracer['S2'], t=500)
-    #    axes[1,1].pcolormesh(times, wtc.frequencies, ZZ)
-    #    axes[1,1].set_yscale('log')
-
-    #    return fig
 
 app = App(app_ui, server)

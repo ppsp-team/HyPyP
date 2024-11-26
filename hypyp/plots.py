@@ -182,8 +182,8 @@ def plot_coherence_df(
     df,
     s1_label,
     s2_label,
-    field1,
-    field2,
+    field1, # roi1 or channel1
+    field2, # roi2 or channel2
     ordered_fields,
 ):
     # We don't sharex and sharey because the list of channels might be different in the 2 subjects
@@ -212,8 +212,8 @@ def plot_coherence_df(
         return heatmap
 
     dyad_selector = (df['subject1']==s1_label) & (df['subject2']==s2_label)
-    s1_selector = (df['subject1']==s1_label) & (df['subject2']==s1_label)
-    s2_selector = (df['subject1']==s2_label) & (df['subject2']==s2_label)
+    s1_selector = (df['subject1']==s1_label) & (df['subject2']==s1_label) & (df['channel1']!=df['channel2'])
+    s2_selector = (df['subject1']==s2_label) & (df['subject2']==s2_label) & (df['channel1']!=df['channel2'])
     df_dyad = df[dyad_selector]
     df_s1 = df[s1_selector]
     df_s2 = df[s2_selector]
@@ -232,7 +232,12 @@ def plot_coherence_df(
     
 
 def plot_coherence_per_task_bars(df, is_intra=False):
-    filtered_df = df[(df['roi1'] == df['roi2']) & (df['is_intra'] == is_intra)]
+    selector = (df['roi1'] == df['roi2']) & (df['is_intra'] == is_intra)
+    if is_intra:
+        # exclude same channel, since they always have a coherence of 1
+        selector = selector & (df['channel1']!=df['channel2'])
+
+    filtered_df = df[selector]
 
     # Draw a nested barplot by species and sex
     p = sns.catplot(

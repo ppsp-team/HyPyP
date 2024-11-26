@@ -222,8 +222,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             s1_selected_ch = s1_raw.pick(mne.pick_channels(s1_raw.ch_names, include = [input.signal_data_files_s1_channel()]))
             s2_selected_ch = s2_raw.pick(mne.pick_channels(s2_raw.ch_names, include = [input.signal_data_files_s2_channel()]))
 
-            y1 = s1_selected_ch.get_data()[0,:]
-            y2 = s2_selected_ch.get_data()[0,:]
+            y1 = np.ma.masked_invalid(s1_selected_ch.get_data())[0,:]
+            y2 = np.ma.masked_invalid(s2_selected_ch.get_data())[0,:]
 
             # Crop signals
             stop = min(len(y1), len(y2))
@@ -271,6 +271,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 lower_bound=-input.wavelet_upper_bound(),
                 wtc_smoothing_smooth_factor=input.smoothing_smooth_factor(),
                 wtc_smoothing_boxcar_size=input.smoothing_boxcar_size(),
+                cache=None,
             )
             # TODO: is this still implemented?
             if input.wavelet_hack_compute_each_scale():
@@ -332,12 +333,15 @@ def server(input: Inputs, output: Outputs, session: Session):
         return DataBrowser().add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
 
     def get_preprocessor():
-        if input.subject_preprocessor() == 'mne':
-            return MnePreprocessor()
-        if input.subject_preprocessor() == 'upstream':
+        value = input.subject_preprocessor()
+        if value == 'upstream':
             return UpstreamPreprocessor()
-        if input.subject_preprocessor() == 'cedalion':
+        if value == 'mne':
+            return MnePreprocessor()
+        if value == 'cedalion':
             return CedalionPreprocessor()
+        raise RuntimeError(f'Unknown preprocessor "{value}"')
+        
 
     @reactive.calc()
     def get_subject1():
@@ -444,8 +448,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "subject_preprocessor",
                 "",
                 choices={
-                    'mne': 'MNE (basic fNIRS preprocessing)',
                     'upstream': 'MNE (no preprocessing, load as-is)',
+                    'mne': 'MNE (basic fNIRS preprocessing)',
                     'cedalion': 'Cedalion (proof of concept preprocessing)',
                 }
             )))
@@ -659,7 +663,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def downsample_mat_for_plot(times, frequencies, ZZ):
         if not input.display_downsample():
             return (times, frequencies, ZZ, 1)
-        times, ZZ, factor = hypyp.plots.downsample_in_time(times, ZZ, t=500)
+        times, ZZ, factor = hypyp.utils.downsample_in_time(times, ZZ, t=500)
         return times, frequencies, ZZ, factor
 
     def get_fig_plot_tracer_mat(key):

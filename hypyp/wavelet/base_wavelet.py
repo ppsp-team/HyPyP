@@ -1,12 +1,8 @@
 from abc import ABC, abstractmethod
-import math
 import numpy as np
-import pandas as pd
-from skimage.measure import block_reduce
 
-from hypyp.wavelet.pair_signals import PairSignals
-
-from ..plots import plot_cwt_weights, plot_wavelet_coherence
+from .pair_signals import PairSignals
+from .wtc import WTC
 from .smooth import smoothing
 
 FRAME_COLUMNS = ['dyad',
@@ -19,108 +15,6 @@ FRAME_COLUMNS = ['dyad',
                  'channel1',
                  'channel2',
                  'coherence']
-
-def downsample_in_time(times, *args, bins=500):
-    ret = []
-    # We assume time is always the last column
-    factor = math.ceil(times.shape[0] / bins)
-
-    if factor == 1:
-        return [times, *args, 1]
-    
-    # First deal with times. Need to pad (cval) with max value, we don't want to "go back in time" for the last values
-    ret.append(block_reduce(times, block_size=factor, func=np.min, cval=np.max(times)))
-    
-    for item in args:
-        if len(item.shape) == 1:
-            ret.append(block_reduce(item, block_size=factor, func=np.mean, cval=np.mean(item)))
-        elif len(item.shape) == 2:
-            ret.append(block_reduce(item, block_size=(1,factor), func=np.mean, cval=np.mean(item)))
-        else:
-            raise RuntimeError(f'Unsupported number of column for downsampling: {len(item)}')
-    
-    ret.append(factor)
-
-    return ret
-        
-class CWT:
-    def __init__(self, weights, times, scales, frequencies, coif, tracer=None):
-        self.W: np.ndarray = weights
-        self.times: np.ndarray = times
-        self.dt = times[1] - times[0]
-        self.scales: np.ndarray = scales
-        self.frequencies: np.ndarray = frequencies
-        self.coi: np.ndarray = 1 / coif # Cone of influence, in scales
-        self.coif: np.ndarray = coif # Cone of influence, in frequencies
-        self.tracer: dict = tracer
-
-    def plot(self, **kwargs):
-        return plot_cwt_weights(self.W, self.times, self.frequencies, self.coif)
-
-class WTC:
-    def __init__(self, wtc, times, scales, frequencies, coif, pair: PairSignals, sig=None, tracer=None):
-        self.wtc = wtc
-        # TODO: compute Region of Interest, something like this:
-        #roi = wtc * (wtc > coif[np.newaxis, :]).astype(int)
-        self.times = times
-        self.scales = scales
-        self.frequencies = frequencies
-        self.coi = 1 / coif
-        self.coif = coif
-        self.task = pair.task
-        self.label = pair.label
-        self.label_subject1 = pair.label_s1
-        self.label_subject2 = pair.label_s2
-        self.roi1 = pair.roi1
-        self.roi2 = pair.roi2
-        self.ch_name1 = pair.ch_name1
-        self.ch_name2 = pair.ch_name2
-        self.label_dyad = pair.label_dyad
-
-        self.tracer = tracer
-
-        self.wtc_roi: np.ma.MaskedArray
-        self.coherence_metric: float
-
-        self.coherence_p_value = None
-        self.coherence_t_stat = None
-        self.sig = sig
-
-        self.compute_roi()
-    
-    def compute_roi(self):
-        mask = self.frequencies[:, np.newaxis] < self.coif
-        self.wtc_roi = np.ma.masked_array(self.wtc, mask)
-        self.coherence_metric = np.mean(self.wtc_roi) # TODO this is just a PoC
-    
-    def downsample_in_time(self, bins):
-        self.times, self.wtc, self.coi, self.coif, _factor = downsample_in_time(self.times, self.wtc, self.coi, self.coif, bins=bins)
-        # must recompute region of interest
-        self.compute_roi()
-    
-    @property
-    def as_frame_row(self) -> list:
-        return [
-            self.label_dyad,
-            self.label_subject1 == self.label_subject2,
-            self.task,
-            self.label_subject1,
-            self.label_subject2,
-            self.roi1,
-            self.roi2,
-            self.ch_name1,
-            self.ch_name2,
-            self.coherence_metric,
-        ]
-    
-    def to_frame(self) -> pd.DataFrame:
-        df = pd.DataFrame([self.as_frame_row], columns=FRAME_COLUMNS)
-        return df
-
-
-    def plot(self, **kwargs):
-        return plot_wavelet_coherence(self.wtc_roi, self.times, self.frequencies, self.coif, self.sig, **kwargs)
-
 
 class BaseWavelet(ABC):
     def __init__(self, evaluate=False, cache=None):

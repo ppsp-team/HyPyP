@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from ..wavelet.pywavelets_wavelet import PywaveletsWavelet
-from ..wavelet.base_wavelet import WTC, BaseWavelet, downsample_in_time, FRAME_COLUMNS
+from ..wavelet.base_wavelet import BaseWavelet
+from ..wavelet.wtc import WTC, FRAME_COLUMNS
 from ..wavelet.pair_signals import PairSignals
 from .subject import Subject, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor import BasePreprocessor

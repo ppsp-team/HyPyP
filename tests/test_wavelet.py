@@ -3,7 +3,6 @@ import pytest
 import numpy as np
 
 from hypyp.signal import SynteticSignal
-from hypyp.wavelet.base_wavelet import WTC, downsample_in_time
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 
@@ -114,47 +113,6 @@ def test_wtc_coi_masked():
     assert res.wtc_roi.mask[0,0] == True
     assert res.wtc_roi.mask[0,len(signal.x)//2] == False
 
-def test_downsampling():
-    wavelet = PywaveletsWavelet()
-    signal = SynteticSignal(n_points=2000).add_sin(1)
-    res = wavelet.cwt(signal.y, signal.period)
-
-    assert res.W.shape[0] == len(res.scales)
-    assert res.W.shape[1] == len(signal.y)
-
-    bins = 1000
-    times, coif, W, factor = downsample_in_time(res.times, res.coif, res.W, bins=bins)
-    assert factor == len(signal.y) // bins
-    assert len(times) == bins
-    assert len(coif) == bins
-    assert W.shape[0] == res.W.shape[0] # no change
-    assert W.shape[1] == bins
-
-def test_downsampling_low_values():
-    wavelet = PywaveletsWavelet()
-    signal = SynteticSignal(tmax=10, n_points=50).add_sin(1)
-    res = wavelet.cwt(signal.y, signal.period)
-
-    times, coif, W, factor = downsample_in_time(res.times, res.coif, res.W)
-    assert factor == 1
-    assert len(times) == len(res.times)
-    assert len(coif) == len(res.coif)
-    assert W.shape[0] == res.W.shape[0]
-    assert W.shape[1] == res.W.shape[1]
-    
-def test_downsampling_threshold():
-    bins = 1000
-    wavelet = PywaveletsWavelet()
-    signal = SynteticSignal(tmax=10, n_points=bins+1).add_sin(1)
-    res = wavelet.cwt(signal.y, signal.period)
-
-    times, coif, W, factor = downsample_in_time(res.times, res.coif, res.W, bins=bins)
-    assert factor == 2
-    expected_len = bins / 2 + 1
-    assert len(times) == expected_len
-    assert len(coif) == expected_len
-    assert W.shape[1] == expected_len
-    
 def test_periods_frequencies_range():    
     frequencies_range = np.array([1., 5.])
     periods_range = 1 / frequencies_range

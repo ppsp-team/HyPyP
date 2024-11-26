@@ -3,7 +3,8 @@ import numpy as np
 try:
     import matlab.engine
 
-    from .base_wavelet import BaseWavelet, WTC
+    from .base_wavelet import BaseWavelet
+    from .wtc import WTC
     from .pair_signals import PairSignals
 
     # In order to work, python must know the location of matlab

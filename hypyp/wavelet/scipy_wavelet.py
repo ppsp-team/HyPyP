@@ -1,7 +1,8 @@
 from math import ceil, floor
 import numpy as np
 
-from .base_wavelet import CWT, WTC, BaseWavelet
+from .base_wavelet import BaseWavelet
+from .cwt import CWT
 import scipy.signal
 
 from ..plots import plot_wavelet_coherence

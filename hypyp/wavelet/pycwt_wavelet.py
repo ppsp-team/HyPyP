@@ -3,7 +3,9 @@ import numpy as np
 try:
     import pycwt
 
-    from .base_wavelet import CWT, BaseWavelet, WTC
+    from .base_wavelet import BaseWavelet
+    from .wtc import WTC
+    from .cwt import CWT
     from .pair_signals import PairSignals
 
     class PycwtWavelet(BaseWavelet):
