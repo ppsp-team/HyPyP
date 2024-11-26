@@ -5,17 +5,6 @@ from .pair_signals import PairSignals
 from .wtc import WTC
 from .smooth import smoothing
 
-FRAME_COLUMNS = ['dyad',
-                 'is_intra',
-                 'task',
-                 'subject1',
-                 'subject2',
-                 'roi1',
-                 'roi2',
-                 'channel1',
-                 'channel2',
-                 'coherence']
-
 class BaseWavelet(ABC):
     def __init__(self, evaluate=False, cache=None):
         self._wavelet = None
