@@ -84,6 +84,7 @@ class Dyad:
                 y1 = y1[:stop] 
                 y2 = y2[:stop] 
 
+                # TODO too much code for this. This is inefficient, we can do better
                 # Look for NaN, and split in section
                 section_id = 0
                 nan_mask1 = np.isnan(y1)
@@ -93,10 +94,17 @@ class Dyad:
                 # TODO we should have a bigger min_length, and it should not be hardcoded here
                 min_length = 10
                 if has_nan:
-                    nan_idx = np.where(nan_mask)[0]
+                    nan_idx = np.where(nan_mask)[0]+1
+                    # We have to drop the first item of every split but the first split, because it contains the NaN
                     x_sections = [item for item in np.split(x, nan_idx) if len(item)>min_length]
                     y1_sections = [item for item in np.split(y1, nan_idx) if len(item)>min_length]
                     y2_sections = [item for item in np.split(y2, nan_idx) if len(item)>min_length]
+                    # remove the lurking NaN in edges of our arrayes
+                    for i in range(len(x_sections)):
+                        delete = np.isnan(y1_sections[i]) | np.isnan(y2_sections[i])
+                        x_sections[i] = np.delete(x_sections[i], delete)
+                        y1_sections[i] = np.delete(y1_sections[i], delete)
+                        y2_sections[i] = np.delete(y2_sections[i], delete)
                 else:
                     x_sections = [x]
                     y1_sections = [y1]

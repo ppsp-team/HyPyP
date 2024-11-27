@@ -109,9 +109,9 @@ def test_wtc_coi_masked():
     wavelet = PywaveletsWavelet(cache=None)
     signal = SynteticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal.x, signal.y, signal.y))
-    assert res.wtc_roi is not None
-    assert res.wtc_roi.mask[0,0] == True
-    assert res.wtc_roi.mask[0,len(signal.x)//2] == False
+    assert res.wtc_coi is not None
+    assert res.wtc_coi.mask[0,0] == True
+    assert res.wtc_coi.mask[0,len(signal.x)//2] == False
 
 def test_periods_frequencies_range():    
     frequencies_range = np.array([1., 5.])

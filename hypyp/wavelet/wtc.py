@@ -42,24 +42,31 @@ class WTC:
 
         self.tracer = tracer
 
-        self.wtc_roi: np.ma.MaskedArray
+        self.wtc_coi: np.ma.MaskedArray
         self.coherence_metric: float
 
         self.coherence_p_value = None
         self.coherence_t_stat = None
         self.sig = sig
 
-        self.compute_roi()
+        self.compute_coherence_in_coi()
     
-    def compute_roi(self):
+    def compute_coherence_in_coi(self):
         mask = self.frequencies[:, np.newaxis] < self.coif
-        self.wtc_roi = np.ma.masked_array(self.wtc, mask)
-        self.coherence_metric = np.mean(self.wtc_roi) # TODO this is just a PoC
+        self.wtc_coi = np.ma.masked_array(self.wtc, mask)
+
+        # TODO maybe we should weight our average because we have more values at higher frequencies than lower frequencies, due to the coi
+        coherence = np.mean(self.wtc_coi)
+        if np.ma.is_masked(coherence):
+            coherence = np.nan
+        elif not np.isfinite(coherence):
+            coherence = np.nan
+        self.coherence_metric = coherence
     
     def downsample_in_time(self, bins):
         self.times, self.wtc, self.coi, self.coif, _factor = downsample_in_time(self.times, self.wtc, self.coi, self.coif, bins=bins)
         # must recompute region of interest
-        self.compute_roi()
+        self.compute_coherence_in_coi()
     
     @property
     def as_frame_row(self) -> list:
@@ -84,5 +91,5 @@ class WTC:
 
 
     def plot(self, **kwargs):
-        return plot_wavelet_coherence(self.wtc_roi, self.times, self.frequencies, self.coif, self.sig, **kwargs)
+        return plot_wavelet_coherence(self.wtc_coi, self.times, self.frequencies, self.coif, self.sig, **kwargs)
 

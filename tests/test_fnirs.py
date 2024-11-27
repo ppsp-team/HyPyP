@@ -401,26 +401,28 @@ def test_dyad_task_annotations_and_time_range_combined():
 
 def test_dyad_wtc_nan_channel_section():
     tasks = [
-        ('task1', 0, 100),
+        ('task1', 0, 500),
     ]
     # Use the same file for the 2 subjects
     subject1 = Subject(tasks_time_range=tasks).load_file(snirf_file1)
     subject2 = Subject(tasks_time_range=tasks).load_file(snirf_file2)
     dyad = Dyad(subject1, subject2)
 
-    target_channel = 'S1_D2 760'
-    # make sure our target_channel matches the regexp
-    assert get_test_ch_match_few().match(target_channel) is not None
-    # Get the epoch data (shape: n_epochs, n_channels, n_times)
     epochs = subject1.get_epochs_for_task('task1')
     data = epochs.get_data()
-    # Set some values to NaN
+    # Set some values to NaN to split in 3 sections
     data[0, 0, 20:40] = np.nan
+    t = int(100*epochs.info['sfreq'])
+    data[0, 0, t:t+1] = np.nan
     epochs._data = data
-    dyad.compute_wtcs(ch_match=get_test_ch_match_few())
+    dyad.compute_wtcs(ch_match=epochs.ch_names[0], downsample=None)
     df = dyad.df
-    assert len(dyad.wtcs) == 6
-    assert len(df[df['coherence']==np.nan]) == 0
+    assert len(dyad.wtcs) == 3
+    # the first section is too small, coherence should be NaN
+    assert np.all(np.isnan(df[df['section']==0]['coherence'].head(1)))
+    # the next 2 sections have enough data for wtc
+    assert np.all(np.isfinite(df[df['section']==1]['coherence'].head(1)))
+    assert np.all(np.isfinite(df[df['section']==2]['coherence'].head(1)))
 
 def test_cohort_wtc():
     subject1, subject2 = get_test_subjects()
