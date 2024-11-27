@@ -57,7 +57,7 @@ def test_epochs_recurring_task():
 
 def test_epochs_recurring_task_crop_time():
     raw = get_fake_raw()
-    onsets = [2, 5, 6, 8] # Have the 2nd task occurence shorter than first one
+    onsets = [2, 5, 6, 7] # Have the 2nd task occurence shorter than first one
     durations = [0, 0, 0, 0]
     descriptions = [1, 2, 1, 2]
     raw.set_annotations(mne.Annotations(onset=onsets, duration=durations, description=descriptions))
@@ -68,8 +68,9 @@ def test_epochs_recurring_task_crop_time():
 
     all_epochs = utils.epochs_from_tasks_annotations(raw, tasks)
     epochs = all_epochs[0]
-    assert len(epochs.times) >= 200
-    assert len(epochs.times) < 300
+    # The epochs time should match the shortest epoch
+    assert len(epochs.times) >= 100
+    assert len(epochs.times) < 200
 
 def test_task_start_end_combinaison():
     raw = get_fake_raw()
@@ -92,11 +93,23 @@ def test_task_from_time_range():
     ]
 
     all_epochs = utils.epochs_from_tasks_time_range(raw, tasks)
-    print(all_epochs[0])
-    print(all_epochs[1])
     assert len(all_epochs) == 2
     duration = all_epochs[1].times[-1] - all_epochs[1].times[0]
     assert duration == tasks[1][2] - tasks[1][1]
+
+def test_task_from_time_range_recurring():
+    raw = get_fake_raw()
+    tasks = [
+        ('task1', 0, 1), # task from start to 1 second
+        ('task1', 8, 10), # task from 3 seconds to 5 seconds
+    ]
+
+    all_epochs = utils.epochs_from_tasks_time_range(raw, tasks)
+    assert len(all_epochs) == 1
+    assert len(all_epochs[0]) == 2
+    # Duration should be the shortest one
+    duration = all_epochs[0].times[-1] - all_epochs[0].times[0]
+    assert duration == tasks[0][2] - tasks[0][1]
 
 def test_downsampling():
     wavelet = PywaveletsWavelet()

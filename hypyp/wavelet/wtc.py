@@ -8,6 +8,7 @@ from ..utils import downsample_in_time
 FRAME_COLUMNS = ['dyad',
                  'is_intra',
                  'task',
+                 'epoch',
                  'subject1',
                  'subject2',
                  'roi1',
@@ -27,6 +28,7 @@ class WTC:
         self.coi = 1 / coif
         self.coif = coif
         self.task = pair.task
+        self.epoch = pair.epoch
         self.label = pair.label
         self.label_subject1 = pair.label_s1
         self.label_subject2 = pair.label_s2
@@ -63,6 +65,7 @@ class WTC:
             self.label_dyad,
             self.label_subject1 == self.label_subject2,
             self.task,
+            self.epoch,
             self.label_subject1,
             self.label_subject2,
             self.roi1,

@@ -158,17 +158,32 @@ def test_subject_epochs():
     assert n_events == 2
     assert len(subject.get_epochs_for_task('task2')) == 3
 
-def test_subject_force_task():
+def test_subject_time_range_task():
     tasks = [
         ('task1', 1, 2),
         ('task2', 4, 5),
     ]
     subject = Subject(tasks_time_range=tasks)
     subject.load_file(snirf_file1, MnePreprocessor())
-    assert len(subject.get_epochs_for_task('task1')) == 1
-    #n_events = subject.get_epochs_for_task('task1').events.shape[0]
-    #assert n_events == 2
-    #assert len(subject.get_epochs_for_task('task2')) == 3
+    epochs_task1 = subject.get_epochs_for_task('task1')
+    epochs_task2 = subject.get_epochs_for_task('task2')
+    assert len(epochs_task1) == 1
+    n_events = epochs_task1.events.shape[0]
+    assert n_events == 1
+    assert len(epochs_task2) == 1
+    
+def test_subject_time_range_task_recurring_event():
+    tasks = [
+        ('task1', 1, 2),
+        ('task1', 4, 5),
+        ('task1', 8, 10),
+    ]
+    subject = Subject(tasks_time_range=tasks)
+    subject.load_file(snirf_file1, MnePreprocessor())
+    epochs = subject.get_epochs_for_task('task1')
+    assert len(epochs) == 3
+    n_events = epochs.events.shape[0]
+    assert n_events == 3
     
 
 def test_upstream_preprocessor():
@@ -199,7 +214,6 @@ def test_mne_preprocessor():
 #
 
 def test_subject_dyad():
-    # Use the same file for the 2 subjects
     subject1 = Subject().load_file(snirf_file1, preprocess=False)
     subject2 = Subject().load_file(snirf_file2, preprocess=False)
     dyad = Dyad(subject1, subject2)
@@ -216,6 +230,25 @@ def test_subject_dyad():
     assert pairs[0].ch_name2 == subject2.pre.ch_names[0]
     assert subject1.label in dyad.label
 
+def test_dyad_pair_recurring_event():
+    tasks = [
+        ('task1', 1, 2),
+        ('task1', 3, 4),
+        ('task1', 5, 6),
+    ]
+    # Use the same file for the 2 subjects
+    subject1 = Subject(tasks_time_range=tasks).load_file(snirf_file1)
+    subject2 = Subject(tasks_time_range=tasks).load_file(snirf_file2)
+    dyad = Dyad(subject1, subject2)
+
+    pairs = dyad.get_pairs(dyad.s1, dyad.s2, ch_match=get_test_ch_match_one())
+    assert len(pairs) == 3
+    # make sure we don't have the same signal
+    assert np.sum(pairs[0].y1 - pairs[1].y1) != 0
+    assert pairs[0].epoch == 0
+    assert pairs[1].epoch == 1
+    assert pairs[2].epoch == 2
+    
 def test_dyad_tasks_intersection():
     tasks = [
         ('my_task1', 1, 2),
@@ -338,17 +371,18 @@ def test_dyad_wtc_per_task():
     subject = Subject(tasks_annotations=tasks).load_file(snirf_file1)
     dyad = Dyad(subject, subject)
     ch_name = get_test_ch_match_one()
-    pairs = dyad.get_pairs(dyad.s1, dyad.s2, match=ch_name)
-    assert len(pairs) == 2
+    pairs = dyad.get_pairs(dyad.s1, dyad.s2, ch_match=ch_name)
+    # we will have multiple pairs because we have one pair per epoch
+    assert len(pairs) == 5
     dyad.compute_wtcs(ch_match=ch_name)
-    assert len(dyad.wtcs) == 2
-    assert dyad.wtcs[0].wtc.shape[1] != dyad.wtcs[1].wtc.shape[1] # not the same duration
+    assert len(dyad.wtcs) == len(pairs)
+    # must compare the first and last wtcs to make sure we are on different tasks (otherwise we might compare 2 epochs of the same task)
+    assert dyad.wtcs[0].wtc.shape[1] != dyad.wtcs[-1].wtc.shape[1] # not the same duration
     assert 'task1' in [wtc.task for wtc in dyad.wtcs] # order may have changed because of task intersection
 
 def test_dyad_task_annotations_and_time_range_combined():
     tasks_annotations = [
         ('task_annotation1', 1, TASK_NEXT_EVENT),
-        ('task_annotation2', 3, TASK_NEXT_EVENT),
     ]
     tasks_time_range = [
         ('task_time_range', 10, 20),
@@ -357,13 +391,13 @@ def test_dyad_task_annotations_and_time_range_combined():
     subject.load_file(snirf_file1)
     dyad = Dyad(subject, subject)
     ch_name = get_test_ch_match_one()
-    pairs = dyad.get_pairs(dyad.s1, dyad.s2, match=ch_name)
+    pairs = dyad.get_pairs(dyad.s1, dyad.s2, ch_match=ch_name)
+    # We have the count from annotations + the count from time_range
     assert len(pairs) == 3
     dyad.compute_wtcs(ch_match=ch_name)
-    assert len(dyad.wtcs) == 3
+    assert len(dyad.wtcs) == len(pairs)
     found_tasks = [wtc.task for wtc in dyad.wtcs]
     assert 'task_annotation1' in found_tasks
-    assert 'task_annotation2' in found_tasks
     assert 'task_time_range' in found_tasks
 
 def test_cohort_wtc():

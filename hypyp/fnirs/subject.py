@@ -137,7 +137,7 @@ class Subject:
             self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_time_range(self.pre, self.tasks_time_range)
         return self
     
-    def get_epochs_for_task(self, task_name: str):
+    def get_epochs_for_task(self, task_name: str) -> List[mne.Epochs]:
         self._assert_is_epochs_loaded()
         id = None
         try:

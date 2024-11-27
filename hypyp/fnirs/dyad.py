@@ -1,6 +1,7 @@
 from typing import Tuple, List
 from collections import OrderedDict
 import re
+import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -61,15 +62,53 @@ class Dyad:
             if not subject.is_preprocessed:
                 subject.preprocess(preprocessor)
         return self
+
+    def _append_pairs(self,
+                      ch_names1,
+                      ch_names2,
+                      s1_task_data,
+                      s2_task_data,
+                      s1,
+                      s2,
+                      task_name,
+                      epoch_id,
+                      pairs):
+        n = s1_task_data.shape[1]
+        x = np.linspace(0, n/s1.pre.info['sfreq'], n)
+        for s1_i, s1_ch_name in enumerate(ch_names1):
+            for s2_i, s2_ch_name in enumerate(ch_names2):
+                y1 = s1_task_data[s1_i,:]
+                y2 = s2_task_data[s2_i,:]
+                # Crop signals in case they are not the same length
+                stop = min(len(y1), len(y2))
+                y1 = y1[:stop] 
+                y2 = y2[:stop] 
+
+                # TODO check if we want info_table
+                pairs.append(PairSignals(
+                    x,
+                    y1,
+                    y2,
+                    ch_name1=s1_ch_name,
+                    ch_name2=s2_ch_name,
+                    label_s1=s1.label,
+                    label_s2=s2.label,
+                    roi1=s1.get_roi_from_channel(s1_ch_name),
+                    roi2=s2.get_roi_from_channel(s2_ch_name),
+                    label_dyad=Dyad.get_label(s1, s2),
+                    task=task_name,
+                    epoch=epoch_id,
+                ))
+            
     
-    def get_pairs(self, s1: Subject, s2: Subject, match:PairMatch=None) -> List[PairSignals]:
+    def get_pairs(self, s1: Subject, s2: Subject, ch_match:PairMatch=None) -> List[PairSignals]:
         pairs = []
 
         # TODO raise exception if sfreq is not the same in both
 
         # Force match in tuple for leaner code below
-        if not isinstance(match, Tuple):
-            match = (match, match)
+        if not isinstance(ch_match, Tuple):
+            ch_match = (ch_match, ch_match)
 
         def check_match(ch_name, m):
             if m is None:
@@ -79,47 +118,33 @@ class Dyad:
             return m in ch_name
 
 
-        ch_names1 = [ch_name for ch_name in s1.ordered_ch_names if check_match(ch_name, match[0])]
-        ch_names2 = [ch_name for ch_name in s2.ordered_ch_names if check_match(ch_name, match[1])]
+        ch_names1 = [ch_name for ch_name in s1.ordered_ch_names if check_match(ch_name, ch_match[0])]
+        ch_names2 = [ch_name for ch_name in s2.ordered_ch_names if check_match(ch_name, ch_match[1])]
 
+
+        seen_tasks = set()
         for task_name, _, _ in self.tasks:
+            if task_name in seen_tasks:
+                continue
+            seen_tasks.add(task_name)
             if task_name == TASK_NAME_WHOLE_RECORD:
                 # TODO see if copy() slows down our computation or takes memory
                 s1_task_data = s1.pre.copy().pick(ch_names1).get_data()
                 s2_task_data = s2.pre.copy().pick(ch_names2).get_data()
+                epoch_id = 0
+                self._append_pairs(ch_names1, ch_names2, s1_task_data, s2_task_data, s1, s2, task_name, epoch_id, pairs)
             else:
                 epochs1 = s1.get_epochs_for_task(task_name).copy().pick(ch_names1)
                 epochs2 = s2.get_epochs_for_task(task_name).copy().pick(ch_names2)
-                # TODO here we take only the first epoch per task. Should we take more?
-                s1_task_data = epochs1.get_data(copy=False)[0,:,:]
-                s2_task_data = epochs2.get_data(copy=False)[0,:,:]
-
-            n = s1_task_data.shape[1]
-            x = np.linspace(0, n/s1.pre.info['sfreq'], n)
-
-            for s1_i, s1_ch_name in enumerate(ch_names1):
-                for s2_i, s2_ch_name in enumerate(ch_names2):
-                    y1 = s1_task_data[s1_i,:]
-                    y2 = s2_task_data[s2_i,:]
-                    # Crop signals in case they are not the same length
-                    stop = min(len(y1), len(y2))
-                    y1 = y1[:stop] 
-                    y2 = y2[:stop] 
-
-                    # TODO check if we want info_table
-                    pairs.append(PairSignals(
-                        x,
-                        y1,
-                        y2,
-                        ch_name1=s1_ch_name,
-                        ch_name2=s2_ch_name,
-                        label_s1=s1.label,
-                        label_s2=s2.label,
-                        roi1=s1.get_roi_from_channel(s1_ch_name),
-                        roi2=s2.get_roi_from_channel(s2_ch_name),
-                        label_dyad=Dyad.get_label(s1, s2),
-                        task=task_name,
-                    ))
+                if len(epochs1) != len(epochs2):
+                    warnings.warn("The 2 subjects do not have the same epochs count. Some epochs will be skipped in pairs.")
+                
+                # add one pair for each epoch
+                for i in range(min(len(epochs1), len(epochs2))):
+                    s1_task_data = epochs1.get_data(copy=False)[i,:,:]
+                    s2_task_data = epochs2.get_data(copy=False)[i,:,:]
+                    epoch_id = i
+                    self._append_pairs(ch_names1, ch_names2, s1_task_data, s2_task_data, s1, s2, task_name, epoch_id, pairs)
 
         return pairs
     
@@ -138,7 +163,7 @@ class Dyad:
     ):
         self.wtcs = []
 
-        for pair in self.get_pairs(self.s1, self.s2, match=ch_match):
+        for pair in self.get_pairs(self.s1, self.s2, ch_match=ch_match):
             if verbose:
                 print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
             if time_range is not None:
@@ -155,7 +180,7 @@ class Dyad:
             # TODO see if we are computing more than once
             #if not self.s1.is_wtc_computed:
             for subject in [self.s1, self.s2]:
-                for pair in self.get_pairs(subject, subject, match=ch_match):
+                for pair in self.get_pairs(subject, subject, ch_match=ch_match):
                     if verbose:
                         print(f'Running Wavelet Coherence intra-subject "{subject.label}" on pair "{pair.label}"')
                     if time_range is not None:

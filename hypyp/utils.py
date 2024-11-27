@@ -414,23 +414,36 @@ TASK_END = -1
 
 def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList) -> List[mne.Epochs]:
     all_epochs = []
+    events_per_task = dict()
+    duration_per_task = dict()
     for i, task in enumerate(tasks):
+        task_name, task_start, task_end = task
+
         event_id = i + 1
-        duration = task[2] - task[1]
+        duration = task_end - task_start
         events = mne.make_fixed_length_events(raw,
                                             id=1,
-                                            start=task[1],
-                                            stop=task[2],
+                                            start=task_start,
+                                            stop=task_end,
                                             duration=duration,
                                             first_samp=True,
                                             overlap=0.0)
 
+        if not task_name in events_per_task.keys():
+            events_per_task[task_name] = events
+            duration_per_task[task_name] = duration
+        else:
+            events_per_task[task_name] = np.vstack([events_per_task[task_name], events])
+            duration_per_task[task_name] = min(duration_per_task[task_name], duration)
+
+
+    for task_name in events_per_task.keys():
         event_id_map = {task[0]: 1}
         epochs = mne.Epochs(raw,
-                            events,
+                            events_per_task[task_name],
                             event_id=event_id_map, # TODO this doesn't seem to work. The event_id is always 1
                             tmin=0,
-                            tmax=duration,
+                            tmax=duration_per_task[task_name],
                             baseline=None,
                             preload=True,
                             reject=None,

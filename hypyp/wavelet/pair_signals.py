@@ -13,6 +13,7 @@ class PairSignals:
                  roi2='',
                  label_dyad='',
                  task='',
+                 epoch=0,
                  info_table1=[],
                  info_table2=[],
                  range:Tuple[float, float]|None=None,
@@ -29,6 +30,7 @@ class PairSignals:
         self.ch_name2 = ch_name2
 
         self.task = task
+        self.epoch = epoch
 
         self.info_table1 = info_table1
         self.info_table2 = info_table2
@@ -44,8 +46,14 @@ class PairSignals:
     @property
     def label(self):
         ret = f'{self.ch_name1} - {self.ch_name2}'
-        if self.task != '':
-            ret = f'{self.task} - {ret}'
+
+        prefix = self.task
+        if self.epoch > 0:
+            prefix = f'{prefix}[{self.epoch}]'
+
+        if prefix != '':
+            ret = f'{prefix} - {ret}'
+        
         return ret
 
     def sub(self, range):
@@ -62,6 +70,7 @@ class PairSignals:
             ch_name1=self.ch_name1,
             ch_name2=self.ch_name2,
             task=self.task,
+            epoch=self.epoch,
             info_table1=self.info_table1,
             info_table2=self.info_table2,
             label_s1=self.label_s1,
