@@ -84,21 +84,41 @@ class Dyad:
                 y1 = y1[:stop] 
                 y2 = y2[:stop] 
 
-                # TODO check if we want info_table
-                pairs.append(PairSignals(
-                    x,
-                    y1,
-                    y2,
-                    ch_name1=s1_ch_name,
-                    ch_name2=s2_ch_name,
-                    label_s1=s1.label,
-                    label_s2=s2.label,
-                    roi1=s1.get_roi_from_channel(s1_ch_name),
-                    roi2=s2.get_roi_from_channel(s2_ch_name),
-                    label_dyad=Dyad.get_label(s1, s2),
-                    task=task_name,
-                    epoch=epoch_id,
-                ))
+                # Look for NaN, and split in section
+                section_id = 0
+                nan_mask1 = np.isnan(y1)
+                nan_mask2 = np.isnan(y2)
+                nan_mask = nan_mask1 | nan_mask2
+                has_nan = np.any(nan_mask)
+                # TODO we should have a bigger min_length, and it should not be hardcoded here
+                min_length = 10
+                if has_nan:
+                    nan_idx = np.where(nan_mask)[0]
+                    x_sections = [item for item in np.split(x, nan_idx) if len(item)>min_length]
+                    y1_sections = [item for item in np.split(y1, nan_idx) if len(item)>min_length]
+                    y2_sections = [item for item in np.split(y2, nan_idx) if len(item)>min_length]
+                else:
+                    x_sections = [x]
+                    y1_sections = [y1]
+                    y2_sections = [y2]
+
+                for section_id in range(len(x_sections)):
+                    # TODO check if we want info_table
+                    pairs.append(PairSignals(
+                        x_sections[section_id],
+                        y1_sections[section_id],
+                        y2_sections[section_id],
+                        ch_name1=s1_ch_name,
+                        ch_name2=s2_ch_name,
+                        label_s1=s1.label,
+                        label_s2=s2.label,
+                        roi1=s1.get_roi_from_channel(s1_ch_name),
+                        roi2=s2.get_roi_from_channel(s2_ch_name),
+                        label_dyad=Dyad.get_label(s1, s2),
+                        task=task_name,
+                        epoch=epoch_id,
+                        section=section_id,
+                    ))
             
     
     def get_pairs(self, s1: Subject, s2: Subject, ch_match:PairMatch=None) -> List[PairSignals]:

@@ -99,6 +99,8 @@ class BaseWavelet(ABC):
 
         W1 = cwt1.W
         W2 = cwt2.W
+        # Take a look at caching keys if you fail with this kind of error. Make sure cache keys are well targetted
+        #     ValueError: operands could not be broadcast together with shapes (40,782) (40,100)
         W12 = W1 * W2.conj()
 
         frequencies = cwt1.frequencies
@@ -209,7 +211,7 @@ class BaseWavelet(ABC):
         if pair.task == '':
             raise RuntimeError(f'must have task to have unique identifiers in caching')
 
-        key = f'{subject_label}-{ch_name}-{pair.task}-{str(pair.range)}-{obj_id}'
+        key = f'{subject_label}-{ch_name}-{pair.task}-{pair.epoch}-{pair.x[0]}-{pair.x[-1]}-{str(pair.range)}-{obj_id}'
         if cache_suffix != '':
             key += f'f{cache_suffix}'
         

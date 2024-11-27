@@ -9,6 +9,7 @@ FRAME_COLUMNS = ['dyad',
                  'is_intra',
                  'task',
                  'epoch',
+                 'section',
                  'subject1',
                  'subject2',
                  'roi1',
@@ -29,6 +30,7 @@ class WTC:
         self.coif = coif
         self.task = pair.task
         self.epoch = pair.epoch
+        self.section = pair.section
         self.label = pair.label
         self.label_subject1 = pair.label_s1
         self.label_subject2 = pair.label_s2
@@ -66,6 +68,7 @@ class WTC:
             self.label_subject1 == self.label_subject2,
             self.task,
             self.epoch,
+            self.section,
             self.label_subject1,
             self.label_subject2,
             self.roi1,

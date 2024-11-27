@@ -14,6 +14,7 @@ class PairSignals:
                  label_dyad='',
                  task='',
                  epoch=0,
+                 section=0,
                  info_table1=[],
                  info_table2=[],
                  range:Tuple[float, float]|None=None,
@@ -31,6 +32,7 @@ class PairSignals:
 
         self.task = task
         self.epoch = epoch
+        self.section = section
 
         self.info_table1 = info_table1
         self.info_table2 = info_table2
@@ -50,6 +52,9 @@ class PairSignals:
         prefix = self.task
         if self.epoch > 0:
             prefix = f'{prefix}[{self.epoch}]'
+
+        if self.section > 0:
+            prefix = f'{prefix}(section:{self.section})'
 
         if prefix != '':
             ret = f'{prefix} - {ret}'
@@ -71,6 +76,7 @@ class PairSignals:
             ch_name2=self.ch_name2,
             task=self.task,
             epoch=self.epoch,
+            section=self.section,
             info_table1=self.info_table1,
             info_table2=self.info_table2,
             label_s1=self.label_s1,

@@ -54,7 +54,7 @@ def test_list_paths():
     paths = browser.paths
     assert len(paths) > 0
 
-def test_list_paths():
+def test_add_source():
     browser = DataBrowser()
     previous_count = len(browser.paths)
     browser.add_source('/foo')
@@ -230,7 +230,7 @@ def test_subject_dyad():
     assert pairs[0].ch_name2 == subject2.pre.ch_names[0]
     assert subject1.label in dyad.label
 
-def test_dyad_pair_recurring_event():
+def test_dyad_pairs_recurring_event():
     tasks = [
         ('task1', 1, 2),
         ('task1', 3, 4),
@@ -260,7 +260,6 @@ def test_dyad_tasks_intersection():
     assert len(Dyad(s1, s1).tasks) == 2
     assert len(Dyad(s2, s2).tasks) == 2
     assert len(Dyad(s1, s2).tasks) == 1
-    
     
 def test_dyad_compute_pair_wtc():
     # test with the same subject, so we can check we have a high coherence
@@ -399,6 +398,29 @@ def test_dyad_task_annotations_and_time_range_combined():
     found_tasks = [wtc.task for wtc in dyad.wtcs]
     assert 'task_annotation1' in found_tasks
     assert 'task_time_range' in found_tasks
+
+def test_dyad_wtc_nan_channel_section():
+    tasks = [
+        ('task1', 0, 100),
+    ]
+    # Use the same file for the 2 subjects
+    subject1 = Subject(tasks_time_range=tasks).load_file(snirf_file1)
+    subject2 = Subject(tasks_time_range=tasks).load_file(snirf_file2)
+    dyad = Dyad(subject1, subject2)
+
+    target_channel = 'S1_D2 760'
+    # make sure our target_channel matches the regexp
+    assert get_test_ch_match_few().match(target_channel) is not None
+    # Get the epoch data (shape: n_epochs, n_channels, n_times)
+    epochs = subject1.get_epochs_for_task('task1')
+    data = epochs.get_data()
+    # Set some values to NaN
+    data[0, 0, 20:40] = np.nan
+    epochs._data = data
+    dyad.compute_wtcs(ch_match=get_test_ch_match_few())
+    df = dyad.df
+    assert len(dyad.wtcs) == 6
+    assert len(df[df['coherence']==np.nan]) == 0
 
 def test_cohort_wtc():
     subject1, subject2 = get_test_subjects()
