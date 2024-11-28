@@ -22,7 +22,7 @@ class ScipyWavelet(BaseWavelet):
         self.center_frequency = center_frequency
         self.wavelet_name = 'morlet_scipy'
         self.tracer = dict(name=self.wavelet_name)
-        super().__init__(evaluate)
+        super().__init__(evaluate, disable_caching=True)
 
     def evaluate_psi(self):
         M = 1000

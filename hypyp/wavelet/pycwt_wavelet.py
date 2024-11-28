@@ -23,7 +23,7 @@ try:
             self.compute_significance = compute_significance
             self.tracer = dict(name='pycwt', scales=[]) # TODO have a more strict structure for tracer
             self.wavelet_name = 'pycwt'
-            super().__init__(evaluate)
+            super().__init__(evaluate, disable_caching=True)
 
         def evaluate_psi(self):
             self._psi_x = np.linspace(self.lower_bound, self.upper_bound, 2**self.precision)
