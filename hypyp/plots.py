@@ -8,6 +8,8 @@ import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from skimage.measure import block_reduce
 from matplotlib.ticker import FuncFormatter, ScalarFormatter
+from mne_connectivity.viz import plot_connectivity_circle
+from mne.viz import circular_layout
 
 
 def spectrogram_plot(z, times, frequencies, coif, cmap="viridis", norm=Normalize(), ax=None, colorbar=True):
@@ -178,7 +180,7 @@ def plot_coherence_matrix(
 
     return ax
 
-def plot_coherence_df(
+def plot_coherence_matrix_df(
     df,
     s1_label,
     s2_label,
@@ -228,6 +230,24 @@ def plot_coherence_df(
     heatmap_from_pivot(pivot_s2.rename_axis(index=s2_label, columns=s2_label), ax=axes[1,1])
 
     fig.subplots_adjust(wspace=0.1, hspace=0.1)
+    return fig
+    
+
+def plot_connectogram(df, title=''):
+    fig, ax = plt.subplots(1, 1, subplot_kw={'projection': 'polar'})
+    #node_angles = circular_layout(
+    #    df.columns, list(df.columns), start_pos=90, group_boundaries=[0, len(df.columns) // 2]
+    #)
+    plot_connectivity_circle(df.values,
+        df.columns,
+        #node_angles=node_angles,
+        title=title,
+        colormap='Greys',
+        ax=ax,
+        facecolor='white',
+        textcolor='black',
+        node_edgecolor='black',
+    )
     return fig
     
 

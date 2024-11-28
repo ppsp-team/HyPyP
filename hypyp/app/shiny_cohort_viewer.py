@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import sys
+import tempfile
 
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
 import numpy as np
@@ -18,13 +19,21 @@ from hypyp.wavelet.base_wavelet import WTC
 HARDCODED_RESULTS_PATH = "./data/results"
 
 SIDEBAR_WIDTH = 400 # px
-DEFAULT_PLOT_COHERENCE_HEIGHT = 1000
+DEFAULT_PLOT_COHERENCE_MATRIX_HEIGHT = 1000
 DEFAULT_PLOT_COHERENCE_PER_TASK_HEIGHT = 600
 DEFAULT_PLOT_WTC_HEIGHT = 600
+DEFAULT_PLOT_CONNECTOGRAM_HEIGHT = 1000
+
+STR_TASK_ALL = 'all'
 
 # This is to avoid having external windows launched
 matplotlib.use('Agg')
 
+def mne_figure_as_image(fig):
+    temp_img_path = tempfile.NamedTemporaryFile(suffix=".png").name
+    fig.savefig(temp_img_path)
+    return {"src": temp_img_path, "alt": "MNE Plot"}
+        
 def ui_option_row(label, ui_element, sizes=(6, 6), center=False):
     label_style = ""
     if center:
@@ -48,15 +57,14 @@ app_ui = ui.page_fluid(
             ),
         ),
         ui.nav_panel(
-            "Dyad Coherence Matrix",
+            "Coherence Matrix",
             ui.row(
                 ui.column(
                     10,
-                    ui.output_plot('plot_coherence', height=DEFAULT_PLOT_COHERENCE_HEIGHT)
+                    ui.output_plot('plot_coherence_matrix', height=DEFAULT_PLOT_COHERENCE_MATRIX_HEIGHT)
                 ),
                 ui.column(
                     2,
-                    ui.output_ui('ui_input_select_task'),
                     ui.input_select(
                         'coherence_select_grouping',
                         'Coherence grouping',
@@ -66,6 +74,19 @@ app_ui = ui.page_fluid(
                             'channel_roi': 'Channel-ROI',
                             'roi_channel': 'ROI-Channel',
                         })
+                ),
+            ),
+        ),
+        ui.nav_panel(
+            "Connectograms",
+            ui.row(
+                ui.column(
+                    6,
+                    ui.output_plot('plot_connectogram_s1', height=DEFAULT_PLOT_CONNECTOGRAM_HEIGHT)
+                ),
+                ui.column(
+                    6,
+                    ui.output_plot('plot_connectogram_s2', height=DEFAULT_PLOT_CONNECTOGRAM_HEIGHT)
                 ),
             ),
         ),
@@ -103,13 +124,15 @@ app_ui = ui.page_fluid(
         ),
         ui.nav_spacer(),
         #selected='Cohort Info',
-        selected='Dyad Coherence Matrix',
+        #selected='Coherence Matrix',
+        selected='Connectograms',
         #selected='Coherence Per Task',
         #selected='Wavelet Transform Coherence',
         id='main_nav',
         sidebar=ui.sidebar(
             ui.output_ui('ui_input_cohort_file'),
             ui.output_ui('ui_input_select_dyad'),
+            ui.output_ui('ui_input_select_task'),
             width=SIDEBAR_WIDTH,
         ),
         title="HyPyP fNIRS results viewer",
@@ -179,7 +202,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         return ui.input_select(
             "select_task",
             f"Select Task",
-            choices=[task[0] for task in dyad.tasks],
+            choices=[STR_TASK_ALL] + [task[0] for task in dyad.tasks],
         )
     
     @render.ui
@@ -206,22 +229,41 @@ def server(input: Inputs, output: Outputs, session: Session):
             'Subject 2': [dyad.s2.label for dyad in cohort.dyads],
         })
     
+    def get_query():
+        task = input.select_task() 
+        q = f'task == "{task}"' if task != STR_TASK_ALL else None
+        return q
+
     @render.plot
-    def plot_coherence():
+    def plot_coherence_matrix():
         dyad = get_dyad()
         if dyad is None:
             return None
         grouping = input.coherence_select_grouping()
         if grouping == 'roi':
-            return dyad.plot_coherence_roi_for_task(input.select_task())
+            return dyad.plot_coherence_roi(query=get_query())
         elif grouping == 'channel':
-            return dyad.plot_coherence_channel_for_task(input.select_task())
+            return dyad.plot_coherence_channel(query=get_query())
         elif grouping == 'roi_channel':
-            return dyad.plot_coherence_for_task(input.select_task(), 'roi1', 'channel2')
+            return dyad.plot_coherence_matrix('roi1', 'channel2', query=get_query())
         elif grouping == 'channel_roi':
-            return dyad.plot_coherence_for_task(input.select_task(), 'channel1', 'roi2')
+            return dyad.plot_coherence_matrix('channel1', 'roi2', query=get_query())
         else:
             raise RuntimeError(f'Unknown grouping {grouping}')
+
+    @render.plot
+    def plot_connectogram_s1():
+        dyad = get_dyad()
+        if dyad is None:
+            return None
+        return dyad.plot_connectogram_s1(query=get_query())
+        
+    @render.plot
+    def plot_connectogram_s2():
+        dyad = get_dyad()
+        if dyad is None:
+            return None
+        return dyad.plot_connectogram_s2(query=get_query())
         
     @render.plot
     def plot_coherence_per_task():

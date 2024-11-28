@@ -13,7 +13,7 @@ from ..wavelet.wtc import WTC, FRAME_COLUMNS
 from ..wavelet.pair_signals import PairSignals
 from .subject import Subject, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor import BasePreprocessor
-from ..plots import plot_coherence_matrix, plot_wavelet_coherence, plot_coherence_df, plot_coherence_per_task_bars
+from ..plots import plot_coherence_matrix, plot_wavelet_coherence, plot_coherence_matrix_df, plot_coherence_per_task_bars, plot_connectogram
 
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
 
@@ -333,22 +333,45 @@ class Dyad:
         wtc = self.wtcs[id]
         return plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
 
-    def plot_coherence_for_task(self, task, field1, field2):
+    def plot_coherence_matrix(self, field1, field2, query=None):
         df = self.df
-        df = df[df['task']==task]
-        return plot_coherence_df(df,
+        if query is not None:
+            df = df.query(query)
+        return plot_coherence_matrix_df(df,
             self.s1.label,
             self.s2.label,
             field1,
             field2,
             self.s1.ordered_ch_names)
         
+    def plot_coherence_channel(self, query=None):
+        return self.plot_coherence_matrix('channel1', 'channel2', query)
+        
+    def plot_coherence_roi(self, query=None):
+        return self.plot_coherence_matrix('roi1', 'roi2', query)
+    
     def plot_coherence_channel_for_task(self, task):
-        return self.plot_coherence_for_task(task, 'channel1', 'channel2')
+        return self.plot_coherence_matrix('channel1', 'channel2', query=f'task=="{task}"')
         
     def plot_coherence_roi_for_task(self, task):
-        return self.plot_coherence_for_task(task, 'roi1', 'roi2')
+        return self.plot_coherence_matrix('roi1', 'roi2', query=f'task=="{task}"')
     
     def plot_coherence_per_task_bars(self, is_intra=False):
         return plot_coherence_per_task_bars(self.df, is_intra=is_intra)
         
+    def plot_connectogram_intra(self, subject, query=None):
+        df = self.df
+        selector = (df['subject1']==subject.label) & (df['subject2']==subject.label)
+        df_filtered = df[selector]
+
+        if query is not None:
+            df_filtered = df_filtered.query(query)
+
+        pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
+        return plot_connectogram(pivot, title=subject.label)
+
+    def plot_connectogram_s1(self, query=None):
+        return self.plot_connectogram_intra(self.s1, query)
+
+    def plot_connectogram_s2(self, query=None):
+        return self.plot_connectogram_intra(self.s2, query)
