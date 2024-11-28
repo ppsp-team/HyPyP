@@ -6,7 +6,8 @@ class UpstreamPreprocessor(MnePreprocessor):
     def __init__(self):
         super().__init__()
     
-    def run(self, raw: mne.io.Raw):
+    def run(self, raw: mne.io.Raw, verbose: bool = False):
+        # TODO honor verbose
         step = MnePreprocessStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC)
         steps = [step]
         return steps

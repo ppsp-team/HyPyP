@@ -47,7 +47,8 @@ try:
             return f
 
     class CedalionPreprocessor(BasePreprocessor):
-        def read_file(self, path) -> cdc.Recording:
+        def read_file(self, path, verbose:str=False) -> cdc.Recording:
+            # TODO honor verbose arg
             if not DataBrowser.path_is_snirf(path):
                 raise RuntimeError('Not implemented: only snirf file is supported for now')
 
@@ -59,7 +60,8 @@ try:
             rec['amp']['time'] = rec['amp']['time'].pint.dequantify().pint.quantify("second")
             return rec
 
-        def run(self, rec) -> list[CedalionPreprocessStep]:
+        def run(self, rec, verbose: bool = False) -> list[CedalionPreprocessStep]:
+            # TODO honor verbose
             steps = []
             amp = rec['amp']
             steps.append(CedalionPreprocessStep(amp, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))

@@ -1,4 +1,5 @@
 import tracemalloc
+import time
 
 class MemoryMonitor(object):
     def __init__(self):
@@ -22,3 +23,14 @@ class MemoryMonitor(object):
         print(f"[MemoryMonitor] allocated: {self.format_memory_size(res[0])}, peak: {self.format_memory_size(res[1])}", )
         tracemalloc.stop()
 
+class TimeTracker(object):
+    def __init__(self):
+        self.start_time = None
+        self.stop_time = None
+
+    def __enter__(self):
+        self.start_time = time.time()
+
+    def __exit__(self, *args):
+        self.stop_time = time.time()
+        print("--- %s seconds ---" % (self.stop_time - self.start_time))

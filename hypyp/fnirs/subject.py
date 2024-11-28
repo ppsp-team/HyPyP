@@ -106,19 +106,19 @@ class Subject:
             steps_dict[step.key] = step.desc
         return steps_dict
     
-    def load_file(self, filepath: str, preprocessor:BasePreprocessor=UpstreamPreprocessor(), preprocess=True):
+    def load_file(self, filepath: str, preprocessor:BasePreprocessor=UpstreamPreprocessor(), preprocess=True, verbose=False):
         if not Path(filepath).is_file():
             raise RuntimeError(f'Cannot find file {filepath}')
 
         self.filepath = filepath        
-        self.raw = preprocessor.read_file(filepath)
+        self.raw = preprocessor.read_file(filepath, verbose=verbose)
         if preprocess:
-            self.preprocess(preprocessor)
+            self.preprocess(preprocessor, verbose=verbose)
         return self
     
-    def preprocess(self, preprocessor: BasePreprocessor):
-        self.preprocess_steps = preprocessor.run(self.raw)
-        self.populate_epochs_from_tasks()
+    def preprocess(self, preprocessor: BasePreprocessor, verbose: bool = False):
+        self.preprocess_steps = preprocessor.run(self.raw, verbose=verbose)
+        self.populate_epochs_from_tasks(verbose=verbose)
         return self
 
     def get_preprocess_step(self, key):
@@ -129,12 +129,12 @@ class Subject:
 
         raise RuntimeError(f'No preprocess step named "{key}"')
     
-    def populate_epochs_from_tasks(self):
+    def populate_epochs_from_tasks(self, verbose: bool = False):
         self.epochs_per_task = []
         if len(self.tasks_annotations) > 0:
-            self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_annotations(self.pre, self.tasks_annotations)
+            self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_annotations(self.pre, self.tasks_annotations, verbose=verbose)
         if len(self.tasks_time_range) > 0:
-            self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_time_range(self.pre, self.tasks_time_range)
+            self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_time_range(self.pre, self.tasks_time_range, verbose=verbose)
         return self
     
     def get_epochs_for_task(self, task_name: str) -> List[mne.Epochs]:

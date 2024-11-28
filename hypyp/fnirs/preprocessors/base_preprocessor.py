@@ -57,10 +57,10 @@ class BasePreprocessStep(ABC, Generic[T]):
 
 class BasePreprocessor(ABC, Generic[T]):
     @abstractmethod
-    def read_file(self, path: str) -> T:
+    def read_file(self, path:str, verbose: bool = False) -> T:
         pass
 
     @abstractmethod
-    def run(self, raw: T) -> List[BasePreprocessStep[T]]:
+    def run(self, raw: T, verbose: bool = False) -> List[BasePreprocessStep[T]]:
         pass
 

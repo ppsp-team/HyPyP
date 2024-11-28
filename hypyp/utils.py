@@ -412,7 +412,7 @@ TASK_NEXT_EVENT = None
 TASK_BEGINNING = -1
 TASK_END = -1
 
-def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList) -> List[mne.Epochs]:
+def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -> List[mne.Epochs]:
     all_epochs = []
     events_per_task = dict()
     duration_per_task = dict()
@@ -447,11 +447,12 @@ def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList) -> List[mne.E
                             baseline=None,
                             preload=True,
                             reject=None,
-                            proj=True)
+                            proj=True,
+                            verbose=verbose)
         all_epochs.append(epochs)
     return all_epochs
 
-def epochs_from_tasks_annotations(raw: mne.io.Raw, tasks: TaskList) -> List[mne.Epochs]:
+def epochs_from_tasks_annotations(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -> List[mne.Epochs]:
     events, events_map = mne.events_from_annotations(raw)
     #print(events)
 
@@ -505,6 +506,7 @@ def epochs_from_tasks_annotations(raw: mne.io.Raw, tasks: TaskList) -> List[mne.
             baseline=None,
             preload=True,
             event_repeated='merge',
+            verbose=verbose,
             ))
 
     return epochs_per_tasks

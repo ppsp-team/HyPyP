@@ -43,16 +43,16 @@ class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
             ch_types=['fnirs_cw_amplitude']*n_channels)
         return info
     
-    def read_file(self, path):
+    def read_file(self, path:str, verbose:bool=False):
         # TODO maybe we should not have "preload" hardcoded here
         if DataBrowser.path_is_fif(path):
-            return mne.io.read_raw_fif(path, preload=True)
+            return mne.io.read_raw_fif(path, preload=True, verbose=verbose)
 
         if DataBrowser.path_is_nirx(path):
-            return mne.io.read_raw_nirx(fname=path, preload=True)
+            return mne.io.read_raw_nirx(fname=path, preload=True, verbose=verbose)
 
         if DataBrowser.path_is_snirf(path):
-            return mne.io.read_raw_snirf(path, preload=True)
+            return mne.io.read_raw_snirf(path, preload=True, verbose=verbose)
 
         return None
     
@@ -60,7 +60,8 @@ class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
         s = self.read_file(file_path)
         return s.copy().pick(mne.pick_channels(s.ch_names, include = [channel_name]))
     
-    def run(self, raw: mne.io.Raw):
+    def run(self, raw: mne.io.Raw, verbose: bool = False):
+        # TODO honor verbose
         steps = []
         steps.append(MnePreprocessStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))
 
