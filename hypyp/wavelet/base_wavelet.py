@@ -4,14 +4,20 @@ import numpy as np
 from .pair_signals import PairSignals
 from .wtc import WTC
 from .smooth import smoothing
+from ..profiling import TimeTracker
 
 class BaseWavelet(ABC):
-    def __init__(self, evaluate=False, cache=None):
+    def __init__(self, evaluate=False, cache=None, disable_caching=False):
         self._wavelet = None
         self._psi_x = None
         self._psi = None
         self._wtc = None
+
+        if cache is None:
+            cache = dict()
+        
         self.cache = cache
+        self.cache_is_disabled = disable_caching
 
         if evaluate:
             self.evaluate_psi()
@@ -38,7 +44,7 @@ class BaseWavelet(ABC):
 
     @property
     def use_caching(self):
-        return self.cache is not None
+        return not self.cache_is_disabled and self.cache is not None
     
     @abstractmethod
     def evaluate_psi(self):
@@ -114,18 +120,19 @@ class BaseWavelet(ABC):
             dt=dt,
             dj=dj,
             scales=scales,
-            smooth_factor=self.wtc_smoothing_smooth_factor,
             boxcar_size=self.wtc_smoothing_boxcar_size,
         )
+
+        smoothing_fn = smoothing
 
         S1 = S1_cached
         S2 = S2_cached
         if S1 is None:
-            S1 = smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs)
+            S1 = smoothing_fn(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs)
         if S2 is None:
-            S2 = smoothing(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs)
+            S2 = smoothing_fn(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs)
 
-        S12 = np.abs(smoothing(W12 / scaleMatrix, **smoothing_kwargs))
+        S12 = np.abs(smoothing_fn(W12 / scaleMatrix, **smoothing_kwargs))
         wtc = S12 ** 2 / (S1 * S2)
 
         coi_cached = None

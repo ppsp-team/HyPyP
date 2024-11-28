@@ -53,7 +53,7 @@ try:
         def cwt(self, y, dt, dj):
             pass
 
-        def wtc(self, pair: PairSignals):
+        def wtc(self, pair: PairSignals, cache_suffix='', tracer=None):
             y1 = pair.y1
             y2 = pair.y2
             dt = pair.dt

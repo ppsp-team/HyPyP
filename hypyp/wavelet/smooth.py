@@ -1,8 +1,10 @@
 import numpy as np
 from scipy import signal, fft
 
+from ..profiling import TimeTracker
+
 # TODO: test this
-def smoothing(W, dt, dj, scales, smooth_factor=-0.5, boxcar_size=0.6):
+def smoothing(W, dt, dj, scales, boxcar_size=0.6):
     """Smoothing function used in coherence analysis.
 
     Parameters
@@ -32,12 +34,13 @@ def smoothing(W, dt, dj, scales, smooth_factor=-0.5, boxcar_size=0.6):
 
     k = 2 * np.pi * fft.fftfreq(my_fft_kwargs['n'])
     k2 = k ** 2
+
     snorm = scales / dt
 
     # Smoothing by Gaussian window (absolute value of wavelet function)
     # using the convolution theorem: multiplication by Gaussian curve in
     # Fourier domain for each scale, outer product of scale and frequency
-    gaus_fft = np.exp(smooth_factor * (snorm[:, np.newaxis] ** 2) * k2)  # Outer product
+    gaus_fft = np.exp(-0.5 * (snorm[:, np.newaxis] ** 2) * k2)  # Outer product
     W_fft = fft.fft(W, axis=1, **my_fft_kwargs)
     smooth = fft.ifft(gaus_fft * W_fft, axis=1,  **my_fft_kwargs, overwrite_x=True)
     T = smooth[:, :n]  # Remove possibly padded region due to FFT
@@ -45,34 +48,26 @@ def smoothing(W, dt, dj, scales, smooth_factor=-0.5, boxcar_size=0.6):
     if np.isreal(W).all():
         T = T.real
 
-    # Filter in scale. For the Morlet wavelet it's simply a boxcar with
-    # 0.6 width.
-    # TODO: check this. It's suspicious
-    wsize = boxcar_size / dj * 2
-    win = rect(int(np.round(wsize)), normalize=True)
+    # Filter in scale. 
+    # For the Morlet wavelet it's simply a boxcar with 0.6 width.
+    # TODO find where the above comments come from
+    win = get_boxcar_window(boxcar_size, dj)
+
     T = signal.convolve2d(T, win[:, np.newaxis], 'same')  # Scales are "vertical"
 
     return T
 
-# TODO: test this
-def rect(length, normalize=False):
-    """ Rectangular function adapted from https://github.com/regeirk/pycwt/blob/master/pycwt/helpers.py
-
-    Args:
-        length (int): length of the rectangular function
-        normalize (bool): normalize or not
-
-    Returns:
-        rect (array): the (normalized) rectangular function
-
-    """
-    rect = np.zeros(length)
-    rect[0] = rect[-1] = 0.5
-    rect[1:-1] = 1
-
-    if normalize:
-        rect /= rect.sum()
-
-    return rect
-from math import ceil, floor
-
+def get_boxcar_window(boxcar_size, dj):
+    # TODO test this
+    # Copied from matlab
+    # boxcar_size is "in scale"
+    size_in_scales = boxcar_size
+    fraction = size_in_scales % 1
+    fraction_half = fraction / 2
+    size_in_steps = int(np.floor(size_in_scales/dj))
+    win = np.ones(size_in_steps + 2)
+    win[0] = fraction_half
+    win[-1] = fraction_half
+    # normalize
+    win /= win.sum()
+    return win

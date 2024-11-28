@@ -12,25 +12,28 @@ DEFAULT_PERIODS_RANGE = (2, 20)
 class PywaveletsWavelet(BaseWavelet):
     def __init__(
         self,
-        wavelet_name='cmor2,1',
+        wavelet_name='cmor10,0.25', # similar to pycwt and matlab results. Found by trial and error
         precision=10, # TODO this is not used
         lower_bound=-8,
         upper_bound=8,
-        wtc_smoothing_smooth_factor=-0.1, # TODO: this should be calculated automatically, based on the maths
         wtc_smoothing_boxcar_size=1,
-        cwt_params=dict(),
+        cwt_params=None,
         evaluate=True,
-        cache=dict(), # Set to None to disable caching
         periods_range=None,
         frequencies_range=None,
+        cache=None,
+        disable_caching=False,
+        **kwargs,
     ):
-        self.wtc_smoothing_smooth_factor = wtc_smoothing_smooth_factor
         self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
+        if cwt_params is None:
+            cwt_params = dict()
         self.cwt_params = cwt_params
         self.wavelet_name = wavelet_name
         self.precision = precision
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
+        # TODO remove this default, it probably slows us down
         self.tracer = dict(name='pywt')
 
         if periods_range is not None and frequencies_range is not None:
@@ -43,7 +46,7 @@ class PywaveletsWavelet(BaseWavelet):
         else:
             self.periods_range = DEFAULT_PERIODS_RANGE
 
-        super().__init__(evaluate, cache)
+        super().__init__(evaluate, cache=cache, disable_caching=disable_caching, **kwargs)
 
     def evaluate_psi(self):
         wavelet = pywt.ContinuousWavelet(self.wavelet_name)
@@ -62,7 +65,10 @@ class PywaveletsWavelet(BaseWavelet):
 
         # TODO unhardcode the number of periods
         # TODO see what kind of logspace we want (probably not 10)
-        periods = np.logspace(np.log10(self.periods_range[0]), np.log10(self.periods_range[1]), 40)
+        # TODO unhardcode
+        n = 149
+        periods = np.logspace(np.log10(self.periods_range[0]), np.log10(self.periods_range[1]), n, base=10)
+        #periods = np.logspace(np.log2(self.periods_range[0]), np.log2(self.periods_range[1]), n, base=2)
         frequencies = 1 / periods
         scales = pywt.frequency2scale(self._wavelet, frequencies*dt)
 

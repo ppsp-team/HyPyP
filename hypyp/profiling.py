@@ -24,13 +24,15 @@ class MemoryMonitor(object):
         tracemalloc.stop()
 
 class TimeTracker(object):
-    def __init__(self):
+    def __init__(self, label):
         self.start_time = None
         self.stop_time = None
+        self.label = label
 
     def __enter__(self):
         self.start_time = time.time()
 
     def __exit__(self, *args):
         self.stop_time = time.time()
-        print("--- %s seconds ---" % (self.stop_time - self.start_time))
+        duration = self.stop_time - self.start_time
+        print(f"--- [{self.label}] {duration} seconds ---")

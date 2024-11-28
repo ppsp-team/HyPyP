@@ -269,7 +269,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 precision=input.wavelet_precision(),
                 upper_bound=input.wavelet_upper_bound(),
                 lower_bound=-input.wavelet_upper_bound(),
-                wtc_smoothing_smooth_factor=input.smoothing_smooth_factor(),
                 wtc_smoothing_boxcar_size=input.smoothing_boxcar_size(),
                 cache=None,
             )
@@ -765,7 +764,6 @@ def server(input: Inputs, output: Outputs, session: Session):
     def ui_input_coherence_options():
         options = []
         if input.wavelet_library() in ['pywavelets','scipy']:
-            options.append(ui_option_row("Smooth factor", ui.input_numeric("smoothing_smooth_factor", "", value=-0.1)))
             options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=1)))
         if input.wavelet_library() in ['pycwt']:
             options.append(ui_option_row("Compute significance (slow)", ui.input_checkbox("wavelet_pycwt_significance", "", value=False), sizes=(8,4)))

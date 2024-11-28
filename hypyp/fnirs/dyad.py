@@ -14,6 +14,7 @@ from ..wavelet.pair_signals import PairSignals
 from .subject import Subject, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor import BasePreprocessor
 from ..plots import plot_coherence_matrix, plot_wavelet_coherence, plot_coherence_matrix_df, plot_coherence_per_task_bars, plot_connectogram
+from ..profiling import TimeTracker
 
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
 
@@ -191,7 +192,9 @@ class Dyad:
     ):
         self.wtcs = []
 
-        for pair in self.get_pairs(self.s1, self.s2, ch_match=ch_match):
+        pairs = self.get_pairs(self.s1, self.s2, ch_match=ch_match)
+
+        for pair in pairs:
             if verbose:
                 print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
             if time_range is not None:

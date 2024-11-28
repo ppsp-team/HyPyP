@@ -180,7 +180,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             "select_cohort_file",
             f"Cohort file ({HARDCODED_RESULTS_PATH})",
             choices=my_list,
-            selected="fnirs_cohort_lionlab_small.pickle",
+            selected="fnirs_cohort_lionlab.pickle",
         )
     
     @render.ui

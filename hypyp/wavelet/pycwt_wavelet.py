@@ -36,7 +36,7 @@ try:
             times = np.arange(len(y)) * dt
             return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coif=coif)
 
-        def wtc(self, pair: PairSignals):
+        def wtc(self, pair: PairSignals, cache_suffix='', tracer=None):
             y1 = pair.y1
             y2 = pair.y2
             dt = pair.dt

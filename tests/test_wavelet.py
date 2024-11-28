@@ -9,7 +9,6 @@ from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 def test_instanciate():
     wavelet_name = 'cgau1'
     wavelet = PywaveletsWavelet(wavelet_name=wavelet_name)
-    assert wavelet.wtc_smoothing_smooth_factor != 0
     assert wavelet.wtc_smoothing_boxcar_size > 0
     assert wavelet.wavelet_name == wavelet_name
     assert len(wavelet.psi) == 2 ** wavelet.precision
@@ -65,7 +64,7 @@ def test_cwt():
     # TODO test something on res.W
 
 def test_wtc():
-    wavelet = PywaveletsWavelet(cache=None)
+    wavelet = PywaveletsWavelet(disable_caching=True)
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
@@ -106,7 +105,7 @@ def test_cache():
     assert len(keys) == len(set(keys))
 
 def test_wtc_coi_masked():
-    wavelet = PywaveletsWavelet(cache=None)
+    wavelet = PywaveletsWavelet(disable_caching=True)
     signal = SynteticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal.x, signal.y, signal.y))
     assert res.wtc_coi is not None
@@ -119,18 +118,18 @@ def test_periods_frequencies_range():
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
 
-    wavelet1 = PywaveletsWavelet(periods_range=tuple(periods_range), cache=None)
+    wavelet1 = PywaveletsWavelet(periods_range=tuple(periods_range), disable_caching=True)
     res1 = wavelet1.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert np.all(res1.frequencies[[0,-1]] == pytest.approx(frequencies_range))
 
-    wavelet2 = PywaveletsWavelet(frequencies_range=tuple(frequencies_range), cache=None)
+    wavelet2 = PywaveletsWavelet(frequencies_range=tuple(frequencies_range), disable_caching=True)
     res2 = wavelet2.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
     
 def test_to_pandas_df():
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
-    wavelet = PywaveletsWavelet(cache=None)
+    wavelet = PywaveletsWavelet(disable_caching=True)
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     df = res.to_frame()
     assert df['coherence'][0] > 0
