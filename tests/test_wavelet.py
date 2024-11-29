@@ -143,10 +143,10 @@ def test_smooth_in_scale_window():
     assert np.mean(win10_plus) > win10_plus[0]
 
 def test_fft_kwargs():
-    d = smooth.fft_kwargs(np.zeros((10,)))
+    d = smooth.get_fft_kwargs(np.zeros((10,)))
     assert d['n'] == 16
 
-    d = smooth.fft_kwargs(np.zeros((10,)), extra='foo')
+    d = smooth.get_fft_kwargs(np.zeros((10,)), extra='foo')
     assert d['extra'] == 'foo'
     
 def test_to_pandas_df():

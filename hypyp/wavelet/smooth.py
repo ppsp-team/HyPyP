@@ -5,7 +5,7 @@ from ..profiling import TimeTracker
 
 DEFAULT_SMOOTHING_BOXCAR_SIZE = 0.6
 
-def fft_kwargs(signal, **kwargs):
+def get_fft_kwargs(signal, **kwargs):
     return dict(**kwargs, n = int(2 ** np.ceil(np.log2(len(signal)))))
 
 # TODO: test this
@@ -32,19 +32,20 @@ def smoothing(W, dt, dj, scales, boxcar_size=DEFAULT_SMOOTHING_BOXCAR_SIZE):
 
     # Filter in time.
 
-    my_fft_kwargs = fft_kwargs(W[0, :])
+    fft_kwargs = get_fft_kwargs(W[0, :])
 
-    k = 2 * np.pi * fft.fftfreq(my_fft_kwargs['n'])
+    k = 2 * np.pi * fft.fftfreq(fft_kwargs['n'])
     k2 = k ** 2
 
-    snorm = scales / dt
+    scales_norm = scales / dt
 
     # Smoothing by Gaussian window (absolute value of wavelet function)
     # using the convolution theorem: multiplication by Gaussian curve in
     # Fourier domain for each scale, outer product of scale and frequency
-    gaus_fft = np.exp(-0.5 * (snorm[:, np.newaxis] ** 2) * k2)  # Outer product
-    W_fft = fft.fft(W, axis=1, **my_fft_kwargs)
-    smooth = fft.ifft(gaus_fft * W_fft, axis=1,  **my_fft_kwargs, overwrite_x=True)
+    gaus_fft = np.exp(-0.5 * (scales_norm[:, np.newaxis] ** 2) * k2)  # Outer product
+    W_fft = fft.fft(W, axis=1, **fft_kwargs)
+    smooth_fft = gaus_fft * W_fft
+    smooth = fft.ifft(smooth_fft, axis=1, **fft_kwargs, overwrite_x=True)
     T = smooth[:, :n]  # Remove possibly padded region due to FFT
 
     if np.isreal(W).all():
