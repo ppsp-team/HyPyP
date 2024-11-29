@@ -58,7 +58,6 @@ def smoothing(W, dt, dj, scales, boxcar_size=0.6):
     return T
 
 def get_boxcar_window(boxcar_size, dj):
-    # TODO test this
     # Copied from matlab
     # boxcar_size is "in scale"
     size_in_scales = boxcar_size
@@ -66,9 +65,18 @@ def get_boxcar_window(boxcar_size, dj):
     fraction = size_in_steps % 1
     fraction_half = fraction / 2
     size_in_steps = int(np.floor(size_in_steps))
-    win = np.ones(size_in_steps + 1)
-    win[0] = fraction_half
-    win[-1] = fraction_half
+
+    # edge case, return a dirac
+    if size_in_steps <= 1:
+        return np.array([1])
+
+    if fraction == 0:
+        win = np.ones(size_in_steps)
+    else:
+        win = np.ones(size_in_steps + 1)
+        win[0] = fraction_half
+        win[-1] = fraction_half
+
     # normalize
     win /= win.sum()
     return win

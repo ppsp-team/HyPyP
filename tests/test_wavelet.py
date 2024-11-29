@@ -126,9 +126,23 @@ def test_periods_frequencies_range():
     res2 = wavelet2.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
     
-def test_smooth():
-    foo = smooth.get_boxcar_window(0.6, 2)
-    assert np.sum(foo) == pytest.approx(1)
+def test_smooth_in_scale_window():
+    assert np.sum(smooth.get_boxcar_window(0.6, 10)) == 1#pytest.approx(1)
+    assert len(smooth.get_boxcar_window(1, 1/2)) == 2
+    assert len(smooth.get_boxcar_window(1.1, 1/2)) == 3
+
+    # dirac
+    assert len(smooth.get_boxcar_window(1/12, 1/12)) == 1
+
+    win3 = smooth.get_boxcar_window(1/6, 1/12)
+    assert len(win3) == 3
+    assert win3[0] == win3[2]
+    assert win3[0] < win3[1]
+
+    win10 = smooth.get_boxcar_window(10, 1)
+    assert len(win10) == 10
+    assert np.mean(win10) == win10[0]
+
     
 def test_to_pandas_df():
     signal1 = SynteticSignal().add_noise()
