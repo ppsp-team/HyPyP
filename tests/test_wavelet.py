@@ -5,13 +5,14 @@ import numpy as np
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
+import hypyp.wavelet.smooth as smooth
 
 def test_instanciate():
     wavelet_name = 'cgau1'
     wavelet = PywaveletsWavelet(wavelet_name=wavelet_name)
     assert wavelet.wtc_smoothing_boxcar_size > 0
     assert wavelet.wavelet_name == wavelet_name
-    assert len(wavelet.psi) == 2 ** wavelet.precision
+    assert len(wavelet.psi) == 2 ** 10
     assert isinstance(wavelet.cwt_params, dict)
 
 def test_resolution():
@@ -39,21 +40,20 @@ def test_domain():
     assert wavelet.psi_dx > 0
     assert wavelet.psi_dx < 1
     
-def test_precision():
-    precision = 12
-    wavelet = PywaveletsWavelet(precision=precision)
-    assert len(wavelet.psi_x) == 2 ** precision
-    assert len(wavelet.psi) == 2 ** precision
-    
 def test_psi():
     wavelet = PywaveletsWavelet(wavelet_name='cmor2,1')
     assert len(wavelet.psi_x) == len(wavelet.psi)
-    assert len(wavelet.psi_x) == 2 ** wavelet.precision
+    assert len(wavelet.psi_x) == 2 ** 10
 
     assert np.sum(np.real(wavelet.psi) * wavelet.psi_dx) != 0
     assert np.sum(np.imag(wavelet.psi) * wavelet.psi_dx) != 0
     assert np.sum(np.abs(wavelet.psi) * wavelet.psi_dx) == pytest.approx(1)
 
+def test_number_of_scales():
+    assert len(PywaveletsWavelet(periods_range=(2, 4)).periods) == 12
+    assert len(PywaveletsWavelet(periods_range=(4, 8)).periods) == 12
+    assert len(PywaveletsWavelet(periods_range=(2, 8)).periods) == 24
+    
 
 def test_cwt():
     wavelet = PywaveletsWavelet()
@@ -113,7 +113,7 @@ def test_wtc_coi_masked():
     assert res.wtc_coi.mask[0,len(signal.x)//2] == False
 
 def test_periods_frequencies_range():    
-    frequencies_range = np.array([1., 5.])
+    frequencies_range = np.array([5., 1.])
     periods_range = 1 / frequencies_range
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
@@ -125,6 +125,10 @@ def test_periods_frequencies_range():
     wavelet2 = PywaveletsWavelet(frequencies_range=tuple(frequencies_range), disable_caching=True)
     res2 = wavelet2.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
+    
+def test_smooth():
+    foo = smooth.get_boxcar_window(0.6, 2)
+    assert np.sum(foo) == pytest.approx(1)
     
 def test_to_pandas_df():
     signal1 = SynteticSignal().add_noise()

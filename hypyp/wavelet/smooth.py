@@ -62,10 +62,11 @@ def get_boxcar_window(boxcar_size, dj):
     # Copied from matlab
     # boxcar_size is "in scale"
     size_in_scales = boxcar_size
-    fraction = size_in_scales % 1
+    size_in_steps = size_in_scales/dj
+    fraction = size_in_steps % 1
     fraction_half = fraction / 2
-    size_in_steps = int(np.floor(size_in_scales/dj))
-    win = np.ones(size_in_steps + 2)
+    size_in_steps = int(np.floor(size_in_steps))
+    win = np.ones(size_in_steps + 1)
     win[0] = fraction_half
     win[-1] = fraction_half
     # normalize

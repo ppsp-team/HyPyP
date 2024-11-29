@@ -18,17 +18,15 @@ from hypyp.fnirs.subject import Subject
 from hypyp.fnirs.preprocessors.mne_preprocessor import MnePreprocessor
 from hypyp.fnirs.preprocessors.upstream_preprocessor import UpstreamPreprocessor
 from hypyp.signal import SynteticSignal
+from hypyp.wavelet.base_wavelet import DEFAULT_SMOOTHING_BOXCAR_SIZE
 from hypyp.wavelet.matlab_wavelet import MatlabWavelet
+from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY, DEFAULT_PERIODS_RANGE
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
 from hypyp.wavelet.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
+import hypyp.plots
 
 # TODO: Cedalion is optional, this import should be in a try-catch
 from hypyp.fnirs.preprocessors.cedalion_preprocessor import CedalionPreprocessor
-
-root = os.path.join(Path(__file__).parent, '..', '..')
-sys.path.append(root)
-import hypyp.plots
-from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 
 DEFAULT_PLOT_SIGNAL_HEIGHT = 150 # px
 DEFAULT_PLOT_MNE_HEIGHT = 1200 # px
@@ -115,7 +113,8 @@ app_ui = ui.page_fluid(
             ui.output_ui('ui_card_tracer'),
         ),
         ui.nav_spacer(),
-        selected='Data Browser',
+        #selected='Data Browser',
+        selected='Wavelet Coherence',
         id='main_nav',
         sidebar=ui.sidebar(
             ui.tags.strong('Signal parameters'),
@@ -144,8 +143,6 @@ app_ui = ui.page_fluid(
             ),
             ui.output_ui('ui_input_wavelet_type'),
             ui.output_ui('ui_input_wavelet_options'),
-
-            ui.tags.strong('Coherence parameters'),
             ui.output_ui('ui_input_coherence_options'),
 
             ui.input_action_button("button_action_compute_wtc", label="Compute Wavelet Transform Coherence"),
@@ -238,7 +235,16 @@ def server(input: Inputs, output: Outputs, session: Session):
             info_table2 = [(k, s2_raw.info[k]) for k in s2_raw.info.keys()]
 
         if pair is None:
-            pair = PairSignals(x, y1, y2, info_table1, info_table2)
+            pair = PairSignals(
+                x,
+                y1,
+                y2,
+                info_table1,
+                info_table2,
+                label_s1='s1',
+                label_s2='s2',
+                task='foo',
+            )
 
         try:
             if input.signal_range() is not None:
@@ -266,15 +272,10 @@ def server(input: Inputs, output: Outputs, session: Session):
 
             wavelet = PywaveletsWavelet(
                 wavelet_name=wavelet_name,
-                precision=input.wavelet_precision(),
-                upper_bound=input.wavelet_upper_bound(),
-                lower_bound=-input.wavelet_upper_bound(),
+                periods_range=(input.wavelet_periods_range_low(), input.wavelet_periods_range_high()),
                 wtc_smoothing_boxcar_size=input.smoothing_boxcar_size(),
                 cache=None,
             )
-            # TODO: is this still implemented?
-            if input.wavelet_hack_compute_each_scale():
-                wavelet.cwt_params['hack_compute_each_scale'] = True
 
         elif input.wavelet_library() == 'pycwt':
             wavelet = PycwtWavelet(
@@ -748,12 +749,14 @@ def server(input: Inputs, output: Outputs, session: Session):
         options = []
         if input.wavelet_library() == 'pywavelets':
             if input.wavelet_name() == 'cmor':
-                options.append(ui_option_row("Bandwidth", ui.input_numeric("wavelet_bandwidth", "", value=2)))
-                options.append(ui_option_row("Center frequency", ui.input_numeric("wavelet_center_frequency", "", value=1)))
-
-            options.append(ui_option_row("Upper bound", ui.input_numeric("wavelet_upper_bound", "", value=8)))
-            options.append(ui_option_row("Precision", ui.input_numeric("wavelet_precision", "", value=10)))
-            options.append(ui_option_row("Hack compute each scale", ui.input_checkbox("wavelet_hack_compute_each_scale", "", value=False), sizes=(8,4)))
+                options.append(ui_option_row("Bandwidth/Center Freq.", ui.row(
+                    ui.column(6, ui.input_numeric("wavelet_bandwidth", "", value=DEFAULT_MORLET_BANDWIDTH)),
+                    ui.column(6, ui.input_numeric("wavelet_center_frequency", "", value=DEFAULT_MORLET_CENTER_FREQUENCY)),
+                ))),
+            options.append(ui_option_row("Periods range", ui.row(
+                ui.column(6, ui.input_numeric("wavelet_periods_range_low", "", value=DEFAULT_PERIODS_RANGE[0])),
+                ui.column(6, ui.input_numeric("wavelet_periods_range_high", "", value=DEFAULT_PERIODS_RANGE[1])),
+            ))),
 
         if input.wavelet_library() == 'scipy':
             options.append(ui_option_row("Center frequency", ui.input_numeric("wavelet_scipy_center_frequency", "", value=DEFAULT_SCIPY_CENTER_FREQUENCY)))
@@ -764,7 +767,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def ui_input_coherence_options():
         options = []
         if input.wavelet_library() in ['pywavelets','scipy']:
-            options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=1)))
+            options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=DEFAULT_SMOOTHING_BOXCAR_SIZE)))
         if input.wavelet_library() in ['pycwt']:
             options.append(ui_option_row("Compute significance (slow)", ui.input_checkbox("wavelet_pycwt_significance", "", value=False), sizes=(8,4)))
         return options

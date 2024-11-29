@@ -6,12 +6,21 @@ from .wtc import WTC
 from .smooth import smoothing
 from ..profiling import TimeTracker
 
+DEFAULT_SMOOTHING_BOXCAR_SIZE = 0.6
+
 class BaseWavelet(ABC):
-    def __init__(self, evaluate=False, cache=None, disable_caching=False):
+    def __init__(
+        self,
+        evaluate=False,
+        cache=None,
+        disable_caching=False,
+        wtc_smoothing_boxcar_size=DEFAULT_SMOOTHING_BOXCAR_SIZE,
+    ):
         self._wavelet = None
         self._psi_x = None
         self._psi = None
         self._wtc = None
+        self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
 
         if cache is None:
             cache = dict()

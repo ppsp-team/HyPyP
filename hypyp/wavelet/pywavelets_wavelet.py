@@ -8,15 +8,16 @@ import scipy
 
 
 DEFAULT_PERIODS_RANGE = (2, 20)
+ # mother wavelet similar to pycwt and matlab results. Found by trial and error
+DEFAULT_MORLET_BANDWIDTH = 10
+DEFAULT_MORLET_CENTER_FREQUENCY = 0.25
 
 class PywaveletsWavelet(BaseWavelet):
     def __init__(
         self,
-        wavelet_name='cmor10,0.25', # similar to pycwt and matlab results. Found by trial and error
-        precision=10, # TODO this is not used
+        wavelet_name=f'cmor{DEFAULT_MORLET_BANDWIDTH},{DEFAULT_MORLET_CENTER_FREQUENCY}',
         lower_bound=-8,
         upper_bound=8,
-        wtc_smoothing_boxcar_size=1,
         cwt_params=None,
         evaluate=True,
         periods_range=None,
@@ -25,12 +26,10 @@ class PywaveletsWavelet(BaseWavelet):
         disable_caching=False,
         **kwargs,
     ):
-        self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
         if cwt_params is None:
             cwt_params = dict()
         self.cwt_params = cwt_params
         self.wavelet_name = wavelet_name
-        self.precision = precision
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         # TODO remove this default, it probably slows us down
@@ -45,6 +44,9 @@ class PywaveletsWavelet(BaseWavelet):
             self.periods_range = (1 / frequencies_range[0], 1 / frequencies_range[1])
         else:
             self.periods_range = DEFAULT_PERIODS_RANGE
+        
+        if self.periods_range[0] > self.periods_range[1]:
+            self.periods_range = (self.periods_range[1], self.periods_range[0])
 
         super().__init__(evaluate, cache=cache, disable_caching=disable_caching, **kwargs)
 
@@ -53,23 +55,32 @@ class PywaveletsWavelet(BaseWavelet):
         wavelet.lower_bound = self.lower_bound
         wavelet.upper_bound = self.upper_bound
         self._wavelet = wavelet
-        self._psi, self._psi_x = wavelet.wavefun(self.precision)
+        # TODO unhardcode value here
+        self._psi, self._psi_x = wavelet.wavefun(10)
         return self._psi, self._psi_x
+
+    @property
+    def periods(self, dj=1/12):
+        low, high =  self.periods_range
+        n_scales = np.log2(high/low) 
+        n_steps = int(np.round(n_scales / dj))
+        periods = np.logspace(np.log2(low), np.log2(high), n_steps, base=2)
+        return periods
+        
 
     def cwt(self, y, dt, dj=1/12) -> CWT:
         N = len(y)
         times = np.arange(N) * dt
-        #nOctaves = int(np.log2(np.floor(N / 2.0)))
+        # nOctaves = int(np.log2(np.floor(N / 2.0)))
         # TODO: find the right s0
         # scales = 2 ** np.arange(1, nOctaves, dj)
 
         # TODO unhardcode the number of periods
         # TODO see what kind of logspace we want (probably not 10)
-        # TODO unhardcode
-        n = 149
-        periods = np.logspace(np.log10(self.periods_range[0]), np.log10(self.periods_range[1]), n, base=10)
-        #periods = np.logspace(np.log2(self.periods_range[0]), np.log2(self.periods_range[1]), n, base=2)
-        frequencies = 1 / periods
+        # TODO use dj to get the periods (do it with a test)
+        #n = 50
+        #periods = np.logspace(np.log10(self.periods_range[0]), np.log10(self.periods_range[1]), n, base=10)
+        frequencies = 1 / self.periods
         scales = pywt.frequency2scale(self._wavelet, frequencies*dt)
 
         W, freqs = pywt_copy_cwt(y, scales, self._wavelet, sampling_period=dt, method='fft', tracer=self.tracer, **self.cwt_params)
