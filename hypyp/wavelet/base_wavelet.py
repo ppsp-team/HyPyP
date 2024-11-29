@@ -6,7 +6,6 @@ from .wtc import WTC
 from .smooth import smoothing
 from ..profiling import TimeTracker
 
-DEFAULT_SMOOTHING_BOXCAR_SIZE = 0.6
 
 class BaseWavelet(ABC):
     def __init__(
@@ -14,7 +13,7 @@ class BaseWavelet(ABC):
         evaluate=False,
         cache=None,
         disable_caching=False,
-        wtc_smoothing_boxcar_size=DEFAULT_SMOOTHING_BOXCAR_SIZE,
+        wtc_smoothing_boxcar_size=None,
     ):
         self._wavelet = None
         self._psi_x = None
@@ -22,11 +21,14 @@ class BaseWavelet(ABC):
         self._wtc = None
         self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
 
-        if cache is None:
-            cache = dict()
         
         self.cache = cache
         self.cache_is_disabled = disable_caching
+
+        if self.cache_is_disabled:
+            self.cache = None
+        elif self.cache is None:
+            self.cache = dict()
 
         if evaluate:
             self.evaluate_psi()
@@ -129,8 +131,9 @@ class BaseWavelet(ABC):
             dt=dt,
             dj=dj,
             scales=scales,
-            boxcar_size=self.wtc_smoothing_boxcar_size,
         )
+        if self.wtc_smoothing_boxcar_size is not None:
+            smoothing_kwargs['boxcar_size'] = self.wtc_smoothing_boxcar_size,
 
         smoothing_fn = smoothing
 

@@ -3,8 +3,13 @@ from scipy import signal, fft
 
 from ..profiling import TimeTracker
 
+DEFAULT_SMOOTHING_BOXCAR_SIZE = 0.6
+
+def fft_kwargs(signal, **kwargs):
+    return dict(**kwargs, n = int(2 ** np.ceil(np.log2(len(signal)))))
+
 # TODO: test this
-def smoothing(W, dt, dj, scales, boxcar_size=0.6):
+def smoothing(W, dt, dj, scales, boxcar_size=DEFAULT_SMOOTHING_BOXCAR_SIZE):
     """Smoothing function used in coherence analysis.
 
     Parameters
@@ -26,9 +31,6 @@ def smoothing(W, dt, dj, scales, boxcar_size=0.6):
     m, n = W.shape
 
     # Filter in time.
-    # TODO: check that padding is applied here correctly
-    def fft_kwargs(signal, **kwargs):
-        return {'n': int(2 ** np.ceil(np.log2(len(signal))))}
 
     my_fft_kwargs = fft_kwargs(W[0, :])
 

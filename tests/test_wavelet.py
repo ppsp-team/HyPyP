@@ -10,7 +10,7 @@ import hypyp.wavelet.smooth as smooth
 def test_instanciate():
     wavelet_name = 'cgau1'
     wavelet = PywaveletsWavelet(wavelet_name=wavelet_name)
-    assert wavelet.wtc_smoothing_boxcar_size > 0
+    assert wavelet.wtc_smoothing_boxcar_size is None
     assert wavelet.wavelet_name == wavelet_name
     assert len(wavelet.psi) == 2 ** 10
     assert isinstance(wavelet.cwt_params, dict)
@@ -134,15 +134,20 @@ def test_smooth_in_scale_window():
     # dirac
     assert len(smooth.get_boxcar_window(1/12, 1/12)) == 1
 
-    win3 = smooth.get_boxcar_window(1/6, 1/12)
-    assert len(win3) == 3
-    assert win3[0] == win3[2]
-    assert win3[0] < win3[1]
-
     win10 = smooth.get_boxcar_window(10, 1)
     assert len(win10) == 10
     assert np.mean(win10) == win10[0]
 
+    win10_plus = smooth.get_boxcar_window(10.1, 1)
+    assert len(win10_plus) == 11
+    assert np.mean(win10_plus) > win10_plus[0]
+
+def test_fft_kwargs():
+    d = smooth.fft_kwargs(np.zeros((10,)))
+    assert d['n'] == 16
+
+    d = smooth.fft_kwargs(np.zeros((10,)), extra='foo')
+    assert d['extra'] == 'foo'
     
 def test_to_pandas_df():
     signal1 = SynteticSignal().add_noise()
