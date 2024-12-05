@@ -120,7 +120,7 @@ class BaseWavelet(ABC):
             cache_suffix=cache_suffix,
         )
         if self.wtc_smoothing_boxcar_size is not None:
-            smoothing_kwargs['boxcar_size'] = self.wtc_smoothing_boxcar_size,
+            smoothing_kwargs['boxcar_size'] = self.wtc_smoothing_boxcar_size
 
         S1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'smooth', cache_suffix))
         S1 = self.smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs) if S1_cached is None else S1_cached
@@ -203,18 +203,14 @@ class BaseWavelet(ABC):
         # Webster (1999) and by Grinsted et al. (2004).
         fft_kwargs = self.get_fft_kwargs(W[0, :])
         scales_norm = scales / dt
-        gaus_fft_cache_key = self.get_cache_key('gaus_fft', fft_kwargs['n'], scales_norm, cache_suffix)
-        gaus_fft = self.get_cache_item(gaus_fft_cache_key)
         
-        if gaus_fft is None:
-            k = 2 * np.pi * fft.fftfreq(fft_kwargs['n'])
-            k2 = k ** 2
+        k = 2 * np.pi * fft.fftfreq(fft_kwargs['n'])
+        k2 = k ** 2
 
-            # Smoothing by Gaussian window (absolute value of wavelet function)
-            # using the convolution theorem: multiplication by Gaussian curve in
-            # Fourier domain for each scale, outer product of scale and frequency
-            gaus_fft = np.exp(-0.5 * (scales_norm[:, np.newaxis] ** 2) * k2)  # Outer product
-            self.update_cache_if_none(gaus_fft_cache_key, gaus_fft)
+        # Smoothing by Gaussian window (absolute value of wavelet function)
+        # using the convolution theorem: multiplication by Gaussian curve in
+        # Fourier domain for each scale, outer product of scale and frequency
+        gaus_fft = np.exp(-0.5 * (scales_norm[:, np.newaxis] ** 2) * k2)  # Outer product
 
         W_fft = fft.fft(W, axis=1, **fft_kwargs)
         smooth_fft = gaus_fft * W_fft

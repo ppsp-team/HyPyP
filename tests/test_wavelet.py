@@ -162,9 +162,9 @@ def test_smoothing():
     assert np.all(smoothed < 1)
     # TODO Should test more
     
-def test_smoothing_cache():
-    wavelet = PywaveletsWavelet()
-    assert 'key_foo_bar' in wavelet.get_cache_key('foo', 'bar')
+def test_cache_key():
+    assert 'key_foo_bar' in PywaveletsWavelet().get_cache_key('foo', 'bar')
+    assert PywaveletsWavelet(disable_caching=True).get_cache_key('foo', 'bar') is None
     
 def test_to_pandas_df():
     signal1 = SynteticSignal().add_noise()
