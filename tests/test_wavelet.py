@@ -4,8 +4,8 @@ import numpy as np
 
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.pair_signals import PairSignals
+from hypyp.wavelet.base_wavelet import BaseWavelet
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
-import hypyp.wavelet.smooth as smooth
 
 def test_instanciate():
     wavelet_name = 'cgau1'
@@ -50,9 +50,9 @@ def test_psi():
     assert np.sum(np.abs(wavelet.psi) * wavelet.psi_dx) == pytest.approx(1)
 
 def test_number_of_scales():
-    assert len(PywaveletsWavelet(periods_range=(2, 4)).periods) == 12
-    assert len(PywaveletsWavelet(periods_range=(4, 8)).periods) == 12
-    assert len(PywaveletsWavelet(periods_range=(2, 8)).periods) == 24
+    assert len(PywaveletsWavelet(periods_range=(2, 4)).get_periods()) == 12
+    assert len(PywaveletsWavelet(periods_range=(4, 8)).get_periods()) == 12
+    assert len(PywaveletsWavelet(periods_range=(2, 8)).get_periods()) == 24
     
 
 def test_cwt():
@@ -104,6 +104,7 @@ def test_cache():
     #print(keys)
     assert len(keys) == len(set(keys))
 
+
 def test_wtc_coi_masked():
     wavelet = PywaveletsWavelet(disable_caching=True)
     signal = SynteticSignal().add_noise()
@@ -127,27 +128,43 @@ def test_periods_frequencies_range():
     assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
     
 def test_smooth_in_scale_window():
-    assert np.sum(smooth.get_boxcar_window(0.6, 10)) == 1#pytest.approx(1)
-    assert len(smooth.get_boxcar_window(1, 1/2)) == 2
-    assert len(smooth.get_boxcar_window(1.1, 1/2)) == 3
+    assert np.sum(BaseWavelet.get_boxcar_window(0.6, 10)) == 1#pytest.approx(1)
+    assert len(BaseWavelet.get_boxcar_window(1, 1/2)) == 2
+    assert len(BaseWavelet.get_boxcar_window(1.1, 1/2)) == 3
 
     # dirac
-    assert len(smooth.get_boxcar_window(1/12, 1/12)) == 1
+    assert len(BaseWavelet.get_boxcar_window(1/12, 1/12)) == 1
 
-    win10 = smooth.get_boxcar_window(10, 1)
+    win10 = BaseWavelet.get_boxcar_window(10, 1)
     assert len(win10) == 10
     assert np.mean(win10) == win10[0]
 
-    win10_plus = smooth.get_boxcar_window(10.1, 1)
+    win10_plus = BaseWavelet.get_boxcar_window(10.1, 1)
     assert len(win10_plus) == 11
     assert np.mean(win10_plus) > win10_plus[0]
 
 def test_fft_kwargs():
-    d = smooth.get_fft_kwargs(np.zeros((10,)))
+    d = BaseWavelet.get_fft_kwargs(np.zeros((10,)))
     assert d['n'] == 16
 
-    d = smooth.get_fft_kwargs(np.zeros((10,)), extra='foo')
+    d = BaseWavelet.get_fft_kwargs(np.zeros((10,)), extra='foo')
     assert d['extra'] == 'foo'
+    
+def test_smoothing():
+    dt = 0.1
+    dj = 0.1
+    wavelet = PywaveletsWavelet()
+    scales = wavelet.get_scales(dt, dj)
+    W = np.zeros((len(scales), 200))
+    W[:, np.arange(0, W.shape[1], 2)] = 1
+    smoothed = wavelet.smoothing(W, dt, dj, scales)
+    assert np.all(smoothed > 0)
+    assert np.all(smoothed < 1)
+    # TODO Should test more
+    
+def test_smoothing_cache():
+    wavelet = PywaveletsWavelet()
+    assert 'key_foo_bar' in wavelet.get_cache_key('foo', 'bar')
     
 def test_to_pandas_df():
     signal1 = SynteticSignal().add_noise()

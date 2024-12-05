@@ -8,7 +8,8 @@ import scipy
 
 
 DEFAULT_PERIODS_RANGE = (2, 20)
- # mother wavelet similar to pycwt and matlab results. Found by trial and error
+DEFAULT_PERIODS_DJ = 1/12
+# mother wavelet similar to pycwt and matlab results. Found by trial and error
 DEFAULT_MORLET_BANDWIDTH = 10
 DEFAULT_MORLET_CENTER_FREQUENCY = 0.25
 
@@ -59,30 +60,23 @@ class PywaveletsWavelet(BaseWavelet):
         self._psi, self._psi_x = wavelet.wavefun(10)
         return self._psi, self._psi_x
 
-    @property
-    def periods(self, dj=1/12):
+    def get_periods(self, dj=DEFAULT_PERIODS_DJ):
         low, high =  self.periods_range
         n_scales = np.log2(high/low) 
         n_steps = int(np.round(n_scales / dj))
         periods = np.logspace(np.log2(low), np.log2(high), n_steps, base=2)
         return periods
         
+    def get_scales(self, dt, dj):
+        frequencies = 1 / self.get_periods(dj)
+        scales = pywt.frequency2scale(self._wavelet, frequencies*dt)
+        return scales
 
-    def cwt(self, y, dt, dj=1/12) -> CWT:
+
+    def cwt(self, y, dt, dj=DEFAULT_PERIODS_DJ) -> CWT:
         N = len(y)
         times = np.arange(N) * dt
-        # nOctaves = int(np.log2(np.floor(N / 2.0)))
-        # TODO: find the right s0
-        # scales = 2 ** np.arange(1, nOctaves, dj)
-
-        # TODO unhardcode the number of periods
-        # TODO see what kind of logspace we want (probably not 10)
-        # TODO use dj to get the periods (do it with a test)
-        #n = 50
-        #periods = np.logspace(np.log10(self.periods_range[0]), np.log10(self.periods_range[1]), n, base=10)
-        frequencies = 1 / self.periods
-        scales = pywt.frequency2scale(self._wavelet, frequencies*dt)
-
+        scales = self.get_scales(dt, dj)
         W, freqs = pywt_copy_cwt(y, scales, self._wavelet, sampling_period=dt, method='fft', tracer=self.tracer, **self.cwt_params)
 
         # TODO: this is hardcoded, we have to check where this equation comes from

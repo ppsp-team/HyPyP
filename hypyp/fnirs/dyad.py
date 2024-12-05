@@ -183,13 +183,16 @@ class Dyad:
     # TODO remove "time_range", this is only for testing
     def compute_wtcs(
         self,
-        wavelet:BaseWavelet=PywaveletsWavelet(),
+        wavelet:BaseWavelet|None=None,
         ch_match:PairMatch=None,
         time_range:Tuple[float,float]=None,
         verbose=False,
         with_intra=False,
         downsample=None
     ):
+        if wavelet is None:
+            wavelet = PywaveletsWavelet()
+
         self.wtcs = []
 
         pairs = self.get_pairs(self.s1, self.s2, ch_match=ch_match)

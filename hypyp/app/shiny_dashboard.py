@@ -18,7 +18,7 @@ from hypyp.fnirs.subject import Subject
 from hypyp.fnirs.preprocessors.mne_preprocessor import MnePreprocessor
 from hypyp.fnirs.preprocessors.upstream_preprocessor import UpstreamPreprocessor
 from hypyp.signal import SynteticSignal
-from hypyp.wavelet.smooth import DEFAULT_SMOOTHING_BOXCAR_SIZE
+from hypyp.wavelet.base_wavelet import DEFAULT_SMOOTHING_BOXCAR_SIZE
 from hypyp.wavelet.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY, DEFAULT_PERIODS_RANGE
 from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
