@@ -72,6 +72,10 @@ def test_wtc():
     assert res.coherence_metric > 0
     assert res.coherence_metric < 1
     
+def test_cache_key():
+    assert 'key_foo_bar' in PywaveletsWavelet().get_cache_key('foo', 'bar')
+    assert PywaveletsWavelet(disable_caching=True).get_cache_key('foo', 'bar') is None
+    
 def test_cache():
     wavelet = PywaveletsWavelet(cache=dict())
     assert len(list(wavelet.cache.keys())) == 0
@@ -109,9 +113,9 @@ def test_wtc_coi_masked():
     wavelet = PywaveletsWavelet(disable_caching=True)
     signal = SynteticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal.x, signal.y, signal.y))
-    assert res.wtc_coi is not None
-    assert res.wtc_coi.mask[0,0] == True
-    assert res.wtc_coi.mask[0,len(signal.x)//2] == False
+    assert res.wtc_masked is not None
+    assert res.wtc_masked.mask[0,0] == True
+    assert res.wtc_masked.mask[0,len(signal.x)//2] == False
 
 def test_periods_frequencies_range():    
     frequencies_range = np.array([5., 1.])
@@ -162,10 +166,6 @@ def test_smoothing():
     assert np.all(smoothed < 1)
     # TODO Should test more
     
-def test_cache_key():
-    assert 'key_foo_bar' in PywaveletsWavelet().get_cache_key('foo', 'bar')
-    assert PywaveletsWavelet(disable_caching=True).get_cache_key('foo', 'bar') is None
-    
 def test_to_pandas_df():
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
@@ -173,6 +173,24 @@ def test_to_pandas_df():
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     df = res.to_frame()
     assert df['coherence'][0] > 0
+
+def test_downsampling():
+    wavelet = PywaveletsWavelet(disable_caching=True)
+    signal = SynteticSignal(n_points=2000).add_sin(1)
+    pair = PairSignals(signal.x, signal.y, signal.y)
+    wtc = wavelet.wtc(pair)
+
+    dt = signal.x[1] - signal.x[0]
+    nyquist = (1 / dt) / 2
+    assert wtc.sfreq == 1 / dt
+    assert wtc.nyquist == nyquist
+    wtc.downsample_in_time(100)
+
+    assert len(wtc.times) == 100
+    # These should not change
+    assert wtc.sfreq == 1 / dt
+    assert wtc.nyquist == nyquist
+
 
 
     

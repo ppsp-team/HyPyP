@@ -105,13 +105,7 @@ def test_preprocess_step():
     assert step.obj.get_data().shape[1] == 2
     assert step.key == key
     assert step.desc == desc
-    assert step.tracer is None
     assert step.duration == 2
-
-    # With tracer
-    pre_step_with_tracer = MnePreprocessStep(raw, key, desc, tracer=dict(foo=np.zeros((2,2))))
-    assert pre_step_with_tracer.tracer is not None
-    assert pre_step_with_tracer.tracer['foo'][0,0] == 0
 
 #
 # Subject
@@ -301,7 +295,7 @@ def test_dyad_coi_cache_during_wtc():
         assert np.all(wtc_no_cache.coif == wtc_with_cache.coif)
         # make sure we can clear the cache
         wavelet.clear_cache()
-        dyad.get_pair_wtc(pair, wavelet)
+        _ = dyad.get_pair_wtc(pair, wavelet)
         assert spy_method.call_count == 2
 
 def test_dyad_cwt_cache_with_different_times():
@@ -509,7 +503,7 @@ def test_dyad_coherence_pandas():
     subject1, subject2 = get_test_subjects()
     dyad = Dyad(subject1, subject2)
     dyad.compute_wtcs(ch_match=get_test_ch_match_few())
-    df = dyad.get_coherence_df()
+    df = dyad._get_coherence_df()
     assert len(df['task'].unique()) == len(dyad.s1.task_keys)
     assert len(df['channel1'].unique()) == 2
     assert len(df['channel2'].unique()) == 2
@@ -524,10 +518,10 @@ def test_dyad_coherence_pandas_with_intra():
     with pytest.raises(Exception):
         dyad.compute_wtcs(ch_match=get_test_ch_match_few())
         # Since intra subject is not computed, it should raise
-        dyad.get_coherence_df(with_intra=True)
+        dyad._get_coherence_df(with_intra=True)
 
     dyad.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True)
-    df = dyad.get_coherence_df(with_intra=True)
+    df = dyad._get_coherence_df(with_intra=True)
     assert len(df['task'].unique()) == len(dyad.s1.task_keys)
     assert len(df['dyad'].unique()) == 3
     assert len(df['is_intra'].unique()) == 2
@@ -549,7 +543,7 @@ def test_dyad_coherence_pandas_on_roi():
     subject1, subject2 = get_test_subjects()
     dyad = Dyad(subject1, subject2)
     dyad.compute_wtcs(ch_match=get_test_ch_match_few())
-    df = dyad.get_coherence_df()
+    df = dyad._get_coherence_df()
     assert len(df['roi1']) == 4
     assert len(df['roi2']) == 4
 

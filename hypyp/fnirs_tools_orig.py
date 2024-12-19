@@ -3,7 +3,7 @@ from scipy import signal
 from scipy.fft import fft, fftfreq, ifft
 import pywt
 
-def xwt_coherence_morl_orig(x1, x2, fs, nNotes=12, detrend=False, normalize=False, tracer=None):
+def xwt_coherence_morl_orig(x1, x2, fs, nNotes=12, detrend=False, normalize=False):
     """
     Calculates the cross wavelet transform coherence between two time series using the Morlet wavelet.
 
@@ -147,10 +147,6 @@ def xwt_coherence_morl_orig(x1, x2, fs, nNotes=12, detrend=False, normalize=Fals
     S1 = smoothing(np.abs(coef1) ** 2 / scaleMatrix, scales, dj)
     S2 = smoothing(np.abs(coef2) ** 2 / scaleMatrix, scales, dj)
     S12 = smoothing(coef12 / scaleMatrix, scales, dj)
-    if tracer is not None:
-      tracer['S1'] = S1
-      tracer['S2'] = S2
-      tracer['S12'] = S12
     WCT = np.abs(S12) ** 2 / (S1 * S2)
 
     # Cone of influence calculations

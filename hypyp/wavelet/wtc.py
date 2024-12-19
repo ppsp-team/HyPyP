@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from .pair_signals import PairSignals
-from ..plots import plot_wavelet_coherence
+from ..plots import plot_wtc
 from ..utils import downsample_in_time
 
 FRAME_COLUMNS = ['dyad',
@@ -19,15 +19,14 @@ FRAME_COLUMNS = ['dyad',
                  'coherence']
 
 class WTC:
-    def __init__(self, wtc, times, scales, frequencies, coif, pair: PairSignals, sig=None, tracer=None):
+    def __init__(self, wtc, times, scales, frequencies, coi, pair: PairSignals, sig=None):
         self.wtc = wtc
-        # TODO: compute Region of Interest, something like this:
-        #roi = wtc * (wtc > coif[np.newaxis, :]).astype(int)
         self.times = times
         self.scales = scales
         self.frequencies = frequencies
-        self.coi = 1 / coif
-        self.coif = coif
+        self.periods = 1 / frequencies
+        self.coi = coi
+        self.coif = 1 / coi
         self.task = pair.task
         self.epoch = pair.epoch
         self.section = pair.section
@@ -40,9 +39,12 @@ class WTC:
         self.ch_name2 = pair.ch_name2
         self.label_dyad = pair.label_dyad
 
-        self.tracer = tracer
+        # These will not change when we downsample
+        dt = (times[1] - times[0])
+        self.sfreq = 1 / dt
+        self.nyquist = self.sfreq / 2
 
-        self.wtc_coi: np.ma.MaskedArray
+        self.wtc_masked: np.ma.MaskedArray
         self.coherence_metric: float
 
         self.coherence_p_value = None
@@ -53,10 +55,10 @@ class WTC:
     
     def compute_coherence_in_coi(self):
         mask = self.frequencies[:, np.newaxis] < self.coif
-        self.wtc_coi = np.ma.masked_array(self.wtc, mask)
+        self.wtc_masked = np.ma.masked_array(self.wtc, mask)
 
         # TODO maybe we should weight our average because we have more values at higher frequencies than lower frequencies, due to the coi
-        coherence = np.mean(self.wtc_coi)
+        coherence = np.mean(self.wtc_masked)
         if np.ma.is_masked(coherence):
             coherence = np.nan
         elif not np.isfinite(coherence):
@@ -91,5 +93,5 @@ class WTC:
 
 
     def plot(self, **kwargs):
-        return plot_wavelet_coherence(self.wtc_coi, self.times, self.frequencies, self.coif, self.sig, **kwargs)
+        return plot_wtc(self.wtc, self.times, self.frequencies, self.coi, self.sfreq, self.sig, **kwargs)
 

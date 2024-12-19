@@ -241,9 +241,9 @@ def server(input: Inputs, output: Outputs, session: Session):
             return None
         grouping = input.coherence_select_grouping()
         if grouping == 'roi':
-            return dyad.plot_coherence_roi(query=get_query())
+            return dyad.plot_coherence_matrix_per_roi(query=get_query())
         elif grouping == 'channel':
-            return dyad.plot_coherence_channel(query=get_query())
+            return dyad.plot_coherence_matrix_per_channel(query=get_query())
         elif grouping == 'roi_channel':
             return dyad.plot_coherence_matrix('roi1', 'channel2', query=get_query())
         elif grouping == 'channel_roi':
@@ -256,14 +256,14 @@ def server(input: Inputs, output: Outputs, session: Session):
         dyad = get_dyad()
         if dyad is None:
             return None
-        return dyad.plot_connectogram_s1(query=get_query())
+        return dyad.plot_coherence_connectogram_s1(query=get_query())
         
     @render.plot
     def plot_connectogram_s2():
         dyad = get_dyad()
         if dyad is None:
             return None
-        return dyad.plot_connectogram_s2(query=get_query())
+        return dyad.plot_coherence_connectogram_s2(query=get_query())
         
     @render.plot
     def plot_coherence_per_task():
@@ -271,7 +271,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if dyad is None:
             return None
         is_intra = input.coherence_per_task_select_is_intra() == 'is_intra'
-        return dyad.plot_coherence_per_task_bars(is_intra=is_intra)
+        return dyad.plot_coherence_bars_per_task(is_intra=is_intra)
         
     @render.plot
     def plot_wtc():
@@ -284,7 +284,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             ax=ax,
             colorbar=True,
             downsample=False, # downsampling is already done
-            show_coif=True,
+            show_coi=True,
             show_nyquist=True,
         )
         return fig

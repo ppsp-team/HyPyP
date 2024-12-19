@@ -17,7 +17,6 @@ try:
             self,
             evaluate=True,
         ):
-            self.tracer = dict(name='matlab')
             self.wavelet_name = 'matlab'
             print("Starting matlab engine")
             self.eng = matlab.engine.start_matlab()
@@ -53,7 +52,7 @@ try:
         def cwt(self, y, dt, dj):
             pass
 
-        def wtc(self, pair: PairSignals, cache_suffix='', tracer=None):
+        def wtc(self, pair: PairSignals, cache_suffix=''):
             y1 = pair.y1
             y2 = pair.y2
             dt = pair.dt
@@ -71,10 +70,10 @@ try:
             times = np.linspace(0, N*dt, N)
             periods = np.array(self.eng.workspace['period']).flatten()
             scales = np.array(self.eng.workspace['scale']).flatten()
-            coif = 1 / np.array(self.eng.workspace['coi']).flatten()
+            coi = np.array(self.eng.workspace['coi']).flatten()
             sig = np.array(self.eng.workspace['sig']).flatten()
             frequencies = 1 / periods
-            return WTC(wtc, times, scales, frequencies, coif, pair, tracer=self.tracer)
+            return WTC(wtc, times, scales, frequencies, coi, pair)
 
 except:
     MatlabWavelet = None

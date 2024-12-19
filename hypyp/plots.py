@@ -51,16 +51,16 @@ def spectrogram_plot(z, times, frequencies, coif, cmap="viridis", norm=Normalize
 
     return ax
 
-def plot_wavelet_coherence(
+def plot_wtc(
     wtc,
     times,
     frequencies,
-    coif,
+    coi,
+    sfreq,
     sig=None,
     ax=None,
     colorbar=True,
-    downsample=False,
-    show_coif=True,
+    show_coi=True,
     show_nyquist=True,
     title=None,
 ):
@@ -72,12 +72,6 @@ def plot_wavelet_coherence(
         fig = ax.get_figure()
     
     times_orig = times
-    if downsample:
-        factor = len(times) // 500 + 1
-        print(f"Downscaling for display by a factor of {factor}")
-        times = block_reduce(times, block_size=factor, func=np.mean, cval=np.max(times))
-        wtc = block_reduce(wtc, block_size=(1,factor), func=np.mean, cval=np.mean(wtc))
-        coif = block_reduce(coif, block_size=factor, func=np.mean, cval=np.mean(coif))
     
     periods = 1 / frequencies
     xx, yy = np.meshgrid(times, periods)
@@ -89,17 +83,15 @@ def plot_wavelet_coherence(
     ax.set_ylabel('Period (seconds)')
 
     # Cone of influence
-    if show_coif:
-        # TODO use "coi" instead of doing back and forth between frequency and period values
-        ax.plot(times, 1/coif, color=color_shaded)
-        ax.fill_between(times, 1/coif, y2=1000, step="mid", color=color_shaded, alpha=0.4)
+    if show_coi:
+        ax.plot(times, coi, color=color_shaded)
+        ax.fill_between(times, coi, y2=np.max(periods), step="mid", color=color_shaded, alpha=0.4)
 
-    ## Nyquist frequency
-    #if show_nyquist:
-    #    y_nyquist = np.ones((len(times),)) * 1 / np.diff(times_orig).mean() / 2
-    #    y_top = np.ones((len(times),)) * periods[0]
-    #    ax.plot(times, y_nyquist, color=color_shaded)
-    #    ax.fill_between(times, y_nyquist, y_top, step="mid", color=color_shaded, alpha=0.4)
+    if show_nyquist:
+        nyquist = np.ones((len(times),)) * sfreq
+        nyquist_period = 1 / nyquist
+        ax.plot(times, nyquist_period, color=color_shaded)
+        ax.fill_between(times, nyquist_period, y2=np.min(periods), step="mid", color=color_shaded, alpha=0.4)
     
     # Define a custom locator and formatter
     def custom_locator(ymin, ymax):
@@ -109,9 +101,6 @@ def plot_wavelet_coherence(
         ticks.extend(range(25, int(ymax) + 1, 5))
         return ticks
     
-    def custom_formatter(y, _):
-        return f"{int(y)}" if y >= 1 else ""
-
     # Dynamically set ticks based on the current range
     ymin, ymax = ax.get_ylim()  # Get the y-axis limits
     ax.set_yticks(custom_locator(ymin, ymax))
@@ -332,26 +321,6 @@ def spectrogram_plot_period(
     
     return ax
 
-def plot_spectrogram_periods(items, tracers):
-    fig, axes = plt.subplots(1, len(items), figsize=(18,6))
-    fig.suptitle('spectrogram periods')
-    for i in range(len(items)):
-        item = items[i]
-        print(f"shape of wtc: {item['wtc'].shape}")
-        print(item['wtc'][55:77,:].mean())
-        spectrogram_plot_period(
-            np.abs(item['wtc']),
-            item['times'],
-            item['freq'],
-            item['coif'],
-            ax=axes[i],
-            colorbar=False,
-            norm=None
-        )
-        axes[i].title.set_text(tracers[i]['name'])
-    
-    
-    
 def plot_cwt_weights(W, times, frequencies, coif):
     fig, ax = plt.subplots()
     im = ax.pcolormesh(times, frequencies, np.abs(W))
@@ -398,49 +367,3 @@ def plot_times(items):
         axes[i].plot(item['times'])
     plt.show()
 
-def plot_coefs(tracers, key, title):
-    fig, axes = plt.subplots(1, len(tracers), figsize=(18,10))
-    axes = np.atleast_1d(axes)
-    fig.suptitle(title)
-    for i in range(len(tracers)):
-        tracer = tracers[i]
-        im = axes[i].pcolormesh(tracer['x1'], tracer['freq'], np.abs(tracer[key]))
-        axes[i].set_yscale('log')
-        fig.colorbar(im, ax=axes[i])
-        axes[i].title.set_text(tracer['name'])
-
-    
-def plot_S12(tracers):
-    fig, axes = plt.subplots(1, len(tracers), figsize=(18,4))
-    fig.suptitle('S12 real')
-    for i in range(len(tracers)):
-        tracer = tracers[i]
-        xx, yy = np.meshgrid(np.arange(0, tracer['S12'].shape[1]), np.arange(0, tracer['S12'].shape[0]))
-        ZZ = np.real(tracer['S12'])
-        axes[i].pcolor(xx, yy, ZZ)
-        axes[i].title.set_text(tracer['name'])
-    plt.show()
-    
-    fig, axes = plt.subplots(1, len(tracers), figsize=(18,4))
-    fig.suptitle('S12 imag')
-    for i in range(len(tracers)):
-        tracer = tracers[i]
-        xx, yy = np.meshgrid(np.arange(0, tracer['S12'].shape[1]), np.arange(0, tracer['S12'].shape[0]))
-        ZZ = np.imag(tracer['S12'])
-        axes[i].pcolor(xx, yy, ZZ)
-    plt.show()
-    
-def plot_im_diff(left, right, title):
-    fig, axes = plt.subplots(1, 3, figsize=(18,4))
-    fig.suptitle(title)
-    xx, yy = np.meshgrid(np.arange(0, left.shape[1]), np.arange(0, left.shape[0]))
-
-    im = axes[0].pcolor(xx, yy, left)
-    fig.colorbar(im, ax=axes[0])
-
-    im = axes[1].pcolor(xx, yy, right - left, cmap=cm.get_cmap('Greys'))
-    fig.colorbar(im, ax=axes[1])
-
-    im = axes[2].pcolor(xx, yy, right)
-    fig.colorbar(im, ax=axes[2])
-    

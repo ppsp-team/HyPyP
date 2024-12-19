@@ -95,7 +95,6 @@ app_ui = ui.page_fluid(
                     ui.card(
                         ui.tags.strong('Wavelet'),
                         ui.output_plot('plot_mother_wavelet'),
-                        ui.output_ui('ui_plot_daughter_wavelet'),
                         ui.row(
                             ui.column(6, ui.output_plot('plot_scales')),
                             ui.column(6, ui.output_plot('plot_frequencies')),
@@ -106,11 +105,9 @@ app_ui = ui.page_fluid(
                     ui.card(
                         ui.tags.strong('Wavelet Coherence'),
                         ui.output_plot('plot_wtc'),
-                        ui.output_ui('ui_plot_wtc_at_time'),
                     ),
                 ),
             ),
-            ui.output_ui('ui_card_tracer'),
         ),
         ui.nav_spacer(),
         #selected='Data Browser',
@@ -150,19 +147,8 @@ app_ui = ui.page_fluid(
             ui.tags.strong('Display parameters'),
             ui_option_row("Signal offset y", ui.input_checkbox("display_signal_offset_y", "", value=True), sizes=(8,4)),
             ui_option_row("Downsample", ui.input_checkbox("display_downsample", "", value=True), sizes=(8,4)),
-            ui_option_row("Show COI", ui.input_checkbox("display_show_coif", "", value=True), sizes=(8,4)),
+            ui_option_row("Show COI", ui.input_checkbox("display_show_coi", "", value=True), sizes=(8,4)),
             ui_option_row("Show Nyquist", ui.input_checkbox("display_show_nyquist", "", value=True), sizes=(8,4)),
-            ui_option_row("Show tracer plots", ui.input_checkbox("display_show_tracer", "", value=False), sizes=(8,4)),
-            ui_option_row("Show Log value for tracers", ui.input_checkbox("display_show_log_tracer", "", value=False), sizes=(8,4)),
-            ui.input_select(
-                "diplay_show_tracer_complex",
-                "",
-                choices={
-                    'abs': 'Magnitude',
-                    'real': 'Real part',
-                    'imag': 'Imaginary part',
-                },
-            ),
             open="always",
             width=400,
         ),
@@ -279,8 +265,6 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         elif input.wavelet_library() == 'pycwt':
             wavelet = PycwtWavelet(
-                upper_bound=input.wavelet_upper_bound(),
-                lower_bound=-input.wavelet_upper_bound(),
                 compute_significance=input.wavelet_pycwt_significance(),
             )
 
@@ -300,7 +284,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     @reactive.event(input.button_action_compute_wtc)
     def compute_coherence():
         pair = get_signals()
-        return get_wavelet().wtc(pair)
+        wtc = get_wavelet().wtc(pair)
+        if input.display_downsample():
+            wtc.downsample_in_time(500)
+        return wtc
 
     def get_signal_data_files_s1_path():
         return input.signal_data_files_s1_path()
@@ -583,126 +570,21 @@ def server(input: Inputs, output: Outputs, session: Session):
         return fig
 
     @render.plot()
-    def plot_daughter_wavelet():
-        fig, ax = plt.subplots()
-
-        wtc_res = compute_coherence()
-        id = input.display_daughter_wavelet_id()
-        psi = wtc_res.tracer['psi_scales'][id]
-        ax.plot(np.real(psi))
-        ax.plot(np.imag(psi))
-        ax.plot(np.abs(psi))
-        ax.title.set_text(f"daughter wavelet {id}/{len(wtc_res.tracer['psi_scales'])} for {wtc_res.frequencies[id]:.3f}Hz")
-        ax.legend(['real', 'imag', 'abs'])
-        return fig
-
-    @render.ui
-    def ui_plot_daughter_wavelet():
-        # block on this, so that we render only when ready
-        _ = compute_coherence()
-        
-        return [
-            ui.output_plot('plot_daughter_wavelet'),
-            ui_option_row("Plot daughter wavelet id", ui.input_numeric("display_daughter_wavelet_id", "", value=0), center=True),
-        ]
-        
-    @render.plot()
     def plot_wtc():
         fig, ax = plt.subplots()
         compute_coherence().plot(
             ax=ax,
             colorbar=False,
-            downsample=input.display_downsample(),
-            show_coif=input.display_show_coif(),
+            show_coi=input.display_show_coi(),
             show_nyquist=input.display_show_nyquist(),
         )
         return fig
-
-    @render.plot()
-    def plot_wtc_at_time():
-        fig, ax = plt.subplots()
-
-        wtc_res  = compute_coherence()
-
-        if input.display_wtc_frequencies_at_time() is None:
-            # region of interest
-            # TODO this computation is wrong. Use wtc_masked
-            roi = wtc_res.wtc * (wtc_res.wtc > wtc_res.coif[np.newaxis, :]).astype(int)
-            col = np.argmax(np.sum(roi, axis=0))
-        else:
-            col = int(input.display_wtc_frequencies_at_time() / wtc_res.dt)
-            
-        ax.plot(wtc_res.frequencies, wtc_res.wtc[:,col])
-        ax.title.set_text(f'Coherence at t={wtc_res.times[col]:.1f} (max found: {wtc_res.frequencies[np.argmax(wtc_res.wtc[:,col])]:.2f}Hz)')
-        ax.set_xscale('log')
-        ax.set_xlabel('Frequency (Hz)')
-        return fig
-
-    @render.ui
-    def ui_plot_wtc_at_time():
-        # block on this, so that we render only when ready
-        _ = compute_coherence()
-        
-        return [
-            ui.output_plot('plot_wtc_at_time'),
-            ui_option_row("Plot coherence at time", ui.input_numeric("display_wtc_frequencies_at_time", "", value=None), center=True),
-        ]
-        
-    def ZZ_with_options(ZZ):
-        if input.display_show_log_tracer():
-            ZZ = np.log(ZZ)
-        if input.diplay_show_tracer_complex() == 'abs' and ZZ.dtype.kind == 'c':
-            ZZ = np.abs(ZZ)
-        elif input.diplay_show_tracer_complex() == 'real':
-            ZZ = np.real(ZZ)
-        elif input.diplay_show_tracer_complex() == 'imag':
-            ZZ = np.imag(ZZ)
-        return ZZ
 
     def downsample_mat_for_plot(times, frequencies, ZZ):
         if not input.display_downsample():
             return (times, frequencies, ZZ, 1)
         times, ZZ, factor = hypyp.utils.downsample_in_time(times, ZZ, t=500)
         return times, frequencies, ZZ, factor
-
-    def get_fig_plot_tracer_mat(key):
-        fig, ax = plt.subplots()
-        wtc_res = compute_coherence()
-        times, frequencies, ZZ, _ = downsample_mat_for_plot(wtc_res.times, wtc_res.frequencies, ZZ_with_options(wtc_res.tracer[key]))
-        im = ax.pcolormesh(times, frequencies, ZZ)
-        ax.set_yscale('log')
-        fig.colorbar(im, ax=ax)
-        ax.title.set_text(key)
-        return fig
-
-    @render.plot()
-    def plot_tracer_W1():
-        return get_fig_plot_tracer_mat('W1')
-    @render.plot()
-    def plot_tracer_W2():
-        return get_fig_plot_tracer_mat('W2')
-    @render.plot()
-    def plot_tracer_W12():
-        return get_fig_plot_tracer_mat('W12')
-    @render.plot()
-    def plot_tracer_S1():
-        return get_fig_plot_tracer_mat('S1')
-    @render.plot()
-    def plot_tracer_S2():
-        return get_fig_plot_tracer_mat('S2')
-    @render.plot()
-    def plot_tracer_S12():
-        return get_fig_plot_tracer_mat('S12')
-    @render.plot()
-    def plot_tracer_wtc():
-        fig, ax = plt.subplots()
-        wtc_res = compute_coherence()
-        times, frequencies, ZZ, _ = downsample_mat_for_plot(wtc_res.times, wtc_res.frequencies, ZZ_with_options(wtc_res.wtc))
-        im = ax.pcolormesh(times, frequencies, ZZ)
-        ax.set_yscale('log')
-        fig.colorbar(im, ax=ax)
-        ax.title.set_text('wtc')
-        return fig
 
     @render.plot()
     def plot_frequencies():
@@ -771,26 +653,4 @@ def server(input: Inputs, output: Outputs, session: Session):
             options.append(ui_option_row("Compute significance (slow)", ui.input_checkbox("wavelet_pycwt_significance", "", value=False), sizes=(8,4)))
         return options
     
-    @render.ui
-    def ui_card_tracer():
-        if input.display_show_tracer():
-            return ui.card(
-                ui.tags.strong('Tracing of intermediary results'),
-                ui.row(
-                    ui.column(4, ui.output_plot('plot_tracer_W1')),
-                    ui.column(4, ui.output_plot('plot_tracer_W2')),
-                    ui.column(4, ui.output_plot('plot_tracer_W12')),
-                ),
-                ui.row(
-                    ui.column(4, ui.output_plot('plot_tracer_S1')),
-                    ui.column(4, ui.output_plot('plot_tracer_S2')),
-                    ui.column(4, ui.output_plot('plot_tracer_S12')),
-                ),
-                ui.row(
-                    ui.column(4),
-                    ui.column(4),
-                    ui.column(4, ui.output_plot('plot_tracer_wtc')),
-                ),
-            )
-
 app = App(app_ui, server)

@@ -87,8 +87,7 @@ class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
         steps.append(MnePreprocessStep(
                         raw_od, 
                         PREPROCESS_STEP_OD_KEY,
-                        PREPROCESS_STEP_OD_DESC,
-                        tracer=dict(quality_sci=quality_sci)))
+                        PREPROCESS_STEP_OD_DESC))
 
         picks = mne.pick_types(raw_od.info, fnirs=True, exclude='bads')
 
@@ -96,8 +95,7 @@ class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
         steps.append(MnePreprocessStep(
                         raw_od_clean, 
                         PREPROCESS_STEP_OD_CLEAN_KEY,
-                        PREPROCESS_STEP_OD_CLEAN_DESC,
-                        tracer=dict(quality_sci=quality_sci)))
+                        PREPROCESS_STEP_OD_CLEAN_DESC))
 
         # TODO: see if we want to expose parameters here
         raw_haemo = mne.preprocessing.nirs.beer_lambert_law(raw_od_clean, ppf=0.1)

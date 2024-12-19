@@ -22,7 +22,7 @@ PREPROCESS_STEP_HAEMO_FILTERED_DESC = 'Hemoglobin Band-pass Filtered'
 T = TypeVar('T')
 
 class BasePreprocessStep(ABC, Generic[T]):
-    def __init__(self, obj: T, key: str, desc: str = '', tracer: dict = None):
+    def __init__(self, obj: T, key: str, desc: str = ''):
         self.obj: T = obj
         self.key: str = key
         self.desc: str
@@ -30,7 +30,6 @@ class BasePreprocessStep(ABC, Generic[T]):
             self.desc = desc
         else:
             self.desc = key
-        self.tracer: dict = tracer 
 
     @property
     @abstractmethod

@@ -21,7 +21,6 @@ try:
             self.lower_bound = lower_bound
             self.upper_bound = upper_bound
             self.compute_significance = compute_significance
-            self.tracer = dict(name='pycwt', scales=[]) # TODO have a more strict structure for tracer
             self.wavelet_name = 'pycwt'
             super().__init__(evaluate, disable_caching=True)
 
@@ -31,12 +30,11 @@ try:
             return self._psi, self._psi_x
         
         def cwt(self, y, dt, dj):
-            W, scales, freqs, coi, _, _ = pycwt.cwt(y, dt=dt, dj=dj, tracer=self.tracer)
-            coif = 1 / coi
+            W, scales, freqs, coi, _, _ = pycwt.cwt(y, dt=dt, dj=dj)
             times = np.arange(len(y)) * dt
-            return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coif=coif)
+            return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coi=coi)
 
-        def wtc(self, pair: PairSignals, cache_suffix='', tracer=None):
+        def wtc(self, pair: PairSignals, cache_suffix=''):
             y1 = pair.y1
             y2 = pair.y2
             dt = pair.dt
@@ -44,11 +42,12 @@ try:
             N = len(y1)
             times = np.arange(N) * dt
 
-            wtc, _, coif_periods, frequencies, sig = pycwt.wct(y1, y2, dt=dt, sig=self.compute_significance, tracer=self.tracer)
-            coif = 1 / coif_periods
+            wtc, _, coi, frequencies, sig = pycwt.wct(y1, y2, dt=dt, sig=self.compute_significance)
             if not self.compute_significance:
                 sig = None
-            return WTC(wtc, times, self.tracer['scales'], frequencies, coif, pair, sig=sig, tracer=self.tracer)
+
+            # TODO get scales to send to WTC
+            return WTC(wtc, times, [], frequencies, coi, pair, sig=sig)
 
 except:
     PycwtWavelet = None

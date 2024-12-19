@@ -13,7 +13,7 @@ from ..wavelet.wtc import WTC, FRAME_COLUMNS
 from ..wavelet.pair_signals import PairSignals
 from .subject import Subject, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor import BasePreprocessor
-from ..plots import plot_coherence_matrix, plot_wavelet_coherence, plot_coherence_matrix_df, plot_coherence_per_task_bars, plot_connectogram
+from ..plots import plot_coherence_matrix, plot_wtc, plot_coherence_matrix_df, plot_coherence_per_task_bars, plot_connectogram
 from ..profiling import TimeTracker
 
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
@@ -188,7 +188,8 @@ class Dyad:
         time_range:Tuple[float,float]=None,
         verbose=False,
         with_intra=False,
-        downsample=None
+        downsample=None,
+        keep_wtcs=True,
     ):
         if wavelet is None:
             wavelet = PywaveletsWavelet()
@@ -224,77 +225,16 @@ class Dyad:
                         wtc.downsample_in_time(downsample)
                     subject.wtcs.append(wtc)
 
-        self.df = self.get_coherence_df(with_intra=with_intra)
+        self.df = self._get_coherence_df(with_intra=with_intra)
+
+        if not keep_wtcs:
+            self.wtcs = []
+            self.s1.wtcs = []
+            self.s1.wtcs = []
 
         return self
     
-    # TODO Maybe having wtcs as optional (and default to self.wtcs) is confusing
-    def get_wtc_property_matrix(self, property_name: str, wtcs:List[WTC]=None, reverse=False):
-        if wtcs is None:
-            wtcs = self.wtcs
-
-        task_map = OrderedDict()
-        row_map = OrderedDict()
-        col_map = OrderedDict()
-
-        tasks = sorted(list(set([wtc.task for wtc in wtcs])))
-        ch_names1 = sorted(list(set([wtc.ch_name1 for wtc in wtcs])))
-        ch_names2 = sorted(list(set([wtc.ch_name2 for wtc in wtcs])))
-
-        if self.s1.channel_roi is not None:
-            ch_names1 = self.s1.channel_roi.get_names_in_order(ch_names1)
-        if self.s2.channel_roi is not None:
-            ch_names2 = self.s2.channel_roi.get_names_in_order(ch_names2)
-
-        for i, task in enumerate(tasks):
-            task_map[task] = i
-
-        for j, ch_name1 in enumerate(ch_names1):
-            row_map[ch_name1] = j
-
-        for k, ch_name2 in enumerate(ch_names2):
-            col_map[ch_name2] = k
-
-        mat = np.zeros((len(tasks), len(ch_names1), len(ch_names2)))
-
-        for wtc in wtcs:
-            i = task_map[wtc.task]
-            j = row_map[wtc.ch_name1]
-            k = col_map[wtc.ch_name2]
-            if reverse:
-                mat[i,k,j] = getattr(wtc, property_name)
-            else:
-                mat[i,j,k] = getattr(wtc, property_name)
-
-        return mat, tasks, ch_names1, ch_names2
-    
-    def get_coherence_matrix(self):
-        return self.get_wtc_property_matrix('coherence_metric')
-
-    def get_coherence_matrix_with_intra(self):
-        # TODO this is crappy. We should use grouping and facets in display instead
-        dyadic = self.get_wtc_property_matrix('coherence_metric')
-        dyadic_T = self.get_wtc_property_matrix('coherence_metric', reverse=True)
-        s1 = self.get_wtc_property_matrix('coherence_metric', self.s1.wtcs)
-        s2 = self.get_wtc_property_matrix('coherence_metric', self.s2.wtcs)
-
-        if dyadic[1] != s1[1] or dyadic[1] != s2[1] :
-            raise RuntimeError('Tasks list do not match, cannot concatenate matrices')
-
-        left = np.concatenate((s1[0], dyadic_T[0]), axis=1)
-        right = np.concatenate((dyadic[0], s2[0]), axis=1)
-        mat = np.concatenate((left, right), axis=2)
-
-        # for intra-subject ch_names1==ch_names2, so it does not matter which one we take
-        ch_names1 = s1[2] + dyadic_T[2]
-        ch_names2 = dyadic[3] + s2[3]
-
-        return mat, dyadic[1], ch_names1, ch_names2
-
-    def get_p_value_matrix(self):
-        return self.get_wtc_property_matrix('coherence_p_value')
-    
-    def get_coherence_df(self, with_intra=False) -> pd.DataFrame:
+    def _get_coherence_df(self, with_intra=False) -> pd.DataFrame:
         if with_intra:
             if not self.s1.is_wtc_computed or not self.s2.is_wtc_computed:
                 raise RuntimeError('Intra subject WTCs are not computed. Please check "compute_wtcs" arguments')
@@ -308,36 +248,17 @@ class Dyad:
             df_data.append(wtc.as_frame_row)
 
         return pd.DataFrame(df_data, columns=FRAME_COLUMNS)
+
     
     #
     # Plots
     # 
-    def plot_coherence_matrices(self):
-        mat, tasks, ch_names1, ch_names2 = self.get_coherence_matrix()
-        fig, axes = plt.subplots(ncols=len(tasks), sharex=True, sharey=True, figsize=(10, 6))
-        axes = np.atleast_1d(axes)
-        for i, task in enumerate(tasks):
-            plot_coherence_matrix(mat[i,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, title=task, ax=axes[i])
-        fig.suptitle(self.label)
-        return fig
-
-    def plot_coherence_matrix_for_task(self, task_name, with_intra=False):
-        # TODO we should not load the whole matrix if we only want one task
-        if with_intra:
-            mat, tasks, ch_names1, ch_names2 = self.get_coherence_matrix_with_intra()
-        else:
-            mat, tasks, ch_names1, ch_names2 = self.get_coherence_matrix()
-
-        # TODO deal with id not found
-        id = [i for i, task in enumerate(self.tasks) if task[0] == task_name][0]
-        return plot_coherence_matrix(mat[id,:,:], ch_names1, ch_names2, self.s1.label, self.s2.label, with_intra=with_intra, title=self.tasks[id][0])
-
     def plot_wtc(self, wtc: WTC):
-        return plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
+        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, wtc.sig, title=wtc.label)
 
     def plot_wtc_by_id(self, id: int):
         wtc = self.wtcs[id]
-        return plot_wavelet_coherence(wtc.wtc, wtc.times, wtc.frequencies, wtc.coif, wtc.sig, downsample=True, title=wtc.label)
+        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, wtc.sig, title=wtc.label)
 
     def plot_coherence_matrix(self, field1, field2, query=None):
         df = self.df
@@ -350,22 +271,22 @@ class Dyad:
             field2,
             self.s1.ordered_ch_names)
         
-    def plot_coherence_channel(self, query=None):
+    def plot_coherence_matrix_per_channel(self, query=None):
         return self.plot_coherence_matrix('channel1', 'channel2', query)
         
-    def plot_coherence_roi(self, query=None):
+    def plot_coherence_matrix_per_roi(self, query=None):
         return self.plot_coherence_matrix('roi1', 'roi2', query)
     
-    def plot_coherence_channel_for_task(self, task):
+    def plot_coherence_matrix_per_channel_for_task(self, task):
         return self.plot_coherence_matrix('channel1', 'channel2', query=f'task=="{task}"')
         
-    def plot_coherence_roi_for_task(self, task):
+    def plot_coherence_matrix_per_roi_for_task(self, task):
         return self.plot_coherence_matrix('roi1', 'roi2', query=f'task=="{task}"')
     
-    def plot_coherence_per_task_bars(self, is_intra=False):
+    def plot_coherence_bars_per_task(self, is_intra=False):
         return plot_coherence_per_task_bars(self.df, is_intra=is_intra)
         
-    def plot_connectogram_intra(self, subject, query=None):
+    def plot_coherence_connectogram_intra(self, subject, query=None):
         df = self.df
         selector = (df['subject1']==subject.label) & (df['subject2']==subject.label)
         df_filtered = df[selector]
@@ -376,8 +297,8 @@ class Dyad:
         pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
         return plot_connectogram(pivot, title=subject.label)
 
-    def plot_connectogram_s1(self, query=None):
-        return self.plot_connectogram_intra(self.s1, query)
+    def plot_coherence_connectogram_s1(self, query=None):
+        return self.plot_coherence_connectogram_intra(self.s1, query)
 
-    def plot_connectogram_s2(self, query=None):
-        return self.plot_connectogram_intra(self.s2, query)
+    def plot_coherence_connectogram_s2(self, query=None):
+        return self.plot_coherence_connectogram_intra(self.s2, query)

@@ -5,8 +5,6 @@ from .base_wavelet import BaseWavelet
 from .cwt import CWT
 import scipy.signal
 
-from ..plots import plot_wavelet_coherence
-
 DEFAULT_SCIPY_CENTER_FREQUENCY = 6
 
 class ScipyWavelet(BaseWavelet):
@@ -21,7 +19,6 @@ class ScipyWavelet(BaseWavelet):
         self.cwt_params = cwt_params
         self.center_frequency = center_frequency
         self.wavelet_name = 'morlet_scipy'
-        self.tracer = dict(name=self.wavelet_name)
         super().__init__(evaluate, disable_caching=True)
 
     def evaluate_psi(self):
@@ -45,21 +42,14 @@ class ScipyWavelet(BaseWavelet):
         freqs = (self.center_frequency * fs) / (2 * np.pi * scales)
         times = np.linspace(0, N*dt, N)
 
-        # serapately compute wavelets for tracing. Code is from scipy/signal/_wavelets.py
-        self.tracer['psi_scales'] = []
-        for ind, width in enumerate(scales):
-            N = np.min([10 * width, len(y)])
-            wav = wavelet_fn(N, width, **wavelet_kwargs)[::-1]
-            self.tracer['psi_scales'].append(np.conj(wav))
-
         # TODO: this is hardcoded, we have to check where this equation comes from
         # Cone of influence calculations
+        # TODO this is duplicated in BaseWavelet and PywaveletWavelet
         f0 = 2 * np.pi
         cmor_coi = 1.0 / np.sqrt(2)
         cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
         coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
         coi = cmor_flambda * cmor_coi * dt * coi
-        coif = 1.0 / coi
 
-        return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coif=coif, tracer=self.tracer)
+        return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coi=coi)
 

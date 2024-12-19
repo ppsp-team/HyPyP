@@ -4,8 +4,11 @@ import csv
 import scipy.io
 
 class ChannelROI:
-    def __init__(self):
-        self.rois = OrderedDict()
+    def __init__(self, rois:OrderedDict=None):
+        if rois is None:
+            self.rois = OrderedDict()
+        else:
+            self.rois = rois
 
     @staticmethod
     def from_lionirs(roi_file_path):

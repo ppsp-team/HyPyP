@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
+import warnings
+
 import numpy as np
 from scipy import fft
 from scipy.ndimage import convolve1d
 
 from .pair_signals import PairSignals
 from .wtc import WTC
+from .cwt import CWT
 from ..profiling import TimeTracker
 
 DEFAULT_SMOOTHING_BOXCAR_SIZE = 0.6
@@ -67,7 +70,7 @@ class BaseWavelet(ABC):
     def cwt(self, y, dt, dj):
         pass
     
-    def wtc(self, pair: PairSignals, cache_suffix='', tracer=None):
+    def wtc(self, pair: PairSignals, cache_suffix=''):
         
         # TODO add verbose option
         #if s1_cwt is not None:
@@ -86,15 +89,18 @@ class BaseWavelet(ABC):
         dj = 1 / 12 # TODO have as parameter
     
         # TODO: have detrend as parameter
+        # if detrend:
+        #     y1 = signal.detrend(y1, type='linear')
+        #     y2 = signal.detrend(y2, type='linear')
         # TODO: have normalize as parameter
         y1 = (y1 - y1.mean()) / y1.std()
         y2 = (y2 - y2.mean()) / y2.std()
     
         cwt1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'cwt', cache_suffix))
-        cwt1 = self.cwt(y1, dt, dj) if cwt1_cached is None else cwt1_cached
+        cwt1: CWT = self.cwt(y1, dt, dj) if cwt1_cached is None else cwt1_cached
 
         cwt2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'cwt', cache_suffix))
-        cwt2 = self.cwt(y2, dt, dj) if cwt2_cached is None else cwt2_cached
+        cwt2: CWT = self.cwt(y2, dt, dj) if cwt2_cached is None else cwt2_cached
 
         if (cwt1.scales != cwt2.scales).any():
             raise RuntimeError('The two CWT have different scales')
@@ -106,9 +112,15 @@ class BaseWavelet(ABC):
         W2 = cwt2.W
         # Take a look at caching keys if you fail with this kind of error. Make sure cache keys are well targetted
         #     ValueError: operands could not be broadcast together with shapes (40,782) (40,100)
-        W12 = W1 * W2.conj()
+        try:
+            W12 = W1 * W2.conj()
+        except ValueError as e:
+            warnings.warn("Wrong operand shapes could mean that a wrong cached value is used. Please check that cache keys contain all the relevant arguments")
+            raise e
+            
 
         frequencies = cwt1.frequencies
+        periods = cwt1.periods
         scales = cwt1.scales
         times = cwt1.times
 
@@ -131,29 +143,14 @@ class BaseWavelet(ABC):
         S12 = np.abs(self.smoothing(W12 / scaleMatrix, **smoothing_kwargs))
         wtc = S12 ** 2 / (S1 * S2)
 
-        coi = self.get_cache_item(self.get_cache_key_coi(N, dt))
-        coif = self.get_cache_item(self.get_cache_key_coif(N, dt))
-        if coi is None or coif is None:
-            coi, coif = self.get_cone_of_influence(N, dt)
+        coi = self.get_and_cache_cone_of_influence(N, dt, cache_suffix=cache_suffix)
 
         self.update_cache_if_none(self.get_cache_key_pair(pair, 0, 'cwt', cache_suffix), cwt1)
         self.update_cache_if_none(self.get_cache_key_pair(pair, 1, 'cwt', cache_suffix), cwt2)
         self.update_cache_if_none(self.get_cache_key_pair(pair, 0, 'smooth', cache_suffix), S1)
         self.update_cache_if_none(self.get_cache_key_pair(pair, 1, 'smooth', cache_suffix), S2)
-        self.update_cache_if_none(self.get_cache_key_coi(N, dt, cache_suffix), coi)
-        self.update_cache_if_none(self.get_cache_key_coif(N, dt, cache_suffix), coif)
 
-        if tracer is not None:
-            tracer['cwt1'] = cwt1
-            tracer['cwt2'] = cwt2
-            tracer['W1'] = W1
-            tracer['W2'] = W2
-            tracer['W12'] = W12
-            tracer['S1'] = S1
-            tracer['S2'] = S2
-            tracer['S12'] = S12
-
-        return WTC(wtc, times, scales, frequencies, coif, pair, tracer=tracer)
+        return WTC(wtc, times, scales, frequencies, coi, pair)
 
     def update_cache_if_none(self, key, value):
         if not self.use_caching:
@@ -162,17 +159,29 @@ class BaseWavelet(ABC):
         if self.get_cache_item(key) is None:
             self.add_cache_item(key, value)
 
-    def get_cone_of_influence(self, N, dt):
+    def get_and_cache_cone_of_influence(self, N, dt, cache_suffix=''):
+        cache_key = self.get_cache_key('coi', N, dt, cache_suffix)
+        coi = self.get_cache_item(cache_key)
+        if coi is not None:
+            return coi
+        coi = self.get_cone_of_influence(N, dt)
+        self.update_cache_if_none(cache_key, coi)
+        return coi
+
+
+    def get_cone_of_influence(self, N, dt, cache_suffix=''):
         # TODO this result is the same for every pair. It should be cached
         # Cone of influence calculations
         f0 = 2 * np.pi
+
+        # TODO this will depend on the wavelet
         cmor_coi = 1.0 / np.sqrt(2)
         # TODO: this is hardcoded, we have to check where this equation comes from
         cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
         coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
         coi = cmor_flambda * cmor_coi * dt * coi
-        coif = 1.0 / coi
-        return coi, coif
+
+        return coi
     
     
     #
@@ -313,16 +322,6 @@ class BaseWavelet(ABC):
         
         return key
     
-    def get_cache_key_coi(self, N, dt, cache_suffix=''):
-        if not self.use_caching:
-            return None
-        return f'coi_{N}_{dt}_{cache_suffix}'
-    
-    def get_cache_key_coif(self, N, dt, cache_suffix=''):
-        if not self.use_caching:
-            return None
-        return f'coif_{N}_{dt}_{cache_suffix}'
-
     def get_cache_key(self, *args):
         if not self.use_caching:
             return None
