@@ -5,19 +5,18 @@ class PairSignals:
                  x,
                  y1,
                  y2,
-                 ch_name1='',
-                 ch_name2='',
+                 label_ch1='',
+                 label_ch2='',
                  label_s1='', # TODO be more consistent in argument names
                  label_s2='',
-                 roi1='',
-                 roi2='',
+                 label_roi1='',
+                 label_roi2='',
                  label_dyad='',
                  task='',
                  epoch=0,
                  section=0,
+                 is_intra:bool=False,
                  is_shuffle:bool=False,
-                 info_table1=[],
-                 info_table2=[],
                  range:Tuple[float, float]|None=None,
         ):
         self.x = x
@@ -28,28 +27,27 @@ class PairSignals:
         self.y1 = y1
         self.y2 = y2
 
-        self.ch_name1 = ch_name1
-        self.ch_name2 = ch_name2
+        self.is_intra = is_intra
+        self.is_shuffle = is_shuffle
+
+        self.label_ch1 = label_ch1
+        self.label_ch2 = label_ch2
 
         self.task = task
         self.epoch = epoch
         self.section = section
 
-        self.info_table1 = info_table1
-        self.info_table2 = info_table2
-
+        self.label_dyad = label_dyad
         self.label_s1 = label_s1
         self.label_s2 = label_s2
-        self.roi1 = roi1
-        self.roi2 = roi2
-        self.label_dyad = label_dyad
-        self.is_shuffle = is_shuffle
+        self.label_roi1 = label_roi1
+        self.label_roi2 = label_roi2
 
         self.range = range
     
     @property
     def label(self):
-        ret = f'{self.ch_name1} - {self.ch_name2}'
+        ret = f'{self.label_ch1} - {self.label_ch2}'
 
         prefix = self.task
         if self.epoch > 0:
@@ -74,19 +72,17 @@ class PairSignals:
             self.x[signal_from:signal_to],
             self.y1[signal_from:signal_to],
             self.y2[signal_from:signal_to],
-            ch_name1=self.ch_name1,
-            ch_name2=self.ch_name2,
+            is_shuffle=self.is_shuffle,
             task=self.task,
             epoch=self.epoch,
             section=self.section,
-            info_table1=self.info_table1,
-            info_table2=self.info_table2,
+            label_dyad=self.label_dyad,
             label_s1=self.label_s1,
             label_s2=self.label_s2,
-            roi1=self.roi1,
-            roi2=self.roi2,
-            label_dyad=self.label_dyad,
-            is_shuffle=self.is_shuffle,
+            label_ch1=self.label_ch1,
+            label_ch2=self.label_ch2,
+            label_roi1=self.label_roi1,
+            label_roi2=self.label_roi2,
             range=range, # keep track that this is a range in an original PairSignals
         )
     

@@ -75,7 +75,6 @@ app_ui = ui.page_fluid(
                     ui.card(
                         ui.tags.strong('Signal 1'),
                         ui.output_table('text_info_s1_file_path'),
-                        ui.output_table('table_info_s1'),
                     )
                 ),
                 ui.column(
@@ -83,7 +82,6 @@ app_ui = ui.page_fluid(
                     ui.card(
                         ui.tags.strong('Signal 2'),
                         ui.output_table('text_info_s2_file_path'),
-                        ui.output_table('table_info_s2'),
                     )
                 ),
             ),
@@ -161,8 +159,6 @@ app_ui = ui.page_fluid(
 def server(input: Inputs, output: Outputs, session: Session):
     @reactive.calc()
     def get_signals() -> PairSignals:
-        info_table1 = []
-        info_table2 = []
         pair = None
         if input.signal_type() == 'testing':
             fs = input.signal_sampling_frequency()
@@ -217,16 +213,12 @@ def server(input: Inputs, output: Outputs, session: Session):
             N = len(y1)
             fs = s1_selected_ch.info['sfreq']
             x = np.linspace(0, N/fs, N)
-            info_table1 = [(k, s1_raw.info[k]) for k in s1_raw.info.keys()]
-            info_table2 = [(k, s2_raw.info[k]) for k in s2_raw.info.keys()]
 
         if pair is None:
             pair = PairSignals(
                 x,
                 y1,
                 y2,
-                info_table1,
-                info_table2,
                 label_s1='s1',
                 label_s2='s2',
                 task='foo',
@@ -529,14 +521,6 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.plot(pair.x, pair.y2 - offset)
         return fig
     
-    @render.table
-    def table_info_s1():
-        return pd.DataFrame(get_signals().info_table1, columns=['Key', 'Value'])
-        
-    @render.table
-    def table_info_s2():
-        return pd.DataFrame(get_signals().info_table2, columns=['Key', 'Value'])
-        
 
     @render.plot(height=DEFAULT_PLOT_SIGNAL_HEIGHT)
     def plot_signals_spectrum():

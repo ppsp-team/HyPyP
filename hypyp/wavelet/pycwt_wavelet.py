@@ -41,7 +41,7 @@ try:
             N = len(y1)
             times = np.arange(N) * dt
 
-            wtc, _, coi, freqs, sig = pycwt.wct(y1, y2, dt=dt, sig=False)
+            wtc, _awtc, coi, freqs, _sig = pycwt.wct(y1, y2, dt=dt, sig=False)
 
             periods = 1 / freqs
 

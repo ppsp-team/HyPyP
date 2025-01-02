@@ -220,8 +220,8 @@ def test_subject_dyad():
     #assert len(pairs) == n_channels * n_channels * n_epochs # TODO this is the test we with, with epochs
     assert len(pairs) == len(subject1.pre.ch_names) * len(subject2.pre.ch_names)
     assert pairs[0].label is not None
-    assert pairs[0].ch_name1 == subject1.pre.ch_names[0]
-    assert pairs[0].ch_name2 == subject2.pre.ch_names[0]
+    assert pairs[0].label_ch1 == subject1.pre.ch_names[0]
+    assert pairs[0].label_ch2 == subject2.pre.ch_names[0]
     assert subject1.label in dyad.label
 
 def test_dyad_pairs_recurring_event():
@@ -345,7 +345,7 @@ def test_dyad_compute_regex_match_wtc():
     dyad = Dyad(subject, subject)
     dyad.compute_wtcs(ch_match=get_test_ch_match_few(), time_range=(0,10))
     assert len(dyad.wtcs) == 4
-    assert dyad.wtcs[0].label == dyad.get_pairs(dyad.s1, dyad.s2)[0].label
+    assert dyad.wtcs[0].label_pair == dyad.get_pairs(dyad.s1, dyad.s2)[0].label
 
 def test_dyad_compute_tuple_match_wtc():
     subject = Subject().load_file(snirf_file1)

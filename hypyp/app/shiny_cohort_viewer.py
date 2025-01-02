@@ -165,7 +165,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         dyad = get_dyad()
         if dyad is None:
             return None
-        wtcs = [wtc for wtc in dyad.wtcs if wtc.label == input.select_wtc()]
+        wtcs = [wtc for wtc in dyad.wtcs if wtc.label_pair == input.select_wtc()]
         if len(wtcs) == 0:
             return None
         return wtcs[0]
@@ -214,7 +214,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             "select_wtc",
             f"Select Channel Pair",
             # TODO the filtering here is sketchy
-            choices=[wtc.label for wtc in dyad.wtcs if wtc.label.startswith(input.select_task())]
+            choices=[wtc.label_pair for wtc in dyad.wtcs if wtc.label_pair.startswith(input.select_task())]
         )
     
     @render.table

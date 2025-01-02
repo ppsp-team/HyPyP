@@ -89,11 +89,11 @@ def test_cache():
     other_time_range = (0,2)
     zeros = np.zeros((10,))
     x = np.arange(len(zeros))
-    pair1 = PairSignals(x, zeros, zeros, ch_name1='ch1', ch_name2='ch2', label_s1='subject1', label_s2='subject2', task='my_task', range=time_range)
-    pair2 = PairSignals(x, zeros, zeros, ch_name1='ch1', ch_name2='ch2', label_s1='subject1', label_s2='subject2', task='my_task', range=other_time_range)
-    pair3 = PairSignals(x, zeros, zeros, ch_name1='ch1', ch_name2='ch2', label_s1='subject1', label_s2='subject2', task='my_other_task', range=time_range)
-    pair4 = PairSignals(x, zeros, zeros, ch_name1='ch3', ch_name2='ch4', label_s1='subject1', label_s2='subject2', task='my_task', range=time_range)
-    pair5 = PairSignals(x, zeros, zeros, ch_name1='ch1', ch_name2='ch2', label_s1='subject5.1', label_s2='subject5.2', task='my_task', range=time_range)
+    pair1 = PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject1', label_s2='subject2', task='my_task', range=time_range)
+    pair2 = PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject1', label_s2='subject2', task='my_task', range=other_time_range)
+    pair3 = PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject1', label_s2='subject2', task='my_other_task', range=time_range)
+    pair4 = PairSignals(x, zeros, zeros, label_ch1='ch3', label_ch2='ch4', label_s1='subject1', label_s2='subject2', task='my_task', range=time_range)
+    pair5 = PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject5.1', label_s2='subject5.2', task='my_task', range=time_range)
     # add all the keys to a list, then use a set to remove duplicates and make sure we still have the same count
     keys = []
     keys.append(wavelet.get_cache_key_pair(pair1, 0, 'cwt'))

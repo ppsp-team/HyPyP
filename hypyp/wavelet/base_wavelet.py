@@ -302,10 +302,10 @@ class BaseWavelet(ABC):
 
         if subject_id == 0:
             subject_label = pair.label_s1
-            ch_name = pair.ch_name1
+            ch_name = pair.label_ch1
         elif subject_id == 1:
             subject_label = pair.label_s2
-            ch_name = pair.ch_name2
+            ch_name = pair.label_ch2
         else:
             raise RuntimeError(f'subject_id must be 0 or 1')
         

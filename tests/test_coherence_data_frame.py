@@ -12,7 +12,7 @@ def test_instanciate():
     wavelet = PywaveletsWavelet(disable_caching=True)
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
-    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y, ch_name1='foo', ch_name2='bar'))
+    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y, label_ch1='foo', label_ch2='bar'))
     df = CoherenceDataFrame.from_wtcs([res.as_frame_row])
     assert np.all(df['channel1'] == 'foo')
     assert np.all(df['channel2'] == 'bar')

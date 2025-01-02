@@ -10,40 +10,44 @@ from ..utils import downsample_in_time
 class WTC:
     def __init__(self, wtc, times, scales, periods, coi, pair: PairSignals):
         self.wtc = wtc
+
         self.times = times
         self.scales = scales
         self.periods = periods
         self.frequencies = 1 / periods
         self.coi = coi
         self.coif = 1 / coi
+
+        self.is_intra = pair.is_intra
+        self.is_shuffle = pair.is_shuffle
+
         self.task = pair.task
         self.epoch = pair.epoch
         self.section = pair.section
-        self.label = pair.label
-        self.label_subject1 = pair.label_s1
-        self.label_subject2 = pair.label_s2
-        self.roi1 = pair.roi1
-        self.roi2 = pair.roi2
-        self.ch_name1 = pair.ch_name1
-        self.ch_name2 = pair.ch_name2
+
         self.label_dyad = pair.label_dyad
-        self.is_shuffle = pair.is_shuffle
+        self.label_pair = pair.label
+        self.label_s1 = pair.label_s1
+        self.label_s2 = pair.label_s2
+        self.label_ch1 = pair.label_ch1
+        self.label_ch2 = pair.label_ch2
+        self.label_roi1 = pair.label_roi1
+        self.label_roi2 = pair.label_roi2
 
         # These will not change when we downsample
         dt = (times[1] - times[0])
+        self.dt = dt
         self.sfreq = 1 / dt
         self.nyquist = self.sfreq / 2
 
         self.wtc_masked: np.ma.MaskedArray
         self.coherence_metric: float
 
-        self.coherence_p_value = None
-        self.coherence_t_stat = None
-
         self.compute_coherence_in_coi()
     
+    # TODO split in time segments here and make sure we weight our values correctly given time and frequencies
     def compute_coherence_in_coi(self):
-        mask = self.frequencies[:, np.newaxis] < self.coif
+        mask = self.periods[:, np.newaxis] > self.coi
         self.wtc_masked = np.ma.masked_array(self.wtc, mask)
 
         # TODO maybe we should weight our average because we have more values at higher frequencies than lower frequencies, due to the coi
@@ -64,17 +68,17 @@ class WTC:
         # IMPORTANT: must match the ordering of COHERENCE_FRAME_COLUMNS
         return [
             self.label_dyad,
-            self.label_subject1 == self.label_subject2,
+            self.is_intra,
             self.is_shuffle,
             self.task,
             self.epoch,
             self.section,
-            self.label_subject1,
-            self.label_subject2,
-            self.roi1,
-            self.roi2,
-            self.ch_name1,
-            self.ch_name2,
+            self.label_s1,
+            self.label_s2,
+            self.label_roi1,
+            self.label_roi2,
+            self.label_ch1,
+            self.label_ch2,
             self.coherence_metric,
         ]
     

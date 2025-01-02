@@ -68,8 +68,8 @@ class Dyad:
         return self
 
     def _append_pairs(self,
-                      ch_names1,
-                      ch_names2,
+                      s1_ch_names,
+                      s2_ch_names,
                       s1_task_data,
                       s2_task_data,
                       s1,
@@ -80,8 +80,8 @@ class Dyad:
                       pairs):
         n = s1_task_data.shape[1]
         x = np.linspace(0, n/s1.pre.info['sfreq'], n)
-        for s1_i, s1_ch_name in enumerate(ch_names1):
-            for s2_i, s2_ch_name in enumerate(ch_names2):
+        for s1_i, s1_ch_name in enumerate(s1_ch_names):
+            for s2_i, s2_ch_name in enumerate(s2_ch_names):
                 y1 = s1_task_data[s1_i,:]
                 y2 = s2_task_data[s2_i,:]
                 # Crop signals in case they are not the same length
@@ -116,21 +116,21 @@ class Dyad:
                     y2_sections = [y2]
 
                 for section_id in range(len(x_sections)):
-                    # TODO check if we want info_table
                     pairs.append(PairSignals(
                         x_sections[section_id],
                         y1_sections[section_id],
                         y2_sections[section_id],
-                        ch_name1=s1_ch_name,
-                        ch_name2=s2_ch_name,
+                        label_ch1=s1_ch_name,
+                        label_ch2=s2_ch_name,
                         label_s1=s1.label,
                         label_s2=s2.label,
-                        roi1=s1.get_roi_from_channel(s1_ch_name),
-                        roi2=s2.get_roi_from_channel(s2_ch_name),
+                        label_roi1=s1.get_roi_from_channel(s1_ch_name),
+                        label_roi2=s2.get_roi_from_channel(s2_ch_name),
                         label_dyad=Dyad.get_label(s1, s2),
                         task=task_name,
                         epoch=epoch_id,
                         section=section_id,
+                        is_intra=(s1==s2),
                         is_shuffle=is_shuffle,
                     ))
             
@@ -152,9 +152,8 @@ class Dyad:
             return m in ch_name
 
 
-        ch_names1 = [ch_name for ch_name in s1.ordered_ch_names if check_match(ch_name, ch_match[0])]
-        ch_names2 = [ch_name for ch_name in s2.ordered_ch_names if check_match(ch_name, ch_match[1])]
-
+        s1_ch_names = [ch_name for ch_name in s1.ordered_ch_names if check_match(ch_name, ch_match[0])]
+        s2_ch_names = [ch_name for ch_name in s2.ordered_ch_names if check_match(ch_name, ch_match[1])]
 
         seen_tasks = set()
         for task_name, _, _ in self.tasks:
@@ -163,13 +162,24 @@ class Dyad:
             seen_tasks.add(task_name)
             if task_name == TASK_NAME_WHOLE_RECORD:
                 # TODO see if copy() slows down our computation or takes memory
-                s1_task_data = s1.pre.copy().pick(ch_names1).get_data()
-                s2_task_data = s2.pre.copy().pick(ch_names2).get_data()
+                s1_task_data = s1.pre.copy().pick(s1_ch_names).get_data()
+                s2_task_data = s2.pre.copy().pick(s2_ch_names).get_data()
                 epoch_id = 0
-                self._append_pairs(ch_names1, ch_names2, s1_task_data, s2_task_data, s1, s2, task_name, epoch_id, is_shuffle, pairs)
+                self._append_pairs(
+                    s1_ch_names,
+                    s2_ch_names,
+                    s1_task_data,
+                    s2_task_data,
+                    s1,
+                    s2,
+                    task_name,
+                    epoch_id,
+                    is_shuffle,
+                    pairs,
+                )
             else:
-                epochs1 = s1.get_epochs_for_task(task_name).copy().pick(ch_names1)
-                epochs2 = s2.get_epochs_for_task(task_name).copy().pick(ch_names2)
+                epochs1 = s1.get_epochs_for_task(task_name).copy().pick(s1_ch_names)
+                epochs2 = s2.get_epochs_for_task(task_name).copy().pick(s2_ch_names)
                 if len(epochs1) != len(epochs2):
                     warnings.warn("The 2 subjects do not have the same epochs count. Some epochs will be skipped in pairs.")
                 
@@ -178,7 +188,18 @@ class Dyad:
                     s1_task_data = epochs1.get_data(copy=False)[i,:,:]
                     s2_task_data = epochs2.get_data(copy=False)[i,:,:]
                     epoch_id = i
-                    self._append_pairs(ch_names1, ch_names2, s1_task_data, s2_task_data, s1, s2, task_name, epoch_id, is_shuffle, pairs)
+                    self._append_pairs(
+                        s1_ch_names,
+                        s2_ch_names,
+                        s1_task_data,
+                        s2_task_data,
+                        s1,
+                        s2,
+                        task_name,
+                        epoch_id,
+                        is_shuffle,
+                        pairs,
+                    )
 
         return pairs
     
@@ -261,11 +282,11 @@ class Dyad:
     # Plots
     # 
     def plot_wtc(self, wtc: WTC):
-        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label)
+        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label_pair)
 
     def plot_wtc_by_id(self, id: int):
         wtc = self.wtcs[id]
-        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label)
+        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label_pair)
 
     def plot_coherence_matrix(self, field1, field2, query=None):
         df = self.df
