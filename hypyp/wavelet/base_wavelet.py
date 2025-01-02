@@ -118,9 +118,7 @@ class BaseWavelet(ABC):
         except ValueError as e:
             warnings.warn("Wrong operand shapes could mean that a wrong cached value is used. Please check that cache keys contain all the relevant arguments")
             raise e
-            
 
-        frequencies = cwt1.frequencies
         periods = cwt1.periods
         scales = cwt1.scales
         times = cwt1.times
@@ -151,7 +149,7 @@ class BaseWavelet(ABC):
         self.update_cache_if_none(self.get_cache_key_pair(pair, 0, 'smooth', cache_suffix), S1)
         self.update_cache_if_none(self.get_cache_key_pair(pair, 1, 'smooth', cache_suffix), S2)
 
-        return WTC(wtc, times, scales, frequencies, coi, pair)
+        return WTC(wtc, times, scales, periods, coi, pair)
 
     def update_cache_if_none(self, key, value):
         if not self.use_caching:

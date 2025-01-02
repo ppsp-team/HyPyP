@@ -7,10 +7,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
+
 from ..wavelet.pywavelets_wavelet import PywaveletsWavelet
 from ..wavelet.base_wavelet import BaseWavelet
-from ..wavelet.wtc import WTC, FRAME_COLUMNS
+from ..wavelet.wtc import WTC
 from ..wavelet.pair_signals import PairSignals
+from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from .subject import Subject, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor import BasePreprocessor
 from ..plots import plot_coherence_matrix, plot_wtc, plot_coherence_matrix_df, plot_coherence_per_task_bars, plot_connectogram
@@ -247,7 +249,7 @@ class Dyad:
         for wtc in wtcs:
             df_data.append(wtc.as_frame_row)
 
-        return pd.DataFrame(df_data, columns=FRAME_COLUMNS)
+        return CoherenceDataFrame.from_wtcs(df_data)
 
     
     #

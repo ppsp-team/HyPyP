@@ -43,12 +43,14 @@ try:
             N = len(y1)
             times = np.arange(N) * dt
 
-            wtc, _, coi, frequencies, sig = pycwt.wct(y1, y2, dt=dt, sig=self.compute_significance)
+            wtc, _, coi, freqs, sig = pycwt.wct(y1, y2, dt=dt, sig=self.compute_significance)
             if not self.compute_significance:
                 sig = None
 
+            periods = 1 / freqs
+
             # TODO get scales to send to WTC
-            return WTC(wtc, times, [], frequencies, coi, pair, sig=sig)
+            return WTC(wtc, times, [], periods, coi, pair, sig=sig)
 
 except:
     PycwtWavelet = None

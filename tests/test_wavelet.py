@@ -172,6 +172,7 @@ def test_to_pandas_df():
     wavelet = PywaveletsWavelet(disable_caching=True)
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     df = res.to_frame()
+
     assert df['coherence'][0] > 0
 
 def test_downsampling():

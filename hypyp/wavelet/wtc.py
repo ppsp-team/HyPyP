@@ -1,30 +1,19 @@
 import numpy as np
 import pandas as pd
 
+
 from .pair_signals import PairSignals
+from .coherence_data_frame import CoherenceDataFrame
 from ..plots import plot_wtc
 from ..utils import downsample_in_time
 
-FRAME_COLUMNS = ['dyad',
-                 'is_intra',
-                 'task',
-                 'epoch',
-                 'section',
-                 'subject1',
-                 'subject2',
-                 'roi1',
-                 'roi2',
-                 'channel1',
-                 'channel2',
-                 'coherence']
-
 class WTC:
-    def __init__(self, wtc, times, scales, frequencies, coi, pair: PairSignals, sig=None):
+    def __init__(self, wtc, times, scales, periods, coi, pair: PairSignals, sig=None):
         self.wtc = wtc
         self.times = times
         self.scales = scales
-        self.frequencies = frequencies
-        self.periods = 1 / frequencies
+        self.periods = periods
+        self.frequencies = 1 / periods
         self.coi = coi
         self.coif = 1 / coi
         self.task = pair.task
@@ -72,6 +61,7 @@ class WTC:
     
     @property
     def as_frame_row(self) -> list:
+        # IMPORTANT: must match the ordering of COHERENCE_FRAME_COLUMNS
         return [
             self.label_dyad,
             self.label_subject1 == self.label_subject2,
@@ -87,11 +77,13 @@ class WTC:
             self.coherence_metric,
         ]
     
-    def to_frame(self) -> pd.DataFrame:
-        df = pd.DataFrame([self.as_frame_row], columns=FRAME_COLUMNS)
+    def to_frame(self) -> CoherenceDataFrame:
+        df = CoherenceDataFrame.from_wtcs([self.as_frame_row])
         return df
 
-
+    #
+    # Plots
+    #
     def plot(self, **kwargs):
         return plot_wtc(self.wtc, self.times, self.frequencies, self.coi, self.sfreq, self.sig, **kwargs)
 

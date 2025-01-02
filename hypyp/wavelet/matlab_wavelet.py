@@ -72,8 +72,7 @@ try:
             scales = np.array(self.eng.workspace['scale']).flatten()
             coi = np.array(self.eng.workspace['coi']).flatten()
             sig = np.array(self.eng.workspace['sig']).flatten()
-            frequencies = 1 / periods
-            return WTC(wtc, times, scales, frequencies, coi, pair)
+            return WTC(wtc, times, scales, periods, coi, pair)
 
 except:
     MatlabWavelet = None
