@@ -57,7 +57,6 @@ def plot_wtc(
     frequencies,
     coi,
     sfreq,
-    sig=None,
     ax=None,
     colorbar=True,
     show_coi=True,
@@ -121,9 +120,6 @@ def plot_wtc(
     if title is not None:
         fig.suptitle(title)
 
-    if sig is not None:
-        ax.contour(xx, yy, wtc, levels=sig, color='k')
-        
     return ax
 
 def plot_coherence_matrix(

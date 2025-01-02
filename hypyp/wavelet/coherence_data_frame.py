@@ -8,6 +8,7 @@ import pandas as pd
 COHERENCE_FRAME_COLUMNS = [
     'dyad',
     'is_intra',
+    'is_shuffle',
     'task',
     'epoch',
     'section',
@@ -24,6 +25,7 @@ class CoherenceDataFrame(TypedDict, total=False):
     # row properties
     dyad: str
     is_intra: bool
+    is_shuffle: bool
     task: str
     epoch: int
     section: int

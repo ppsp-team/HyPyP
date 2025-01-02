@@ -7,9 +7,12 @@ class CWT:
         self.W: np.ndarray = weights
         self.times: np.ndarray = times
         self.dt = times[1] - times[0]
+
         self.scales: np.ndarray = scales
+
         self.periods: np.ndarray = periods
         self.frequencies: np.ndarray = 1 / periods
+
         self.coi: np.ndarray = coi # Cone of influence, in periods
         self.coif: np.ndarray = 1 / coi # Cone of influence, in frequencies
 

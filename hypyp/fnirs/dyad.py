@@ -21,11 +21,12 @@ from ..profiling import TimeTracker
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
 
 class Dyad:
-    def __init__(self, s1: Subject, s2: Subject, label:str=''):
+    def __init__(self, s1: Subject, s2: Subject, label:str='', is_shuffle:bool=False):
         self.s1: Subject = s1
         self.s2: Subject = s2
         self.wtcs: List[WTC] = None
         self.df: pd.DataFrame = None
+        self.is_shuffle = is_shuffle
 
         if label == '':
             self.label = Dyad.get_label(s1, s2)
@@ -75,6 +76,7 @@ class Dyad:
                       s2,
                       task_name,
                       epoch_id,
+                      is_shuffle,
                       pairs):
         n = s1_task_data.shape[1]
         x = np.linspace(0, n/s1.pre.info['sfreq'], n)
@@ -129,10 +131,11 @@ class Dyad:
                         task=task_name,
                         epoch=epoch_id,
                         section=section_id,
+                        is_shuffle=is_shuffle,
                     ))
             
     
-    def get_pairs(self, s1: Subject, s2: Subject, ch_match:PairMatch=None) -> List[PairSignals]:
+    def get_pairs(self, s1: Subject, s2: Subject, ch_match:PairMatch=None, is_shuffle:bool=False) -> List[PairSignals]:
         pairs = []
 
         # TODO raise exception if sfreq is not the same in both
@@ -163,7 +166,7 @@ class Dyad:
                 s1_task_data = s1.pre.copy().pick(ch_names1).get_data()
                 s2_task_data = s2.pre.copy().pick(ch_names2).get_data()
                 epoch_id = 0
-                self._append_pairs(ch_names1, ch_names2, s1_task_data, s2_task_data, s1, s2, task_name, epoch_id, pairs)
+                self._append_pairs(ch_names1, ch_names2, s1_task_data, s2_task_data, s1, s2, task_name, epoch_id, is_shuffle, pairs)
             else:
                 epochs1 = s1.get_epochs_for_task(task_name).copy().pick(ch_names1)
                 epochs2 = s2.get_epochs_for_task(task_name).copy().pick(ch_names2)
@@ -175,7 +178,7 @@ class Dyad:
                     s1_task_data = epochs1.get_data(copy=False)[i,:,:]
                     s2_task_data = epochs2.get_data(copy=False)[i,:,:]
                     epoch_id = i
-                    self._append_pairs(ch_names1, ch_names2, s1_task_data, s2_task_data, s1, s2, task_name, epoch_id, pairs)
+                    self._append_pairs(ch_names1, ch_names2, s1_task_data, s2_task_data, s1, s2, task_name, epoch_id, is_shuffle, pairs)
 
         return pairs
     
@@ -198,7 +201,7 @@ class Dyad:
 
         self.wtcs = []
 
-        pairs = self.get_pairs(self.s1, self.s2, ch_match=ch_match)
+        pairs = self.get_pairs(self.s1, self.s2, ch_match=ch_match, is_shuffle=self.is_shuffle)
 
         for pair in pairs:
             if verbose:
@@ -211,7 +214,8 @@ class Dyad:
 
             self.wtcs.append(wtc)
 
-        if with_intra:
+        # TODO should test this "is_shuffle" condition
+        if with_intra and not self.is_shuffle:
             self.s1.wtcs = []
             self.s2.wtcs = []
             # TODO see if we are computing more than once
@@ -237,7 +241,8 @@ class Dyad:
         return self
     
     def _get_coherence_df(self, with_intra=False) -> pd.DataFrame:
-        if with_intra:
+        # TODO test this "is_shuffle" condition
+        if with_intra and not self.is_shuffle:
             if not self.s1.is_wtc_computed or not self.s2.is_wtc_computed:
                 raise RuntimeError('Intra subject WTCs are not computed. Please check "compute_wtcs" arguments')
             wtcs = self.wtcs + self.s1.wtcs + self.s2.wtcs
@@ -256,11 +261,11 @@ class Dyad:
     # Plots
     # 
     def plot_wtc(self, wtc: WTC):
-        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, wtc.sig, title=wtc.label)
+        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label)
 
     def plot_wtc_by_id(self, id: int):
         wtc = self.wtcs[id]
-        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, wtc.sig, title=wtc.label)
+        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label)
 
     def plot_coherence_matrix(self, field1, field2, query=None):
         df = self.df

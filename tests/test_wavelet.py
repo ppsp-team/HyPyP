@@ -68,7 +68,6 @@ def test_wtc():
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
-    # check that we have a metric for significance
     assert res.coherence_metric > 0
     assert res.coherence_metric < 1
     

@@ -264,9 +264,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         elif input.wavelet_library() == 'pycwt':
-            wavelet = PycwtWavelet(
-                compute_significance=input.wavelet_pycwt_significance(),
-            )
+            wavelet = PycwtWavelet()
 
         elif input.wavelet_library() == 'scipy':
             wavelet = ScipyWavelet(
@@ -650,7 +648,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.wavelet_library() in ['pywavelets','scipy']:
             options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=DEFAULT_SMOOTHING_BOXCAR_SIZE)))
         if input.wavelet_library() in ['pycwt']:
-            options.append(ui_option_row("Compute significance (slow)", ui.input_checkbox("wavelet_pycwt_significance", "", value=False), sizes=(8,4)))
+            pass
         return options
     
 app = App(app_ui, server)

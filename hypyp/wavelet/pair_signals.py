@@ -15,6 +15,7 @@ class PairSignals:
                  task='',
                  epoch=0,
                  section=0,
+                 is_shuffle:bool=False,
                  info_table1=[],
                  info_table2=[],
                  range:Tuple[float, float]|None=None,
@@ -42,6 +43,7 @@ class PairSignals:
         self.roi1 = roi1
         self.roi2 = roi2
         self.label_dyad = label_dyad
+        self.is_shuffle = is_shuffle
 
         self.range = range
     
@@ -84,6 +86,7 @@ class PairSignals:
             roi1=self.roi1,
             roi2=self.roi2,
             label_dyad=self.label_dyad,
+            is_shuffle=self.is_shuffle,
             range=range, # keep track that this is a range in an original PairSignals
         )
     

@@ -14,13 +14,11 @@ try:
             precision=10,
             lower_bound=-8,
             upper_bound=8,
-            compute_significance=False,
             evaluate=True,
         ):
             self.precision = precision
             self.lower_bound = lower_bound
             self.upper_bound = upper_bound
-            self.compute_significance = compute_significance
             self.wavelet_name = 'pycwt'
             super().__init__(evaluate, disable_caching=True)
 
@@ -43,14 +41,12 @@ try:
             N = len(y1)
             times = np.arange(N) * dt
 
-            wtc, _, coi, freqs, sig = pycwt.wct(y1, y2, dt=dt, sig=self.compute_significance)
-            if not self.compute_significance:
-                sig = None
+            wtc, _, coi, freqs, sig = pycwt.wct(y1, y2, dt=dt, sig=False)
 
             periods = 1 / freqs
 
             # TODO get scales to send to WTC
-            return WTC(wtc, times, [], periods, coi, pair, sig=sig)
+            return WTC(wtc, times, [], periods, coi, pair)
 
 except:
     PycwtWavelet = None

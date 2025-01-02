@@ -37,15 +37,10 @@ class Cohort():
                 dyad.preprocess(preprocessor)
         return self
     
-    # TODO delete significance argument, not used
-    def compute_wtcs(self, *args, significance=False, **kwargs):
+    def compute_wtcs(self, *args, **kwargs):
         for dyad in self.dyads:
             dyad.compute_wtcs(*args, **kwargs)
         
-        if significance:
-            self.compute_wtcs_shuffle(**kwargs)
-            self.compute_wtcs_significance()
-            
         return self
     
     def clear_dyads_shuffle(self):
@@ -57,52 +52,29 @@ class Cohort():
             for j, dyad2 in enumerate(self.dyads):
                 if i == j:
                     continue
-                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}'))
+                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}', is_shuffle=True))
         return dyads_shuffle
 
+    # TODO add as argument the number of shuffle dyads
     def compute_wtcs_shuffle(self, *args, **kwargs):
         self.dyads_shuffle = self.get_dyads_shuffle()
-        for dyad in self.dyads_shuffle:
-            dyad.compute_wtcs(*args, **kwargs)
+        for dyad_shuffle in self.dyads_shuffle:
+            dyad_shuffle.compute_wtcs(*args, **kwargs)
         return self
     
-    def compute_wtcs_significance(self):
-        if not self.is_wtc_computed:
-            raise RuntimeError('Must compute wavelet coherence for dyads to have significance')
-
-        if not self.is_wtc_shuffle_computed:
-            raise RuntimeError('Must compute wavelet coherence for dyads shuffle to have significance')
-        
-        # TODO statistic test to have real significance
-        # TODO better looping, with dictionaries to have direct access to dyads channels
-        for i, dyad in enumerate(self.dyads):
-            for j, wtc in enumerate(dyad.wtcs):
-                coherence_metrics = []
-                # get the same pair for each dyad_shuffle
-                for k, dyad_shuffle in enumerate(self.dyads_shuffle):
-                    # don't include the real dyad
-                    if k == j:
-                        continue
-                    for l, wtc_shuffle in enumerate(dyad_shuffle.wtcs):
-                        if wtc_shuffle.label == wtc.label:
-                            coherence_metrics.append(wtc_shuffle.coherence_metric)
-
-                others = np.array(coherence_metrics)
-                n = len(others)
-                if n > 0:
-                    # p-value
-                    # TODO: this should be better than this
-                    wtc.coherence_t_stat, wtc.coherence_p_value = ttest_1samp(others, wtc.coherence_metric)
-        
-        self.clear_dyads_shuffle()
-        return self
-        
     def get_coherence_df(self) -> pd.DataFrame:
         df = pd.DataFrame()
+        if not self.is_wtc_computed:
+            raise RuntimeError('wtc not computed')
+
         for dyad in self.dyads:
             df = pd.concat([df, dyad.df], ignore_index=True)
+
+        if self.is_wtc_shuffle_computed:
+            for dyad_shuffle in self.dyads_shuffle:
+                df = pd.concat([df, dyad_shuffle.df], ignore_index=True)
+
         return df
-    
     
     #
     # Disk serialisation

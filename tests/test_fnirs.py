@@ -433,24 +433,23 @@ def test_cohort_wtc():
     wtcs_kwargs = dict(ch_match=get_test_ch_match_one())
 
     cohort.compute_wtcs(**wtcs_kwargs)
+    df = cohort.get_coherence_df()
     assert cohort.is_wtc_computed == True
     assert len(dyad1.wtcs) == 1
     
     # dyads shuffle are computed only when we want significance
     assert cohort.is_wtc_shuffle_computed == False
-    assert cohort.dyads[0].wtcs[0].sig is None
-
     assert cohort.dyads_shuffle is None
+    assert np.all(df['is_shuffle'] == False)
+
     cohort.compute_wtcs_shuffle(**wtcs_kwargs)
+    df_with_shuffle = cohort.get_coherence_df()
     assert len(cohort.dyads_shuffle) == len(dyads)*(len(dyads)-1)
 
     assert cohort.is_wtc_shuffle_computed == True
     assert len(cohort.dyads_shuffle[0].wtcs) == 1
+    assert len(df_with_shuffle['is_shuffle'].unique()) == 2
 
-    cohort.compute_wtcs_significance()
-    assert cohort.dyads[0].wtcs[0].coherence_p_value > 0
-    # Memory should be freed after significance has been computed
-    assert cohort.dyads_shuffle is None
 
 def test_dyad_computes_whole_record_by_default():
     subject = get_test_subject()
@@ -578,14 +577,6 @@ def test_ordered_subject_ch_names():
     subject = Subject(channel_roi=croi).load_file(snirf_file1)
     ch_names = subject.ordered_ch_names
     assert ch_names[0] == 'S2_D2 760'
-
-@pytest.mark.skip(reason="TODO: have significance comparison")
-def test_significance():
-    pass
-
-@pytest.mark.skip(reason="TODO: optimisation")
-def test_pair_indexing_in_matrix():
-    pass
 
 # Skip this test because it downloads data. We don't want this on the CI
 @pytest.mark.skip(reason="Downloads data")

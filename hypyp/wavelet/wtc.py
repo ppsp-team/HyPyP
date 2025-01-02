@@ -8,7 +8,7 @@ from ..plots import plot_wtc
 from ..utils import downsample_in_time
 
 class WTC:
-    def __init__(self, wtc, times, scales, periods, coi, pair: PairSignals, sig=None):
+    def __init__(self, wtc, times, scales, periods, coi, pair: PairSignals):
         self.wtc = wtc
         self.times = times
         self.scales = scales
@@ -27,6 +27,7 @@ class WTC:
         self.ch_name1 = pair.ch_name1
         self.ch_name2 = pair.ch_name2
         self.label_dyad = pair.label_dyad
+        self.is_shuffle = pair.is_shuffle
 
         # These will not change when we downsample
         dt = (times[1] - times[0])
@@ -38,7 +39,6 @@ class WTC:
 
         self.coherence_p_value = None
         self.coherence_t_stat = None
-        self.sig = sig
 
         self.compute_coherence_in_coi()
     
@@ -65,6 +65,7 @@ class WTC:
         return [
             self.label_dyad,
             self.label_subject1 == self.label_subject2,
+            self.is_shuffle,
             self.task,
             self.epoch,
             self.section,
@@ -85,5 +86,5 @@ class WTC:
     # Plots
     #
     def plot(self, **kwargs):
-        return plot_wtc(self.wtc, self.times, self.frequencies, self.coi, self.sfreq, self.sig, **kwargs)
+        return plot_wtc(self.wtc, self.times, self.frequencies, self.coi, self.sfreq, **kwargs)
 
