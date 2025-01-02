@@ -76,6 +76,7 @@ class PywaveletsWavelet(BaseWavelet):
         times = np.arange(N) * dt
         scales = self.get_scales(dt, dj)
         W, freqs = pywt.cwt(y, scales, self._wavelet, sampling_period=dt, method='fft', **self.cwt_params)
+        periods = 1 / freqs
 
         # TODO: this is hardcoded, we have to check where this equation comes from
         # Cone of influence calculations
@@ -87,4 +88,4 @@ class PywaveletsWavelet(BaseWavelet):
         coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
         coi = cmor_flambda * cmor_coi * dt * coi
     
-        return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coi=coi)
+        return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)

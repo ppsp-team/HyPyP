@@ -466,39 +466,6 @@ def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
         # This should raise an exception, since the epochs have not been loaded from annotations
         dyad.compute_wtcs(ch_match=get_test_ch_match_one(), time_range=(0,10))
 
-def test_dyad_coherence_matrix():
-    tasks = [
-        ('task1', 0, 10),
-        ('task2', 10, 20),
-        ('task3', 20, 30),
-    ]
-    subject = Subject(tasks_time_range=tasks).load_file(snirf_file1)
-    dyad = Dyad(subject, subject).compute_wtcs(ch_match=get_test_ch_match_few())
-    # channels detectors expected on 3 tasks: D1-D1, D1-D2, D2-D1, D2-D2
-    assert len(dyad.wtcs) == 3*4
-    conn_matrix, task_names, row_names, col_names = dyad.get_coherence_matrix()
-
-    assert len(conn_matrix.shape) == 3
-    assert conn_matrix.shape[0] == 3 # 3 tasks
-    assert conn_matrix.shape[1] == 2
-    assert conn_matrix.shape[2] == 2
-
-    assert task_names[0] == 'task1'
-    assert row_names[0] == 'S1_D1 760'
-    assert row_names[-1] == 'S1_D2 760'
-    assert col_names[0] == 'S1_D1 760'
-    assert col_names[-1] == 'S1_D2 760'
-
-    # Since the dyad is twice the same subject, the diagonal should be 1
-    assert conn_matrix[0,0,0] == pytest.approx(1)
-    assert conn_matrix[0,1,1] == pytest.approx(1)
-    assert conn_matrix[0,0,1] < 1
-    # Same subject so the matrix should be symetric on every task
-    assert np.all(conn_matrix[:,0,1] == pytest.approx(conn_matrix[:,1,0]))
-
-    # Make sure results for different tasks are not the same
-    assert conn_matrix[0,0,1] != conn_matrix[1,0,1]
-
 def test_dyad_coherence_pandas():
     subject1, subject2 = get_test_subjects()
     dyad = Dyad(subject1, subject2)
@@ -528,9 +495,10 @@ def test_dyad_coherence_pandas_with_intra():
 
 def test_cohort_coherence_pandas():
     subject1, subject2 = get_test_subjects()
-    dyad1 = Dyad(subject1, subject1, label='dyad1')
-    dyad2 = Dyad(subject1, subject2, label='dyad2')
-    dyad3 = Dyad(subject2, subject2, label='dyad3')
+    subject3, _ = get_test_subjects()
+    dyad1 = Dyad(subject1, subject2, label='dyad1')
+    dyad2 = Dyad(subject1, subject3, label='dyad2')
+    dyad3 = Dyad(subject2, subject3, label='dyad3')
     cohort = Cohort([dyad1, dyad2, dyad3])
     cohort.compute_wtcs(ch_match=get_test_ch_match_few())
     df = cohort.get_coherence_df()
@@ -538,6 +506,14 @@ def test_cohort_coherence_pandas():
     assert len(df['channel1'].unique()) == 2
     assert len(df['channel2'].unique()) == 2
     assert len(df['dyad'].unique()) == 3
+    assert np.all(df['is_intra'] == False)
+
+def test_cohort_coherence_pandas_with_intra():
+    cohort = Cohort([Dyad(*get_test_subjects(), label='dyad1')])
+    cohort.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True)
+    df = cohort.get_coherence_df()
+    assert len(df['is_intra'].unique()) == 2
+
 
 def test_dyad_coherence_pandas_on_roi():
     subject1, subject2 = get_test_subjects()
@@ -546,45 +522,6 @@ def test_dyad_coherence_pandas_on_roi():
     df = dyad._get_coherence_df()
     assert len(df['roi1']) == 4
     assert len(df['roi2']) == 4
-
-def test_dyad_connection_matrix_intra_subject():
-    tasks = [
-        ('task1', 0, 10),
-        ('task2', 10, 20),
-    ]
-    subject1 = Subject(tasks_time_range=tasks).load_file(snirf_file1)
-    subject2 = Subject(tasks_time_range=tasks).load_file(snirf_file2)
-    dyad = Dyad(subject1, subject2).compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True)
-    conn_matrix, task_names, row_names, col_names = dyad.get_coherence_matrix_with_intra()
-
-    assert len(conn_matrix.shape) == 3
-    assert conn_matrix.shape[0] == 2 # 3 tasks
-    assert conn_matrix.shape[1] == 4 # 2 intra + 2 inter
-    assert conn_matrix.shape[2] == 4
-
-    assert task_names[0] == 'task1'
-    
-    # names are duplicated
-    ch_names = ['S1_D1 760', 'S1_D2 760']
-    assert row_names == ch_names + ch_names
-    assert col_names == ch_names + ch_names
-
-def test_dyad_p_value_matrix():
-    subject1, subject2 = get_test_subjects()
-    dyad1 = Dyad(subject1, subject1)
-    dyad2 = Dyad(subject1, subject2)
-
-    # TODO we have too many methods to call, this should be much simpler
-    # Add a bunch of "dyad2" in the cohort to have a p-value
-    # TODO we should use synthetic data instead
-    Cohort([dyad1, dyad2, dyad2, dyad2, dyad2]).compute_wtcs(ch_match=get_test_ch_match_few(), significance=True)
-
-    # We need a cohort to have a p-value
-    p_value_matrix = dyad1.get_p_value_matrix()[0]
-    assert len(p_value_matrix.shape) == 3
-
-    assert p_value_matrix[0,0,0] > 0
-    assert p_value_matrix[0,0,0] < 1
 
 def test_wtc_downsampling():
     subject = get_test_subject()

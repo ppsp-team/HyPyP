@@ -77,7 +77,7 @@ class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
         # TODO: this code flow if confusing
         if len(haemo_picks) > 0:
             raw_haemo = raw.copy().pick(haemo_picks)
-            steps.append(MnePreprocessStep(raw_haemo, PREPROCESS_STEP_HAEMO_FILTERED_KEY, PREPROCESS_STEP_HAEMO_DESC))
+            steps.append(MnePreprocessStep(raw_haemo, PREPROCESS_STEP_HAEMO_FILTERED_KEY, PREPROCESS_STEP_HAEMO_FILTERED_DESC))
             return steps
 
         raw_od = mne.preprocessing.nirs.optical_density(raw)

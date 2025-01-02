@@ -37,6 +37,7 @@ class Cohort():
                 dyad.preprocess(preprocessor)
         return self
     
+    # TODO delete significance argument, not used
     def compute_wtcs(self, *args, significance=False, **kwargs):
         for dyad in self.dyads:
             dyad.compute_wtcs(*args, **kwargs)

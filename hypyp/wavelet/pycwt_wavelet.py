@@ -31,8 +31,9 @@ try:
         
         def cwt(self, y, dt, dj):
             W, scales, freqs, coi, _, _ = pycwt.cwt(y, dt=dt, dj=dj)
+            periods = 1 / freqs
             times = np.arange(len(y)) * dt
-            return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coi=coi)
+            return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)
 
         def wtc(self, pair: PairSignals, cache_suffix=''):
             y1 = pair.y1

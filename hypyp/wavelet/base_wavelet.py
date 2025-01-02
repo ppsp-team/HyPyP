@@ -86,13 +86,14 @@ class BaseWavelet(ABC):
 
         N = len(y1)
 
-        dj = 1 / 12 # TODO have as parameter
+        dj = 1 / 12 # TODO have as parameter, or as class property with default
     
         # TODO: have detrend as parameter
         # if detrend:
         #     y1 = signal.detrend(y1, type='linear')
         #     y2 = signal.detrend(y2, type='linear')
         # TODO: have normalize as parameter
+        # TODO: maybe this should be in preprocessing instead
         y1 = (y1 - y1.mean()) / y1.std()
         y2 = (y2 - y2.mean()) / y2.std()
     

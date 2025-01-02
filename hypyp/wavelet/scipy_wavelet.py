@@ -40,6 +40,7 @@ class ScipyWavelet(BaseWavelet):
         wavelet_kwargs = dict(w=self.center_frequency)
         W = scipy.signal.cwt(y, wavelet_fn, scales, **wavelet_kwargs, **self.cwt_params)
         freqs = (self.center_frequency * fs) / (2 * np.pi * scales)
+        periods = 1 / freqs
         times = np.linspace(0, N*dt, N)
 
         # TODO: this is hardcoded, we have to check where this equation comes from
@@ -51,5 +52,5 @@ class ScipyWavelet(BaseWavelet):
         coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
         coi = cmor_flambda * cmor_coi * dt * coi
 
-        return CWT(weights=W, times=times, scales=scales, frequencies=freqs, coi=coi)
+        return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)
 
