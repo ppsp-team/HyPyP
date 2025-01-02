@@ -355,11 +355,3 @@ def plot_coifs(items):
         axes[i].plot(item['coif'])
     plt.show()
     
-def plot_times(items):
-    fig, axes = plt.subplots(1, len(items), figsize=(18,4))
-    fig.suptitle('times')
-    for i in range(len(items)):
-        item = items[i]
-        axes[i].plot(item['times'])
-    plt.show()
-

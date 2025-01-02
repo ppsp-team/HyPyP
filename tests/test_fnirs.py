@@ -10,6 +10,7 @@ from numpy.testing import assert_array_almost_equal
 import mne
 
 from hypyp.fnirs.cohort import Cohort
+from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.fnirs.subject import Subject
@@ -541,6 +542,20 @@ def test_save_cohort_to_disk():
         cohort_reloaded = Cohort.from_pickle(file_path)
     
     assert len(cohort_reloaded.dyads) == len(cohort.dyads)
+
+def test_save_cohort_df_to_disk():
+    subject = get_test_subject()
+    dyad = Dyad(subject, subject)
+    cohort = Cohort([dyad])
+    cohort.compute_wtcs()
+
+    with tempfile.NamedTemporaryFile(suffix='.feather') as temp_file:
+        file_path = temp_file.name
+        cohort.save_feather(file_path)
+        df = CoherenceDataFrame.from_feather(file_path)
+    
+    assert np.all(df['subject1'] == subject.label)
+    
 
 def test_lionirs_channel_grouping():
     roi_file_path = 'data/lionirs/channel_grouping_7ROI.mat'

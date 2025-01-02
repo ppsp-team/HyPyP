@@ -15,6 +15,7 @@ class WTC:
         self.scales = scales
         self.periods = periods
         self.frequencies = 1 / periods
+
         self.coi = coi
         self.coif = 1 / coi
 
@@ -70,15 +71,15 @@ class WTC:
             self.label_dyad,
             self.is_intra,
             self.is_shuffle,
-            self.task,
-            self.epoch,
-            self.section,
             self.label_s1,
             self.label_s2,
             self.label_roi1,
             self.label_roi2,
             self.label_ch1,
             self.label_ch2,
+            self.task,
+            self.epoch,
+            self.section,
             self.coherence_metric,
         ]
     

@@ -6,6 +6,7 @@ from scipy.stats import ttest_1samp
 import pandas as pd
 
 from hypyp.fnirs.preprocessors.base_preprocessor import BasePreprocessor
+from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 
 
 from .dyad import Dyad
@@ -62,19 +63,19 @@ class Cohort():
             dyad_shuffle.compute_wtcs(*args, **kwargs)
         return self
     
-    def get_coherence_df(self) -> pd.DataFrame:
-        df = pd.DataFrame()
+    def get_coherence_df(self) -> CoherenceDataFrame:
+        dfs = []
         if not self.is_wtc_computed:
             raise RuntimeError('wtc not computed')
 
         for dyad in self.dyads:
-            df = pd.concat([df, dyad.df], ignore_index=True)
+            dfs.append(dyad.df)
 
         if self.is_wtc_shuffle_computed:
             for dyad_shuffle in self.dyads_shuffle:
-                df = pd.concat([df, dyad_shuffle.df], ignore_index=True)
+                dfs.append(dyad_shuffle.df)
 
-        return df
+        return CoherenceDataFrame.concat(dfs)
     
     #
     # Disk serialisation
@@ -88,3 +89,7 @@ class Cohort():
         # Serialize the object to the temporary file
         with open(file_path, 'wb') as f:
             pickle.dump(self, f)
+
+    def save_feather(self, file_path):
+        df = self.get_coherence_df()
+        CoherenceDataFrame.save_feather(df, file_path)

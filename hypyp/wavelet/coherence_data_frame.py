@@ -1,68 +1,82 @@
-#import os
 from typing import Tuple, TypedDict, cast
 
 #import numpy as np
 import pandas as pd
-#import feather
+import pyarrow.feather as feather
 
 COHERENCE_FRAME_COLUMNS = [
     'dyad',
     'is_intra',
     'is_shuffle',
-    'task',
-    'epoch',
-    'section',
     'subject1',
     'subject2',
     'roi1',
     'roi2',
     'channel1',
     'channel2',
+    'task',
+    'epoch',
+    'section',
     'coherence',
 ]
 
 class CoherenceDataFrame(TypedDict, total=False):
     # row properties
-    dyad: str
+    dyad: pd.Categorical
+
     is_intra: bool
     is_shuffle: bool
-    task: str
+
+    subject1: pd.Categorical
+    subject2: pd.Categorical
+    roi1: pd.Categorical
+    roi2: pd.Categorical
+    channel1: pd.Categorical
+    channel2: pd.Categorical
+
+    task: pd.Categorical
     epoch: int
     section: int
-    subject1: str
-    subject2: str
-    roi1: str
-    roi2: str
-    channel1: str
-    channel2: str
+
     coherence: float
 
     @staticmethod
     def from_wtcs(data):
-        # TODO: use factors
-        df = pd.DataFrame(data, columns=COHERENCE_FRAME_COLUMNS)
+        df = pd.DataFrame(
+            data,
+            columns=COHERENCE_FRAME_COLUMNS,
+        )
+        CoherenceDataFrame.set_dtype_categories(df)
+
         return cast(CoherenceDataFrame, df)
     
-    #@staticmethod
-    #def from_feather(feather_path: str):
-    #    json_path = feather_path.replace('.feather', '.json')
-
-    #    with open(json_path, 'r') as f:
-    #        meta = json.load(f)
-
-    #    with open(feather_path, 'rb') as f:
-    #        df = feather.read_dataframe(f)
-    #    
-    #    return cast(Tuple[SensorDataFrame, SensorDataFrameMeta], (df, meta))
+    @staticmethod
+    def set_dtype_categories(df):
+        df['dyad'] = df['dyad'].astype('category')
+        df['subject1'] = df['subject1'].astype('category')
+        df['subject2'] = df['subject2'].astype('category')
+        df['roi1'] = df['roi1'].astype('category')
+        df['roi2'] = df['roi2'].astype('category')
+        df['channel1'] = df['channel1'].astype('category')
+        df['channel2'] = df['channel2'].astype('category')
+        df['task'] = df['task'].astype('category')
+        
     
-    #@staticmethod
-    #def save_to_feather(df, meta: SensorDataFrameMeta, feather_path: str):
-    #    ensure_folder_exists_for(feather_path)
-    #    json_path = feather_path.replace('.feather', '.json')
-
-    #    with open(json_path, 'w') as f:
-    #        json.dump(meta, f)
-
-    #    with open(feather_path, 'wb') as f:
-    #        feather.write_dataframe(df, f)
+    @staticmethod
+    def concat(dfs):
+        df = pd.concat(dfs, ignore_index=True)
+        return df
+        
+    
+    @staticmethod
+    def from_feather(feather_path: str):
+        with open(feather_path, 'rb') as f:
+            df = feather.read_feather(f)
+        
+        return cast(CoherenceDataFrame, df)
+    
+    @staticmethod
+    def save_feather(df, feather_path: str):
+        with open(feather_path, 'wb') as f:
+            feather.write_feather(df, f)
 
