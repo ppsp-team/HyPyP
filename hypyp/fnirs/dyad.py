@@ -15,7 +15,7 @@ from ..wavelet.pair_signals import PairSignals
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from .subject import Subject, TASK_NAME_WHOLE_RECORD
 from .preprocessors.base_preprocessor import BasePreprocessor
-from ..plots import plot_coherence_matrix, plot_wtc, plot_coherence_matrix_df, plot_coherence_per_task_bars, plot_connectogram
+from ..plots import plot_wtc, plot_coherence_matrix_df, plot_coherence_per_task_bars, plot_connectogram
 from ..profiling import TimeTracker
 
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
@@ -68,6 +68,7 @@ class Dyad:
         return self
 
     def _append_pairs(self,
+                      label_dyad,
                       s1_ch_names,
                       s2_ch_names,
                       s1_task_data,
@@ -126,7 +127,7 @@ class Dyad:
                         label_s2=s2.label,
                         label_roi1=s1.get_roi_from_channel(s1_ch_name),
                         label_roi2=s2.get_roi_from_channel(s2_ch_name),
-                        label_dyad=Dyad.get_label(s1, s2),
+                        label_dyad=label_dyad,
                         task=task_name,
                         epoch=epoch_id,
                         section=section_id,
@@ -135,7 +136,10 @@ class Dyad:
                     ))
             
     
-    def get_pairs(self, s1: Subject, s2: Subject, ch_match:PairMatch=None, is_shuffle:bool=False) -> List[PairSignals]:
+    def get_pairs(self, s1: Subject, s2: Subject, label_dyad:str=None, ch_match:PairMatch=None, is_shuffle:bool=False) -> List[PairSignals]:
+        if label_dyad is None:
+            label_dyad = self.label
+
         pairs = []
 
         # TODO raise exception if sfreq is not the same in both
@@ -166,6 +170,7 @@ class Dyad:
                 s2_task_data = s2.pre.copy().pick(s2_ch_names).get_data()
                 epoch_id = 0
                 self._append_pairs(
+                    label_dyad,
                     s1_ch_names,
                     s2_ch_names,
                     s1_task_data,
@@ -189,6 +194,7 @@ class Dyad:
                     s2_task_data = epochs2.get_data(copy=False)[i,:,:]
                     epoch_id = i
                     self._append_pairs(
+                        label_dyad,
                         s1_ch_names,
                         s2_ch_names,
                         s1_task_data,
@@ -242,7 +248,7 @@ class Dyad:
             # TODO see if we are computing more than once
             #if not self.s1.is_wtc_computed:
             for subject in [self.s1, self.s2]:
-                for pair in self.get_pairs(subject, subject, ch_match=ch_match):
+                for pair in self.get_pairs(subject, subject, f'{subject.label}(intra)', ch_match=ch_match):
                     if verbose:
                         print(f'Running Wavelet Coherence intra-subject "{subject.label}" on pair "{pair.label}"')
                     if time_range is not None:

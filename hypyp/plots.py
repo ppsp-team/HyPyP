@@ -3,53 +3,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import itertools as itertools
-from matplotlib.colors import Normalize
-import matplotlib.cm as cm
+from matplotlib.ticker import FuncFormatter
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from skimage.measure import block_reduce
-from matplotlib.ticker import FuncFormatter, ScalarFormatter
 from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
-
-
-def spectrogram_plot(z, times, frequencies, coif, cmap="viridis", norm=Normalize(), ax=None, colorbar=True):
-    ###########################################################################
-    # plot
-    
-    # set default colormap, if none specified
-    if cmap is None:
-        cmap = cm.get_cmap('Greys')
-    # or if cmap is a string, get the actual object
-    elif isinstance(cmap, str):
-        cmap = plt.colormaps[cmap]
-
-    # create the figure if needed
-    if ax is None:
-        fig, ax = plt.subplots()
-    else:
-        fig = plt.gcf()
-
-    xx,yy = np.meshgrid(times,frequencies)
-    ZZ = z
-    
-    if norm is None:
-        im = ax.pcolor(xx,yy,ZZ, cmap=cmap)
-        ax.plot(times,coif)
-        ax.fill_between(times,coif, step="mid", alpha=0.4)
-    else:
-        im = ax.pcolor(xx,yy,ZZ, norm=norm, cmap=cmap)
-        ax.plot(times,coif)
-        ax.fill_between(times,coif, step="mid", alpha=0.4)
-    
-    if colorbar:
-        cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
-        fig.colorbar(im,cax=cbaxes, orientation='vertical')
-
-    ax.set_xlim(times.min(), times.max())
-    ax.set_ylim(frequencies.min(), frequencies.max())
-    ax.title.set_text('Wavelet coherence')
-
-    return ax
 
 def plot_wtc(
     wtc,
@@ -70,12 +27,9 @@ def plot_wtc(
     else:
         fig = ax.get_figure()
     
-    times_orig = times
-    
     periods = 1 / frequencies
     xx, yy = np.meshgrid(times, periods)
     
-    #im = ax.pcolor(xx, yy, wtc, norm=Normalize())
     im = ax.pcolor(xx, yy, wtc, vmin=0, vmax=1)
     ax.set_yscale('log')
     ax.set_xlabel('Time (s)')
@@ -119,49 +73,6 @@ def plot_wtc(
 
     if title is not None:
         fig.suptitle(title)
-
-    return ax
-
-def plot_coherence_matrix(
-        z,
-        ch_names1,
-        ch_names2,
-        label1,
-        label2,
-        title='Coherence matrix',
-        with_intra=False,
-        ax=None):
-    # create the figure if needed
-    if ax is None:
-        _, ax = plt.subplots()
-
-    sns.heatmap(z, cmap='viridis', cbar=True, ax=ax, vmin=0, vmax=1)
-
-    if title != '':
-        ax.set_title(title)
-
-    # Set x and y ticks
-    ax.set_yticks(ticks=np.arange(len(ch_names1)), labels=ch_names1, fontsize=6, rotation=0)
-    ax.set_xticks(ticks=np.arange(len(ch_names2)), labels=ch_names2, fontsize=6, rotation=90)
-
-    if with_intra:
-        x_quadrant_labels = [label2, label1]
-        y_quadrant_labels = [label2, label1]
-
-        x_quadrant_boundaries = [0, len(ch_names1)//2, len(ch_names1)]
-        y_quadrant_boundaries = [0, len(ch_names1)//2, len(ch_names1)]
-
-        x_quadrant_positions = [(x_quadrant_boundaries[i] + x_quadrant_boundaries[i+1]) / 2 for i in range(len(x_quadrant_boundaries) - 1)]
-        for pos, label in zip(x_quadrant_positions, x_quadrant_labels):
-            ax.text(pos, -0.2, label, ha='center', va='center', fontsize=12, transform=ax.get_xaxis_transform())
-
-        y_quadrant_positions = [(y_quadrant_boundaries[i] + y_quadrant_boundaries[i+1]) / 2 for i in range(len(y_quadrant_boundaries) - 1)]
-        for pos, label in zip(y_quadrant_positions, y_quadrant_labels):
-            ax.text(-0.2, pos, label, ha='center', va='center', fontsize=12, rotation=90, transform=ax.get_yaxis_transform())
-    
-    else:
-        ax.set_xlabel(label2)
-        ax.set_ylabel(label1)
 
     return ax
 
@@ -259,64 +170,6 @@ def plot_coherence_per_task_bars(df, is_intra=False):
     plt.subplots_adjust(bottom=0.5)
     return p
 
-
-def spectrogram_plot_period(
-    z,
-    times,
-    frequencies,
-    coif,
-    cmap="viridis",
-    norm=Normalize(),
-    ax=None,
-    colorbar=True
-):
-    ###########################################################################
-    # plot
-    
-    # set default colormap, if none specified
-    if cmap is None:
-        cmap = cm.get_cmap('Greys')
-    # or if cmap is a string, get the actual object
-    elif isinstance(cmap, str):
-        cmap = plt.colormaps[cmap]
-
-    # create the figure if needed
-    if ax is None:
-        fig, ax = plt.subplots()
-    else:
-        fig = plt.gcf()
-
-    #periods = np.log2(5/frequencies)
-    periods = np.log2(1/frequencies)
-
-    #ntimes = 5*times
-    ntimes = times
-    
-    xx,yy = np.meshgrid(times, periods)
-    ZZ = z
-    
-    im = ax.pcolor(xx, yy, ZZ, cmap=cmap)
-    #im = ax.pcolormesh(ZZ)
-    #ax.set_yscale('log')
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Period')
-    ax.plot(ntimes,coif)
-    ax.fill_between(times,coif, step="mid", alpha=0.4)
-    
-    if colorbar:
-        cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
-        fig.colorbar(im,cax=cbaxes, orientation='vertical')
-
-    #ax.set_xlim(times.min(), times.max())
-    #ax.set_ylim(periods.min(), periods.max())
-
-    steps = np.arange(0, len(periods), 10)
-    ax.set_yticks(np.round(periods[steps], 2), np.round(2**(periods[steps]), 2))
-    
-    #ax.invert_yaxis()
-    
-    return ax
-
 def plot_cwt_weights(W, times, frequencies, coif):
     fig, ax = plt.subplots()
     im = ax.pcolormesh(times, frequencies, np.abs(W))
@@ -331,27 +184,3 @@ def plot_cwt_weights(W, times, frequencies, coif):
     ax.set_ylim(frequencies.min(), frequencies.max())
 
 
-
-def plot_line(items, key, title, use_log_scale=False):
-    fig, axes = plt.subplots(1, len(items), figsize=(18,4))
-    fig.suptitle(title)
-    for i in range(len(items)):
-        item = items[i]
-        try:
-            print(f"{title}: {item[key].shape}")
-            axes[i].plot(item[key])
-            if use_log_scale:
-                axes[i].set_yscale('log')
-        except Exception as e:
-            print(e)
-            pass
-    plt.show()
-    
-def plot_coifs(items):
-    fig, axes = plt.subplots(1, len(items), figsize=(18,4))
-    fig.suptitle('coif')
-    for i in range(len(items)):
-        item = items[i]
-        axes[i].plot(item['coif'])
-    plt.show()
-    

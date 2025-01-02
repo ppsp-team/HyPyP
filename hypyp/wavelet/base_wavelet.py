@@ -186,7 +186,6 @@ class BaseWavelet(ABC):
     #
     # Smoothing
     #
-    # TODO: test this
     def smoothing(self, W, dt, dj, scales, boxcar_size=DEFAULT_SMOOTHING_BOXCAR_SIZE, cache_suffix=''):
         """Smoothing function used in coherence analysis.
 
