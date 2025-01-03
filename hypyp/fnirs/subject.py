@@ -6,11 +6,11 @@ from pathlib import Path
 import mne
 import itertools as itertools
 
-from ..wavelet.base_wavelet import WTC
 from .preprocessors.base_preprocessor import BasePreprocessor, BasePreprocessStep
 from .preprocessors.upstream_preprocessor import UpstreamPreprocessor
-from ..utils import epochs_from_tasks_annotations, TASK_BEGINNING, TASK_END, Task, TaskList, epochs_from_tasks_time_range
 from .channel_roi import ChannelROI
+from ..utils import epochs_from_tasks_annotations, TASK_BEGINNING, TASK_END, TaskList, epochs_from_tasks_time_range
+from ..wavelet.base_wavelet import WTC
 
 TASK_NAME_WHOLE_RECORD = 'whole_record'
 
@@ -24,7 +24,7 @@ class Subject:
         self.label = label if label != '' else random_label(10)
         self.channel_roi: ChannelROI|None = channel_roi
         self.raw: mne.io.Raw = None
-        self.wtcs: List[WTC] = None # intra-subject wtc
+        self.intra_wtcs: List[WTC] = None # intra-subject wtc
         self.epochs_per_task: List[mne.Epochs] = None
         self.preprocess_steps: List[BasePreprocessStep] = None
         self.tasks_annotations: TaskList = []
@@ -68,7 +68,7 @@ class Subject:
     
     @property
     def is_wtc_computed(self):
-        return self.wtcs is not None
+        return self.intra_wtcs is not None
 
     @property
     def pre(self) -> mne.io.Raw:

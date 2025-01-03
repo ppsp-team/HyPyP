@@ -191,6 +191,4 @@ def test_downsampling():
     assert wtc.sfreq == 1 / dt
     assert wtc.nyquist == nyquist
 
-
-
     

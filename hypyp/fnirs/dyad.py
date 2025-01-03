@@ -24,7 +24,7 @@ class Dyad:
     def __init__(self, s1: Subject, s2: Subject, label:str='', is_shuffle:bool=False):
         self.s1: Subject = s1
         self.s2: Subject = s2
-        self.wtcs: List[WTC] = None
+        self.inter_wtcs: List[WTC] = None
         self.df: pd.DataFrame = None
         self.is_shuffle = is_shuffle
 
@@ -55,7 +55,7 @@ class Dyad:
     
     @property
     def is_wtc_computed(self):
-        return self.wtcs is not None
+        return self.inter_wtcs is not None
 
     @staticmethod
     def get_label(s1: Subject, s2: Subject):
@@ -226,7 +226,7 @@ class Dyad:
         if wavelet is None:
             wavelet = PywaveletsWavelet()
 
-        self.wtcs = []
+        self.inter_wtcs = []
 
         pairs = self.get_pairs(self.s1, self.s2, ch_match=ch_match, is_shuffle=self.is_shuffle)
 
@@ -239,12 +239,12 @@ class Dyad:
             if downsample is not None:
                 wtc.downsample_in_time(downsample)
 
-            self.wtcs.append(wtc)
+            self.inter_wtcs.append(wtc)
 
         # TODO should test this "is_shuffle" condition
         if with_intra and not self.is_shuffle:
-            self.s1.wtcs = []
-            self.s2.wtcs = []
+            self.s1.intra_wtcs = []
+            self.s2.intra_wtcs = []
             # TODO see if we are computing more than once
             #if not self.s1.is_wtc_computed:
             for subject in [self.s1, self.s2]:
@@ -256,14 +256,14 @@ class Dyad:
                     wtc = self.get_pair_wtc(pair, wavelet, cache_suffix='intra')
                     if downsample is not None:
                         wtc.downsample_in_time(downsample)
-                    subject.wtcs.append(wtc)
+                    subject.intra_wtcs.append(wtc)
 
         self.df = self._get_coherence_df(with_intra=with_intra)
 
         if not keep_wtcs:
-            self.wtcs = []
-            self.s1.wtcs = []
-            self.s1.wtcs = []
+            self.inter_wtcs = []
+            self.s1.intra_wtcs = []
+            self.s1.intra_wtcs = []
 
         return self
     
@@ -272,16 +272,13 @@ class Dyad:
         if with_intra and not self.is_shuffle:
             if not self.s1.is_wtc_computed or not self.s2.is_wtc_computed:
                 raise RuntimeError('Intra subject WTCs are not computed. Please check "compute_wtcs" arguments')
-            wtcs = self.wtcs + self.s1.wtcs + self.s2.wtcs
+            wtcs = self.inter_wtcs + self.s1.intra_wtcs + self.s2.intra_wtcs
         else:
-            wtcs = self.wtcs
+            wtcs = self.inter_wtcs
 
-        df_data = []
+        frame_rows = [wtc.as_frame_row for wtc in wtcs]
 
-        for wtc in wtcs:
-            df_data.append(wtc.as_frame_row)
-
-        return CoherenceDataFrame.from_wtcs(df_data)
+        return CoherenceDataFrame.from_wtcs(frame_rows)
 
     
     #
@@ -291,7 +288,7 @@ class Dyad:
         return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label_pair)
 
     def plot_wtc_by_id(self, id: int):
-        wtc = self.wtcs[id]
+        wtc = self.inter_wtcs[id]
         return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label_pair)
 
     def plot_coherence_matrix(self, field1, field2, query=None):

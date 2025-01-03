@@ -7,7 +7,7 @@ class PairSignals:
                  y2,
                  label_ch1='',
                  label_ch2='',
-                 label_s1='', # TODO be more consistent in argument names
+                 label_s1='',
                  label_s2='',
                  label_roi1='',
                  label_roi2='',

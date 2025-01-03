@@ -317,9 +317,9 @@ def test_dyad_compute_all_wtc():
     assert dyad.is_wtc_computed == False
     dyad.compute_wtcs(time_range=(0,10))
     assert dyad.is_wtc_computed == True
-    assert len(dyad.wtcs) == len(subject.pre.ch_names)**2
+    assert len(dyad.inter_wtcs) == len(subject.pre.ch_names)**2
     # Should have a mean of 1 since the first pair is the same signal
-    assert np.mean(dyad.wtcs[0].wtc) == pytest.approx(1)
+    assert np.mean(dyad.inter_wtcs[0].wtc) == pytest.approx(1)
 
     assert len(dyad.df['channel1'].unique()) == 32
     
@@ -330,8 +330,8 @@ def test_dyad_computes_intra_subject():
     dyad.compute_wtcs(time_range=(0,10), with_intra=True)
     assert subject1.is_wtc_computed == True
     assert subject2.is_wtc_computed == True
-    assert len(dyad.wtcs) == len(subject1.wtcs)
-    assert len(dyad.wtcs) == len(subject2.wtcs)
+    assert len(dyad.inter_wtcs) == len(subject1.intra_wtcs)
+    assert len(dyad.inter_wtcs) == len(subject2.intra_wtcs)
     
 
 def test_dyad_compute_str_match_wtc():
@@ -339,14 +339,14 @@ def test_dyad_compute_str_match_wtc():
     dyad = Dyad(subject, subject)
     dyad.compute_wtcs(ch_match='760', time_range=(0,10))
     assert dyad.is_wtc_computed == True
-    assert len(dyad.wtcs) == (len(subject.pre.pick('all').ch_names)/2)**2
+    assert len(dyad.inter_wtcs) == (len(subject.pre.pick('all').ch_names)/2)**2
 
 def test_dyad_compute_regex_match_wtc():
     subject = Subject().load_file(snirf_file1)
     dyad = Dyad(subject, subject)
     dyad.compute_wtcs(ch_match=get_test_ch_match_few(), time_range=(0,10))
-    assert len(dyad.wtcs) == 4
-    assert dyad.wtcs[0].label_pair == dyad.get_pairs(dyad.s1, dyad.s2)[0].label
+    assert len(dyad.inter_wtcs) == 4
+    assert dyad.inter_wtcs[0].label_pair == dyad.get_pairs(dyad.s1, dyad.s2)[0].label
 
 def test_dyad_compute_tuple_match_wtc():
     subject = Subject().load_file(snirf_file1)
@@ -354,7 +354,7 @@ def test_dyad_compute_tuple_match_wtc():
     regex1 = re.compile(r'^S1_D1.*760')
     regex2 = re.compile(r'.*760')
     dyad.compute_wtcs(ch_match=(regex1, regex2), time_range=(0,10))
-    assert len(dyad.wtcs) == 16
+    assert len(dyad.inter_wtcs) == 16
     #[print(wtc.label) for wtc in dyad.wtcs]
 
 def test_dyad_wtc_per_task():
@@ -369,10 +369,10 @@ def test_dyad_wtc_per_task():
     # we will have multiple pairs because we have one pair per epoch
     assert len(pairs) == 5
     dyad.compute_wtcs(ch_match=ch_name)
-    assert len(dyad.wtcs) == len(pairs)
+    assert len(dyad.inter_wtcs) == len(pairs)
     # must compare the first and last wtcs to make sure we are on different tasks (otherwise we might compare 2 epochs of the same task)
-    assert dyad.wtcs[0].wtc.shape[1] != dyad.wtcs[-1].wtc.shape[1] # not the same duration
-    assert 'task1' in [wtc.task for wtc in dyad.wtcs] # order may have changed because of task intersection
+    assert dyad.inter_wtcs[0].wtc.shape[1] != dyad.inter_wtcs[-1].wtc.shape[1] # not the same duration
+    assert 'task1' in [wtc.task for wtc in dyad.inter_wtcs] # order may have changed because of task intersection
 
 def test_dyad_task_annotations_and_time_range_combined():
     tasks_annotations = [
@@ -389,8 +389,8 @@ def test_dyad_task_annotations_and_time_range_combined():
     # We have the count from annotations + the count from time_range
     assert len(pairs) == 3
     dyad.compute_wtcs(ch_match=ch_name)
-    assert len(dyad.wtcs) == len(pairs)
-    found_tasks = [wtc.task for wtc in dyad.wtcs]
+    assert len(dyad.inter_wtcs) == len(pairs)
+    found_tasks = [wtc.task for wtc in dyad.inter_wtcs]
     assert 'task_annotation1' in found_tasks
     assert 'task_time_range' in found_tasks
 
@@ -412,7 +412,7 @@ def test_dyad_wtc_nan_channel_section():
     epochs._data = data
     dyad.compute_wtcs(ch_match=epochs.ch_names[0], downsample=None)
     df = dyad.df
-    assert len(dyad.wtcs) == 3
+    assert len(dyad.inter_wtcs) == 3
     # the first section is too small, coherence should be NaN
     assert np.all(np.isnan(df[df['section']==0]['coherence'].head(1)))
     # the next 2 sections have enough data for wtc
@@ -436,7 +436,7 @@ def test_cohort_wtc():
     cohort.compute_wtcs(**wtcs_kwargs)
     df = cohort.get_coherence_df()
     assert cohort.is_wtc_computed == True
-    assert len(dyad1.wtcs) == 1
+    assert len(dyad1.inter_wtcs) == 1
     
     # dyads shuffle are computed only when we want significance
     assert cohort.is_wtc_shuffle_computed == False
@@ -456,7 +456,7 @@ def test_dyad_computes_whole_record_by_default():
     subject = get_test_subject()
     dyad = Dyad(subject, subject)
     dyad.compute_wtcs(ch_match=get_test_ch_match_one())
-    assert len(dyad.wtcs) == 1
+    assert len(dyad.inter_wtcs) == 1
 
 def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
     subject = Subject(tasks_annotations=[('task1', 1, TASK_NEXT_EVENT)])
@@ -528,7 +528,7 @@ def test_wtc_downsampling():
     dyad = Dyad(subject, subject)
     n = 100
     Cohort([dyad]).compute_wtcs(ch_match=get_test_ch_match_one(), downsample=n)
-    assert len(dyad.wtcs[0].times) <= n
+    assert len(dyad.inter_wtcs[0].times) <= n
     
 
 def test_save_cohort_to_disk():
@@ -559,7 +559,7 @@ def test_save_cohort_df_to_disk():
 
 def test_lionirs_channel_grouping():
     roi_file_path = 'data/lionirs/channel_grouping_7ROI.mat'
-    croi = ChannelROI.from_lionirs(roi_file_path)
+    croi = ChannelROI.from_lionirs_file(roi_file_path)
     assert len(croi.rois.keys()) == 14
 
     key1 = list(croi.rois.keys())[0]
@@ -581,14 +581,14 @@ def test_lionirs_channel_grouping():
     assert ordered_names[3] == 'S1_D2 hbr'
     assert ordered_names[4] == 'whatever'
 
-    assert croi.group_boundaries[:2] == [0, 5]
-    assert croi.group_boundaries[-1] == len(croi.ordered_channel_names)
+    assert croi.group_boundaries_sizes[:2] == [0, 5]
+    assert croi.group_boundaries_sizes[-1] == len(croi.ordered_channel_names)
 
     assert croi.get_roi_from_channel(ordered_names[0]) == 'PreFr_L'
 
 def test_ordered_subject_ch_names():
     roi_file_path = 'data/lionirs/channel_grouping_7ROI.mat'
-    croi = ChannelROI.from_lionirs(roi_file_path)
+    croi = ChannelROI.from_lionirs_file(roi_file_path)
     subject = Subject(channel_roi=croi).load_file(snirf_file1)
     ch_names = subject.ordered_ch_names
     assert ch_names[0] == 'S2_D2 760'
