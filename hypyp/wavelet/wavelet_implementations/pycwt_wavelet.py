@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 
 try:
@@ -40,7 +41,7 @@ try:
             times = np.arange(len(y)) * dt
             return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)
 
-        def wtc(self, pair: PairSignals, cache_suffix=''):
+        def wtc(self, pair: PairSignals, bin_seconds:float|None=None, period_cuts:List[float]|None=None, cache_suffix=''):
             y1 = pair.y1
             y2 = pair.y2
             dt = pair.dt
@@ -53,7 +54,15 @@ try:
             periods = 1 / freqs
 
             # TODO get scales to send to WTC
-            return WTC(wtc, times, [], periods, coi, pair)
+            return WTC(
+                wtc,
+                times,
+                [],
+                periods,
+                coi,
+                pair,
+                wavelet_library=self.wavelet_library,
+                wavelet_name=self.wavelet_name)
 
 except:
     PycwtWavelet = None

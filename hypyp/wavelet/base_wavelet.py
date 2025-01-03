@@ -109,10 +109,10 @@ class BaseWavelet(ABC):
         y2 = (y2 - y2.mean()) / y2.std()
     
         cwt1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'cwt', cache_suffix))
-        cwt1: CWT = self.cwt(y1, dt, dj) if cwt1_cached is None else cwt1_cached
+        cwt1: CWT = self.cwt(y1, dt, dj, cache_suffix=cache_suffix) if cwt1_cached is None else cwt1_cached
 
         cwt2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'cwt', cache_suffix))
-        cwt2: CWT = self.cwt(y2, dt, dj) if cwt2_cached is None else cwt2_cached
+        cwt2: CWT = self.cwt(y2, dt, dj, cache_suffix=cache_suffix) if cwt2_cached is None else cwt2_cached
 
         if (cwt1.scales != cwt2.scales).any():
             raise RuntimeError('The two CWT have different scales')
@@ -170,6 +170,7 @@ class BaseWavelet(ABC):
             bin_seconds=bin_seconds,
             period_cuts=period_cuts,
             wavelet_library=self.wavelet_library,
+            wavelet_name=self.wavelet_name,
         )
 
     def update_cache_if_none(self, key, value):

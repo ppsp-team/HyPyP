@@ -601,7 +601,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                     'cgau6': 'Complex Gaussian 6',
                     'cgau7': 'Complex Gaussian 7',
                     'cgau8': 'Complex Gaussian 8',
-                    'fbsp': 'Fbsp',
                 },
             ))
         return options

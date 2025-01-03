@@ -79,13 +79,13 @@ class PywaveletsWavelet(BaseWavelet):
         return scales
 
 
-    def cwt(self, y, dt, dj=DEFAULT_PERIODS_DJ) -> CWT:
+    def cwt(self, y, dt, dj=DEFAULT_PERIODS_DJ, cache_suffix:str='') -> CWT:
         N = len(y)
         times = np.arange(N) * dt
         scales = self.get_scales(dt, dj)
         W, freqs = pywt.cwt(y, scales, self._wavelet, sampling_period=dt, method='fft', **self.cwt_params)
         periods = 1 / freqs
 
-        coi = self.get_cone_of_influence(N, dt)
+        coi = self.get_and_cache_cone_of_influence(N, dt, cache_suffix=cache_suffix)
     
         return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)

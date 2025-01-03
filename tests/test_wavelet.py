@@ -260,6 +260,7 @@ def test_wtc_wavelet_info():
     df = res.to_frame()
 
     assert df.at[0, 'wavelet_library'] == 'pywavelets'
+    assert df.at[0, 'wavelet_name'] == wavelet.wavelet_name
     
 @pytest.mark.parametrize("wavelet", [
    PywaveletsWavelet(), 

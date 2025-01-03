@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 
 try:
@@ -61,7 +62,7 @@ try:
         def cwt(self, y, dt, dj):
             pass
 
-        def wtc(self, pair: PairSignals, cache_suffix=''):
+        def wtc(self, pair: PairSignals, bin_seconds:float|None=None, period_cuts:List[float]|None=None, cache_suffix=''):
             y1 = pair.y1
             y2 = pair.y2
             dt = pair.dt
@@ -80,8 +81,15 @@ try:
             periods = np.array(self.eng.workspace['period']).flatten()
             scales = np.array(self.eng.workspace['scale']).flatten()
             coi = np.array(self.eng.workspace['coi']).flatten()
-            sig = np.array(self.eng.workspace['sig']).flatten()
-            return WTC(wtc, times, scales, periods, coi, pair)
+            return WTC(
+                wtc,
+                times,
+                scales,
+                periods,
+                coi,
+                pair,
+                wavelet_library=self.wavelet_library,
+                wavelet_name=self.wavelet_name)
 
 except:
     MatlabWavelet = None

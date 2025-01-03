@@ -38,7 +38,7 @@ class ScipyWavelet(BaseWavelet):
 
         return self._psi, self._psi_x
 
-    def cwt(self, y, dt, dj=1/12) -> CWT:
+    def cwt(self, y, dt, dj=1/12, cache_suffix:str='') -> CWT:
         N = len(y)
         fs = 1 / dt
         nOctaves = int(np.log2(np.floor(N / 2.0)))
@@ -50,7 +50,7 @@ class ScipyWavelet(BaseWavelet):
         periods = 1 / freqs
         times = np.linspace(0, N*dt, N)
 
-        coi = self.get_cone_of_influence(N, dt)
+        coi = self.get_and_cache_cone_of_influence(N, dt, cache_suffix=cache_suffix)
 
         return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)
 
