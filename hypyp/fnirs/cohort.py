@@ -14,7 +14,7 @@ from .dyad import Dyad
 class Cohort():
     def __init__(self, dyads: List[Dyad] = []):
         self.dyads: List[Dyad] = dyads
-        self.dyads_shuffle = None
+        self.dyads_shuffle: List[Dyad]|None = None
 
     @property
     def is_wtc_computed(self):

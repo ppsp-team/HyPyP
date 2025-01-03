@@ -448,7 +448,7 @@ def test_cohort_wtc():
     assert len(cohort.dyads_shuffle) == len(dyads)*(len(dyads)-1)
 
     assert cohort.is_wtc_shuffle_computed == True
-    assert len(cohort.dyads_shuffle[0].wtcs) == 1
+    assert len(cohort.dyads_shuffle[0].inter_wtcs) == 1
     assert len(df_with_shuffle['is_shuffle'].unique()) == 2
 
 
