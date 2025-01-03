@@ -210,7 +210,7 @@ class Dyad:
         return pairs
     
     def get_pair_wtc(self, pair: PairSignals, wavelet: BaseWavelet, cache_suffix='') -> WTC: 
-        return wavelet.wtc(pair, cache_suffix)
+        return wavelet.wtc(pair, cache_suffix=cache_suffix)
     
     # TODO remove "time_range", this is only for testing
     def compute_wtcs(
@@ -276,7 +276,9 @@ class Dyad:
         else:
             wtcs = self.inter_wtcs
 
-        frame_rows = [wtc.as_frame_row for wtc in wtcs]
+        frame_rows = []
+        for wtc in wtcs:
+            frame_rows = frame_rows + wtc.as_frame_rows
 
         return CoherenceDataFrame.from_wtcs(frame_rows)
 

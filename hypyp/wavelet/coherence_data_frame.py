@@ -17,7 +17,9 @@ COHERENCE_FRAME_COLUMNS = [
     'task',
     'epoch',
     'section',
+    'bin',
     'coherence',
+    'coherence_masked',
 ]
 
 class CoherenceDataFrame(TypedDict, total=False):
@@ -37,8 +39,10 @@ class CoherenceDataFrame(TypedDict, total=False):
     task: pd.Categorical
     epoch: int
     section: int
+    bin: int
 
     coherence: float
+    coherence_masked: float
 
     @staticmethod
     def from_wtcs(data):

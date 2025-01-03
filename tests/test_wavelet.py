@@ -191,4 +191,21 @@ def test_downsampling():
     assert wtc.sfreq == 1 / dt
     assert wtc.nyquist == nyquist
 
+def test_wtc_time_slicing():
+    tmax = 100
+    n = 1000
+    signal1 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    signal2 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    wavelet = PywaveletsWavelet(disable_caching=True)
+    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), bin_seconds=10)
+    df = res.to_frame()
+
+    assert df.shape[0] == 10
+
+    # first and last bins should be excluded (nan) since they do not have enough unmasked values
+    masked = df['coherence_masked']
+    assert masked[0] > masked[1]
+    assert np.isnan(df.at[0, 'coherence'])
+    assert np.isnan(df.at[df.shape[0]-1, 'coherence'])
+    
     
