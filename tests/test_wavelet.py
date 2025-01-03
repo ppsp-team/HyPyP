@@ -208,4 +208,47 @@ def test_wtc_time_slicing():
     assert np.isnan(df.at[0, 'coherence'])
     assert np.isnan(df.at[df.shape[0]-1, 'coherence'])
     
+def test_wtc_period_slicing():
+    tmax = 100
+    n = 1000
+    signal1 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    signal2 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    wavelet = PywaveletsWavelet(disable_caching=True)
+    period_cuts = [3, 5, 10]
+    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), period_cuts=period_cuts)
+    df = res.to_frame()
+
+    assert df.shape[0] == 4
+
+    # first and last bins should be excluded (nan) since they do not have enough unmasked values
+    masked = df['coherence_masked']
+    assert masked[0] < masked[1]
+
+def test_wtc_period_slicing_edge_cases():
+    tmax = 100
+    n = 1000
+    signal1 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    signal2 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    wavelet = PywaveletsWavelet(disable_caching=True)
+    pair = PairSignals(signal1.x, signal1.y, signal2.y)
+    assert wavelet.wtc(pair, period_cuts=[99999]).to_frame().shape[0] == 1
+    assert wavelet.wtc(pair, period_cuts=[0]).to_frame().shape[0] == 1
+    assert wavelet.wtc(pair, period_cuts=[0, 1, 1.5]).to_frame().shape[0] == 1
+    assert wavelet.wtc(pair, period_cuts=[3, 10]).to_frame().shape[0] == 3
+    assert wavelet.wtc(pair, period_cuts=[3, 3.001, 3.002, 10]).to_frame().shape[0] == 3
+    
+def test_wtc_period_time_combined_slicing():
+    tmax = 100
+    n = 1000
+    signal1 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    signal2 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    wavelet = PywaveletsWavelet(disable_caching=True)
+    bin_seconds = 20
+    period_cuts = [3, 5, 10]
+    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), bin_seconds=bin_seconds, period_cuts=period_cuts)
+    df = res.to_frame()
+
+    assert df.shape[0] == 5 * 4
+    #print(df)
+    
     

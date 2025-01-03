@@ -209,8 +209,15 @@ class Dyad:
 
         return pairs
     
-    def get_pair_wtc(self, pair: PairSignals, wavelet: BaseWavelet, cache_suffix='') -> WTC: 
-        return wavelet.wtc(pair, cache_suffix=cache_suffix)
+    def get_pair_wtc(
+        self,
+        pair: PairSignals,
+        wavelet: BaseWavelet,
+        bin_seconds: float | None = None,
+        period_cuts: List[float] | None = None,
+        cache_suffix='',
+    ) -> WTC: 
+        return wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix=cache_suffix)
     
     # TODO remove "time_range", this is only for testing
     def compute_wtcs(
@@ -222,6 +229,8 @@ class Dyad:
         with_intra=False,
         downsample=None,
         keep_wtcs=True,
+        bin_seconds: float | None = None,
+        period_cuts: List[float] | None = None,
     ):
         if wavelet is None:
             wavelet = PywaveletsWavelet()
@@ -235,7 +244,7 @@ class Dyad:
                 print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
             if time_range is not None:
                 pair = pair.sub(time_range)
-            wtc = self.get_pair_wtc(pair, wavelet, cache_suffix='dyad')
+            wtc = self.get_pair_wtc(pair, wavelet, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix='dyad')
             if downsample is not None:
                 wtc.downsample_in_time(downsample)
 
@@ -253,7 +262,7 @@ class Dyad:
                         print(f'Running Wavelet Coherence intra-subject "{subject.label}" on pair "{pair.label}"')
                     if time_range is not None:
                         pair = pair.sub(time_range)
-                    wtc = self.get_pair_wtc(pair, wavelet, cache_suffix='intra')
+                    wtc = self.get_pair_wtc(pair, wavelet, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix='intra')
                     if downsample is not None:
                         wtc.downsample_in_time(downsample)
                     subject.intra_wtcs.append(wtc)

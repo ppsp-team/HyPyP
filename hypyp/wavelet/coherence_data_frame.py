@@ -20,6 +20,8 @@ COHERENCE_FRAME_COLUMNS = [
     'bin',
     'coherence',
     'coherence_masked',
+    'bin_time_range',
+    'bin_period_range',
 ]
 
 class CoherenceDataFrame(TypedDict, total=False):
@@ -43,6 +45,8 @@ class CoherenceDataFrame(TypedDict, total=False):
 
     coherence: float
     coherence_masked: float
+    bin_time_range: float
+    bin_period_range: float
 
     @staticmethod
     def from_wtcs(data):
@@ -64,6 +68,8 @@ class CoherenceDataFrame(TypedDict, total=False):
         df['channel1'] = df['channel1'].astype('category')
         df['channel2'] = df['channel2'].astype('category')
         df['task'] = df['task'].astype('category')
+        df['bin_time_range'] = df['bin_time_range'].astype('category')
+        df['bin_period_range'] = df['bin_period_range'].astype('category')
         
     
     @staticmethod

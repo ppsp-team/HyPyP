@@ -57,6 +57,11 @@ ggplot(data=data_inter, aes(x=roi1, y=coherence, color=task)) +
   facet_wrap(.~ roi2, labeller = labeller(roi2 = function(x) paste("Child:", x))) +
   ggtitle('Zone pair coherence')
 
+ggplot(data=data_inter, aes(x=task, y=coherence, color=bin_period_range)) +
+  geom_bar() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  ggtitle('Coherence, period range comparison')
+
 
 
 
