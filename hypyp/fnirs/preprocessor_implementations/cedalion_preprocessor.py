@@ -6,7 +6,7 @@ try:
     import matplotlib.pyplot as plt
 
     from ..data_browser import DataBrowser
-    from .base_preprocessor import *
+    from ..base_preprocessor import *
 
     class CedalionPreprocessStep(BasePreprocessStep[cdc.Recording]):
         @property

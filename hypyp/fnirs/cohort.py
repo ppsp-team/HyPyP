@@ -5,7 +5,7 @@ import numpy as np
 from scipy.stats import ttest_1samp
 import pandas as pd
 
-from hypyp.fnirs.preprocessors.base_preprocessor import BasePreprocessor
+from hypyp.fnirs.base_preprocessor import BasePreprocessor
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 
 

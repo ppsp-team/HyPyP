@@ -1,6 +1,6 @@
-from .preprocessors.base_preprocessor import BasePreprocessor, BasePreprocessStep
-from .preprocessors.mne_preprocessor import MnePreprocessor, MnePreprocessStep
-from .preprocessors.upstream_preprocessor import UpstreamPreprocessor
+from .base_preprocessor import BasePreprocessor, BasePreprocessStep
+from .preprocessor_implementations.mne_preprocessor import MnePreprocessor, MnePreprocessStep
+from .preprocessor_implementations.upstream_preprocessor import UpstreamPreprocessor
 from .data_browser import DataBrowser
 from .subject import Subject
 from .dyad import Dyad

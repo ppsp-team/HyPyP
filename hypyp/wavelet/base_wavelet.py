@@ -71,6 +71,16 @@ class BaseWavelet(ABC):
     def cwt(self, y, dt, dj):
         pass
     
+    @property
+    @abstractmethod
+    def wavelet_library(self):
+        pass
+
+    @property
+    @abstractmethod
+    def wavelet_name(self):
+        pass
+    
     def wtc(self, pair: PairSignals, bin_seconds:float|None=None, period_cuts:List[float]|None=None, cache_suffix=''):
         
         # TODO add verbose option
@@ -150,7 +160,17 @@ class BaseWavelet(ABC):
         self.update_cache_if_none(self.get_cache_key_pair(pair, 0, 'smooth', cache_suffix), S1)
         self.update_cache_if_none(self.get_cache_key_pair(pair, 1, 'smooth', cache_suffix), S2)
 
-        return WTC(wtc, times, scales, periods, coi, pair, bin_seconds=bin_seconds, period_cuts=period_cuts)
+        return WTC(
+            wtc,
+            times,
+            scales,
+            periods,
+            coi,
+            pair,
+            bin_seconds=bin_seconds,
+            period_cuts=period_cuts,
+            wavelet_library=self.wavelet_library,
+        )
 
     def update_cache_if_none(self, key, value):
         if not self.use_caching:

@@ -11,7 +11,19 @@ from ..utils import downsample_in_time
 MASK_THRESHOLD = 0.5
 
 class WTC:
-    def __init__(self, wtc, times, scales, periods, coi, pair: PairSignals, bin_seconds:float|None=None, period_cuts:List[float]|None=None):
+    def __init__(
+        self,
+        wtc,
+        times,
+        scales,
+        periods,
+        coi,
+        pair: PairSignals,
+        bin_seconds:float|None=None,
+        period_cuts:List[float]|None=None,
+        wavelet_library:str='',
+        wavelet_name:str='',
+    ):
         self.wtc = wtc
 
         self.times = times
@@ -52,6 +64,9 @@ class WTC:
         self.period_cuts = period_cuts
         self.coherence_bins: List[Tuple[float, float, str, str]] = []
 
+        self.wavelet_library = wavelet_library
+        self.wavelet_name = wavelet_name
+
         self.compute_coherence_in_coi()
     
     def compute_coherence_in_coi(self):
@@ -73,18 +88,20 @@ class WTC:
         self.coherence_bins = []
 
         if self.bin_seconds is None:
+            # single bin
             t_ranges = [(0, len(self.times))]
         else:
+            t_ranges = []
             duration = len(self.times) * dt
             t_steps = int(duration / self.bin_seconds)
             t_size = int(self.bin_seconds / dt)
-            t_ranges = []
             for t_step in range(t_steps):
                 t_start = t_step * t_size
                 t_stop = t_start + t_size
                 t_ranges.append((t_start, t_stop))
 
         if self.period_cuts is None:
+            # single bin
             p_ranges = [(0, len(self.scales))]
         else:
             p_ranges = []
@@ -111,6 +128,7 @@ class WTC:
                 if last_i < len(self.periods):
                     p_ranges.append((last_i, len(self.periods)))
             
+        # loop over time bins and period bins
         for t_start, t_stop in t_ranges:
             for p_start, p_stop in p_ranges:
                 wtc_bin = self.wtc_masked[p_start:p_stop, t_start:t_stop]
@@ -154,6 +172,8 @@ class WTC:
                 self.coherence_bins[bin_id][1], # masked
                 self.coherence_bins[bin_id][2], # time range
                 self.coherence_bins[bin_id][3], # period range
+                self.wavelet_library,
+                self.wavelet_name,
             ])
         return frames
     

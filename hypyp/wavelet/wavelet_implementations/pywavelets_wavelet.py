@@ -1,8 +1,8 @@
 from math import ceil, floor
 import numpy as np
 
-from .base_wavelet import BaseWavelet
-from .cwt import CWT
+from ..base_wavelet import BaseWavelet
+from ..cwt import CWT
 import pywt
 import scipy
 
@@ -30,7 +30,7 @@ class PywaveletsWavelet(BaseWavelet):
         if cwt_params is None:
             cwt_params = dict()
         self.cwt_params = cwt_params
-        self.wavelet_name = wavelet_name
+        self._wavelet_name = wavelet_name
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
 
@@ -49,8 +49,16 @@ class PywaveletsWavelet(BaseWavelet):
 
         super().__init__(evaluate, cache=cache, disable_caching=disable_caching, **kwargs)
 
+    @property
+    def wavelet_library(self):
+        return 'pywavelets'
+
+    @property
+    def wavelet_name(self):
+        return self._wavelet_name
+
     def evaluate_psi(self):
-        wavelet = pywt.ContinuousWavelet(self.wavelet_name)
+        wavelet = pywt.ContinuousWavelet(self._wavelet_name)
         wavelet.lower_bound = self.lower_bound
         wavelet.upper_bound = self.upper_bound
         self._wavelet = wavelet

@@ -1,6 +1,5 @@
-from typing import Tuple, TypedDict, cast
+from typing import TypedDict, cast
 
-#import numpy as np
 import pandas as pd
 import pyarrow.feather as feather
 
@@ -22,6 +21,8 @@ COHERENCE_FRAME_COLUMNS = [
     'coherence_masked',
     'bin_time_range',
     'bin_period_range',
+    'wavelet_library',
+    'wavelet_name',
 ]
 
 class CoherenceDataFrame(TypedDict, total=False):
@@ -45,8 +46,11 @@ class CoherenceDataFrame(TypedDict, total=False):
 
     coherence: float
     coherence_masked: float
-    bin_time_range: float
-    bin_period_range: float
+    bin_time_range: pd.Categorical
+    bin_period_range: pd.Categorical
+
+    wavelet_library: pd.Categorical
+    wavelet_name: pd.Categorical
 
     @staticmethod
     def from_wtcs(data):
@@ -70,6 +74,8 @@ class CoherenceDataFrame(TypedDict, total=False):
         df['task'] = df['task'].astype('category')
         df['bin_time_range'] = df['bin_time_range'].astype('category')
         df['bin_period_range'] = df['bin_period_range'].astype('category')
+        df['wavelet_library'] = df['wavelet_library'].astype('category')
+        df['wavelet_name'] = df['wavelet_name'].astype('category')
         
     
     @staticmethod

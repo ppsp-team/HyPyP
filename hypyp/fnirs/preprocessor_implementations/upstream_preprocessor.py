@@ -1,4 +1,4 @@
-from .base_preprocessor import *
+from ..base_preprocessor import *
 from .mne_preprocessor import MnePreprocessor, MnePreprocessStep
 
 # This is the same as MnePreprocessor, but without the default pipeline

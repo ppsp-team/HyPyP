@@ -6,8 +6,8 @@ from pathlib import Path
 import mne
 import itertools as itertools
 
-from .preprocessors.base_preprocessor import BasePreprocessor, BasePreprocessStep
-from .preprocessors.upstream_preprocessor import UpstreamPreprocessor
+from .base_preprocessor import BasePreprocessor, BasePreprocessStep
+from .preprocessor_implementations.upstream_preprocessor import UpstreamPreprocessor
 from .channel_roi import ChannelROI
 from ..utils import epochs_from_tasks_annotations, TASK_BEGINNING, TASK_END, TaskList, epochs_from_tasks_time_range
 from ..wavelet.base_wavelet import WTC

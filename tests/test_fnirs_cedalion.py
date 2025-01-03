@@ -1,7 +1,7 @@
 import pytest
 
-from hypyp.fnirs.preprocessors.base_preprocessor import PREPROCESS_STEP_BASE_KEY
-from hypyp.fnirs.preprocessors.cedalion_preprocessor import CedalionPreprocessor
+from hypyp.fnirs.base_preprocessor import PREPROCESS_STEP_BASE_KEY
+from hypyp.fnirs.preprocessor_implementations.cedalion_preprocessor import CedalionPreprocessor
 
 snirf_file = './data/fNIRS/DCARE_02_sub1.snirf'
 

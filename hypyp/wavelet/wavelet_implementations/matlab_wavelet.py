@@ -3,9 +3,9 @@ import numpy as np
 try:
     import matlab.engine
 
-    from .base_wavelet import BaseWavelet
-    from .wtc import WTC
-    from .pair_signals import PairSignals
+    from ..base_wavelet import BaseWavelet
+    from ..wtc import WTC
+    from ..pair_signals import PairSignals
 
     # In order to work, python must know the location of matlab
     # Add something like this to ~/.bashrc
@@ -21,8 +21,17 @@ try:
             print("Starting matlab engine")
             self.eng = matlab.engine.start_matlab()
             print("Matlab engine started")
+            # TODO unhardcode path
             self.eng.cd('/home/patrice/work/ppsp/matlab-wtc/Archive/wavelet-coherence/wavelet-coherence-master/')
             super().__init__(evaluate)
+
+        @property
+        def wavelet_library(self):
+            return 'matlab'
+
+        @property
+        def wavelet_name(self):
+            return 'cmor'
 
         def evaluate_psi(self):
 

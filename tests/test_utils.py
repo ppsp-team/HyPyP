@@ -6,7 +6,7 @@ import numpy as np
 import mne
 from hypyp import utils
 from hypyp.signal import SynteticSignal
-from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
+from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet
 
 def get_fake_raw():
     sfreq = 100

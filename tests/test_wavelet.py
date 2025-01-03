@@ -5,7 +5,7 @@ import numpy as np
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.base_wavelet import BaseWavelet
-from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
+from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet
 
 def test_instanciate():
     wavelet_name = 'cgau1'
@@ -250,5 +250,34 @@ def test_wtc_period_time_combined_slicing():
 
     assert df.shape[0] == 5 * 4
     #print(df)
+    
+def test_wtc_wavelet_info():
+    signal1 = SynteticSignal().add_noise()
+    signal2 = SynteticSignal().add_noise()
+    pair = PairSignals(signal1.x, signal1.y, signal2.y)
+    wavelet = PywaveletsWavelet(disable_caching=True)
+    res = wavelet.wtc(pair)
+    df = res.to_frame()
+
+    assert df.at[0, 'wavelet_library'] == 'pywavelets'
+    
+@pytest.mark.parametrize("wavelet", [
+   PywaveletsWavelet(), 
+   PywaveletsWavelet(wavelet_name='cmor10,1'), 
+   PywaveletsWavelet(wavelet_name='cgau1'), 
+   PywaveletsWavelet(wavelet_name='cgau2'), 
+   PywaveletsWavelet(wavelet_name='cgau3'), 
+])
+def test_cone_of_influence(wavelet):
+    n = 11
+    dt = 1
+    coi = wavelet.get_cone_of_influence(n, dt)
+    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA\n")
+    print(coi)
+    assert coi[0] == coi[-1]
+    assert coi[0] < coi[1]
+    assert np.argmax(coi) == n // 2
+    assert len(coi) == n
+
     
     

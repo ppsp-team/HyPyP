@@ -3,10 +3,10 @@ import numpy as np
 try:
     import pycwt
 
-    from .base_wavelet import BaseWavelet
-    from .wtc import WTC
-    from .cwt import CWT
-    from .pair_signals import PairSignals
+    from ..base_wavelet import BaseWavelet
+    from ..wtc import WTC
+    from ..cwt import CWT
+    from ..pair_signals import PairSignals
 
     class PycwtWavelet(BaseWavelet):
         def __init__(
@@ -19,8 +19,15 @@ try:
             self.precision = precision
             self.lower_bound = lower_bound
             self.upper_bound = upper_bound
-            self.wavelet_name = 'pycwt'
             super().__init__(evaluate, disable_caching=True)
+
+        @property
+        def wavelet_library(self):
+            return 'pycwt'
+
+        @property
+        def wavelet_name(self):
+            return 'cmor'
 
         def evaluate_psi(self):
             self._psi_x = np.linspace(self.lower_bound, self.upper_bound, 2**self.precision)

@@ -15,18 +15,18 @@ import mne
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.fnirs.data_browser import DataBrowser
 from hypyp.fnirs.subject import Subject
-from hypyp.fnirs.preprocessors.mne_preprocessor import MnePreprocessor
-from hypyp.fnirs.preprocessors.upstream_preprocessor import UpstreamPreprocessor
+from hypyp.fnirs.preprocessor_implementations.mne_preprocessor import MnePreprocessor
+from hypyp.fnirs.preprocessor_implementations.upstream_preprocessor import UpstreamPreprocessor
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.base_wavelet import DEFAULT_SMOOTHING_BOXCAR_SIZE
-from hypyp.wavelet.matlab_wavelet import MatlabWavelet
-from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY, DEFAULT_PERIODS_RANGE
-from hypyp.wavelet.pycwt_wavelet import PycwtWavelet
-from hypyp.wavelet.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
+from hypyp.wavelet.wavelet_implementations.matlab_wavelet import MatlabWavelet
+from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY, DEFAULT_PERIODS_RANGE
+from hypyp.wavelet.wavelet_implementations.pycwt_wavelet import PycwtWavelet
+from hypyp.wavelet.wavelet_implementations.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
 import hypyp.plots
 
 # TODO: Cedalion is optional, this import should be in a try-catch
-from hypyp.fnirs.preprocessors.cedalion_preprocessor import CedalionPreprocessor
+from hypyp.fnirs.preprocessor_implementations.cedalion_preprocessor import CedalionPreprocessor
 
 DEFAULT_PLOT_SIGNAL_HEIGHT = 150 # px
 DEFAULT_PLOT_MNE_HEIGHT = 1200 # px

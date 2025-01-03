@@ -8,7 +8,7 @@ import pandas as pd
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 from hypyp.wavelet.pair_signals import PairSignals
-from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
+from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.wavelet.wtc import WTC
 
 def test_instanciate():

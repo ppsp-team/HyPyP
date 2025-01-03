@@ -5,7 +5,7 @@ import mne
 import scipy.io
 
 from ..data_browser import DataBrowser
-from .base_preprocessor import *
+from ..base_preprocessor import *
 
 class MnePreprocessStep(BasePreprocessStep[mne.io.Raw]):
     @property

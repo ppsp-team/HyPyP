@@ -12,14 +12,14 @@ import mne
 from hypyp.fnirs.cohort import Cohort
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 from hypyp.wavelet.pair_signals import PairSignals
-from hypyp.wavelet.pywavelets_wavelet import PywaveletsWavelet
+from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.fnirs.subject import Subject
 from hypyp.fnirs.channel_roi import ChannelROI
 from hypyp.fnirs.dyad import Dyad
 from hypyp.fnirs.data_browser import DataBrowser
-from hypyp.fnirs.preprocessors.base_preprocessor import PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_HAEMO_FILTERED_KEY
-from hypyp.fnirs.preprocessors.mne_preprocessor import MnePreprocessStep, MnePreprocessor
-from hypyp.fnirs.preprocessors.upstream_preprocessor import UpstreamPreprocessor
+from hypyp.fnirs.base_preprocessor import PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_HAEMO_FILTERED_KEY
+from hypyp.fnirs.preprocessor_implementations.mne_preprocessor import MnePreprocessStep, MnePreprocessor
+from hypyp.fnirs.preprocessor_implementations.upstream_preprocessor import UpstreamPreprocessor
 from hypyp.utils import TASK_NEXT_EVENT
 
 fif_file = './data/sub-110_session-1_pre.fif'

@@ -1,8 +1,8 @@
 from math import ceil, floor
 import numpy as np
 
-from .base_wavelet import BaseWavelet
-from .cwt import CWT
+from ..base_wavelet import BaseWavelet
+from ..cwt import CWT
 import scipy.signal
 
 DEFAULT_SCIPY_CENTER_FREQUENCY = 6
@@ -18,8 +18,15 @@ class ScipyWavelet(BaseWavelet):
         self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
         self.cwt_params = cwt_params
         self.center_frequency = center_frequency
-        self.wavelet_name = 'morlet_scipy'
         super().__init__(evaluate, disable_caching=True)
+
+    @property
+    def wavelet_library(self):
+        return 'scipy'
+
+    @property
+    def wavelet_name(self):
+        return 'cmor'
 
     def evaluate_psi(self):
         M = 1000
