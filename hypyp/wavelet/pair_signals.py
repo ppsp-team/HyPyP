@@ -17,7 +17,7 @@ class PairSignals:
                  section=0,
                  is_intra:bool=False,
                  is_shuffle:bool=False,
-                 range:Tuple[float, float]|None=None,
+                 time_range:Tuple[float, float]|None=None,
         ):
         self.x = x
         self.n = len(x)
@@ -43,7 +43,7 @@ class PairSignals:
         self.label_roi1 = label_roi1
         self.label_roi2 = label_roi2
 
-        self.range = range
+        self.time_range = time_range # seconds
     
     @property
     def label(self):
@@ -61,12 +61,12 @@ class PairSignals:
         
         return ret
 
-    def sub(self, range):
-        if range[0] == 0 and range[1] == self.n/self.fs:
+    def sub(self, time_range):
+        if time_range[0] == 0 and time_range[1] == self.n/self.fs:
             return self
 
-        signal_from = int(self.fs * range[0])
-        signal_to = int(self.fs * range[1])
+        signal_from = int(self.fs * time_range[0])
+        signal_to = int(self.fs * time_range[1])
         
         return PairSignals(
             self.x[signal_from:signal_to],
@@ -83,7 +83,7 @@ class PairSignals:
             label_ch2=self.label_ch2,
             label_roi1=self.label_roi1,
             label_roi2=self.label_roi2,
-            range=range, # keep track that this is a range in an original PairSignals
+            time_range=time_range, # keep track that this is a range in an original PairSignals
         )
     
     def __repr__(self):

@@ -25,7 +25,7 @@ class Dyad:
         self.s1: Subject = s1
         self.s2: Subject = s2
         self.inter_wtcs: List[WTC] = None
-        self.df: pd.DataFrame = None
+        self.df: CoherenceDataFrame = None
         self.is_shuffle = is_shuffle
 
         if label == '':
@@ -219,18 +219,17 @@ class Dyad:
     ) -> WTC: 
         return wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix=cache_suffix)
     
-    # TODO remove "time_range", this is only for testing
     def compute_wtcs(
         self,
         wavelet:BaseWavelet|None=None,
         ch_match:PairMatch=None,
-        time_range:Tuple[float,float]=None,
+        only_time_range:Tuple[float,float]=None,
+        bin_seconds: float | None = None,
+        period_cuts: List[float] | None = None,
         verbose=False,
         with_intra=False,
         downsample=None,
         keep_wtcs=True,
-        bin_seconds: float | None = None,
-        period_cuts: List[float] | None = None,
     ):
         if wavelet is None:
             wavelet = PywaveletsWavelet()
@@ -242,8 +241,8 @@ class Dyad:
         for pair in pairs:
             if verbose:
                 print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
-            if time_range is not None:
-                pair = pair.sub(time_range)
+            if only_time_range is not None:
+                pair = pair.sub(only_time_range)
             wtc = self.get_pair_wtc(pair, wavelet, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix='dyad')
             if downsample is not None:
                 wtc.downsample_in_time(downsample)
@@ -260,8 +259,8 @@ class Dyad:
                 for pair in self.get_pairs(subject, subject, f'{subject.label}(intra)', ch_match=ch_match):
                     if verbose:
                         print(f'Running Wavelet Coherence intra-subject "{subject.label}" on pair "{pair.label}"')
-                    if time_range is not None:
-                        pair = pair.sub(time_range)
+                    if only_time_range is not None:
+                        pair = pair.sub(only_time_range)
                     wtc = self.get_pair_wtc(pair, wavelet, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix='intra')
                     if downsample is not None:
                         wtc.downsample_in_time(downsample)

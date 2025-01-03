@@ -1,27 +1,10 @@
-print("[+] Checking for installed packages")
-local_installed_packages <- .packages(all.available = TRUE)
-
-# Installing "arrow" from source might take a few minutes
-required_packages <- c(
-  "arrow",
-  "ggplot2"
-)
-
-for (p in required_packages) {
-  print(paste0("[*] Looking for package '", p, "': "))
-  if (!(p %in% local_installed_packages)) {
-    install.packages(p)
-  }
-}
-
-library("arrow")
 library("ggplot2")
 
 current_path <- rstudioapi::getActiveDocumentContext()$path 
 base_path <- dirname(dirname(current_path))
-feather_path <- paste0(base_path, "/data/results/fnirs_cohort_example.feather")
+csv_path <- paste0(base_path, "/data/results/fnirs_cohort_example.csv")
 
-data <- arrow::read_feather(feather_path)
+data <- read.csv(csv_path, header=TRUE, stringsAsFactors=FALSE)
 
 data = within(data, {
   dyad <- as.factor(dyad)
@@ -32,35 +15,46 @@ data = within(data, {
   channel1 <- as.factor(channel1)
   channel2 <- as.factor(channel2)
   task <- as.factor(task)
+  bin_time_range <- as.factor(bin_time_range)
+  bin_period_range <- as.factor(bin_period_range)
+  
+  is_intra <- tolower(is_intra) == "true"
+  is_shuffle <- tolower(is_shuffle) == "true"
 })
 
 data$roi_pair = paste(data$roi1, data$roi2, sep='-')
 
-    
-data_inter <- subset(data, data['is_intra'] == FALSE & data['is_shuffle'] == FALSE)
-data_inter
+sel_not_intra = data$is_intra == FALSE
+sel_not_shuffle = data$is_shuffle == FALSE
+sel_not_na = sapply(data$coherence, is.na) == FALSE
+data_inter <- subset(data, sel_not_intra & sel_not_shuffle & sel_not_na)
 
 ggplot(data=data_inter, aes(x=channel1, y=channel2, fill=coherence)) +
   geom_tile() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   ggtitle('Inter subject coherence')
 
-ggplot(data=data_inter, aes(x=dyad, y=coherence, color=task)) +
+ggplot(data=data_inter, aes(x=roi1, y=roi2, fill=coherence)) +
+  geom_tile() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  ggtitle('Inter subject coherence per region of interest')
+
+ggplot(data=data_inter, aes(x=coherence, y=dyad, color=task)) +
   geom_boxplot() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   ggtitle('Coherence')
 
-ggplot(data=data_inter, aes(x=roi1, y=coherence, color=task)) +
+ggplot(data=data_inter[data_inter$task!='baseline', ], aes(x=coherence, y=roi1)) +
   geom_boxplot() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-  scale_x_discrete(labels = function(x) paste("Parent:", x)) +
+  scale_y_discrete(labels = function(x) paste("Parent:", x)) +
   facet_wrap(.~ roi2, labeller = labeller(roi2 = function(x) paste("Child:", x))) +
   ggtitle('Zone pair coherence')
 
-ggplot(data=data_inter, aes(x=task, y=coherence, color=bin_period_range)) +
-  geom_bar() +
+ggplot(data=data_inter, aes(x=coherence, y=bin_period_range, color=task)) +
+  geom_boxplot() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-  ggtitle('Coherence, period range comparison')
+  ggtitle('Coherence per period range')
 
 
 

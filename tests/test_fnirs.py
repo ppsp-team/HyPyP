@@ -315,7 +315,7 @@ def test_dyad_compute_all_wtc():
     subject = Subject().load_file(snirf_file1)
     dyad = Dyad(subject, subject)
     assert dyad.is_wtc_computed == False
-    dyad.compute_wtcs(time_range=(0,10))
+    dyad.compute_wtcs(only_time_range=(0,10))
     assert dyad.is_wtc_computed == True
     assert len(dyad.inter_wtcs) == len(subject.pre.ch_names)**2
     # Should have a mean of 1 since the first pair is the same signal
@@ -327,7 +327,7 @@ def test_dyad_computes_intra_subject():
     subject1 = Subject().load_file(snirf_file1)
     subject2 = Subject().load_file(snirf_file2)
     dyad = Dyad(subject1, subject2)
-    dyad.compute_wtcs(time_range=(0,10), with_intra=True)
+    dyad.compute_wtcs(only_time_range=(0,10), with_intra=True)
     assert subject1.is_wtc_computed == True
     assert subject2.is_wtc_computed == True
     assert len(dyad.inter_wtcs) == len(subject1.intra_wtcs)
@@ -337,14 +337,14 @@ def test_dyad_computes_intra_subject():
 def test_dyad_compute_str_match_wtc():
     subject = Subject().load_file(snirf_file1)
     dyad = Dyad(subject, subject)
-    dyad.compute_wtcs(ch_match='760', time_range=(0,10))
+    dyad.compute_wtcs(ch_match='760', only_time_range=(0,10))
     assert dyad.is_wtc_computed == True
     assert len(dyad.inter_wtcs) == (len(subject.pre.pick('all').ch_names)/2)**2
 
 def test_dyad_compute_regex_match_wtc():
     subject = Subject().load_file(snirf_file1)
     dyad = Dyad(subject, subject)
-    dyad.compute_wtcs(ch_match=get_test_ch_match_few(), time_range=(0,10))
+    dyad.compute_wtcs(ch_match=get_test_ch_match_few(), only_time_range=(0,10))
     assert len(dyad.inter_wtcs) == 4
     assert dyad.inter_wtcs[0].label_pair == dyad.get_pairs(dyad.s1, dyad.s2)[0].label
 
@@ -353,7 +353,7 @@ def test_dyad_compute_tuple_match_wtc():
     dyad = Dyad(subject, subject)
     regex1 = re.compile(r'^S1_D1.*760')
     regex2 = re.compile(r'.*760')
-    dyad.compute_wtcs(ch_match=(regex1, regex2), time_range=(0,10))
+    dyad.compute_wtcs(ch_match=(regex1, regex2), only_time_range=(0,10))
     assert len(dyad.inter_wtcs) == 16
     #[print(wtc.label) for wtc in dyad.wtcs]
 
@@ -464,7 +464,7 @@ def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
     dyad = Dyad(subject, subject)
     with pytest.raises(Exception):
         # This should raise an exception, since the epochs have not been loaded from annotations
-        dyad.compute_wtcs(ch_match=get_test_ch_match_one(), time_range=(0,10))
+        dyad.compute_wtcs(ch_match=get_test_ch_match_one(), only_time_range=(0,10))
 
 def test_dyad_coherence_pandas():
     subject1, subject2 = get_test_subjects()

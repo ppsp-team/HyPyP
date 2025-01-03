@@ -93,3 +93,7 @@ class Cohort():
     def save_feather(self, file_path):
         df = self.get_coherence_df()
         CoherenceDataFrame.save_feather(df, file_path)
+
+    def save_csv(self, file_path):
+        df = self.get_coherence_df()
+        df.to_csv(file_path)

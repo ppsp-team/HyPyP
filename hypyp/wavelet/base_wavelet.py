@@ -315,7 +315,7 @@ class BaseWavelet(ABC):
         if pair.task == '':
             raise RuntimeError(f'must have task to have unique identifiers in caching')
 
-        key = f'{subject_label}_{ch_name}_{pair.task}_{pair.epoch}_{pair.x[0]}_{pair.x[-1]}_{str(pair.range)}_{obj_id}'
+        key = f'{subject_label}_{ch_name}_{pair.task}_{pair.epoch}_{pair.x[0]}_{pair.x[-1]}_{str(pair.time_range)}_{obj_id}'
         if cache_suffix != '':
             key += f'f{cache_suffix}'
         
