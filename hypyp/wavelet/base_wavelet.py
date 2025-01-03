@@ -189,17 +189,23 @@ class BaseWavelet(ABC):
         return coi
 
 
-    def get_cone_of_influence(self, N, dt, cache_suffix=''):
-        # TODO this result is the same for every pair. It should be cached
-        # Cone of influence calculations
+    def get_cone_of_influence(self, N, dt):
+        # See "A Practical Guide to Wavelet Analysis" from Torrence and Compo (1998), Table 1
         f0 = 2 * np.pi
 
-        # TODO this will depend on the wavelet
-        cmor_coi = 1.0 / np.sqrt(2)
-        # TODO: this is hardcoded, we have to check where this equation comes from
-        cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+        # e-folding valid for cmor (complex morlet) and cgau (complex gaussian)
+        e_folding_time = 1.0 / np.sqrt(2)
+
+        if self.wavelet_name.startswith('cmor'):
+            flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+        elif self.wavelet_name.startswith('cgau'):
+            m = int(self.wavelet_name[4:])
+            flambda = 2 * np.pi / np.sqrt(m + 0.5)
+        else:
+            raise RuntimeError(f'Unknown cone of influence for wavelet {self.wavelet_name}')
+
         coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
-        coi = cmor_flambda * cmor_coi * dt * coi
+        coi = flambda * e_folding_time * dt * coi
 
         return coi
     

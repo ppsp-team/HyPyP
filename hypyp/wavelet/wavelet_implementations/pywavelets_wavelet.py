@@ -86,14 +86,6 @@ class PywaveletsWavelet(BaseWavelet):
         W, freqs = pywt.cwt(y, scales, self._wavelet, sampling_period=dt, method='fft', **self.cwt_params)
         periods = 1 / freqs
 
-        # TODO: this is hardcoded, we have to check where this equation comes from
-        # Cone of influence calculations
-        # TODO: this is probably only valid for morlet wavelet
-        # TODO this is duplicated here and in BaseWavelet
-        f0 = 2 * np.pi
-        cmor_coi = 1.0 / np.sqrt(2)
-        cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
-        coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
-        coi = cmor_flambda * cmor_coi * dt * coi
+        coi = self.get_cone_of_influence(N, dt)
     
         return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)

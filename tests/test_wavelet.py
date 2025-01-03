@@ -272,8 +272,6 @@ def test_cone_of_influence(wavelet):
     n = 11
     dt = 1
     coi = wavelet.get_cone_of_influence(n, dt)
-    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA\n")
-    print(coi)
     assert coi[0] == coi[-1]
     assert coi[0] < coi[1]
     assert np.argmax(coi) == n // 2
