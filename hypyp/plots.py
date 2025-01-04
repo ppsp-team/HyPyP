@@ -65,16 +65,35 @@ def plot_wtc(
 
     ax.invert_yaxis()
 
-
     if colorbar:
-        #cbaxes = inset_axes(ax, width="2%", height="90%", loc=4) 
-        #fig.colorbar(im, cax=cbaxes, orientation='vertical')
         fig.colorbar(im)
 
     if title is not None:
-        fig.suptitle(title)
+        ax.set_title(title)
 
     return ax
+
+def subplot_heatmap_from_pivot(pivot, ordered_fields, ax):
+    index_order = [i for i in ordered_fields if i in pivot.index]
+    # Append indices not in ordered_fields
+    for i in pivot.index:
+        if i not in index_order:
+            index_order.append(i)
+    column_order = [c for c in ordered_fields if c in pivot.columns]
+    for c in pivot.columns:
+        if c not in column_order:
+            column_order.append(c)
+
+    pivot_reordered = pivot.reindex(index=index_order, columns=column_order)
+    heatmap = sns.heatmap(pivot_reordered, cmap='viridis', vmin=0, vmax=1, cbar=False, ax=ax)
+
+    ax.set_xticks(ticks=range(len(pivot_reordered.columns)))
+    ax.set_xticklabels(pivot_reordered.columns, rotation=90, ha='left', fontsize=6 if len(column_order)>15 else 10)
+    ax.set_yticks(ticks=range(len(pivot_reordered.index)))
+    ax.set_yticklabels(pivot_reordered.index, rotation=0, va='top', fontsize=6 if len(index_order)>15 else 10)
+    ax.tick_params(axis='both', which='both', length=0)
+
+    return heatmap
 
 def plot_coherence_matrix_df(
     df,
@@ -85,29 +104,6 @@ def plot_coherence_matrix_df(
     ordered_fields,
 ):
     # We don't sharex and sharey because the list of channels might be different in the 2 subjects
-    fig, axes = plt.subplots(2, 2, figsize=(8, 8), sharex=False, sharey=False)
-
-    def heatmap_from_pivot(pivot, ax):
-        index_order = [i for i in ordered_fields if i in pivot.index]
-        # Append indices not in ordered_fields
-        for i in pivot.index:
-            if i not in index_order:
-                index_order.append(i)
-        column_order = [c for c in ordered_fields if c in pivot.columns]
-        for c in pivot.columns:
-            if c not in column_order:
-                column_order.append(c)
-
-        pivot_reordered = pivot.reindex(index=index_order, columns=column_order)
-        heatmap = sns.heatmap(pivot_reordered, cmap='viridis', vmin=0, vmax=1, cbar=False, ax=ax)
-
-        ax.set_xticks(ticks=range(len(pivot_reordered.columns)))
-        ax.set_xticklabels(pivot_reordered.columns, rotation=90, ha='left', fontsize=6 if len(column_order)>15 else 10)
-        ax.set_yticks(ticks=range(len(pivot_reordered.index)))
-        ax.set_yticklabels(pivot_reordered.index, rotation=0, va='top', fontsize=6 if len(index_order)>15 else 10)
-        ax.tick_params(axis='both', which='both', length=0)
-
-        return heatmap
 
     dyad_selector = (df['subject1']==s1_label) & (df['subject2']==s2_label)
     s1_selector = (df['subject1']==s1_label) & (df['subject2']==s1_label) & (df['channel1']!=df['channel2'])
@@ -116,14 +112,19 @@ def plot_coherence_matrix_df(
     df_s1 = df[s1_selector]
     df_s2 = df[s2_selector]
 
-    pivot_s1 = df_s1.pivot_table(index=field1, columns=field2, values='coherence', aggfunc='mean')
-    pivot_s2 = df_s2.pivot_table(index=field2, columns=field1, values='coherence', aggfunc='mean')
-    pivot_dyad = df_dyad.pivot_table(index=field1, columns=field2, values='coherence', aggfunc='mean')
+    pivot_s1 = df_s1.pivot_table(index=field1, columns=field2, values='coherence', aggfunc='mean', observed=False)
+    pivot_s2 = df_s2.pivot_table(index=field2, columns=field1, values='coherence', aggfunc='mean', observed=False)
+    pivot_dyad = df_dyad.pivot_table(index=field1, columns=field2, values='coherence', aggfunc='mean', observed=False)
     
-    heatmap_from_pivot(pivot_s1.rename_axis(index=s1_label, columns=s1_label), ax=axes[0,0])
-    heatmap_from_pivot(pivot_dyad.rename_axis(index=s1_label, columns=s2_label), ax=axes[0,1])
-    heatmap_from_pivot(pivot_dyad.T.rename_axis(index=s2_label, columns=s1_label), ax=axes[1,0])
-    heatmap_from_pivot(pivot_s2.rename_axis(index=s2_label, columns=s2_label), ax=axes[1,1])
+    if np.all(df['is_intra']):
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8), sharex=False, sharey=False)
+        subplot_heatmap_from_pivot(pivot_s1.rename_axis(index=s1_label, columns=s1_label), ordered_fields=ordered_fields, ax=ax)
+    else:
+        fig, axes = plt.subplots(2, 2, figsize=(8, 8), sharex=False, sharey=False)
+        subplot_heatmap_from_pivot(pivot_s1.rename_axis(index=s1_label, columns=s1_label), ordered_fields=ordered_fields, ax=axes[0,0])
+        subplot_heatmap_from_pivot(pivot_dyad.rename_axis(index=s1_label, columns=s2_label), ordered_fields=ordered_fields, ax=axes[0,1])
+        subplot_heatmap_from_pivot(pivot_dyad.T.rename_axis(index=s2_label, columns=s1_label), ordered_fields=ordered_fields, ax=axes[1,0])
+        subplot_heatmap_from_pivot(pivot_s2.rename_axis(index=s2_label, columns=s2_label), ordered_fields=ordered_fields, ax=axes[1,1])
 
     fig.subplots_adjust(wspace=0.1, hspace=0.1)
     return fig

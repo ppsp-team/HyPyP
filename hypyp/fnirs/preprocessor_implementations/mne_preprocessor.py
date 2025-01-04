@@ -27,24 +27,7 @@ class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
     def __init__(self):
         super().__init__()
     
-    # TODO these 2 functions are no longer used
-    def get_nirs_ch_names(self, meas_list, lambdas):
-        ret = []
-        for s, d, _, lmbda in meas_list:
-            ret.append(f"S{s}_D{d} {lambdas[lmbda-1][0]}")
-        return ret
-            
-    def get_info_nirs(self, x, mat):
-        sfreq = 1 / (x[1] - x[0])
-        n_channels = mat['d'].shape[1]
-        info = mne.create_info(
-            self.get_nirs_ch_names(mat['SD'][0,0][0], mat['SD'][0,0][1]),
-            sfreq,
-            ch_types=['fnirs_cw_amplitude']*n_channels)
-        return info
-    
     def read_file(self, path:str, verbose:bool=False):
-        # TODO maybe we should not have "preload" hardcoded here
         if DataBrowser.path_is_fif(path):
             return mne.io.read_raw_fif(path, preload=True, verbose=verbose)
 
@@ -61,7 +44,6 @@ class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
         return s.copy().pick(mne.pick_channels(s.ch_names, include = [channel_name]))
     
     def run(self, raw: mne.io.Raw, verbose: bool = False):
-        # TODO honor verbose
         steps = []
         steps.append(MnePreprocessStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))
 
@@ -83,34 +65,20 @@ class MnePreprocessor(BasePreprocessor[mne.io.Raw]):
         raw_od = mne.preprocessing.nirs.optical_density(raw)
         quality_sci = mne.preprocessing.nirs.scalp_coupling_index(raw_od)
         raw_od.info['bads'] = list(compress(raw_od.ch_names, quality_sci < 0.1))
-
-        steps.append(MnePreprocessStep(
-                        raw_od, 
-                        PREPROCESS_STEP_OD_KEY,
-                        PREPROCESS_STEP_OD_DESC))
+        steps.append(MnePreprocessStep(raw_od, PREPROCESS_STEP_OD_KEY, PREPROCESS_STEP_OD_DESC))
 
         picks = mne.pick_types(raw_od.info, fnirs=True, exclude='bads')
-
         raw_od_clean = raw_od.copy().pick(picks)
-        steps.append(MnePreprocessStep(
-                        raw_od_clean, 
-                        PREPROCESS_STEP_OD_CLEAN_KEY,
-                        PREPROCESS_STEP_OD_CLEAN_DESC))
+        steps.append(MnePreprocessStep(raw_od_clean, PREPROCESS_STEP_OD_CLEAN_KEY, PREPROCESS_STEP_OD_CLEAN_DESC))
 
-        # TODO: see if we want to expose parameters here
         raw_haemo = mne.preprocessing.nirs.beer_lambert_law(raw_od_clean, ppf=0.1)
         steps.append(MnePreprocessStep(raw_haemo, PREPROCESS_STEP_HAEMO_KEY, PREPROCESS_STEP_HAEMO_DESC))
-
-        # TODO: have these parameters exposed?
         raw_haemo_filtered = raw_haemo.copy().filter(
                                                 0.05,
                                                 0.7,
                                                 h_trans_bandwidth=0.2,
-                                                l_trans_bandwidth=0.02)
-        steps.append(MnePreprocessStep(
-            raw_haemo_filtered,
-            PREPROCESS_STEP_HAEMO_FILTERED_KEY,
-            PREPROCESS_STEP_HAEMO_FILTERED_DESC))
-
+                                                l_trans_bandwidth=0.02,
+                                                verbose=verbose)
+        steps.append(MnePreprocessStep(raw_haemo_filtered, PREPROCESS_STEP_HAEMO_FILTERED_KEY, PREPROCESS_STEP_HAEMO_FILTERED_DESC))
         return steps
         

@@ -18,7 +18,7 @@ from hypyp.fnirs.subject import Subject
 from hypyp.fnirs.preprocessor_implementations.mne_preprocessor import MnePreprocessor
 from hypyp.fnirs.preprocessor_implementations.upstream_preprocessor import UpstreamPreprocessor
 from hypyp.signal import SynteticSignal
-from hypyp.wavelet.base_wavelet import DEFAULT_SMOOTHING_BOXCAR_SIZE
+from hypyp.wavelet.base_wavelet import DEFAULT_SMOOTH_WIN_SIZE
 from hypyp.wavelet.wavelet_implementations.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY, DEFAULT_PERIODS_RANGE
 from hypyp.wavelet.wavelet_implementations.pycwt_wavelet import PycwtWavelet
@@ -629,7 +629,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def ui_input_coherence_options():
         options = []
         if input.wavelet_library() in ['pywavelets','scipy']:
-            options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=DEFAULT_SMOOTHING_BOXCAR_SIZE)))
+            options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=DEFAULT_SMOOTH_WIN_SIZE)))
         if input.wavelet_library() in ['pycwt']:
             pass
         return options

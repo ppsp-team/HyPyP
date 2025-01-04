@@ -11,7 +11,8 @@ from .wtc import WTC
 from .cwt import CWT
 from ..profiling import TimeTracker
 
-DEFAULT_SMOOTHING_BOXCAR_SIZE = 0.6
+# Window size is in "scale"
+DEFAULT_SMOOTH_WIN_SIZE = 0.6
 
 class BaseWavelet(ABC):
     def __init__(
@@ -19,12 +20,14 @@ class BaseWavelet(ABC):
         evaluate=False,
         cache=None,
         disable_caching=False,
+        verbose=False,
         wtc_smoothing_boxcar_size=None,
     ):
         self._wavelet = None
         self._psi_x = None
         self._psi = None
         self._wtc = None
+        self.verbose = verbose
         self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
 
         
@@ -83,12 +86,6 @@ class BaseWavelet(ABC):
     
     def wtc(self, pair: PairSignals, bin_seconds:float|None=None, period_cuts:List[float]|None=None, cache_suffix=''):
         
-        # TODO add verbose option
-        #if s1_cwt is not None:
-        #    print(f'Reusing cache for key "{s1_cwt_key}"')
-        #if s2_cwt is not None:
-        #    print(f'Reusing cache for key "{s2_cwt_key}"')
-
         y1 = pair.y1
         y2 = pair.y2
         dt = pair.dt
@@ -109,10 +106,10 @@ class BaseWavelet(ABC):
         y2 = (y2 - y2.mean()) / y2.std()
     
         cwt1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'cwt', cache_suffix))
-        cwt1: CWT = self.cwt(y1, dt, dj, cache_suffix=cache_suffix) if cwt1_cached is None else cwt1_cached
+        cwt1: CWT = self.cwt(y1, dt, dj) if cwt1_cached is None else cwt1_cached
 
         cwt2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'cwt', cache_suffix))
-        cwt2: CWT = self.cwt(y2, dt, dj, cache_suffix=cache_suffix) if cwt2_cached is None else cwt2_cached
+        cwt2: CWT = self.cwt(y2, dt, dj) if cwt2_cached is None else cwt2_cached
 
         if (cwt1.scales != cwt2.scales).any():
             raise RuntimeError('The two CWT have different scales')
@@ -186,7 +183,7 @@ class BaseWavelet(ABC):
         if coi is not None:
             return coi
         coi = self.get_cone_of_influence(N, dt)
-        self.update_cache_if_none(cache_key, coi)
+        self.add_cache_item(cache_key, coi)
         return coi
 
 
@@ -214,7 +211,7 @@ class BaseWavelet(ABC):
     #
     # Smoothing
     #
-    def smoothing(self, W, dt, dj, scales, boxcar_size=DEFAULT_SMOOTHING_BOXCAR_SIZE, cache_suffix=''):
+    def smoothing(self, W, dt, dj, scales, boxcar_size=DEFAULT_SMOOTH_WIN_SIZE, cache_suffix=''):
         """Smoothing function used in coherence analysis.
 
         Parameters
@@ -264,8 +261,8 @@ class BaseWavelet(ABC):
         win_cache_key = self.get_cache_key('boxcar_window', boxcar_size, dj, cache_suffix)
         win = self.get_cache_item(win_cache_key)
         if win is None:
-            win = self.get_boxcar_window(boxcar_size, dj)
-            self.update_cache_if_none(win_cache_key, win)
+            win = self.get_smoothing_window(boxcar_size, dj)
+            self.add_cache_item(win_cache_key, win)
 
         T = convolve1d(T, win, axis=0, mode='nearest')
 
@@ -275,10 +272,8 @@ class BaseWavelet(ABC):
     def get_fft_kwargs(signal, **kwargs):
         return dict(**kwargs, n = int(2 ** np.ceil(np.log2(len(signal)))))
 
-    # TODO this should be called "weighted boxcar", since the edges differ. See if we want to test different windows
-    # TODO have the possibility to compare with Hann window
     @staticmethod
-    def get_boxcar_window(boxcar_size, dj):
+    def get_smoothing_window(boxcar_size, dj):
         # Copied from matlab
         # boxcar_size is "in scale"
         size_in_scales = boxcar_size
@@ -313,12 +308,20 @@ class BaseWavelet(ABC):
         if key is None:
             return None
         try:
-            return self.cache[key]
+            found = self.cache[key]
+            if self.verbose:
+                print(f'Found cache key {key}')
+                pass
+            return found
         except:
+            if self.verbose:
+                #print(f'Not found cache key {key}')
+                pass
             return None
     
     def add_cache_item(self, key, value):
-        self.cache[key] = value
+        if self.use_caching:
+            self.cache[key] = value
 
     def clear_cache(self):
         self.cache = dict()
@@ -342,9 +345,9 @@ class BaseWavelet(ABC):
         if pair.task == '':
             raise RuntimeError(f'must have task to have unique identifiers in caching')
 
-        key = f'{subject_label}_{ch_name}_{pair.task}_{pair.epoch}_{pair.x[0]}_{pair.x[-1]}_{str(pair.time_range)}_{obj_id}'
+        key = f'[{subject_label}][{ch_name}][{pair.task}][{pair.epoch}][{pair.x[0]}-{pair.x[-1]}][{str(pair.time_range)}][{obj_id}]'
         if cache_suffix != '':
-            key += f'f{cache_suffix}'
+            key += f'_{cache_suffix}'
         
         return key
     

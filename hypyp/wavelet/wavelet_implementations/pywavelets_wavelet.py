@@ -23,8 +23,6 @@ class PywaveletsWavelet(BaseWavelet):
         evaluate=True,
         periods_range=None,
         frequencies_range=None,
-        cache=None,
-        disable_caching=False,
         **kwargs,
     ):
         if cwt_params is None:
@@ -47,7 +45,7 @@ class PywaveletsWavelet(BaseWavelet):
         if self.periods_range[0] > self.periods_range[1]:
             self.periods_range = (self.periods_range[1], self.periods_range[0])
 
-        super().__init__(evaluate, cache=cache, disable_caching=disable_caching, **kwargs)
+        super().__init__(evaluate, **kwargs)
 
     @property
     def wavelet_library(self):

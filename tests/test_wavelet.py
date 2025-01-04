@@ -131,18 +131,18 @@ def test_periods_frequencies_range():
     assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
     
 def test_smooth_in_scale_window():
-    assert np.sum(BaseWavelet.get_boxcar_window(0.6, 10)) == 1#pytest.approx(1)
-    assert len(BaseWavelet.get_boxcar_window(1, 1/2)) == 2
-    assert len(BaseWavelet.get_boxcar_window(1.1, 1/2)) == 3
+    assert np.sum(BaseWavelet.get_smoothing_window(0.6, 10)) == 1#pytest.approx(1)
+    assert len(BaseWavelet.get_smoothing_window(1, 1/2)) == 2
+    assert len(BaseWavelet.get_smoothing_window(1.1, 1/2)) == 3
 
     # dirac
-    assert len(BaseWavelet.get_boxcar_window(1/12, 1/12)) == 1
+    assert len(BaseWavelet.get_smoothing_window(1/12, 1/12)) == 1
 
-    win10 = BaseWavelet.get_boxcar_window(10, 1)
+    win10 = BaseWavelet.get_smoothing_window(10, 1)
     assert len(win10) == 10
     assert np.mean(win10) == win10[0]
 
-    win10_plus = BaseWavelet.get_boxcar_window(10.1, 1)
+    win10_plus = BaseWavelet.get_smoothing_window(10.1, 1)
     assert len(win10_plus) == 11
     assert np.mean(win10_plus) > win10_plus[0]
 

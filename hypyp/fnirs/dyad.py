@@ -24,7 +24,7 @@ class Dyad:
     def __init__(self, s1: Subject, s2: Subject, label:str='', is_shuffle:bool=False):
         self.s1: Subject = s1
         self.s2: Subject = s2
-        self.inter_wtcs: List[WTC] = None
+        self.wtcs: List[WTC] = None
         self.df: CoherenceDataFrame = None
         self.is_shuffle = is_shuffle
 
@@ -55,7 +55,7 @@ class Dyad:
     
     @property
     def is_wtc_computed(self):
-        return self.inter_wtcs is not None
+        return self.wtcs is not None
 
     @staticmethod
     def get_label(s1: Subject, s2: Subject):
@@ -234,7 +234,7 @@ class Dyad:
         if wavelet is None:
             wavelet = PywaveletsWavelet()
 
-        self.inter_wtcs = []
+        self.wtcs = []
 
         pairs = self.get_pairs(self.s1, self.s2, ch_match=ch_match, is_shuffle=self.is_shuffle)
 
@@ -247,7 +247,7 @@ class Dyad:
             if downsample is not None:
                 wtc.downsample_in_time(downsample)
 
-            self.inter_wtcs.append(wtc)
+            self.wtcs.append(wtc)
 
         # TODO should test this "is_shuffle" condition
         if with_intra and not self.is_shuffle:
@@ -269,7 +269,7 @@ class Dyad:
         self.df = self._get_coherence_df(with_intra=with_intra)
 
         if not keep_wtcs:
-            self.inter_wtcs = []
+            self.wtcs = []
             self.s1.intra_wtcs = []
             self.s1.intra_wtcs = []
 
@@ -280,9 +280,9 @@ class Dyad:
         if with_intra and not self.is_shuffle:
             if not self.s1.is_wtc_computed or not self.s2.is_wtc_computed:
                 raise RuntimeError('Intra subject WTCs are not computed. Please check "compute_wtcs" arguments')
-            wtcs = self.inter_wtcs + self.s1.intra_wtcs + self.s2.intra_wtcs
+            wtcs = self.wtcs + self.s1.intra_wtcs + self.s2.intra_wtcs
         else:
-            wtcs = self.inter_wtcs
+            wtcs = self.wtcs
 
         frame_rows = []
         for wtc in wtcs:
@@ -294,17 +294,18 @@ class Dyad:
     #
     # Plots
     # 
-    def plot_wtc(self, wtc: WTC):
-        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label_pair)
+    def plot_wtc(self, wtc: WTC, ax=None):
+        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label_pair, ax=ax)
 
     def plot_wtc_by_id(self, id: int):
-        wtc = self.inter_wtcs[id]
+        wtc = self.wtcs[id]
         return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label_pair)
 
     def plot_coherence_matrix(self, field1, field2, query=None):
         df = self.df
         if query is not None:
             df = df.query(query)
+            
         return plot_coherence_matrix_df(df,
             self.s1.label,
             self.s2.label,
