@@ -185,5 +185,5 @@ class WTC:
     # Plots
     #
     def plot(self, **kwargs):
-        return plot_wtc(self.wtc, self.times, self.frequencies, self.coi, self.sfreq, **kwargs)
+        return plot_wtc(self.wtc, self.times, self.periods, self.coi, self.sfreq, **kwargs)
 

@@ -5,7 +5,7 @@ import numpy as np
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.base_wavelet import BaseWavelet
-from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet
+from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY
 
 def test_instanciate():
     wavelet_name = 'cgau1'

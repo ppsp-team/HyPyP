@@ -31,6 +31,10 @@ class Cohort():
             if not dyad.is_wtc_computed:
                 return False
         return True
+    
+    @property
+    def df(self):
+        return self.get_coherence_df()
 
     def preprocess(self, preprocessor: BasePreprocessor):
         for dyad in self.dyads:
@@ -91,9 +95,7 @@ class Cohort():
             pickle.dump(self, f)
 
     def save_feather(self, file_path):
-        df = self.get_coherence_df()
-        CoherenceDataFrame.save_feather(df, file_path)
+        CoherenceDataFrame.save_feather(self.df, file_path)
 
     def save_csv(self, file_path):
-        df = self.get_coherence_df()
-        df.to_csv(file_path)
+        self.df.to_csv(file_path)

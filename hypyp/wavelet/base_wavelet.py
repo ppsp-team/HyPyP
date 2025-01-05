@@ -3,8 +3,10 @@ from typing import List
 import warnings
 
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy import fft
 from scipy.ndimage import convolve1d
+from scipy.signal import convolve2d
 
 from .pair_signals import PairSignals
 from .wtc import WTC
@@ -14,10 +16,15 @@ from ..profiling import TimeTracker
 # Window size is in "scale"
 DEFAULT_SMOOTH_WIN_SIZE = 0.6
 
+DEFAULT_PERIODS_RANGE = (2, 20)
+DEFAULT_PERIODS_DJ = 1/12
+
 class BaseWavelet(ABC):
     def __init__(
         self,
-        evaluate=False,
+        periods_range=None,
+        frequencies_range=None,
+        evaluate=True,
         cache=None,
         disable_caching=False,
         verbose=False,
@@ -29,6 +36,19 @@ class BaseWavelet(ABC):
         self._wtc = None
         self.verbose = verbose
         self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
+
+        if periods_range is not None and frequencies_range is not None:
+            raise RuntimeError('Cannot specify both periods_range and frequencies_range')
+
+        if periods_range is not None:
+            self.periods_range = periods_range
+        elif frequencies_range is not None:
+            self.periods_range = (1 / frequencies_range[0], 1 / frequencies_range[1])
+        else:
+            self.periods_range = DEFAULT_PERIODS_RANGE
+        
+        if self.periods_range[0] > self.periods_range[1]:
+            self.periods_range = (self.periods_range[1], self.periods_range[0])
 
         
         self.cache = cache
@@ -84,6 +104,13 @@ class BaseWavelet(ABC):
     def wavelet_name(self):
         pass
     
+    def get_periods(self, dj=DEFAULT_PERIODS_DJ):
+        low, high =  self.periods_range
+        n_scales = np.log2(high/low) 
+        n_steps = int(np.round(n_scales / dj))
+        periods = np.logspace(np.log2(low), np.log2(high), n_steps, base=2)
+        return periods
+        
     def wtc(self, pair: PairSignals, bin_seconds:float|None=None, period_cuts:List[float]|None=None, cache_suffix=''):
         
         y1 = pair.y1
@@ -234,7 +261,9 @@ class BaseWavelet(ABC):
         # total weight of unity, according to suggestions by Torrence &
         # Webster (1999) and by Grinsted et al. (2004).
         fft_kwargs = self.get_fft_kwargs(W[0, :])
-        scales_norm = scales / dt
+        #scales_norm = scales / dt
+        scales_norm = scales # scales are already normalized
+        # TODO cleanup the above comment
         
         k = 2 * np.pi * fft.fftfreq(fft_kwargs['n'])
         k2 = k ** 2
@@ -251,7 +280,7 @@ class BaseWavelet(ABC):
 
         if np.isreal(W).all():
             T = T.real
-
+        
         #
         # Filter in scale. 
         # 
@@ -265,6 +294,7 @@ class BaseWavelet(ABC):
             self.add_cache_item(win_cache_key, win)
 
         T = convolve1d(T, win, axis=0, mode='nearest')
+        #T = convolve2d(T, win[:, np.newaxis], 'same')  # Scales are "vertical"
 
         return T
 
@@ -276,8 +306,9 @@ class BaseWavelet(ABC):
     def get_smoothing_window(boxcar_size, dj):
         # Copied from matlab
         # boxcar_size is "in scale"
-        size_in_scales = boxcar_size
-        size_in_steps = size_in_scales/dj
+        #size_in_scales = boxcar_size
+        size_in_scales = boxcar_size * 2 # the pycwt code has a *2. TODO: find out why it is different from matlab code
+        size_in_steps = size_in_scales / dj
         fraction = size_in_steps % 1
         fraction_half = fraction / 2
         size_in_steps = int(np.floor(size_in_steps))
@@ -356,3 +387,20 @@ class BaseWavelet(ABC):
             return None
         return f'key_{"_".join([str(arg) for arg in args])}'
     
+
+    #
+    # Plots
+    #
+    def plot_mother_wavelet(self, show_legend=True, ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+        else:
+            fig = ax.get_figure()
+
+        ax.plot(self.psi_x, np.real(self.psi))
+        ax.plot(self.psi_x, np.imag(self.psi))
+        ax.plot(self.psi_x, np.abs(self.psi))
+        ax.title.set_text(f"mother wavelet ({self.wavelet_name})")
+        if show_legend:
+            ax.legend(['real', 'imag', 'abs'])
+        return fig

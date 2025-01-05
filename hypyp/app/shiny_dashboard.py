@@ -58,7 +58,7 @@ app_ui = ui.page_fluid(
             ui.output_ui('ui_preprocess_steps'),
         ),
         ui.nav_panel(
-            "Choice of Signals",
+            "Wavelet Coherence",
             ui.row(
                 ui.column(12,
                     ui.card(
@@ -70,33 +70,10 @@ app_ui = ui.page_fluid(
                 ),
             ),
             ui.row(
-                ui.column(
-                    6,
-                    ui.card(
-                        ui.tags.strong('Signal 1'),
-                        ui.output_table('text_info_s1_file_path'),
-                    )
-                ),
-                ui.column(
-                    6,
-                    ui.card(
-                        ui.tags.strong('Signal 2'),
-                        ui.output_table('text_info_s2_file_path'),
-                    )
-                ),
-            ),
-        ),
-        ui.nav_panel(
-            "Wavelet Coherence",
-            ui.row(
                 ui.column(6,
                     ui.card(
                         ui.tags.strong('Wavelet'),
                         ui.output_plot('plot_mother_wavelet'),
-                        ui.row(
-                            ui.column(6, ui.output_plot('plot_scales')),
-                            ui.column(6, ui.output_plot('plot_frequencies')),
-                        ),
                     ),
                 ),
                 ui.column(6,
@@ -118,7 +95,7 @@ app_ui = ui.page_fluid(
                 "",
                 choices={
                     'data_files': 'Local data files',
-                    'testing': 'Test signals',
+                    'testing': 'Synthetic signals',
                 },
             ),
             ui.output_ui('ui_input_signal_choice'),
@@ -245,36 +222,34 @@ def server(input: Inputs, output: Outputs, session: Session):
     def get_wavelet():
         if input.wavelet_library() == 'pywavelets':
             wavelet_name = input.wavelet_name()
-            if input.wavelet_name() == 'cmor':
+            if wavelet_name == 'cmor':
                 wavelet_name = f'cmor{input.wavelet_bandwidth()}, {input.wavelet_center_frequency()}'
 
-            wavelet = PywaveletsWavelet(
+            return PywaveletsWavelet(
                 wavelet_name=wavelet_name,
                 periods_range=(input.wavelet_periods_range_low(), input.wavelet_periods_range_high()),
                 wtc_smoothing_boxcar_size=input.smoothing_boxcar_size(),
-                cache=None,
+                disable_caching=True,
             )
 
-        elif input.wavelet_library() == 'pycwt':
-            wavelet = PycwtWavelet()
+        if input.wavelet_library() == 'pycwt':
+            return PycwtWavelet()
 
-        elif input.wavelet_library() == 'scipy':
-            wavelet = ScipyWavelet(
+        if input.wavelet_library() == 'scipy':
+            return ScipyWavelet(
                 center_frequency=input.wavelet_scipy_center_frequency(),
             )
 
-        elif input.wavelet_library() == 'matlab':
-            wavelet = MatlabWavelet()
+        if input.wavelet_library() == 'matlab':
+            return MatlabWavelet()
 
-        else:
-            raise RuntimeError(f'Unknown wavelet library: {input.wavelet_library()}')
-
-        return wavelet
+        raise RuntimeError(f'Unknown wavelet library: {input.wavelet_library()}')
 
     @reactive.event(input.button_action_compute_wtc)
     def compute_coherence():
+        wavelet = get_wavelet()
         pair = get_signals()
-        wtc = get_wavelet().wtc(pair)
+        wtc = wavelet.wtc(pair)
         if input.display_downsample():
             wtc.downsample_in_time(500)
         return wtc
@@ -396,8 +371,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "signal_testing_choice",
                 "",
                 choices={
-                    'chirp_sinusoid': 'One sinusoid, one chirp',
                     'chirp': 'Crossing chirps',
+                    'chirp_sinusoid': 'One sinusoid, one chirp',
                     'sinusoid': 'Sinusoid different',
                     'sinusoid_almost_similar': 'Sinusoid almost similar',
                     'sinusoid_dephased': 'Sinusoid dephased',
@@ -459,7 +434,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 options.append(ui_option_row("Freq", ui.input_numeric("signal_sinusoid_dephased_freq1", "", value=0.02))),
             elif input.signal_testing_choice() == 'chirp':
                 options.append(ui_option_row("Freq Chirp from", ui.input_numeric("signal_chirp_freq1", "", value=0.2))),
-                options.append(ui_option_row("Freq Chirp to", ui.input_numeric("signal_chirp_freq2", "", value=2))),
+                options.append(ui_option_row("Freq Chirp to", ui.input_numeric("signal_chirp_freq2", "", value=0.05))),
             elif input.signal_testing_choice() == 'chirp_sinusoid':
                 options.append(ui_option_row("Freq Sinusoid", ui.input_numeric("signal_chirp_sinusoid_freq1", "", value=1))),
                 options.append(ui_option_row("Freq Chirp from", ui.input_numeric("signal_chirp_sinusoid_freq2", "", value=0.2))),
@@ -467,7 +442,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         
             options.append(ui_option_row("Sampling freq. (Hz)", ui.input_numeric("signal_sampling_frequency", "", value=5))),
             options.append(ui_option_row("Nb. points", ui.input_numeric("signal_n", "", value=2000))),
-            options.append(ui_option_row("Noise level", ui.input_numeric("signal_noise_level", "", value=0.01))),
+            options.append(ui_option_row("Noise level", ui.input_numeric("signal_noise_level", "", value=0.1))),
         
         if input.signal_type() == 'data_files':
             # TODO this try-except is here to have a PoC of Cedalion integration
@@ -556,7 +531,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         fig, ax = plt.subplots()
         compute_coherence().plot(
             ax=ax,
-            colorbar=False,
+            show_colorbar=False,
             show_coi=input.display_show_coi(),
             show_nyquist=input.display_show_nyquist(),
         )
@@ -567,22 +542,6 @@ def server(input: Inputs, output: Outputs, session: Session):
             return (times, frequencies, ZZ, 1)
         times, ZZ, factor = hypyp.utils.downsample_in_time(times, ZZ, t=500)
         return times, frequencies, ZZ, factor
-
-    @render.plot()
-    def plot_frequencies():
-        fig, ax = plt.subplots()
-        wtc_res = compute_coherence()
-        ax.scatter(np.arange(len(wtc_res.frequencies)), wtc_res.frequencies, marker='.')
-        ax.title.set_text('frequencies')
-        return fig
-
-    @render.plot()
-    def plot_scales():
-        fig, ax = plt.subplots()
-        wtc_res = compute_coherence()
-        ax.scatter(np.arange(len(wtc_res.scales)), wtc_res.scales, marker='.')
-        ax.title.set_text('scales')
-        return fig
 
     @render.ui
     def ui_input_wavelet_type():

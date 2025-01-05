@@ -4,21 +4,57 @@ import seaborn as sns
 import numpy as np
 import itertools as itertools
 from matplotlib.ticker import FuncFormatter
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
+
+# Define a custom locator and formatter for periods
+def custom_locator_periods(ymin, ymax):
+    ticks = []
+    ticks.extend(range(math.ceil(ymin), 11))
+    ticks.extend(range(12, 21, 2))
+    ticks.extend(range(25, int(ymax) + 1, 5))
+    return ticks
+    
+def plot_cwt(W, times, periods, coi, ax=None, show_colorbar=True):
+    if ax is None:
+        fig, ax = plt.subplots()
+    else:
+        fig = ax.get_figure()
+    
+    xx, yy = np.meshgrid(times, periods)
+    
+    im = ax.pcolor(xx, yy, np.abs(W))
+    ax.set_yscale('log')
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('Period (seconds)')
+    ax.set_title('CWT Weights')
+    if show_colorbar:
+        fig.colorbar(im, ax=ax)
+
+    # cone of influence
+    ax.plot(times, coi)
+    ax.fill_between(times, coi, y2=np.max(periods), step="mid", alpha=0.4)
+
+    ymin, ymax = ax.get_ylim()  # Get the y-axis limits
+    ax.set_yticks(custom_locator_periods(ymin, ymax))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y,_: f"{int(y)}" if y >= 1 else ""))
+    ax.set_xlim(times.min(), times.max())
+    ax.set_ylim(periods.min(), periods.max())
+    ax.invert_yaxis()
+
+    return fig
 
 def plot_wtc(
     wtc,
     times,
-    frequencies,
+    periods,
     coi,
     sfreq,
+    title=None,
     ax=None,
-    colorbar=True,
+    show_colorbar=True,
     show_coi=True,
     show_nyquist=True,
-    title=None,
 ):
     color_shaded = '0.2'
     # create the figure if needed
@@ -27,7 +63,6 @@ def plot_wtc(
     else:
         fig = ax.get_figure()
     
-    periods = 1 / frequencies
     xx, yy = np.meshgrid(times, periods)
     
     im = ax.pcolor(xx, yy, wtc, vmin=0, vmax=1)
@@ -46,17 +81,9 @@ def plot_wtc(
         ax.plot(times, nyquist_period, color=color_shaded)
         ax.fill_between(times, nyquist_period, y2=np.min(periods), step="mid", color=color_shaded, alpha=0.4)
     
-    # Define a custom locator and formatter
-    def custom_locator(ymin, ymax):
-        ticks = []
-        ticks.extend(range(math.ceil(ymin), 11))
-        ticks.extend(range(12, 21, 2))
-        ticks.extend(range(25, int(ymax) + 1, 5))
-        return ticks
-    
     # Dynamically set ticks based on the current range
     ymin, ymax = ax.get_ylim()  # Get the y-axis limits
-    ax.set_yticks(custom_locator(ymin, ymax))
+    ax.set_yticks(custom_locator_periods(ymin, ymax))
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y,_: f"{int(y)}" if y >= 1 else ""))
     #ax.yaxis.get_major_formatter().set_scientific(False)  # Disable scientific notation
 
@@ -65,13 +92,13 @@ def plot_wtc(
 
     ax.invert_yaxis()
 
-    if colorbar:
+    if show_colorbar:
         fig.colorbar(im)
 
     if title is not None:
         ax.set_title(title)
 
-    return ax
+    return fig
 
 def subplot_heatmap_from_pivot(pivot, ordered_fields, ax):
     index_order = [i for i in ordered_fields if i in pivot.index]
@@ -130,8 +157,12 @@ def plot_coherence_matrix_df(
     return fig
     
 
-def plot_connectogram(df, title=''):
-    fig, ax = plt.subplots(1, 1, subplot_kw={'projection': 'polar'})
+def plot_connectogram(df, title='', ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, subplot_kw={'projection': 'polar'})
+    else:
+        fig = ax.get_figure()
+    
     #node_angles = circular_layout(
     #    df.columns, list(df.columns), start_pos=90, group_boundaries=[0, len(df.columns) // 2]
     #)
@@ -156,7 +187,6 @@ def plot_coherence_per_task_bars(df, is_intra=False):
 
     filtered_df = df[selector]
 
-    # Draw a nested barplot by species and sex
     p = sns.catplot(
         data=filtered_df, kind="bar",
         x="roi1", y="coherence", hue="task",
@@ -170,18 +200,5 @@ def plot_coherence_per_task_bars(df, is_intra=False):
     p.legend.set_title("Task")
     plt.subplots_adjust(bottom=0.5)
     return p
-
-def plot_cwt_weights(W, times, frequencies, coif):
-    fig, ax = plt.subplots()
-    im = ax.pcolormesh(times, frequencies, np.abs(W))
-    ax.set_yscale('log')
-    fig.colorbar(im, ax=ax)
-    ax.title.set_text('Weights')
-
-    # cone of influence
-    ax.plot(times, coif)
-    ax.fill_between(times, coif, step="mid", alpha=0.4)
-    ax.set_xlim(times.min(), times.max())
-    ax.set_ylim(frequencies.min(), frequencies.max())
 
 

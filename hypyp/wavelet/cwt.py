@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..plots import plot_cwt_weights
+from ..plots import plot_cwt
 
 class CWT:
     def __init__(self, weights, times, scales, periods, coi):
@@ -17,6 +17,6 @@ class CWT:
         self.coif: np.ndarray = 1 / coi # Cone of influence, in frequencies
 
     def plot(self, **kwargs):
-        return plot_cwt_weights(self.W, self.times, self.frequencies, self.coif)
+        return plot_cwt(self.W, self.times, self.periods, self.coi, **kwargs)
 
 

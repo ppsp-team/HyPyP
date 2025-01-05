@@ -5,8 +5,7 @@ from ..base_wavelet import BaseWavelet
 from ..cwt import CWT
 import scipy.signal
 
-# This will divided by sfreq
-DEFAULT_SCIPY_CENTER_FREQUENCY = 5
+DEFAULT_SCIPY_CENTER_FREQUENCY = 6
 
 class ScipyWavelet(BaseWavelet):
     def __init__(
@@ -14,24 +13,21 @@ class ScipyWavelet(BaseWavelet):
         center_frequency=DEFAULT_SCIPY_CENTER_FREQUENCY,
         wtc_smoothing_boxcar_size=1,
         cwt_params=dict(),
-        **kwargs,
+        evaluate=True,
     ):
         self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
         self.cwt_params = cwt_params
         self.center_frequency = center_frequency
-        super().__init__(**kwargs)
+        self.wavelet_name = 'morlet_scipy'
+        super().__init__(evaluate, disable_caching=True)
 
-    @property
-    def wavelet_library(self):
-        return 'scipy'
+        @property
+        def wavelet_library(self):
+            return 'scipy'
 
-    @property
-    def wavelet_name(self):
-        return f'cmor{self.bandwidth},{self.center_frequency}/fs'
-    
-    @property
-    def bandwidth(self):
-        return 2
+        @property
+        def wavelet_name(self):
+            return 'cmor'
 
     def evaluate_psi(self):
         M = 1000
@@ -43,18 +39,26 @@ class ScipyWavelet(BaseWavelet):
 
         return self._psi, self._psi_x
 
-    def cwt(self, y, dt, dj=1/12, cache_suffix:str='') -> CWT:
+    def cwt(self, y, dt, dj=1/12) -> CWT:
         N = len(y)
         fs = 1 / dt
-        periods = self.get_periods(dj)
-        scales = (self.center_frequency * fs * periods) / (2 * np.pi)
-
+        nOctaves = int(np.log2(np.floor(N / 2.0)))
+        scales = 2 ** np.arange(1, nOctaves, dj)
         wavelet_fn = scipy.signal.morlet2
         wavelet_kwargs = dict(w=self.center_frequency)
         W = scipy.signal.cwt(y, wavelet_fn, scales, **wavelet_kwargs, **self.cwt_params)
-
+        freqs = (self.center_frequency * fs) / (2 * np.pi * scales)
+        periods = 1 / freqs
         times = np.linspace(0, N*dt, N)
-        coi = self.get_and_cache_cone_of_influence(N, dt, cache_suffix=cache_suffix)
+
+        # TODO: this is hardcoded, we have to check where this equation comes from
+        # Cone of influence calculations
+        # TODO this is duplicated in BaseWavelet and PywaveletWavelet
+        f0 = 2 * np.pi
+        cmor_coi = 1.0 / np.sqrt(2)
+        cmor_flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+        coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
+        coi = cmor_flambda * cmor_coi * dt * coi
 
         return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)
 

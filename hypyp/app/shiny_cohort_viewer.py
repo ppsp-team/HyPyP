@@ -282,8 +282,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         wtc.plot(
             ax=ax,
-            colorbar=True,
-            downsample=False, # downsampling is already done
+            show_colorbar=True,
             show_coi=True,
             show_nyquist=True,
         )
