@@ -1,11 +1,27 @@
-library("ggplot2")
+---
+title: "HyPyP fNIRS coherence example"
+output:
+  pdf_document: default
+  html_notebook: default
+---
 
-current_path <- rstudioapi::getActiveDocumentContext()$path 
-base_path <- dirname(dirname(current_path))
-csv_path <- paste0(base_path, "/data/results/fnirs_cohort_example.csv")
+
+
+```{r}
+library("ggplot2")
+```
+
+Load CSV file produced by `fnirs_cohort_example.ipynb`.
+
+```{r}
+csv_path <- "../data/results/fnirs_cohort_example.csv"
 
 data <- read.csv(csv_path, header=TRUE, stringsAsFactors=FALSE)
+```
 
+Cleanup loaded data and have factors for better use with ggplot
+
+```{r}
 data = within(data, {
   dyad <- as.factor(dyad)
   subject1 <- as.factor(subject1)
@@ -21,29 +37,56 @@ data = within(data, {
   is_intra <- tolower(is_intra) == "true"
   is_shuffle <- tolower(is_shuffle) == "true"
 })
+```
 
+Prepare a key for pairs of region of interest, for further grouping.
+
+```{r}
 data$roi_pair = paste(data$roi1, data$roi2, sep='-')
+```
 
+Remove any intra-subject and shuffled dyad from our data set to be analysed, to have only inter-subject dyads
+
+```{r}
 sel_not_intra = data$is_intra == FALSE
 sel_not_shuffle = data$is_shuffle == FALSE
 sel_not_na = sapply(data$coherence, is.na) == FALSE
 data_inter <- subset(data, sel_not_intra & sel_not_shuffle & sel_not_na)
+```
 
+Show simple inter-subject coherence matrix. The ordering here is lost compared to python code.
+
+```{r}
 ggplot(data=data_inter, aes(x=channel1, y=channel2, fill=coherence)) +
   geom_tile() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   ggtitle('Inter subject coherence')
 
+```
+
+Show inter-subject coherence matrix per Region of Interest
+
+```{r}
 ggplot(data=data_inter, aes(x=roi1, y=roi2, fill=coherence)) +
   geom_tile() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   ggtitle('Inter subject coherence per region of interest')
 
+```
+
+Plot the coherence per task
+
+```{r}
 ggplot(data=data_inter, aes(x=coherence, y=dyad, color=task)) +
   geom_boxplot() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   ggtitle('Coherence')
 
+```
+
+Compare the coherence by zone pairs with facets. This is only to give an idea of the possibility, there are probably much better ways to visualize this.
+
+```{r}
 ggplot(data=data_inter[data_inter$task!='baseline', ], aes(x=coherence, y=roi1)) +
   geom_boxplot() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
@@ -51,20 +94,14 @@ ggplot(data=data_inter[data_inter$task!='baseline', ], aes(x=coherence, y=roi1))
   facet_wrap(.~ roi2, labeller = labeller(roi2 = function(x) paste("Child:", x))) +
   ggtitle('Zone pair coherence')
 
+```
+
+Split of coherence per periods range.
+
+```{r}
 ggplot(data=data_inter, aes(x=coherence, y=bin_period_range, color=task)) +
   geom_boxplot() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   ggtitle('Coherence per period range')
 
-
-
-
-
-
-
-
-
-
-
-
-
+```
