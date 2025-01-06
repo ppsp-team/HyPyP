@@ -32,6 +32,9 @@ class PywaveletsWavelet(BaseWavelet):
         self._wavelet_name = wavelet_name
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
+        self.bandwidth_frequency = None
+        self.center_frequency = None
+        self.degree = None
 
         super().__init__(**kwargs)
 
@@ -41,13 +44,23 @@ class PywaveletsWavelet(BaseWavelet):
 
     @property
     def wavelet_name(self):
-        return self._wavelet_name
+        name = self._wavelet_name
+        if self.wtc_smoothing_win_size is not None:
+            name += f'[win:{self.wtc_smoothing_win_size}]'
+        return name
 
     def evaluate_psi(self):
         wavelet = pywt.ContinuousWavelet(self._wavelet_name)
         wavelet.lower_bound = self.lower_bound
         wavelet.upper_bound = self.upper_bound
         self._wavelet = wavelet
+
+        if wavelet.short_family_name == 'cmor':
+            self.center_frequency = wavelet.center_frequency
+            self.bandwidth_frequency = wavelet.bandwidth_frequency
+        elif wavelet.short_family_name == 'cgau':
+            self.degree = int(self.wavelet_name[4:])
+        
         # TODO unhardcode value here
         self._psi, self._psi_x = wavelet.wavefun(10)
         return self._psi, self._psi_x

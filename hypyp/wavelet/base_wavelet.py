@@ -20,6 +20,9 @@ DEFAULT_PERIODS_RANGE = (2, 20)
 DEFAULT_PERIODS_DJ = 1/12
 
 class BaseWavelet(ABC):
+    verbose: bool
+    wtc_smoothing_win_size: int|None
+
     def __init__(
         self,
         periods_range=None,
@@ -28,14 +31,14 @@ class BaseWavelet(ABC):
         cache=None,
         disable_caching=False,
         verbose=False,
-        wtc_smoothing_boxcar_size=None,
+        wtc_smoothing_win_size=None,
     ):
         self._wavelet = None
         self._psi_x = None
         self._psi = None
         self._wtc = None
         self.verbose = verbose
-        self.wtc_smoothing_boxcar_size = wtc_smoothing_boxcar_size
+        self.wtc_smoothing_win_size = wtc_smoothing_win_size
 
         if periods_range is not None and frequencies_range is not None:
             raise RuntimeError('Cannot specify both periods_range and frequencies_range')
@@ -165,8 +168,8 @@ class BaseWavelet(ABC):
             scales=scales,
             cache_suffix=cache_suffix,
         )
-        if self.wtc_smoothing_boxcar_size is not None:
-            smoothing_kwargs['boxcar_size'] = self.wtc_smoothing_boxcar_size
+        if self.wtc_smoothing_win_size is not None:
+            smoothing_kwargs['boxcar_size'] = self.wtc_smoothing_win_size
 
         S1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'smooth', cache_suffix))
         S1 = self.smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs) if S1_cached is None else S1_cached
@@ -216,15 +219,17 @@ class BaseWavelet(ABC):
 
     def get_cone_of_influence(self, N, dt):
         # See "A Practical Guide to Wavelet Analysis" from Torrence and Compo (1998), Table 1
-        f0 = 2 * np.pi
 
         # e-folding valid for cmor (complex morlet) and cgau (complex gaussian)
         e_folding_time = 1.0 / np.sqrt(2)
 
         if self.wavelet_name.startswith('cmor'):
-            flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+            # TODO check this computation. Seems wrong
+            f0 = 2 * np.pi * self.center_frequency
+            #flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+            flambda = 2 * np.pi / f0
         elif self.wavelet_name.startswith('cgau'):
-            m = int(self.wavelet_name[4:])
+            m = self.degree
             flambda = 2 * np.pi / np.sqrt(m + 0.5)
         else:
             raise RuntimeError(f'Unknown cone of influence for wavelet {self.wavelet_name}')

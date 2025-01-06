@@ -228,7 +228,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return PywaveletsWavelet(
                 wavelet_name=wavelet_name,
                 periods_range=(input.wavelet_periods_range_low(), input.wavelet_periods_range_high()),
-                wtc_smoothing_boxcar_size=input.smoothing_boxcar_size(),
+                wtc_smoothing_win_size=input.smoothing_win_size(),
                 disable_caching=True,
             )
 
@@ -588,7 +588,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def ui_input_coherence_options():
         options = []
         if input.wavelet_library() in ['pywavelets','scipy']:
-            options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_boxcar_size", "", value=DEFAULT_SMOOTH_WIN_SIZE)))
+            options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_win_size", "", value=DEFAULT_SMOOTH_WIN_SIZE)))
         if input.wavelet_library() in ['pycwt']:
             pass
         return options

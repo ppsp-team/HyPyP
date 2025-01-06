@@ -15,7 +15,7 @@ def custom_locator_periods(ymin, ymax):
     ticks.extend(range(25, int(ymax) + 1, 5))
     return ticks
     
-def plot_cwt(W, times, periods, coi, ax=None, show_colorbar=True):
+def plot_cwt(W, times, periods, coi, ax=None, show_colorbar=True, show_coi=True):
     if ax is None:
         fig, ax = plt.subplots()
     else:
@@ -32,8 +32,9 @@ def plot_cwt(W, times, periods, coi, ax=None, show_colorbar=True):
         fig.colorbar(im, ax=ax)
 
     # cone of influence
-    ax.plot(times, coi)
-    ax.fill_between(times, coi, y2=np.max(periods), step="mid", alpha=0.4)
+    if show_coi:
+        ax.plot(times, coi)
+        ax.fill_between(times, coi, y2=np.max(periods), step="mid", alpha=0.4)
 
     ymin, ymax = ax.get_ylim()  # Get the y-axis limits
     ax.set_yticks(custom_locator_periods(ymin, ymax))

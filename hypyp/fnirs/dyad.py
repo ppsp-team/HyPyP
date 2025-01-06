@@ -250,6 +250,7 @@ class Dyad:
             self.wtcs.append(wtc)
 
         # TODO should test this "is_shuffle" condition
+        # TODO check if we are already is_intra (same subject) to avoid computing again
         if with_intra and not self.is_shuffle:
             self.s1.intra_wtcs = []
             self.s2.intra_wtcs = []

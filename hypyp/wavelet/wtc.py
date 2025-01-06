@@ -78,7 +78,7 @@ class WTC:
 
         coherence = np.mean(self.wtc_masked)
         coherence_masked = np.mean(self.wtc_masked.mask)
-        if np.ma.is_masked(coherence) or not np.isfinite(coherence) or coherence_masked > MASK_THRESHOLD:
+        if np.ma.is_masked(coherence) or not np.isfinite(coherence):
             coherence = np.nan
 
         self.coherence_metric = coherence
@@ -102,7 +102,7 @@ class WTC:
 
         if self.period_cuts is None:
             # single bin
-            p_ranges = [(0, len(self.scales))]
+            p_ranges = [(0, len(self.periods))]
         else:
             p_ranges = []
             start_look_at = 0

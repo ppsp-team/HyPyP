@@ -10,10 +10,13 @@ from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsW
 def test_instanciate():
     wavelet_name = 'cgau1'
     wavelet = PywaveletsWavelet(wavelet_name=wavelet_name)
-    assert wavelet.wtc_smoothing_boxcar_size is None
+    assert wavelet.wtc_smoothing_win_size is None
     assert wavelet.wavelet_name == wavelet_name
     assert len(wavelet.psi) == 2 ** 10
     assert isinstance(wavelet.cwt_params, dict)
+    assert wavelet.bandwidth_frequency is None
+    assert wavelet.center_frequency is None
+    assert wavelet.degree == 1
 
 def test_resolution():
     wavelet = PywaveletsWavelet(evaluate=False)
@@ -131,18 +134,18 @@ def test_periods_frequencies_range():
     assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
     
 def test_smooth_in_scale_window():
-    assert np.sum(BaseWavelet.get_smoothing_window(0.6, 10)) == 1#pytest.approx(1)
-    assert len(BaseWavelet.get_smoothing_window(1, 1/2)) == 2
-    assert len(BaseWavelet.get_smoothing_window(1.1, 1/2)) == 3
+    assert np.sum(BaseWavelet.get_smoothing_window(0.6, 10)) == 1
+    assert len(BaseWavelet.get_smoothing_window(1, 1/2)) == 4
+    assert len(BaseWavelet.get_smoothing_window(1.1, 1/2)) == 5
 
     # dirac
-    assert len(BaseWavelet.get_smoothing_window(1/12, 1/12)) == 1
+    assert len(BaseWavelet.get_smoothing_window(1/12, 1/12)) == 2
 
-    win10 = BaseWavelet.get_smoothing_window(10, 1)
+    win10 = BaseWavelet.get_smoothing_window(5, 1)
     assert len(win10) == 10
     assert np.mean(win10) == win10[0]
 
-    win10_plus = BaseWavelet.get_smoothing_window(10.1, 1)
+    win10_plus = BaseWavelet.get_smoothing_window(5.1, 1)
     assert len(win10_plus) == 11
     assert np.mean(win10_plus) > win10_plus[0]
 

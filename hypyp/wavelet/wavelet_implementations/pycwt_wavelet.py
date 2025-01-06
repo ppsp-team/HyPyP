@@ -52,7 +52,7 @@ try:
             times = np.arange(len(y)) * dt
             return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)
 
-        def smoothing(self, W, dt, dj, scales, _boxcar_size=0, _cache_suffix=''):
+        def smoothing(self, W, dt, dj, scales, _win_size=0, _cache_suffix=''):
             return self._wavelet.smooth(W, dt, dj, scales)
 
         def wtc(self, pair: PairSignals, bin_seconds:float|None=None, period_cuts:List[float]|None=None, cache_suffix=''):
@@ -83,7 +83,9 @@ try:
                 coi,
                 pair,
                 wavelet_library=self.wavelet_library,
-                wavelet_name=self.wavelet_name)
+                wavelet_name=self.wavelet_name,
+                bin_seconds=bin_seconds,
+                period_cuts=period_cuts)
 
 except:
     PycwtWavelet = None
