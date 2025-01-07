@@ -1,37 +1,56 @@
-from typing import Tuple, List
-from collections import OrderedDict
+from typing import Tuple, List, Self
 import re
 import warnings
 
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 
-
-from ..wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet
 from ..wavelet.base_wavelet import BaseWavelet
+from ..wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet
 from ..wavelet.wtc import WTC
 from ..wavelet.pair_signals import PairSignals
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
-from .subject import Subject, TASK_NAME_WHOLE_RECORD
+from ..utils import TaskList, TASK_NAME_WHOLE_RECORD
+from .subject import Subject
 from .base_preprocessor import BasePreprocessor
-from ..plots import plot_wtc, plot_coherence_matrix_df, plot_coherence_per_task_bars, plot_connectogram
-from ..profiling import TimeTracker
+from ..plots import (
+    plot_wtc,
+    plot_coherence_matrix,
+    plot_coherence_bars_per_task,
+    plot_coherence_connectogram
+)
 
 PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
 
 class Dyad:
+    s1: Subject
+    s2: Subject
+    wtcs: List[WTC]
+    df: CoherenceDataFrame|None
+    is_shuffle: bool
+    label: str
+    tasks: TaskList
+
     def __init__(self, s1: Subject, s2: Subject, label:str='', is_shuffle:bool=False):
-        self.s1: Subject = s1
-        self.s2: Subject = s2
-        self.wtcs: List[WTC] = None
-        self.df: CoherenceDataFrame = None
+        """
+        The Dyad object is a pair of subjects of an hyperscanning recording.
+        Their recorded channels should be time aligned.
+
+        Args:
+            s1 (Subject): subject 1 of the dyad
+            s2 (Subject): subject 2 of the dyad
+            label (str, optional): Custom label for the dyad. Defaults to `s1.label`-`s2.label`.
+            is_shuffle (bool, optional): If the dyad is a permutated pair created for comparison. Defaults to False.
+        """
+        self.s1 = s1
+        self.s2 = s2
+        self.wtcs = None
+        self.df = None
         self.is_shuffle = is_shuffle
 
-        if label == '':
-            self.label = Dyad.get_label(s1, s2)
-        else:
-            self.label = label
+        self.label = label
+        if self.label == '':
+            self.label = Dyad.get_label_from_subjects(s1, s2)
 
         # Intersect the tasks
         self.tasks = []
@@ -43,11 +62,11 @@ class Dyad:
                 self.tasks.append(task)
     
     @property 
-    def subjects(self):
+    def subjects(self) -> Tuple[Subject, Subject]:
         return (self.s1, self.s2)
     
     @property
-    def is_preprocessed(self):
+    def is_preprocessed(self) -> bool:
         for subject in self.subjects:
             if not subject.is_preprocessed:
                 return False
@@ -58,15 +77,46 @@ class Dyad:
         return self.wtcs is not None
 
     @staticmethod
-    def get_label(s1: Subject, s2: Subject):
+    def get_label_from_subjects(s1: Subject, s2: Subject) -> str:
         return f'{s1.label}-{s2.label}'
 
-    def preprocess(self, preprocessor: BasePreprocessor):
+    def preprocess(self, preprocessor: BasePreprocessor) -> Self:
+        """
+        Run the preprocess pipeline on every subject in the dyad
+
+        Args:
+            preprocessor (BasePreprocessor): Which preprocessor to use. If no preprocessing is necessary, use UpstreamPreprocessor()
+
+        Returns:
+            Self: the object itself. Useful for chaining operations
+        """
         for subject in self.subjects:
-            if not subject.is_preprocessed:
-                subject.preprocess(preprocessor)
+            subject.preprocess(preprocessor)
         return self
 
+    def get_pair_wtc(
+        self,
+        pair: PairSignals,
+        wavelet: BaseWavelet,
+        bin_seconds: float | None = None,
+        period_cuts: List[float] | None = None,
+        cache_suffix='',
+    ) -> WTC: 
+        """
+        Compute the Wavelet Transform Coherence for a signal pair
+
+        Args:
+            pair (PairSignals): pair of signals from 2 subjects channels
+            wavelet (BaseWavelet): the wavelet to use for the wavelet transform
+            bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
+            period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
+            cache_suffix (str, optional): string to add to the caching key. Useful to split intra and inter subject. Defaults to ''.
+
+        Returns:
+            WTC: Wavelet Transform Coherence object resulting from the computation
+        """
+        return wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix=cache_suffix)
+    
     def _append_pairs(self,
                       label_dyad,
                       s1_ch_names,
@@ -137,6 +187,18 @@ class Dyad:
             
     
     def get_pairs(self, s1: Subject, s2: Subject, label_dyad:str=None, ch_match:PairMatch=None, is_shuffle:bool=False) -> List[PairSignals]:
+        """_summary_
+
+        Args:
+            s1 (Subject): subject 1 of the dyad
+            s2 (Subject): subject 2 of the dyad
+            label_dyad (str, optional): custom label for the dyad. Defaults to self.label.
+            ch_match (PairMatch, optional): string or regex to match channel name. Defaults to None, which means all channels.
+            is_shuffle (bool, optional): True if the pair is a permutated pair. Defaults to False.
+
+        Returns:
+            List[PairSignals]: a list of all the possible pairs of subject1 channels with subject2 channels
+        """
         if label_dyad is None:
             label_dyad = self.label
 
@@ -209,16 +271,6 @@ class Dyad:
 
         return pairs
     
-    def get_pair_wtc(
-        self,
-        pair: PairSignals,
-        wavelet: BaseWavelet,
-        bin_seconds: float | None = None,
-        period_cuts: List[float] | None = None,
-        cache_suffix='',
-    ) -> WTC: 
-        return wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix=cache_suffix)
-    
     def compute_wtcs(
         self,
         wavelet:BaseWavelet|None=None,
@@ -230,7 +282,24 @@ class Dyad:
         with_intra=False,
         downsample=None,
         keep_wtcs=True,
-    ):
+    ) -> Self:
+        """
+        Compute the Wavelet Transform Coherence for every channel pairs on the dyad
+
+        Args:
+            wavelet (BaseWavelet): the wavelet to use for the wavelet transform
+            ch_match (PairMatch, optional): string or regex to match channel name. Defaults to None, which means all channels.
+            only_time_range (Tuple[float,float], optional): _description_. Defaults to None.
+            bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
+            period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
+            verbose (bool, optional): verbose flag. Defaults to False.
+            with_intra (bool, optional): compute intra-subject as well. Defaults to False.
+            downsample (_type_, optional): downsample in time the resulting WTC. Useful to save memory space and faster display. Defaults to None.
+            keep_wtcs (bool, optional): if False, all the WTCs will be removed from object after the coherence dataframe has been computed. Useful to save memory space. Defaults to True.
+
+        Returns:
+            Self: the object itself. Useful for chaining operations
+        """
         if wavelet is None:
             wavelet = PywaveletsWavelet()
 
@@ -307,7 +376,7 @@ class Dyad:
         if query is not None:
             df = df.query(query)
             
-        return plot_coherence_matrix_df(df,
+        return plot_coherence_matrix(df,
             self.s1.label,
             self.s2.label,
             field1,
@@ -327,7 +396,7 @@ class Dyad:
         return self.plot_coherence_matrix('roi1', 'roi2', query=f'task=="{task}"')
     
     def plot_coherence_bars_per_task(self, is_intra=False):
-        return plot_coherence_per_task_bars(self.df, is_intra=is_intra)
+        return plot_coherence_bars_per_task(self.df, is_intra=is_intra)
         
     def plot_coherence_connectogram_intra(self, subject, query=None):
         df = self.df
@@ -338,7 +407,7 @@ class Dyad:
             df_filtered = df_filtered.query(query)
 
         pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
-        return plot_connectogram(pivot, title=subject.label)
+        return plot_coherence_connectogram(pivot, title=subject.label)
 
     def plot_coherence_connectogram_s1(self, query=None):
         return self.plot_coherence_connectogram_intra(self.s1, query)

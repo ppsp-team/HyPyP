@@ -13,7 +13,7 @@ The `.csv` file here has been generated from the Jupyter Notebook `tutorial/fnir
 
 The code here is to help getting started in loading the transformed data and get it in a suitable dataframe format for analysis. The plots below are very basics and serve only as inspiration.
 
-Here is a list of fields:
+Here is the list of fields imported from the CSV:
 
 |Field | Description |
 | - | ---- |

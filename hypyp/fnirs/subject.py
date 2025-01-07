@@ -9,10 +9,15 @@ import itertools as itertools
 from .base_preprocessor import BasePreprocessor, BasePreprocessStep
 from .preprocessor_implementations.upstream_preprocessor import UpstreamPreprocessor
 from .channel_roi import ChannelROI
-from ..utils import epochs_from_tasks_annotations, TASK_BEGINNING, TASK_END, TaskList, epochs_from_tasks_time_range
+from ..utils import (
+    epochs_from_tasks_annotations,
+    epochs_from_tasks_time_range,
+    TASK_BEGINNING,
+    TASK_END,
+    TASK_NAME_WHOLE_RECORD,
+    TaskList,
+)
 from ..wavelet.base_wavelet import WTC
-
-TASK_NAME_WHOLE_RECORD = 'whole_record'
 
 def random_label(length):
    letters = string.ascii_lowercase

@@ -411,6 +411,7 @@ TaskList = list[Task]
 TASK_NEXT_EVENT = None
 TASK_BEGINNING = -1
 TASK_END = -1
+TASK_NAME_WHOLE_RECORD = 'whole_record'
 
 def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -> List[mne.Epochs]:
     all_epochs = []

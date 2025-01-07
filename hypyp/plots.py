@@ -123,7 +123,7 @@ def subplot_heatmap_from_pivot(pivot, ordered_fields, ax):
 
     return heatmap
 
-def plot_coherence_matrix_df(
+def plot_coherence_matrix(
     df,
     s1_label,
     s2_label,
@@ -158,7 +158,7 @@ def plot_coherence_matrix_df(
     return fig
     
 
-def plot_connectogram(df, title='', ax=None):
+def plot_coherence_connectogram(df, title='', ax=None):
     if ax is None:
         fig, ax = plt.subplots(1, 1, subplot_kw={'projection': 'polar'})
     else:
@@ -180,7 +180,7 @@ def plot_connectogram(df, title='', ax=None):
     return fig
     
 
-def plot_coherence_per_task_bars(df, is_intra=False):
+def plot_coherence_bars_per_task(df, is_intra=False):
     selector = (df['roi1'] == df['roi2']) & (df['is_intra'] == is_intra)
     if is_intra:
         # exclude same channel, since they always have a coherence of 1
