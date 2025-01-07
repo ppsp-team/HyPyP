@@ -59,7 +59,7 @@ class PywaveletsWavelet(BaseWavelet):
             self.center_frequency = wavelet.center_frequency
             self.bandwidth_frequency = wavelet.bandwidth_frequency
         elif wavelet.short_family_name == 'cgau':
-            self.degree = int(self.wavelet_name[4:])
+            self.degree = int(self._wavelet_name[4:])
         
         # TODO unhardcode value here
         self._psi, self._psi_x = wavelet.wavefun(10)
