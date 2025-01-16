@@ -3,6 +3,15 @@ import time
 
 class MemoryMonitor(object):
     def __init__(self):
+        """
+        Track memory usage during a code block execution. Usage:
+
+        ```
+        with MemoryMonitor():
+            // my code
+        ```
+
+        """
         pass
     
     def format_memory_size(self, size_bytes):
@@ -24,7 +33,18 @@ class MemoryMonitor(object):
         tracemalloc.stop()
 
 class TimeTracker(object):
-    def __init__(self, label):
+    def __init__(self, label:str):
+        """
+        Track code execution time. Usage:
+
+        ```
+        with TimeTracker('foo'):
+            // my code
+        ```
+
+        Args:
+            label (str): identifier for the code block (for display only)
+        """
         self.start_time = None
         self.stop_time = None
         self.label = label

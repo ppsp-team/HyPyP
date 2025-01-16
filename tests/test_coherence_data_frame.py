@@ -5,7 +5,7 @@ import tempfile
 import numpy as np
 import pandas as pd
 
-from hypyp.signal import SynteticSignal
+from hypyp.signal import SyntheticSignal
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet
@@ -13,8 +13,8 @@ from hypyp.wavelet.wtc import WTC
 
 def test_instanciate():
     wavelet = PywaveletsWavelet(disable_caching=True)
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y, label_ch1='foo', label_ch2='bar'))
     df = CoherenceDataFrame.from_wtc_frame_rows(res.as_frame_rows)
     assert np.all(df['channel1'] == 'foo')
@@ -34,8 +34,8 @@ def test_instanciate():
 
 def test_save_load_feather():
     wavelet = PywaveletsWavelet(disable_caching=True)
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y, label_ch1='foo', label_ch2='bar'))
     df_before = CoherenceDataFrame.from_wtc_frame_rows(res.as_frame_rows)
 

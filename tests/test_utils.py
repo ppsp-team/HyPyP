@@ -5,7 +5,7 @@ import pytest
 import numpy as np
 import mne
 from hypyp import utils
-from hypyp.signal import SynteticSignal
+from hypyp.signal import SyntheticSignal
 from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet
 
 def get_fake_raw():
@@ -113,7 +113,7 @@ def test_task_from_time_range_recurring():
 
 def test_downsampling():
     wavelet = PywaveletsWavelet()
-    signal = SynteticSignal(n_points=2000).add_sin(1)
+    signal = SyntheticSignal(n_points=2000).add_sin(1)
     res = wavelet.cwt(signal.y, signal.period)
 
     assert res.W.shape[0] == len(res.scales)
@@ -129,7 +129,7 @@ def test_downsampling():
 
 def test_downsampling_low_values():
     wavelet = PywaveletsWavelet()
-    signal = SynteticSignal(tmax=10, n_points=50).add_sin(1)
+    signal = SyntheticSignal(duration=10, n_points=50).add_sin(1)
     res = wavelet.cwt(signal.y, signal.period)
 
     times, coif, W, factor = utils.downsample_in_time(res.times, res.coif, res.W)
@@ -142,7 +142,7 @@ def test_downsampling_low_values():
 def test_downsampling_threshold():
     bins = 1000
     wavelet = PywaveletsWavelet()
-    signal = SynteticSignal(tmax=10, n_points=bins+1).add_sin(1)
+    signal = SyntheticSignal(duration=10, n_points=bins+1).add_sin(1)
     res = wavelet.cwt(signal.y, signal.period)
 
     times, coif, W, factor = utils.downsample_in_time(res.times, res.coif, res.W, bins=bins)

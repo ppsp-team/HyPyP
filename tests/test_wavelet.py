@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 
-from hypyp.signal import SynteticSignal
+from hypyp.signal import SyntheticSignal
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.base_wavelet import BaseWavelet
 from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY
@@ -60,15 +60,15 @@ def test_number_of_scales():
 
 def test_cwt():
     wavelet = PywaveletsWavelet()
-    signal = SynteticSignal(tmax=100).add_sin(0.05)
+    signal = SyntheticSignal(duration=100).add_sin(0.05)
     res = wavelet.cwt(signal.y, signal.period)
     assert len(res.scales) > 0
     assert len(res.scales) == len(res.frequencies)
     # TODO test something on res.W
 
 def test_pair_signals():
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
     sub = pair.sub((0, 1))
     assert sub.x[0] == 0
@@ -77,8 +77,8 @@ def test_pair_signals():
     assert sub.section_id == pair.section_id
     
 def test_pair_signals_epoch():
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
     sub = pair.sub((0, 1), section_id=pair.section_id+1)
     assert sub.section_id == pair.section_id+1
@@ -86,8 +86,8 @@ def test_pair_signals_epoch():
 
 def test_wtc():
     wavelet = PywaveletsWavelet(disable_caching=True)
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert res.coherence_metric > 0
     assert res.coherence_metric < 1
@@ -131,7 +131,7 @@ def test_cache():
 
 def test_wtc_coi_masked():
     wavelet = PywaveletsWavelet(disable_caching=True)
-    signal = SynteticSignal().add_noise()
+    signal = SyntheticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal.x, signal.y, signal.y))
     assert res.wtc_masked is not None
     assert res.wtc_masked.mask[0,0] == True
@@ -140,8 +140,8 @@ def test_wtc_coi_masked():
 def test_periods_frequencies_range():    
     frequencies_range = np.array([5., 1.])
     periods_range = 1 / frequencies_range
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
 
     wavelet1 = PywaveletsWavelet(periods_range=tuple(periods_range), disable_caching=True)
     res1 = wavelet1.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
@@ -187,8 +187,8 @@ def test_smoothing():
     # TODO Should test more
     
 def test_to_pandas_df():
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
     wavelet = PywaveletsWavelet(disable_caching=True)
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     df = res.to_frame()
@@ -197,7 +197,7 @@ def test_to_pandas_df():
 
 def test_downsampling():
     wavelet = PywaveletsWavelet(disable_caching=True)
-    signal = SynteticSignal(n_points=2000).add_sin(1)
+    signal = SyntheticSignal(n_points=2000).add_sin(1)
     pair = PairSignals(signal.x, signal.y, signal.y)
     wtc = wavelet.wtc(pair)
 
@@ -215,8 +215,8 @@ def test_downsampling():
 def test_wtc_time_slicing():
     tmax = 100
     n = 1000
-    signal1 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
-    signal2 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
     wavelet = PywaveletsWavelet(disable_caching=True)
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), bin_seconds=10)
     df = res.to_frame()
@@ -232,8 +232,8 @@ def test_wtc_time_slicing():
 def test_wtc_period_slicing():
     tmax = 100
     n = 1000
-    signal1 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
-    signal2 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
     wavelet = PywaveletsWavelet(disable_caching=True)
     period_cuts = [3, 5, 10]
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), period_cuts=period_cuts)
@@ -248,8 +248,8 @@ def test_wtc_period_slicing():
 def test_wtc_period_slicing_edge_cases():
     tmax = 100
     n = 1000
-    signal1 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
-    signal2 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
     wavelet = PywaveletsWavelet(disable_caching=True)
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
     assert wavelet.wtc(pair, period_cuts=[99999]).to_frame().shape[0] == 1
@@ -261,8 +261,8 @@ def test_wtc_period_slicing_edge_cases():
 def test_wtc_period_time_combined_slicing():
     tmax = 100
     n = 1000
-    signal1 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
-    signal2 = SynteticSignal(tmax=tmax, n_points=n).add_noise()
+    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
     wavelet = PywaveletsWavelet(disable_caching=True)
     bin_seconds = 20
     period_cuts = [3, 5, 10]
@@ -273,8 +273,8 @@ def test_wtc_period_time_combined_slicing():
     #print(df)
     
 def test_wtc_wavelet_info():
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
     wavelet = PywaveletsWavelet(disable_caching=True)
     res = wavelet.wtc(pair)

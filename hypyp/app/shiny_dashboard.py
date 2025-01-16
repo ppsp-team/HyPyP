@@ -18,7 +18,7 @@ from hypyp.fnirs.subject import Subject
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_basic import MnePreprocessorBasic
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_upstream import MnePreprocessorUpstream
 from hypyp.fnirs.preprocessor.implementations.cedalion_preprocessor import CedalionPreprocessor
-from hypyp.signal import SynteticSignal
+from hypyp.signal import SyntheticSignal
 from hypyp.wavelet.base_wavelet import DEFAULT_SMOOTH_WIN_SIZE
 from hypyp.wavelet.implementations.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY, DEFAULT_PERIODS_RANGE
@@ -142,13 +142,13 @@ def server(input: Inputs, output: Outputs, session: Session):
             x = np.linspace(0, N/fs, N)
             tmax = N / fs
             if input.signal_testing_choice() == 'sinusoid':
-                y1 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_sinusoid_freq1()).y
-                y2 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_sinusoid_freq2()).y
+                y1 = SyntheticSignal(duration=tmax, n_points=N).add_sin(input.signal_sinusoid_freq1()).y
+                y2 = SyntheticSignal(duration=tmax, n_points=N).add_sin(input.signal_sinusoid_freq2()).y
             elif input.signal_testing_choice() == 'sinusoid_almost_similar':
-                y1 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_sinusoid_almost_similar_freq1()).y
-                y2 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_sinusoid_almost_similar_freq1() - 0.001).y
+                y1 = SyntheticSignal(duration=tmax, n_points=N).add_sin(input.signal_sinusoid_almost_similar_freq1()).y
+                y2 = SyntheticSignal(duration=tmax, n_points=N).add_sin(input.signal_sinusoid_almost_similar_freq1() - 0.001).y
             elif input.signal_testing_choice() == 'sinusoid_dephased':
-                y1 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_sinusoid_dephased_freq1()).y
+                y1 = SyntheticSignal(duration=tmax, n_points=N).add_sin(input.signal_sinusoid_dephased_freq1()).y
                 y1_fft = np.fft.fft(y1)
                 y1_magnitude = np.abs(y1_fft)
                 y1_phase = np.angle(y1_fft)
@@ -157,13 +157,13 @@ def server(input: Inputs, output: Outputs, session: Session):
                 y2 = np.fft.ifft(y1_randomized_fft).real
                 y2 = y2 * 1 / (np.abs(np.max(y2)-np.min(y2)) / 2)
             elif input.signal_testing_choice() == 'chirp':
-                signal1 = SynteticSignal(tmax=tmax, n_points=N)
+                signal1 = SyntheticSignal(duration=tmax, n_points=N)
                 signal1.add_chirp(input.signal_chirp_freq1(), input.signal_chirp_freq2())
                 y1 = signal1.y
                 y2 = np.flip(y1)
             elif input.signal_testing_choice() == 'chirp_sinusoid':
-                y1 = SynteticSignal(tmax=tmax, n_points=N).add_sin(input.signal_chirp_sinusoid_freq1()).y
-                y2 = SynteticSignal(tmax=tmax, n_points=N).add_chirp(input.signal_chirp_sinusoid_freq2(), input.signal_chirp_sinusoid_freq3()).y
+                y1 = SyntheticSignal(duration=tmax, n_points=N).add_sin(input.signal_chirp_sinusoid_freq1()).y
+                y2 = SyntheticSignal(duration=tmax, n_points=N).add_chirp(input.signal_chirp_sinusoid_freq2(), input.signal_chirp_sinusoid_freq3()).y
 
             noise_level = input.signal_noise_level()
             y1 +=  noise_level * np.random.normal(0, 1, len(x))

@@ -1,7 +1,7 @@
 import pytest
 import warnings
 
-from hypyp.signal import SynteticSignal
+from hypyp.signal import SyntheticSignal
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.wavelet.implementations.scipy_wavelet import ScipyWavelet
@@ -19,8 +19,8 @@ def test_pywavelets():
     assert min(x) == wavelet.lower_bound
     assert max(x) == wavelet.upper_bound
     assert len(x) == len(psi)
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
 
 def test_scipy():
@@ -30,8 +30,8 @@ def test_scipy():
     assert psi.dtype.kind == 'c'
     # TODO test something
 
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
 
 
@@ -45,8 +45,8 @@ def test_pycwt():
     assert min(x) == wavelet.lower_bound
     assert max(x) == wavelet.upper_bound
     assert len(x) == len(psi)
-    signal1 = SynteticSignal().add_noise()
-    signal2 = SynteticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
 
     # make sure we do not exceed the period range
