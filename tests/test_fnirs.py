@@ -12,7 +12,7 @@ import mne
 from hypyp.fnirs.cohort import Cohort
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 from hypyp.wavelet.pair_signals import PairSignals
-from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet
+from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.fnirs.subject import Subject
 from hypyp.fnirs.channel_roi import ChannelROI
 from hypyp.fnirs.dyad import Dyad
@@ -226,9 +226,9 @@ def test_dyad_pairs_recurring_event():
     assert len(pairs) == 3
     # make sure we don't have the same signal
     assert np.sum(pairs[0].y1 - pairs[1].y1) != 0
-    assert pairs[0].epoch == 0
-    assert pairs[1].epoch == 1
-    assert pairs[2].epoch == 2
+    assert pairs[0].epoch_id == 0
+    assert pairs[1].epoch_id == 1
+    assert pairs[2].epoch_id == 2
     
 def test_dyad_tasks_intersection():
     tasks = [

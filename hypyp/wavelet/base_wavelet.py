@@ -378,10 +378,11 @@ class BaseWavelet(ABC):
         if len(subject_label) < 1:
             raise RuntimeError(f'subjects must have labels to use caching')
 
-        if pair.task == '':
+        if pair.label_task == '':
             raise RuntimeError(f'must have task to have unique identifiers in caching')
 
-        key = f'[{subject_label}][{ch_name}][{pair.task}][{pair.epoch}][{pair.x[0]}-{pair.x[-1]}][{str(pair.time_range)}][{obj_id}]'
+        time_range_str = f'{pair.x[0]}-{pair.x[-1]}'
+        key = f'[{subject_label}][{ch_name}][{pair.label_task}][{pair.epoch_id}][{pair.x[0]}-{pair.x[-1]}][{time_range_str}][{obj_id}]'
         if cache_suffix != '':
             key += f'_{cache_suffix}'
         

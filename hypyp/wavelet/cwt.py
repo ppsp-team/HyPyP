@@ -1,22 +1,48 @@
+from matplotlib.figure import Figure
 import numpy as np
 
 from ..plots import plot_cwt
 
 class CWT:
-    def __init__(self, weights, times, scales, periods, coi):
-        self.W: np.ndarray = weights
-        self.times: np.ndarray = times
+    W: np.ndarray
+    times: np.ndarray
+    dt: float
+    scales: np.ndarray
+    periods: np.ndarray
+    frequencies: np.ndarray
+    coi: np.ndarray # Cone of influence, in periods
+    coif: np.ndarray # Cone of influence, in frequencies
+
+    def __init__(self, weights:np.ndarray, times:np.ndarray, scales:np.ndarray, periods:np.ndarray, coi:np.ndarray):
+        """
+        The CWT object holds the results of a Continuous Wavelet Transform 
+
+        Args:
+            weights (np.ndarray): weights of the transforms
+            times (np.ndarray): timecodes
+            scales (np.ndarray): scales used
+            periods (np.ndarray): scales in "seconds"
+            coi (np.ndarray): cone of influence
+        """
+        self.W = weights
+        self.times = times
         self.dt = times[1] - times[0]
 
-        self.scales: np.ndarray = scales
+        self.scales = scales
 
-        self.periods: np.ndarray = periods
-        self.frequencies: np.ndarray = 1 / periods
+        self.periods = periods
+        self.frequencies = 1 / periods
 
-        self.coi: np.ndarray = coi # Cone of influence, in periods
-        self.coif: np.ndarray = 1 / coi # Cone of influence, in frequencies
+        self.coi = coi
+        self.coif = 1 / coi
 
-    def plot(self, **kwargs):
+    def plot(self, **kwargs) -> Figure:
+        """
+        Plot the Continuous Wavelet Transform weights
+
+        Returns:
+            Figure: matplotlib.Figure
+        """
         return plot_cwt(self.W, self.times, self.periods, self.coi, **kwargs)
 
 

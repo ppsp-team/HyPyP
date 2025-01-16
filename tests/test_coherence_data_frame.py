@@ -8,7 +8,7 @@ import pandas as pd
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 from hypyp.wavelet.pair_signals import PairSignals
-from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet
+from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet
 from hypyp.wavelet.wtc import WTC
 
 def test_instanciate():
@@ -16,13 +16,13 @@ def test_instanciate():
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y, label_ch1='foo', label_ch2='bar'))
-    df = CoherenceDataFrame.from_wtcs(res.as_frame_rows)
+    df = CoherenceDataFrame.from_wtc_frame_rows(res.as_frame_rows)
     assert np.all(df['channel1'] == 'foo')
     assert np.all(df['channel2'] == 'bar')
 
     # Make sure categorical is correct when merging data frames
     res2 = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y, label_ch1='baz', label_ch2='bar'))
-    df2 = CoherenceDataFrame.from_wtcs(res2.as_frame_rows)
+    df2 = CoherenceDataFrame.from_wtc_frame_rows(res2.as_frame_rows)
 
     df_concat = CoherenceDataFrame.concat([df, df2])
 
@@ -37,7 +37,7 @@ def test_save_load_feather():
     signal1 = SynteticSignal().add_noise()
     signal2 = SynteticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y, label_ch1='foo', label_ch2='bar'))
-    df_before = CoherenceDataFrame.from_wtcs(res.as_frame_rows)
+    df_before = CoherenceDataFrame.from_wtc_frame_rows(res.as_frame_rows)
 
     with tempfile.TemporaryDirectory(prefix='hypyp-') as tmp_path:
         feather_path = os.path.join(tmp_path, 'test.feather')

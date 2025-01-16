@@ -37,9 +37,9 @@ class WTC:
         self.is_intra = pair.is_intra
         self.is_shuffle = pair.is_shuffle
 
-        self.task = pair.task
-        self.epoch = pair.epoch
-        self.section = pair.section
+        self.task = pair.label_task
+        self.epoch_id = pair.epoch_id
+        self.section_id = pair.section_id
 
         self.label_dyad = pair.label_dyad
         self.label_pair = pair.label
@@ -165,8 +165,8 @@ class WTC:
                 self.label_ch1,
                 self.label_ch2,
                 self.task,
-                self.epoch,
-                self.section,
+                self.epoch_id,
+                self.section_id,
                 bin_id, 
                 self.coherence_bins[bin_id][0], # metric
                 self.coherence_bins[bin_id][1], # masked
@@ -178,7 +178,7 @@ class WTC:
         return frames
     
     def to_frame(self) -> CoherenceDataFrame:
-        df = CoherenceDataFrame.from_wtcs(self.as_frame_rows)
+        df = CoherenceDataFrame.from_wtc_frame_rows(self.as_frame_rows)
         return df
 
     #

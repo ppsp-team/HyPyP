@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ..wavelet.base_wavelet import BaseWavelet
-from ..wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet
+from ..wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet
 from ..wavelet.wtc import WTC
 from ..wavelet.pair_signals import PairSignals
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
@@ -88,7 +88,7 @@ class Dyad:
             preprocessor (BasePreprocessor): Which preprocessor class to use. If no preprocessing is necessary, use MnePreprocessorUpstream()
 
         Returns:
-            Self: the object itself. Useful for chaining operations
+            Dyad: the object itself. Useful for chaining operations
         """
         for subject in self.subjects:
             subject.preprocess(preprocessor)
@@ -178,9 +178,9 @@ class Dyad:
                         label_roi1=s1.get_roi_from_channel(s1_ch_name),
                         label_roi2=s2.get_roi_from_channel(s2_ch_name),
                         label_dyad=label_dyad,
-                        task=task_name,
-                        epoch=epoch_id,
-                        section=section_id,
+                        label_task=task_name,
+                        epoch_id=epoch_id,
+                        section_id=section_id,
                         is_intra=(s1==s2),
                         is_shuffle=is_shuffle,
                     ))
@@ -300,7 +300,7 @@ class Dyad:
             keep_wtcs (bool, optional): if False, all the WTCs will be removed from object after the coherence dataframe has been computed. Useful to save memory space. Defaults to True.
 
         Returns:
-            Self: the object itself. Useful for chaining operations
+            Dyad: the object itself. Useful for chaining operations
         """
         if wavelet is None:
             wavelet = PywaveletsWavelet()
@@ -360,7 +360,7 @@ class Dyad:
         for wtc in wtcs:
             frame_rows = frame_rows + wtc.as_frame_rows
 
-        return CoherenceDataFrame.from_wtcs(frame_rows)
+        return CoherenceDataFrame.from_wtc_frame_rows(frame_rows)
 
     
     #

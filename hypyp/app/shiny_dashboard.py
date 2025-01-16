@@ -20,10 +20,10 @@ from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_upstream import M
 from hypyp.fnirs.preprocessor.implementations.cedalion_preprocessor import CedalionPreprocessor
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.base_wavelet import DEFAULT_SMOOTH_WIN_SIZE
-from hypyp.wavelet.wavelet_implementations.matlab_wavelet import MatlabWavelet
-from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY, DEFAULT_PERIODS_RANGE
-from hypyp.wavelet.wavelet_implementations.pycwt_wavelet import PycwtWavelet
-from hypyp.wavelet.wavelet_implementations.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
+from hypyp.wavelet.implementations.matlab_wavelet import MatlabWavelet
+from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY, DEFAULT_PERIODS_RANGE
+from hypyp.wavelet.implementations.pycwt_wavelet import PycwtWavelet
+from hypyp.wavelet.implementations.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
 import hypyp.plots
 
 
@@ -197,7 +197,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 y2,
                 label_s1='s1',
                 label_s2='s2',
-                task='foo',
+                label_task='foo',
             )
 
         try:

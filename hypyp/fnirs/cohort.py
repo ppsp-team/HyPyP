@@ -52,7 +52,7 @@ class Cohort():
             preprocessor (BasePreprocessor): Which preprocessor to use. If no preprocessing is necessary, use MnePreprocessorUpstream()
 
         Returns:
-            Self: the object itself. Useful for chaining operations
+            Cohort: the object itself. Useful for chaining operations
         """
         for dyad in self.dyads:
             if not dyad.is_preprocessed:
@@ -64,7 +64,7 @@ class Cohort():
         Wraps the `compute_wtcs` of all the dyads. Arguments are directly passed to the dyads method
 
         Returns:
-            Self: the object itself. Useful for chaining operations
+            Cohort: the object itself. Useful for chaining operations
         """
         for dyad in self.dyads:
             dyad.compute_wtcs(*args, **kwargs)
@@ -76,7 +76,7 @@ class Cohort():
         Delete all the shuffle dyads that have been created
 
         Returns:
-            Self: _description_
+            Cohort: _description_
         """
         self.dyads_shuffle = None
     
@@ -101,7 +101,7 @@ class Cohort():
         Wraps the `compute_wtcs` of all the dyads_shuffle. Arguments are directly passed to the dyads_shuffle method
 
         Returns:
-            Self: the object itself. Useful for chaining operations
+            Cohort: the object itself. Useful for chaining operations
         """
         self.dyads_shuffle = self.get_dyads_shuffle()
         for dyad_shuffle in self.dyads_shuffle:

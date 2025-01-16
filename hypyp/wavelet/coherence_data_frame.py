@@ -1,4 +1,4 @@
-from typing import TypedDict, cast
+from typing import TypedDict, cast, Self, List
 
 import pandas as pd
 import pyarrow.feather as feather
@@ -53,17 +53,26 @@ class CoherenceDataFrame(TypedDict, total=False):
     wavelet_name: pd.Categorical
 
     @staticmethod
-    def from_wtcs(data):
+    def from_wtc_frame_rows(data:list) -> Self:
+        """
+        Get a typed pandas DataFrame from wavelet transform coherence data
+
+        Args:
+            data (list): WTCs data formated as frame rows (see `WTC.as_frame_rows`)
+
+        Returns:
+            CoherenceDataFrame: a typed pandas DataFrame
+        """
         df = pd.DataFrame(
             data,
             columns=COHERENCE_FRAME_COLUMNS,
         )
-        CoherenceDataFrame.set_dtype_categories(df)
+        CoherenceDataFrame._set_dtype_categories(df)
 
         return cast(CoherenceDataFrame, df)
     
     @staticmethod
-    def set_dtype_categories(df):
+    def _set_dtype_categories(df):
         df['dyad'] = df['dyad'].astype('category')
         df['subject1'] = df['subject1'].astype('category')
         df['subject2'] = df['subject2'].astype('category')
@@ -79,20 +88,44 @@ class CoherenceDataFrame(TypedDict, total=False):
         
     
     @staticmethod
-    def concat(dfs):
+    def concat(dfs: List[Self]) -> Self:
+        """
+        Takes a list of dataframes and concatenate them into one dataframe
+
+        Args:
+            dfs (List[Self]): the list of dataframes (CoherenceDataFrame)
+
+        Returns:
+            CoherenceDataFrame: _description_
+        """
         df = pd.concat(dfs, ignore_index=True)
-        return df
+        return cast(CoherenceDataFrame, df)
         
-    
     @staticmethod
-    def from_feather(feather_path: str):
+    def from_feather(feather_path:str) -> Self:
+        """
+        Read pandas feather file and return as CoherenceDataFrame
+
+        Args:
+            feather_path (str): path on disk
+
+        Returns:
+            CoherenceDataFrame: a typed pandas DataFrame
+        """
         with open(feather_path, 'rb') as f:
             df = feather.read_feather(f)
         
         return cast(CoherenceDataFrame, df)
     
     @staticmethod
-    def save_feather(df, feather_path: str):
+    def save_feather(df:Self, feather_path:str):
+        """
+        Save to disk
+
+        Args:
+            df (CoherenceDataFrame): the pandas dataframe to save
+            feather_path (str): path on disk
+        """
         with open(feather_path, 'wb') as f:
             feather.write_feather(df, f)
 

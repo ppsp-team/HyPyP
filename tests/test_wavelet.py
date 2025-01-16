@@ -5,7 +5,7 @@ import numpy as np
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.base_wavelet import BaseWavelet
-from hypyp.wavelet.wavelet_implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY
+from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY
 
 def test_instanciate():
     wavelet_name = 'cgau1'
@@ -66,6 +66,24 @@ def test_cwt():
     assert len(res.scales) == len(res.frequencies)
     # TODO test something on res.W
 
+def test_pair_signals():
+    signal1 = SynteticSignal().add_noise()
+    signal2 = SynteticSignal().add_noise()
+    pair = PairSignals(signal1.x, signal1.y, signal2.y)
+    sub = pair.sub((0, 1))
+    assert sub.x[0] == 0
+    assert sub.x[-1] < 1.1
+    assert sub.x[-1] > 0.9
+    assert sub.section_id == pair.section_id
+    
+def test_pair_signals_epoch():
+    signal1 = SynteticSignal().add_noise()
+    signal2 = SynteticSignal().add_noise()
+    pair = PairSignals(signal1.x, signal1.y, signal2.y)
+    sub = pair.sub((0, 1), section_id=pair.section_id+1)
+    assert sub.section_id == pair.section_id+1
+    
+
 def test_wtc():
     wavelet = PywaveletsWavelet(disable_caching=True)
     signal1 = SynteticSignal().add_noise()
@@ -88,25 +106,25 @@ def test_cache():
     assert len(list(wavelet.cache.keys())) == 0
     assert wavelet.get_cache_item('foo') == None
 
-    time_range = (0,1)
-    other_time_range = (0,2)
     zeros = np.zeros((10,))
     x = np.arange(len(zeros))
-    pair1 = PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject1', label_s2='subject2', task='my_task', time_range=time_range)
-    pair2 = PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject1', label_s2='subject2', task='my_task', time_range=other_time_range)
-    pair3 = PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject1', label_s2='subject2', task='my_other_task', time_range=time_range)
-    pair4 = PairSignals(x, zeros, zeros, label_ch1='ch3', label_ch2='ch4', label_s1='subject1', label_s2='subject2', task='my_task', time_range=time_range)
-    pair5 = PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject5.1', label_s2='subject5.2', task='my_task', time_range=time_range)
+
+    # all these should yield a unique key
+    pairs = [
+        PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject1', label_s2='subject2', label_task='my_task'),
+        PairSignals(x[2:], zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject1', label_s2='subject2', label_task='my_task'), # other time range
+        PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject1', label_s2='subject2', label_task='my_other_task'),
+        PairSignals(x, zeros, zeros, label_ch1='ch3', label_ch2='ch4', label_s1='subject1', label_s2='subject2', label_task='my_task'),
+        PairSignals(x, zeros, zeros, label_ch1='ch1', label_ch2='ch2', label_s1='subject5.1', label_s2='subject5.2', label_task='my_task'),
+    ]
     # add all the keys to a list, then use a set to remove duplicates and make sure we still have the same count
     keys = []
-    keys.append(wavelet.get_cache_key_pair(pair1, 0, 'cwt'))
-    keys.append(wavelet.get_cache_key_pair(pair1, 1, 'cwt'))
-    keys.append(wavelet.get_cache_key_pair(pair2, 0, 'cwt'))
-    keys.append(wavelet.get_cache_key_pair(pair3, 0, 'cwt'))
-    keys.append(wavelet.get_cache_key_pair(pair4, 0, 'cwt'))
-    keys.append(wavelet.get_cache_key_pair(pair5, 0, 'cwt'))
-    keys.append(wavelet.get_cache_key_pair(pair5, 1, 'cwt'))
-    keys.append(wavelet.get_cache_key_pair(pair5, 1, 'something_else'))
+    for pair in pairs:
+        keys.append(wavelet.get_cache_key_pair(pair, 0, 'cwt'))
+        keys.append(wavelet.get_cache_key_pair(pair, 1, 'cwt'))
+
+    keys.append(wavelet.get_cache_key_pair(pairs[0], 0, 'another_suffix'))
+
     #print(keys)
     assert len(keys) == len(set(keys))
 
