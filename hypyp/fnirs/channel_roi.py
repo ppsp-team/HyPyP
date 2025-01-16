@@ -1,16 +1,35 @@
+from typing import Self
 from collections import OrderedDict
 
 import scipy.io
 
 class ChannelROI:
+    rois: OrderedDict
+
     def __init__(self, rois:OrderedDict=None):
+        """
+        Structure for grouping channels into regions of interest
+
+        Args:
+            rois (OrderedDict, optional): predefined regions of interest. Defaults to None.
+        """
         if rois is None:
             self.rois = OrderedDict()
         else:
             self.rois = rois
 
     @staticmethod
-    def from_lionirs_file(roi_file_path):
+    def from_lionirs_file(roi_file_path: str) -> Self:
+        """
+        Create a new ChannelROI object from a file exported 
+
+        Args:
+            roi_file_path (str): The path of the file exported by LIONirs toolbox for Region of Interests
+                                 It should be a matlab file with structure zone->(label|plotLst)
+
+        Returns:
+            ChannelROI: an instance of the class
+        """
         obj = ChannelROI()
 
         mat = scipy.io.loadmat(roi_file_path, struct_as_record=False)
@@ -37,7 +56,7 @@ class ChannelROI:
         return obj
         
     @property
-    def ordered_channel_names(self):
+    def ordered_ch_names(self):
         channel_names = []
         for channel_names_in_roi in self.rois.values():
             channel_names = channel_names + channel_names_in_roi
@@ -48,22 +67,31 @@ class ChannelROI:
         boundaries = [0]
         for values in self.rois.values():
             boundaries.append(len(values) + boundaries[-1])
-        boundaries.append(len(self.ordered_channel_names))
+        boundaries.append(len(self.ordered_ch_names))
         return boundaries
 
-    def get_names_in_order(self, names):
+    def get_ch_names_in_order(self, ch_names:str):
+        """
+        Given a list of channel names, return them in order of Region of Interest
+
+        Args:
+            names (str): 
+
+        Returns:
+            _type_: _description_
+        """
         all_names_found = []
 
         # OPTIMIZE: this is inefficient
-        for ordered_name in self.ordered_channel_names:
-            names_found = [name for name in names if name.startswith(ordered_name)]
+        for ordered_name in self.ordered_ch_names:
+            names_found = [name for name in ch_names if name.startswith(ordered_name)]
             for name_found in names_found:
                 if name_found not in all_names_found:
                     all_names_found.append(name_found)
         
-        for unordered_name in names:
-            if not unordered_name in all_names_found:
-                all_names_found.append(unordered_name)
+        for unordered_ch_name in ch_names:
+            if not unordered_ch_name in all_names_found:
+                all_names_found.append(unordered_ch_name)
         
         return all_names_found
 

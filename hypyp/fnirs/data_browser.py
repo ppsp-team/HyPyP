@@ -1,3 +1,4 @@
+from typing import List, Self
 import os
 from pathlib import Path
 from zipfile import ZipFile
@@ -12,7 +13,15 @@ DOWNLOADS_RELATIVE_PATH = os.path.join('data', 'fNIRS', 'downloads')
 
 
 class DataBrowser:
+    absolute_root_path: str
+    paths: List[str]
+
     def __init__(self):
+        """
+        The DataBrowser class allows to recursively list NIRS files in folders and detect file type
+
+        It can also download demo dataset for convenience.
+        """
         self.absolute_root_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.paths = [
             self.absolute_path(os.path.join('data')),
@@ -20,36 +29,60 @@ class DataBrowser:
             DOWNLOADS_RELATIVE_PATH,
         ]
     
-    def absolute_path(self, relative_path):
+    def absolute_path(self, relative_path:str) -> str:
+        """
+        Get absolute path from relative path
+
+        Args:
+            relative_path (str): a path relative to the project
+
+        Returns:
+            str: the absolute path on disk
+        """
         return os.path.join(self.absolute_root_path, relative_path)
 
-    def add_source(self, path):
+    def add_source(self, path:str) -> Self:
+        """
+        Add a folder to look for NIRS files
+
+        Args:
+            path (str): absolute path to add
+
+        Returns:
+            Self: _description_
+        """
         self.paths.append(path)
         return self
 
     @staticmethod
-    def path_is_nirx(path):
+    def is_path_nirx(path:str) -> bool:
         return os.path.isfile(path) and path.endswith('.hdr')
 
     @staticmethod
-    def path_is_fif(path):
+    def is_path_fif(path:str) -> bool:
         return os.path.isfile(path) and path.endswith('.fif')
 
     @staticmethod
-    def path_is_snirf(path):
+    def is_path_snirf(path:str) -> bool:
         return os.path.isfile(path) and path.endswith('.snirf')
 
-    def list_all_files(self):
+    def list_all_files(self) -> List[str]:
+        """
+        Recursively list all the NIRS files found in the source paths
+
+        Returns:
+            List[str]: list of absolute file paths
+        """
         file_paths = []
         for root_path in self.paths:
             for path in Path(root_path).rglob('*'):
-                if DataBrowser.path_is_fif(str(path)):
+                if DataBrowser.is_path_fif(str(path)):
                     file_paths.append(str(path.absolute()))
 
-                elif DataBrowser.path_is_nirx(str(path)):
+                elif DataBrowser.is_path_nirx(str(path)):
                     file_paths.append(str(path.absolute()))
 
-                elif DataBrowser.path_is_snirf(str(path)):
+                elif DataBrowser.is_path_snirf(str(path)):
                     file_paths.append(str(path.absolute()))
 
         # remove duplicates
@@ -57,7 +90,15 @@ class DataBrowser:
         unique.sort()
         return unique
 
-    def download_demo_dataset(self):
+    def download_demo_dataset(self) -> str:
+        """
+        Download a publicly available demo NIRS dataset of dyads recordings
+
+        Source: https://researchdata.ntu.edu.sg/dataset.xhtml?persistentId=doi:10.21979/N9/35DNCW
+
+        Returns:
+            str: the local path where the dataset has been downloaded
+        """
         extract_path = self.absolute_path(DOWNLOADS_RELATIVE_PATH)
         zip_path = pooch.retrieve(
             fname="fathers.zip",
@@ -75,14 +116,4 @@ class DataBrowser:
 
         self.add_source(target_path)
         return target_path
-    
-    def read_two_signals_from_mat_obj(self, mat, id1, id2):
-        x = mat['t'].flatten().astype(np.float64, copy=True)
-        y1 = mat['d'][:, id1].flatten().astype(np.complex128, copy=True)
-        y2 = mat['d'][:, id2].flatten().astype(np.complex128, copy=True)
-
-        return PairSignals(x, y1, y2)
-    
-    def read_two_signals_from_mat(self, file_path, id1, id2):
-        return self.read_two_signals_from_mat_obj(scipy.io.loadmat(file_path))
     

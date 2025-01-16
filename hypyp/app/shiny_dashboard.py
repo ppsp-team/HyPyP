@@ -15,8 +15,9 @@ import mne
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.fnirs.data_browser import DataBrowser
 from hypyp.fnirs.subject import Subject
-from hypyp.fnirs.preprocessor_implementations.mne_preprocessor import MnePreprocessor
-from hypyp.fnirs.preprocessor_implementations.upstream_preprocessor import UpstreamPreprocessor
+from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_basic import MnePreprocessorBasic
+from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_upstream import MnePreprocessorUpstream
+from hypyp.fnirs.preprocessor.implementations.cedalion_preprocessor import CedalionPreprocessor
 from hypyp.signal import SynteticSignal
 from hypyp.wavelet.base_wavelet import DEFAULT_SMOOTH_WIN_SIZE
 from hypyp.wavelet.wavelet_implementations.matlab_wavelet import MatlabWavelet
@@ -25,8 +26,6 @@ from hypyp.wavelet.wavelet_implementations.pycwt_wavelet import PycwtWavelet
 from hypyp.wavelet.wavelet_implementations.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
 import hypyp.plots
 
-# TODO: Cedalion is optional, this import should be in a try-catch
-from hypyp.fnirs.preprocessor_implementations.cedalion_preprocessor import CedalionPreprocessor
 
 DEFAULT_PLOT_SIGNAL_HEIGHT = 150 # px
 DEFAULT_PLOT_MNE_HEIGHT = 1200 # px
@@ -286,12 +285,12 @@ def server(input: Inputs, output: Outputs, session: Session):
     def get_preprocessor():
         value = input.subject_preprocessor()
         if value == 'upstream':
-            return UpstreamPreprocessor()
+            return MnePreprocessorUpstream()
         if value == 'mne':
-            return MnePreprocessor()
+            return MnePreprocessorBasic()
         if value == 'cedalion':
             return CedalionPreprocessor()
-        raise RuntimeError(f'Unknown preprocessor "{value}"')
+        raise RuntimeError(f'Unknown preprocessor type "{value}"')
         
 
     @reactive.calc()
@@ -325,7 +324,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 show=False,
             )
         except:
-            # TODO this is here because of CedalionPreprocessingStep. This code flow is ugly
+            # TODO this is here because of CedalionStep. This code flow is ugly
             return dict()
 
     def mne_figure_as_image(fig):
@@ -395,7 +394,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "",
                 choices=[STR_SAME_AS_SUBJECT_1] + browser.list_all_files(),
             )))
-            choices.append(ui_option_row("Preprocessor", ui.input_select(
+            choices.append(ui_option_row("Preprocessor Class", ui.input_select(
                 "subject_preprocessor",
                 "",
                 choices={

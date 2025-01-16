@@ -12,7 +12,7 @@ from ..wavelet.pair_signals import PairSignals
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from ..utils import TaskList, TASK_NAME_WHOLE_RECORD
 from .subject import Subject
-from .base_preprocessor import BasePreprocessor
+from .preprocessor.base_preprocessor import BasePreprocessor
 from ..plots import (
     plot_wtc,
     plot_coherence_matrix,
@@ -31,7 +31,7 @@ class Dyad:
     label: str
     tasks: TaskList
 
-    def __init__(self, s1: Subject, s2: Subject, label:str='', is_shuffle:bool=False):
+    def __init__(self, s1:Subject, s2:Subject, label:str='', is_shuffle:bool=False):
         """
         The Dyad object is a pair of subjects of an hyperscanning recording.
         Their recorded channels should be time aligned.
@@ -50,7 +50,7 @@ class Dyad:
 
         self.label = label
         if self.label == '':
-            self.label = Dyad.get_label_from_subjects(s1, s2)
+            self.label = Dyad._get_label_from_subjects(s1, s2)
 
         # Intersect the tasks
         self.tasks = []
@@ -77,7 +77,7 @@ class Dyad:
         return self.wtcs is not None
 
     @staticmethod
-    def get_label_from_subjects(s1: Subject, s2: Subject) -> str:
+    def _get_label_from_subjects(s1:Subject, s2:Subject) -> str:
         return f'{s1.label}-{s2.label}'
 
     def preprocess(self, preprocessor: BasePreprocessor) -> Self:
@@ -85,7 +85,7 @@ class Dyad:
         Run the preprocess pipeline on every subject in the dyad
 
         Args:
-            preprocessor (BasePreprocessor): Which preprocessor to use. If no preprocessing is necessary, use UpstreamPreprocessor()
+            preprocessor (BasePreprocessor): Which preprocessor class to use. If no preprocessing is necessary, use MnePreprocessorUpstream()
 
         Returns:
             Self: the object itself. Useful for chaining operations
@@ -96,10 +96,10 @@ class Dyad:
 
     def get_pair_wtc(
         self,
-        pair: PairSignals,
-        wavelet: BaseWavelet,
-        bin_seconds: float | None = None,
-        period_cuts: List[float] | None = None,
+        pair:PairSignals,
+        wavelet:BaseWavelet,
+        bin_seconds:float | None = None,
+        period_cuts:List[float] | None = None,
         cache_suffix='',
     ) -> WTC: 
         """
@@ -186,8 +186,9 @@ class Dyad:
                     ))
             
     
-    def get_pairs(self, s1: Subject, s2: Subject, label_dyad:str=None, ch_match:PairMatch=None, is_shuffle:bool=False) -> List[PairSignals]:
-        """_summary_
+    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str=None, ch_match:PairMatch=None, is_shuffle:bool=False) -> List[PairSignals]:
+        """
+        Generate all the signal pairs between the 2 subjects and returns them in a format suitable for signal processing
 
         Args:
             s1 (Subject): subject 1 of the dyad
@@ -204,7 +205,8 @@ class Dyad:
 
         pairs = []
 
-        # TODO raise exception if sfreq is not the same in both
+        if s1.pre.info['sfreq'] != s2.pre.info['sfreq']:
+            raise RuntimeError('Subjects must have the same sampling frequency')
 
         # Force match in tuple for leaner code below
         if not isinstance(ch_match, Tuple):
@@ -364,41 +366,112 @@ class Dyad:
     #
     # Plots
     # 
-    def plot_wtc(self, wtc: WTC, ax=None):
-        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label_pair, ax=ax)
+    def plot_wtc(self, wtc: WTC, **kwargs):
+        """
+        Plot the Wavelet Transform Coherence
 
-    def plot_wtc_by_id(self, id: int):
-        wtc = self.wtcs[id]
-        return plot_wtc(wtc.wtc, wtc.times, wtc.frequencies, wtc.coi, wtc.sfreq, title=wtc.label_pair)
+        Args:
+            wtc (WTC): WTC object
+        """
+        return plot_wtc(
+            wtc.wtc,
+            wtc.times,
+            wtc.periods,
+            wtc.coi,
+            wtc.sfreq,
+            title=wtc.label_pair,
+            **kwargs)
 
-    def plot_coherence_matrix(self, field1, field2, query=None):
+    def plot_coherence_matrix(self, field1:str, field2:str, query:str=None, **kwargs):
+        """
+        Plot the computed coherence metric for pair of fields (channel or roi) in a matrix format
+
+        Args:
+            field1 (str): name of the field in dataframe for x axis
+            field2 (str): name of the field in dataframe for y axis
+            query (str, optional): query to filter the dataframe. Defaults to None.
+        """
         df = self.df
         if query is not None:
             df = df.query(query)
             
-        return plot_coherence_matrix(df,
+        return plot_coherence_matrix(
+            df,
             self.s1.label,
             self.s2.label,
             field1,
             field2,
-            self.s1.ordered_ch_names)
+            self.s1.ordered_ch_names,
+            **kwargs)
         
-    def plot_coherence_matrix_per_channel(self, query=None):
-        return self.plot_coherence_matrix('channel1', 'channel2', query)
+    def plot_coherence_matrix_per_channel(self, query:str=None, **kwargs):
+        """
+        Wraps plot_coherence_matrix to plot per channel
+
+        Args:
+            query (str, optional): pandas query to filter the dataframe. Defaults to None.
+        """
+        return self.plot_coherence_matrix(
+            'channel1',
+            'channel2',
+            query,
+            **kwargs)
         
-    def plot_coherence_matrix_per_roi(self, query=None):
-        return self.plot_coherence_matrix('roi1', 'roi2', query)
+    def plot_coherence_matrix_per_roi(self, query:str=None, **kwargs):
+        """
+        Wraps plot_coherence_matrix to plot per region of interest
+
+        Args:
+            query (str, optional): pandas query to filter the dataframe. Defaults to None.
+        """
+        return self.plot_coherence_matrix(
+            'roi1',
+            'roi2',
+            query,
+            **kwargs)
     
-    def plot_coherence_matrix_per_channel_for_task(self, task):
-        return self.plot_coherence_matrix('channel1', 'channel2', query=f'task=="{task}"')
+    def plot_coherence_matrix_per_channel_for_task(self, task:str, **kwargs):
+        """
+        Wraps plot_coherence_matrix_per_channel to plot for a specific task
+
+        Args:
+            task (str): task name
+        """
+        return self.plot_coherence_matrix(
+            'channel1',
+            'channel2',
+            query=f'task=="{task}"',
+            **kwargs)
         
-    def plot_coherence_matrix_per_roi_for_task(self, task):
-        return self.plot_coherence_matrix('roi1', 'roi2', query=f'task=="{task}"')
+    def plot_coherence_matrix_per_roi_for_task(self, task:str, **kwargs):
+        """
+        Wraps plot_coherence_matrix_per_roi to plot for a specific task
+
+        Args:
+            task (str): task name
+        """
+        return self.plot_coherence_matrix(
+            'roi1',
+            'roi2',
+            query=f'task=="{task}"',
+            **kwargs)
     
-    def plot_coherence_bars_per_task(self, is_intra=False):
-        return plot_coherence_bars_per_task(self.df, is_intra=is_intra)
+    def plot_coherence_bars_per_task(self, is_intra:bool=False, **kwargs):
+        """
+        Plot coherence metric per task for comparison
+
+        Args:
+            is_intra (bool, optional): if we should plot the intra-subject data or inter-subject data. Defaults to False.
+        """
+        return plot_coherence_bars_per_task(
+            self.df,
+            is_intra=is_intra,
+            **kwargs)
         
-    def plot_coherence_connectogram_intra(self, subject, query=None):
+    #
+    # Plot connectogram (Proof of Concept)
+    # 
+    def plot_coherence_connectogram_intra(self, subject, query=None, **kwargs):
         df = self.df
         selector = (df['subject1']==subject.label) & (df['subject2']==subject.label)
         df_filtered = df[selector]
@@ -407,10 +480,19 @@ class Dyad:
             df_filtered = df_filtered.query(query)
 
         pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
-        return plot_coherence_connectogram(pivot, title=subject.label)
+        return plot_coherence_connectogram(
+            pivot,
+            title=subject.label,
+            **kwargs)
 
-    def plot_coherence_connectogram_s1(self, query=None):
-        return self.plot_coherence_connectogram_intra(self.s1, query)
+    def plot_coherence_connectogram_s1(self, query=None, **kwargs):
+        return self.plot_coherence_connectogram_intra(
+            self.s1,
+            query,
+            **kwargs)
 
-    def plot_coherence_connectogram_s2(self, query=None):
-        return self.plot_coherence_connectogram_intra(self.s2, query)
+    def plot_coherence_connectogram_s2(self, query=None, **kwargs):
+        return self.plot_coherence_connectogram_intra(
+            self.s2,
+            query,
+            **kwargs)

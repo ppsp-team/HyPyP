@@ -1,13 +1,11 @@
-import random
-import string
-from typing import List
+from typing import List, Self
 from pathlib import Path
 
 import mne
 import itertools as itertools
 
-from .base_preprocessor import BasePreprocessor, BasePreprocessStep
-from .preprocessor_implementations.upstream_preprocessor import UpstreamPreprocessor
+from .preprocessor.base_preprocessor import BasePreprocessor, BaseStep
+from .preprocessor.implementations.mne_preprocessor_upstream import MnePreprocessorUpstream
 from .channel_roi import ChannelROI
 from ..utils import (
     epochs_from_tasks_annotations,
@@ -16,39 +14,64 @@ from ..utils import (
     TASK_END,
     TASK_NAME_WHOLE_RECORD,
     TaskList,
+    generate_random_label,
 )
 from ..wavelet.base_wavelet import WTC
 
-def random_label(length):
-   letters = string.ascii_lowercase
-   return ''.join(random.choice(letters) for i in range(length))
-
 class Subject:
-    def __init__(self, label:str='', tasks_annotations:TaskList=[], tasks_time_range:TaskList=[], channel_roi:ChannelROI=None):
-        self.filepath: str = None
-        self.label = label if label != '' else random_label(10)
-        self.channel_roi: ChannelROI|None = channel_roi
-        self.raw: mne.io.Raw = None
-        self.intra_wtcs: List[WTC] = None # intra-subject wtc
-        self.epochs_per_task: List[mne.Epochs] = None
-        self.preprocess_steps: List[BasePreprocessStep] = None
-        self.tasks_annotations: TaskList = []
-        self.tasks_time_range: TaskList = []
+    filepath: str|None
+    label: str
+    channel_roi: ChannelROI|None
+    raw: mne.io.Raw|None
+    intra_wtcs: List[WTC]|None # intra-subject wtc
+    epochs_per_task: List[mne.Epochs]|None
+    tasks_annotations: TaskList
+    tasks_time_range: TaskList
+
+    preprocess_steps: List[BaseStep]|None
+
+    def __init__(
+        self,
+        label:str='',
+        tasks_annotations:TaskList=[],
+        tasks_time_range:TaskList=[],
+        channel_roi:ChannelROI=None
+    ):
+        """
+        The Subject object encapsulates the logic around the recording for one participant.
+        The preprocessing is run on the channels of the Subject
+
+        Args:
+            label (str, optional): unique label for the subject. Defaults to a random string.
+            tasks_annotations (TaskList, optional): list of tasks during the recording of the participant, that will be extracted from events in the raw files to build epochs. Defaults to [].
+            tasks_time_range (TaskList, optional): defines a list of task from timecodes instead of annotations. Defaults to [].
+            channel_roi (ChannelROI, optional): region of interest object to group channels. Defaults to None.
+        """
+        self.filepath = None
+        self.label = label if label != '' else generate_random_label(10)
+        self.channel_roi = channel_roi
+        self.raw = None
+        self.intra_wtcs = None
+        self.epochs_per_task = None
+        self.preprocess_steps = None
+        self.tasks_annotations = []
+        self.tasks_time_range = []
 
         if len(tasks_annotations) > 0:
             for task in tasks_annotations:
                 assert isinstance(task[0], str)
                 assert len(task) == 3
-            self.tasks_annotations: TaskList = tasks_annotations
+            self.tasks_annotations = tasks_annotations
 
         if len(tasks_time_range) > 0:
             for task in tasks_time_range:
                 assert isinstance(task[0], str)
                 assert len(task) == 3
-            self.tasks_time_range: TaskList = tasks_time_range
+            self.tasks_time_range = tasks_time_range
 
         if len(tasks_annotations) == 0 and len(tasks_time_range) == 0:
-            # TODO this should use tasks_time_range
+            # Use tasks_annotations with special values instead of time_range,
+            # since we don't know yet the duration of the record
             self.tasks_annotations = [(TASK_NAME_WHOLE_RECORD, TASK_BEGINNING, TASK_END)]
 
     def _assert_is_preprocessed(self):
@@ -85,10 +108,10 @@ class Subject:
     def ordered_ch_names(self) -> List[str]:
         if self.channel_roi is None:
             return self.pre.ch_names
-        return self.channel_roi.get_names_in_order(self.pre.ch_names)
+        return self.channel_roi.get_ch_names_in_order(self.pre.ch_names)
 
     @property
-    def ordered_roi(self) -> List[str]:
+    def ordered_roi_names(self) -> List[str]:
         if self.channel_roi is None:
             return []
         return list(self.channel_roi.rois.keys())
@@ -111,7 +134,31 @@ class Subject:
             steps_dict[step.key] = step.desc
         return steps_dict
     
-    def load_file(self, filepath: str, preprocessor:BasePreprocessor=UpstreamPreprocessor(), preprocess=True, verbose=False):
+    def load_file(
+        self,
+        filepath:str,
+        preprocessor:BasePreprocessor|None=None,
+        preprocess=True,
+        verbose=False
+    ) -> Self:
+        """
+        Load a raw NIRS file as the recording of the Subject
+
+        Args:
+            filepath (str): _description_
+            preprocessor (BasePreprocess, optional): which preprocessor to use. Defaults to MnePreprocessUpstream which only load the data as-is.
+            preprocess (bool, optional): if the preprocessing should be done right away, or if the file should only be loaded and the preprocessing would be run later. Defaults to True.
+            verbose (bool, optional): verbosity flag. Defaults to False.
+
+        Raises:
+            RuntimeError: When file is not found
+
+        Returns:
+            Self: the object itself. Useful for chaining operations
+        """
+        if preprocessor is None:
+            preprocessor = MnePreprocessorUpstream()
+
         if not Path(filepath).is_file():
             raise RuntimeError(f'Cannot find file {filepath}')
 
@@ -121,12 +168,31 @@ class Subject:
             self.preprocess(preprocessor, verbose=verbose)
         return self
     
-    def preprocess(self, preprocessor: BasePreprocessor, verbose: bool = False):
+    def preprocess(self, preprocessor:BasePreprocessor, verbose:bool=False):
+        """
+        Run the preprocessing for the raw recording of the Subject
+
+        Args:
+            preprocessor (BasePreprocessor): which preprocessor object to use. See existing implementations or extend BasePreprocessor abstract class to develop your own
+            verbose (bool, optional): verbosity flag. Defaults to False.
+
+        Returns:
+            Self: the object itself. Useful for chaining operations
+        """
         self.preprocess_steps = preprocessor.run(self.raw, verbose=verbose)
         self.populate_epochs_from_tasks(verbose=verbose)
         return self
 
-    def get_preprocess_step(self, key):
+    def get_preprocess_step(self, key:str) -> BaseStep:
+        """
+        Get a specific step of the preprocessing pipeline
+
+        Args:
+            key (str): name of the step
+
+        Returns:
+            BaseStep: an implementation of BaseStep class, depending on the preprocessor implementation
+        """
         self._assert_is_preprocessed()
         for step in self.preprocess_steps:
             if step.key == key:
@@ -134,7 +200,18 @@ class Subject:
 
         raise RuntimeError(f'No preprocess step named "{key}"')
     
-    def populate_epochs_from_tasks(self, verbose: bool = False):
+    def populate_epochs_from_tasks(self, verbose:bool=False) -> Self:
+        """
+        Given the list of tasks (annotations and timed) of the Subject,
+        find the given data in the preprocessed channels and load as epochs that will be compared between subjects
+        and store them in the object
+
+        Args:
+            verbose (bool, optional): verbosity flag. Defaults to False.
+
+        Returns:
+            Self: the object itself. Useful for chaining operations
+        """
         self.epochs_per_task = []
         if len(self.tasks_annotations) > 0:
             self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_annotations(self.pre, self.tasks_annotations, verbose=verbose)
@@ -142,7 +219,16 @@ class Subject:
             self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_time_range(self.pre, self.tasks_time_range, verbose=verbose)
         return self
     
-    def get_epochs_for_task(self, task_name: str) -> List[mne.Epochs]:
+    def get_epochs_for_task(self, task_name:str) -> List[mne.Epochs]:
+        """
+        Given a task name, return all the Epochs object
+
+        Args:
+            task_name (str): name of the task
+
+        Returns:
+            List[mne.Epochs]: list of the Epochs. Epochs must have been populated beforehand
+        """
         self._assert_is_epochs_loaded()
         id = None
         try:
@@ -155,7 +241,16 @@ class Subject:
 
         return self.epochs_per_task[id]
     
-    def get_roi_from_channel(self, ch_name):
+    def get_roi_from_channel(self, ch_name:str) -> str:
+        """
+        Given a channel name, return the region of interest it belongs to, if any
+
+        Args:
+            ch_name (str): name of the channel
+
+        Returns:
+            str: name of the region of interest
+        """
         if self.channel_roi is None:
             return ''
         return self.channel_roi.get_roi_from_channel(ch_name)

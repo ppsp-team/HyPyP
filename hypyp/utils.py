@@ -12,9 +12,10 @@ Useful tools
 """
 
 
-from enum import Enum
 from typing import Tuple, List
 import math
+import random
+import string
 
 import numpy as np
 import pandas as pd
@@ -535,3 +536,15 @@ def downsample_in_time(times, *args, bins=500):
 
     return ret
         
+def generate_random_label(length:int) -> str:
+    """
+    Generate a random label of a specific length
+
+    Args:
+        length (int): length of the string
+
+    Returns:
+        str: a unique label
+    """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(length))

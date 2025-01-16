@@ -17,9 +17,10 @@ from hypyp.fnirs.subject import Subject
 from hypyp.fnirs.channel_roi import ChannelROI
 from hypyp.fnirs.dyad import Dyad
 from hypyp.fnirs.data_browser import DataBrowser
-from hypyp.fnirs.base_preprocessor import PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_HAEMO_FILTERED_KEY
-from hypyp.fnirs.preprocessor_implementations.mne_preprocessor import MnePreprocessStep, MnePreprocessor
-from hypyp.fnirs.preprocessor_implementations.upstream_preprocessor import UpstreamPreprocessor
+from hypyp.fnirs.preprocessor.base_step import PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_HAEMO_FILTERED_KEY
+from hypyp.fnirs.preprocessor.implementations.mne_step import MneStep
+from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_basic import MnePreprocessorBasic
+from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_upstream import MnePreprocessorUpstream
 from hypyp.utils import TASK_NEXT_EVENT
 
 fif_file = './data/sub-110_session-1_pre.fif'
@@ -71,14 +72,14 @@ def test_list_files():
 
 
 #
-# Preprocessor
+# Preprocessing pipeline
 #
 
 # Try to load every file types we have
 @pytest.mark.parametrize("file_path", fnirs_files)
 def test_data_loader_all_types(file_path):
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    raw = MnePreprocessor().read_file(file_path)
+    raw = MnePreprocessorBasic().read_file(file_path)
     assert raw.info['sfreq'] > 0
     assert len(raw.ch_names) > 0
     
@@ -86,7 +87,7 @@ def test_preprocess_step():
     key = 'foo_key'
     desc = 'foo_description'
     raw = mne.io.RawArray(np.array([[1., 2.]]), mne.create_info(['foo'], 1))
-    step = MnePreprocessStep(raw, key, desc)
+    step = MneStep(raw, key, desc)
     assert step.obj.get_data().shape[0] == 1
     assert step.obj.get_data().shape[1] == 2
     assert step.key == key
@@ -100,7 +101,7 @@ def test_preprocess_step():
 def test_subject():
     filepath = snirf_file1
     subject = Subject(label='my_subject')
-    subject.load_file(filepath, MnePreprocessor(), preprocess=False)
+    subject.load_file(filepath, MnePreprocessorBasic(), preprocess=False)
     assert subject.label == 'my_subject'
     assert subject.filepath == filepath
     assert subject.raw is not None
@@ -132,7 +133,7 @@ def test_subject_epochs():
         ('task2', 3, TASK_NEXT_EVENT),
     ]
     subject = Subject(tasks_annotations=tasks)
-    subject.load_file(snirf_file1, MnePreprocessor())
+    subject.load_file(snirf_file1, MnePreprocessorBasic())
     assert len(subject.get_epochs_for_task('task1')) == 2
     n_events = subject.get_epochs_for_task('task1').events.shape[0]
     assert n_events == 2
@@ -144,7 +145,7 @@ def test_subject_time_range_task():
         ('task2', 4, 5),
     ]
     subject = Subject(tasks_time_range=tasks)
-    subject.load_file(snirf_file1, MnePreprocessor())
+    subject.load_file(snirf_file1, MnePreprocessorBasic())
     epochs_task1 = subject.get_epochs_for_task('task1')
     epochs_task2 = subject.get_epochs_for_task('task2')
     assert len(epochs_task1) == 1
@@ -159,7 +160,7 @@ def test_subject_time_range_task_recurring_event():
         ('task1', 8, 10),
     ]
     subject = Subject(tasks_time_range=tasks)
-    subject.load_file(snirf_file1, MnePreprocessor())
+    subject.load_file(snirf_file1, MnePreprocessorBasic())
     epochs = subject.get_epochs_for_task('task1')
     assert len(epochs) == 3
     n_events = epochs.events.shape[0]
@@ -167,7 +168,7 @@ def test_subject_time_range_task_recurring_event():
     
 
 def test_upstream_preprocessor():
-    subject = Subject(tasks_annotations=[('task1', 1, TASK_NEXT_EVENT)]).load_file(snirf_file1, UpstreamPreprocessor())
+    subject = Subject(tasks_annotations=[('task1', 1, TASK_NEXT_EVENT)]).load_file(snirf_file1, MnePreprocessorUpstream())
     assert len(subject.preprocess_steps) == 1
     assert subject.is_preprocessed == True
     assert subject.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
@@ -175,7 +176,7 @@ def test_upstream_preprocessor():
     assert len(subject.epochs_per_task) > 0
 
 def test_mne_preprocessor():
-    preprocessor = MnePreprocessor()
+    preprocessor = MnePreprocessorBasic()
     subject = Subject().load_file(snirf_file1, preprocessor, preprocess=False)
     subject.preprocess(preprocessor)
     assert len(subject.preprocess_steps) > 1
@@ -199,7 +200,7 @@ def test_subject_dyad():
     dyad = Dyad(subject1, subject2)
     assert dyad.is_preprocessed == False
 
-    dyad.preprocess(MnePreprocessor())
+    dyad.preprocess(MnePreprocessorBasic())
     assert dyad.is_preprocessed == True
 
     pairs = dyad.get_pairs(dyad.s1, dyad.s2)
@@ -240,6 +241,14 @@ def test_dyad_tasks_intersection():
     assert len(Dyad(s1, s1).tasks) == 2
     assert len(Dyad(s2, s2).tasks) == 2
     assert len(Dyad(s1, s2).tasks) == 1
+    
+def test_dyad_check_sfreq_same():
+    subject1 = Subject().load_file(snirf_file1)
+    subject1.pre.resample(sfreq=5)
+    subject2 = Subject().load_file(snirf_file2)
+    dyad = Dyad(subject1, subject2)
+    with pytest.raises(Exception):
+        dyad.get_pairs(dyad.s1, dyad.s2)
     
 def test_dyad_compute_pair_wtc():
     # test with the same subject, so we can check we have a high coherence
@@ -554,12 +563,12 @@ def test_lionirs_channel_grouping():
     assert len(roi1) == 5
     assert ch1 == 'S1_D9'
 
-    assert len(croi.ordered_channel_names) == 50
+    assert len(croi.ordered_ch_names) == 50
     # Actual ordering:
     # ['S1_D9', 'S2_D9', 'S2_D2', 'S1_D2', 'S2_D1', 'S3_D1', 'S3_D2', ...]
 
     unordered_names = ['S1_D2 hbo', 'S1_D2 hbr', 'S1_D9 hbo', 'S1_D9 hbr', 'whatever']
-    ordered_names = croi.get_names_in_order(unordered_names)
+    ordered_names = croi.get_ch_names_in_order(unordered_names)
     assert ordered_names[0] == 'S1_D9 hbo'
     assert ordered_names[1] == 'S1_D9 hbr'
     assert ordered_names[2] == 'S1_D2 hbo'
@@ -567,7 +576,7 @@ def test_lionirs_channel_grouping():
     assert ordered_names[4] == 'whatever'
 
     assert croi.group_boundaries_sizes[:2] == [0, 5]
-    assert croi.group_boundaries_sizes[-1] == len(croi.ordered_channel_names)
+    assert croi.group_boundaries_sizes[-1] == len(croi.ordered_ch_names)
 
     assert croi.get_roi_from_channel(ordered_names[0]) == 'PreFr_L'
 

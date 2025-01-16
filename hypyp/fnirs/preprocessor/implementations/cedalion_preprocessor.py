@@ -5,10 +5,11 @@ try:
     from cedalion.typing import NDTimeSeries
     import matplotlib.pyplot as plt
 
-    from ..data_browser import DataBrowser
-    from ..base_preprocessor import *
+    from ...data_browser import DataBrowser
+    from ..base_step import *
+    from ..base_preprocessor import BasePreprocessor
 
-    class CedalionPreprocessStep(BasePreprocessStep[cdc.Recording]):
+    class CedalionStep(BaseStep[cdc.Recording]):
         @property
         def n_times(self):
             return len(self.obj['time'])
@@ -49,7 +50,7 @@ try:
     class CedalionPreprocessor(BasePreprocessor):
         def read_file(self, path, verbose:str=False) -> cdc.Recording:
             # TODO honor verbose arg
-            if not DataBrowser.path_is_snirf(path):
+            if not DataBrowser.is_path_snirf(path):
                 raise RuntimeError('Not implemented: only snirf file is supported for now')
 
             recordings = cedalion.io.read_snirf(path)
@@ -60,14 +61,14 @@ try:
             rec['amp']['time'] = rec['amp']['time'].pint.dequantify().pint.quantify("second")
             return rec
 
-        def run(self, rec, verbose: bool = False) -> list[CedalionPreprocessStep]:
+        def run(self, rec, verbose: bool = False) -> list[CedalionStep]:
             # TODO honor verbose
             steps = []
             amp = rec['amp']
-            steps.append(CedalionPreprocessStep(amp, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))
+            steps.append(CedalionStep(amp, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))
 
             od = cedalion.nirs.int2od(amp)
-            steps.append(CedalionPreprocessStep(od, PREPROCESS_STEP_OD_KEY, PREPROCESS_STEP_OD_DESC))
+            steps.append(CedalionStep(od, PREPROCESS_STEP_OD_KEY, PREPROCESS_STEP_OD_DESC))
 
 
             dpf = xr.DataArray(
@@ -76,7 +77,7 @@ try:
                 coords={"wavelength" : [760., 850.]}) # TODO unhardcode wavelengts
 
             haemo = cedalion.nirs.beer_lambert(rec['amp'], rec.geo3d, dpf)
-            steps.append(CedalionPreprocessStep(haemo, PREPROCESS_STEP_HAEMO_KEY, PREPROCESS_STEP_HAEMO_DESC))
+            steps.append(CedalionStep(haemo, PREPROCESS_STEP_HAEMO_KEY, PREPROCESS_STEP_HAEMO_DESC))
 
             return steps
             

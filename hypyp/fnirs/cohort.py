@@ -1,7 +1,7 @@
 from typing import List, Self
 import pickle
 
-from hypyp.fnirs.base_preprocessor import BasePreprocessor
+from hypyp.fnirs.preprocessor.base_preprocessor import BasePreprocessor
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 
 
@@ -46,10 +46,10 @@ class Cohort():
 
     def preprocess(self, preprocessor: BasePreprocessor) -> Self:
         """
-        Run the preprocess pipeline on every subject in the cohort
+        Run the preprocess steps on every subject in the cohort
 
         Args:
-            preprocessor (BasePreprocessor): Which preprocessor to use. If no preprocessing is necessary, use UpstreamPreprocessor()
+            preprocessor (BasePreprocessor): Which preprocessor to use. If no preprocessing is necessary, use MnePreprocessorUpstream()
 
         Returns:
             Self: the object itself. Useful for chaining operations

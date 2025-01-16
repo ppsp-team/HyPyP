@@ -152,3 +152,5 @@ def test_downsampling_threshold():
     assert len(coif) == expected_len
     assert W.shape[1] == expected_len
     
+def test_random_label():
+    assert len(utils.generate_random_label(10)) == 10

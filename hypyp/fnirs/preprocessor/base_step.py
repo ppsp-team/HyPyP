@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Generic, TypeVar
 
-import mne
-
 PREPROCESS_STEP_BASE_KEY = 'base'
 PREPROCESS_STEP_BASE_DESC = 'Loaded data'
 
@@ -21,15 +19,26 @@ PREPROCESS_STEP_HAEMO_FILTERED_DESC = 'Hemoglobin Band-pass Filtered'
 # Generic type for underlying fnirs implementation (mne raw / cedalion recording)
 T = TypeVar('T')
 
-class BasePreprocessStep(ABC, Generic[T]):
-    def __init__(self, obj: T, key: str, desc: str = ''):
-        self.obj: T = obj
-        self.key: str = key
-        self.desc: str
-        if desc:
-            self.desc = desc
-        else:
+class BaseStep(ABC, Generic[T]):
+    obj: T
+    key: str
+    desc: str
+
+    def __init__(self, obj:T, key:str, desc:str=None):
+        """
+        stores the results of a step in a preprocess pipeline
+
+        Args:
+            obj (T): the implementation dependent object representing the step processed data
+            key (str): identifier for the step
+            desc (str, optional): description of the setup. Defaults to "key" value.
+        """
+        self.obj = obj
+        self.key = key
+        if desc is None:
             self.desc = key
+        else:
+            self.desc = desc
 
     @property
     @abstractmethod
@@ -53,13 +62,3 @@ class BasePreprocessStep(ABC, Generic[T]):
     @abstractmethod
     def plot(self, **kwargs):
         pass
-
-class BasePreprocessor(ABC, Generic[T]):
-    @abstractmethod
-    def read_file(self, path:str, verbose: bool = False) -> T:
-        pass
-
-    @abstractmethod
-    def run(self, raw: T, verbose: bool = False) -> List[BasePreprocessStep[T]]:
-        pass
-
