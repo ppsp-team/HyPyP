@@ -257,7 +257,7 @@ def test_dyad_compute_pair_wtc():
     pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
     wtc = dyad.get_pair_wtc(pair, PywaveletsWavelet())
     # Should have a mean of 1 since the first pair is the same signal
-    assert np.mean(wtc.wtc) == pytest.approx(1)
+    assert np.mean(wtc.W) == pytest.approx(1)
     assert wtc.label_dyad == dyad.label
 
 def test_dyad_cwt_cache_during_wtc():
@@ -270,7 +270,7 @@ def test_dyad_cwt_cache_during_wtc():
         assert spy_method.call_count == 2
         wtc_with_cache = dyad.get_pair_wtc(pair, wavelet) # this should not call cwt, but use the cache
         assert spy_method.call_count == 2
-        assert np.all(wtc_no_cache.wtc == wtc_with_cache.wtc)
+        assert np.all(wtc_no_cache.W == wtc_with_cache.W)
         # make sure we can clear the cache
         wavelet.clear_cache()
         dyad.get_pair_wtc(pair, wavelet)
@@ -313,7 +313,7 @@ def test_dyad_compute_all_wtc():
     assert dyad.is_wtc_computed == True
     assert len(dyad.wtcs) == len(subject.pre.ch_names)**2
     # Should have a mean of 1 since the first pair is the same signal
-    assert np.mean(dyad.wtcs[0].wtc) == pytest.approx(1)
+    assert np.mean(dyad.wtcs[0].W) == pytest.approx(1)
 
     assert len(dyad.df['channel1'].unique()) == 32
     
@@ -365,7 +365,7 @@ def test_dyad_wtc_per_task():
     dyad.compute_wtcs(ch_match=ch_name)
     assert len(dyad.wtcs) == len(pairs)
     # must compare the first and last wtcs to make sure we are on different tasks (otherwise we might compare 2 epochs of the same task)
-    assert dyad.wtcs[0].wtc.shape[1] != dyad.wtcs[-1].wtc.shape[1] # not the same duration
+    assert dyad.wtcs[0].W.shape[1] != dyad.wtcs[-1].W.shape[1] # not the same duration
     assert 'task1' in [wtc.task for wtc in dyad.wtcs] # order may have changed because of task intersection
 
 def test_dyad_task_annotations_and_time_range_combined():

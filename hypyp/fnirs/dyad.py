@@ -374,7 +374,7 @@ class Dyad:
             wtc (WTC): WTC object
         """
         return plot_wtc(
-            wtc.wtc,
+            wtc.W,
             wtc.times,
             wtc.periods,
             wtc.coi,

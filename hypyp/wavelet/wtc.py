@@ -1,4 +1,5 @@
 from typing import List, Tuple
+from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 
@@ -11,9 +12,50 @@ from ..utils import downsample_in_time
 MASK_THRESHOLD = 0.5
 
 class WTC:
+    W: np.ndarray
+
+    times: np.ndarray
+    scales: np.ndarray
+    periods: np.ndarray
+    frequencies: np.ndarray
+
+    coi: np.ndarray
+    coif: np.ndarray
+
+    is_intra: bool
+    is_shuffle: bool
+
+    task: str
+    epoch_id: int
+    section_id: int
+
+    label_dyad: str
+    label_pair: str
+    label_s1: str
+    label_s2: str
+    label_ch1: str
+    label_ch2: str
+    label_roi1: str
+    label_roi2: str
+
+    dt: float
+    sfreq: float
+    nyquist: float
+
+    wtc_masked: np.ma.MaskedArray
+    coherence_metric: float
+    coherence_masked: float
+
+    bin_seconds: float|None
+    period_cuts: List[float]|None
+    coherence_bins: List[Tuple[float, float, str, str]]
+
+    wavelet_library: str
+    wavelet_name: str
+
     def __init__(
         self,
-        wtc,
+        W,
         times,
         scales,
         periods,
@@ -24,7 +66,22 @@ class WTC:
         wavelet_library:str='',
         wavelet_name:str='',
     ):
-        self.wtc = wtc
+        """
+        The WTC object holds the results of a Wavelet Transform Coherence
+
+        Args:
+            wtc (_type_): weights of the coherence
+            times (_type_): timecodes
+            scales (_type_): scales used
+            periods (_type_): scales in "seconds"
+            coi (_type_): cone of influence
+            pair (PairSignals): pair of signals used
+            bin_seconds (float | None, optional): split in bins every X seconds. Defaults to None.
+            period_cuts (List[float] | None, optional): split in bins in frequency domain at the specified periods. Defaults to None.
+            wavelet_library (str, optional): name of the library/implementation used. Defaults to ''.
+            wavelet_name (str, optional): name of the wavelet (includes wavelet parameters). Defaults to ''.
+        """
+        self.W = W
 
         self.times = times
         self.scales = scales
@@ -56,25 +113,21 @@ class WTC:
         self.sfreq = 1 / dt
         self.nyquist = self.sfreq / 2
 
-        self.wtc_masked: np.ma.MaskedArray
-        self.coherence_metric: float
-        self.coherence_masked: float
-
         self.bin_seconds = bin_seconds
         self.period_cuts = period_cuts
-        self.coherence_bins: List[Tuple[float, float, str, str]] = []
+        self.coherence_bins = []
 
         self.wavelet_library = wavelet_library
         self.wavelet_name = wavelet_name
 
-        self.compute_coherence_in_coi()
+        self._compute_coherence_in_coi()
     
-    def compute_coherence_in_coi(self):
+    def _compute_coherence_in_coi(self):
         # don't use self.dt because we want to deal with downsampled data as well
         dt = self.times[1] - self.times[0]
 
         mask = self.periods[:, np.newaxis] > self.coi
-        self.wtc_masked = np.ma.masked_array(self.wtc, mask)
+        self.wtc_masked = np.ma.masked_array(self.W, mask)
 
         coherence = np.mean(self.wtc_masked)
         coherence_masked = np.mean(self.wtc_masked.mask)
@@ -144,10 +197,16 @@ class WTC:
                 ))
 
     
-    def downsample_in_time(self, bins):
-        self.times, self.wtc, self.coi, self.coif, _factor = downsample_in_time(self.times, self.wtc, self.coi, self.coif, bins=bins)
+    def downsample_in_time(self, bins:int):
+        """
+        Merge weights together over time to save memory and allow for faster displaying
+
+        Args:
+            bins (int): number of bins to keep
+        """
+        self.times, self.W, self.coi, self.coif, _factor = downsample_in_time(self.times, self.W, self.coi, self.coif, bins=bins)
         # must recompute coherence in cone of interest
-        self.compute_coherence_in_coi()
+        self._compute_coherence_in_coi()
     
     @property
     def as_frame_rows(self) -> List[List]:
@@ -178,12 +237,24 @@ class WTC:
         return frames
     
     def to_frame(self) -> CoherenceDataFrame:
+        """
+        Get a typed pandas DataFrame from the WTC
+
+        Returns:
+            CoherenceDataFrame: typed pandas dataframe of the computed coherence
+        """
         df = CoherenceDataFrame.from_wtc_frame_rows(self.as_frame_rows)
         return df
 
     #
     # Plots
     #
-    def plot(self, **kwargs):
-        return plot_wtc(self.wtc, self.times, self.periods, self.coi, self.sfreq, **kwargs)
+    def plot(self, **kwargs) -> Figure:
+        """
+        Plot the weights of the WTC
+
+        Returns:
+            Figure: matplotlib.Figure
+        """
+        return plot_wtc(self.W, self.times, self.periods, self.coi, self.sfreq, **kwargs)
 
