@@ -242,6 +242,29 @@ def test_dyad_tasks_intersection():
     assert len(Dyad(s2, s2).tasks) == 2
     assert len(Dyad(s1, s2).tasks) == 1
     
+def test_dyad_tasks_with_same_name_different_definition():
+    # tasks with the same name should be considered to be the same task, even if they have a different "definition" (e.g. start at different times)
+    tasks1 = [
+        ('my_task1', 1, 2),
+        ('my_task2', 3, 4),
+        ('my_task3', 5, 6),
+        ('different_name', 99, 100),
+    ]
+    tasks2 = [
+        ('my_task1', 11, 12),
+        ('my_task2', 13, 14),
+        ('my_task3', 15, 16),
+        ('unknown_task', 99, 100),
+    ]
+    s1 = Subject(tasks_annotations=tasks1)
+    s2 = Subject(tasks_annotations=tasks2)
+    merged_task_names = [t[0] for t in Dyad(s1, s2).tasks]
+    assert 'my_task1' in merged_task_names
+    assert 'my_task2' in merged_task_names
+    assert 'my_task3' in merged_task_names
+    assert 'different_name' not in merged_task_names
+    assert 'unknown_task' not in merged_task_names
+
 def test_dyad_check_sfreq_same():
     subject1 = Subject().load_file(snirf_file1)
     subject1.pre.resample(sfreq=5)
@@ -350,6 +373,29 @@ def test_dyad_compute_tuple_match_wtc():
     dyad.compute_wtcs(ch_match=(regex1, regex2), only_time_range=(0,10))
     assert len(dyad.wtcs) == 16
     #[print(wtc.label) for wtc in dyad.wtcs]
+
+def test_dyad_compute_list_match_wtc():
+    subject = Subject().load_file(snirf_file1)
+    dyad = Dyad(subject, subject)
+    ch_list = ['S1_D1 760', 'S1_D2 760', 'S2_D1 760']
+    dyad.compute_wtcs(ch_match=ch_list, only_time_range=(0,10))
+    assert len(dyad.wtcs) == len(ch_list) * len(ch_list)
+    
+def test_dyad_compute_list_per_subject_match_wtc():
+    subject = Subject().load_file(snirf_file1)
+    dyad = Dyad(subject, subject)
+    ch_list1 = ['S1_D1 760', 'S1_D2 760']
+    ch_list2 = ['S2_D1 760', 'S2_D2 760']
+    dyad.compute_wtcs(ch_match=(ch_list1, ch_list2), only_time_range=(0,10))
+    assert len(dyad.wtcs) == len(ch_list1) * len(ch_list2)
+    assert len(dyad.df['channel1'].unique()) == 2
+
+    assert ch_list1[0] in dyad.df['channel1'].unique()
+    assert ch_list2[0] not in dyad.df['channel1'].unique()
+
+    assert ch_list1[0] not in dyad.df['channel2'].unique()
+    assert ch_list2[0] in dyad.df['channel2'].unique()
+    
 
 def test_dyad_wtc_per_task():
     tasks = [

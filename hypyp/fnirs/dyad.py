@@ -20,7 +20,8 @@ from ..plots import (
     plot_coherence_connectogram
 )
 
-PairMatch = re.Pattern|str|Tuple[re.Pattern|str,re.Pattern|str]
+PairMatchSingleType = str | List[str] | re.Pattern
+PairMatchType = PairMatchSingleType | Tuple[PairMatchSingleType, PairMatchSingleType]
 
 class Dyad:
     s1: Subject
@@ -57,9 +58,13 @@ class Dyad:
         s1_tasks = s1.tasks_annotations + s1.tasks_time_range
         s2_tasks = s2.tasks_annotations + s2.tasks_time_range
 
+        s2_tasks_names = [t[0] for t in s2_tasks]
+        found_tasks_names = []
         for task in s1_tasks:
-            if task in s2_tasks:
+            task_name = task[0]
+            if task_name in s2_tasks_names:
                 self.tasks.append(task)
+                found_tasks_names.append(task_name)
     
     @property 
     def subjects(self) -> Tuple[Subject, Subject]:
@@ -186,7 +191,7 @@ class Dyad:
                     ))
             
     
-    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str=None, ch_match:PairMatch=None, is_shuffle:bool=False) -> List[PairSignals]:
+    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str=None, ch_match:PairMatchType=None, is_shuffle:bool=False) -> List[PairSignals]:
         """
         Generate all the signal pairs between the 2 subjects and returns them in a format suitable for signal processing
 
@@ -194,7 +199,9 @@ class Dyad:
             s1 (Subject): subject 1 of the dyad
             s2 (Subject): subject 2 of the dyad
             label_dyad (str, optional): custom label for the dyad. Defaults to self.label.
-            ch_match (PairMatch, optional): string or regex to match channel name. Defaults to None, which means all channels.
+            ch_match (PairMatchType, optional): string, list or regex to match channel name.
+                                                Can be a tuple of 2 items if subject1 and subject2 have different matches.
+                                                Defaults to None, which means all channels.
             is_shuffle (bool, optional): True if the pair is a permutated pair. Defaults to False.
 
         Returns:
@@ -217,6 +224,8 @@ class Dyad:
                 return True
             if isinstance(m, re.Pattern):
                 return m.search(ch_name) is not None
+            if isinstance(m, List):
+                return ch_name in m
             return m in ch_name
 
 
@@ -276,7 +285,7 @@ class Dyad:
     def compute_wtcs(
         self,
         wavelet:BaseWavelet|None=None,
-        ch_match:PairMatch=None,
+        ch_match:PairMatchType=None,
         only_time_range:Tuple[float,float]=None,
         bin_seconds: float | None = None,
         period_cuts: List[float] | None = None,
@@ -290,7 +299,9 @@ class Dyad:
 
         Args:
             wavelet (BaseWavelet): the wavelet to use for the wavelet transform
-            ch_match (PairMatch, optional): string or regex to match channel name. Defaults to None, which means all channels.
+            ch_match (PairMatchType, optional): string, list or regex to match channel name.
+                                                Can be a tuple of 2 items if subject1 and subject2 have different matches.
+                                                Defaults to None, which means all channels.
             only_time_range (Tuple[float,float], optional): _description_. Defaults to None.
             bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
             period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
@@ -401,7 +412,7 @@ class Dyad:
             self.s2.label,
             field1,
             field2,
-            self.s1.ordered_ch_names,
+            self.s1.ordered_ch_names, # TODO we should also add self.s2.ordered_ch_names somehow
             **kwargs)
         
     def plot_coherence_matrix_per_channel(self, query:str=None, **kwargs):
