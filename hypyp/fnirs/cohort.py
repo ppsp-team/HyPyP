@@ -1,9 +1,9 @@
 from typing import List, Self
 import pickle
 
-from hypyp.fnirs.preprocessor.base_preprocessor import BasePreprocessor
-from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
-
+from .preprocessor.base_preprocessor import BasePreprocessor
+from ..wavelet.coherence_data_frame import CoherenceDataFrame
+from ..profiling import TimeTracker
 
 from .dyad import Dyad
 
@@ -66,9 +66,38 @@ class Cohort():
         Returns:
             Cohort: the object itself. Useful for chaining operations
         """
-        for dyad in self.dyads:
+        for i, dyad in enumerate(self.dyads):
+            if i == 0:
+                tracker = TimeTracker()
+                tracker.start()
+
             dyad.compute_wtcs(*args, **kwargs)
+
+            if i == 0:
+                tracker.stop()
+                self.print_time_estimation(tracker.duration, len(self.dyads))
+                
+        return self
+    
+    def print_time_estimation(self, single_duration, count):
+            print(f'Time for computing one dyad: {TimeTracker.human_readable_duration(single_duration)}')
+            print(f'Expected time for {count} dyads: {TimeTracker.human_readable_duration(single_duration * count)}')
         
+    
+    def estimate_wtcs_run_time(self, *args, **kwargs) -> Self:
+        """
+        Computes the WTC for one dyad and print the expected run time for the whole cohort
+
+        Returns:
+            Cohort: the object itself. Useful for chaining operations
+        """
+        dyad = self.dyads[0]
+        tracker = TimeTracker()
+        tracker.start()
+        dyad.compute_wtcs(*args, **kwargs)
+        tracker.stop()
+        self.print_time_estimation(tracker.duration, len(self.dyads))
+
         return self
     
     def clear_dyads_shuffle(self) -> Self:

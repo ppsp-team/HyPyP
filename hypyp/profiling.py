@@ -33,7 +33,7 @@ class MemoryMonitor(object):
         tracemalloc.stop()
 
 class TimeTracker(object):
-    def __init__(self, label:str):
+    def __init__(self, label:str='time_tracker'):
         """
         Track code execution time. Usage:
 
@@ -47,12 +47,34 @@ class TimeTracker(object):
         """
         self.start_time = None
         self.stop_time = None
+        self.duration = None
         self.label = label
 
-    def __enter__(self):
+    @staticmethod
+    def human_readable_duration(seconds):
+        if seconds < 5:
+            return f"{seconds:.2f} seconds"
+        if seconds < 60:
+            return f"{seconds:.0f} seconds"
+        if seconds < 3600:
+            minutes = seconds / 60
+            return f"{minutes:.1f} minutes"
+        if seconds < 86400:
+            hours = seconds / 3600
+            return f"{hours:.1f} hours"
+        days = seconds / 86400
+        return f"{days:.1f} days"
+
+    def start(self):
         self.start_time = time.time()
 
-    def __exit__(self, *args):
+    def stop(self):
         self.stop_time = time.time()
-        duration = self.stop_time - self.start_time
-        print(f"--- [{self.label}] {duration} seconds ---")
+        self.duration = self.stop_time - self.start_time
+
+    def __enter__(self):
+        self.start()
+
+    def __exit__(self, *args):
+        self.stop()
+        print(f"--- [{self.label}] {self.duration} seconds ---")

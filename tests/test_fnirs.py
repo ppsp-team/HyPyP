@@ -596,6 +596,15 @@ def test_save_cohort_df_to_disk():
     
     assert np.all(df['subject1'] == subject.label)
     
+def test_cohort_run_estimation(capsys):
+    subject = get_test_subject()
+    dyads = []
+    for _ in range(10):
+        dyads.append(Dyad(subject, subject))
+    cohort = Cohort(dyads)
+    cohort.estimate_wtcs_run_time()
+    out = capsys.readouterr()
+    assert 'time' in str(out)
 
 def test_lionirs_channel_grouping():
     roi_file_path = 'data/lionirs/channel_grouping_7ROI.mat'
@@ -632,6 +641,7 @@ def test_ordered_subject_ch_names():
     subject = Subject(channel_roi=croi).load_file(snirf_file1)
     ch_names = subject.ordered_ch_names
     assert ch_names[0] == 'S2_D2 760'
+
 
 # Skip this test because it downloads data. We don't want this on the CI
 @pytest.mark.skip(reason="Downloads data")
