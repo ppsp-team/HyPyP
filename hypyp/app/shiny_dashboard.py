@@ -15,8 +15,8 @@ import mne
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.fnirs.data_browser import DataBrowser
 from hypyp.fnirs.subject import Subject
-from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_basic import MnePreprocessorBasic
-from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_upstream import MnePreprocessorUpstream
+from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo
+from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from hypyp.fnirs.preprocessor.implementations.cedalion_preprocessor import CedalionPreprocessor
 from hypyp.signal import SyntheticSignal
 from hypyp.wavelet.base_wavelet import BaseWavelet
@@ -293,9 +293,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     def get_preprocessor():
         value = input.subject_preprocessor()
         if value == 'upstream':
-            return MnePreprocessorUpstream()
+            return MnePreprocessorAsIs()
         if value == 'mne':
-            return MnePreprocessorBasic()
+            return MnePreprocessorRawToHaemo()
         if value == 'cedalion':
             return CedalionPreprocessor()
         raise RuntimeError(f'Unknown preprocessor type "{value}"')

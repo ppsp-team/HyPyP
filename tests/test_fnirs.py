@@ -19,8 +19,8 @@ from hypyp.fnirs.dyad import Dyad
 from hypyp.fnirs.data_browser import DataBrowser
 from hypyp.fnirs.preprocessor.base_step import PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_HAEMO_FILTERED_KEY
 from hypyp.fnirs.preprocessor.implementations.mne_step import MneStep
-from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_basic import MnePreprocessorBasic
-from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_upstream import MnePreprocessorUpstream
+from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo
+from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from hypyp.utils import TASK_NEXT_EVENT
 
 fif_file = './data/sub-110_session-1_pre.fif'
@@ -79,7 +79,7 @@ def test_list_files():
 @pytest.mark.parametrize("file_path", fnirs_files)
 def test_data_loader_all_types(file_path):
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    raw = MnePreprocessorBasic().read_file(file_path)
+    raw = MnePreprocessorRawToHaemo().read_file(file_path)
     assert raw.info['sfreq'] > 0
     assert len(raw.ch_names) > 0
     
@@ -101,7 +101,7 @@ def test_preprocess_step():
 def test_subject():
     filepath = snirf_file1
     subject = Subject(label='my_subject')
-    subject.load_file(filepath, MnePreprocessorBasic(), preprocess=False)
+    subject.load_file(filepath, MnePreprocessorRawToHaemo(), preprocess=False)
     assert subject.label == 'my_subject'
     assert subject.filepath == filepath
     assert subject.raw is not None
@@ -133,7 +133,7 @@ def test_subject_epochs():
         ('task2', 3, TASK_NEXT_EVENT),
     ]
     subject = Subject(tasks_annotations=tasks)
-    subject.load_file(snirf_file1, MnePreprocessorBasic())
+    subject.load_file(snirf_file1, MnePreprocessorRawToHaemo())
     assert len(subject.get_epochs_for_task('task1')) == 2
     n_events = subject.get_epochs_for_task('task1').events.shape[0]
     assert n_events == 2
@@ -145,7 +145,7 @@ def test_subject_time_range_task():
         ('task2', 4, 5),
     ]
     subject = Subject(tasks_time_range=tasks)
-    subject.load_file(snirf_file1, MnePreprocessorBasic())
+    subject.load_file(snirf_file1, MnePreprocessorRawToHaemo())
     epochs_task1 = subject.get_epochs_for_task('task1')
     epochs_task2 = subject.get_epochs_for_task('task2')
     assert len(epochs_task1) == 1
@@ -160,7 +160,7 @@ def test_subject_time_range_task_recurring_event():
         ('task1', 8, 10),
     ]
     subject = Subject(tasks_time_range=tasks)
-    subject.load_file(snirf_file1, MnePreprocessorBasic())
+    subject.load_file(snirf_file1, MnePreprocessorRawToHaemo())
     epochs = subject.get_epochs_for_task('task1')
     assert len(epochs) == 3
     n_events = epochs.events.shape[0]
@@ -168,7 +168,7 @@ def test_subject_time_range_task_recurring_event():
     
 
 def test_upstream_preprocessor():
-    subject = Subject(tasks_annotations=[('task1', 1, TASK_NEXT_EVENT)]).load_file(snirf_file1, MnePreprocessorUpstream())
+    subject = Subject(tasks_annotations=[('task1', 1, TASK_NEXT_EVENT)]).load_file(snirf_file1, MnePreprocessorAsIs())
     assert len(subject.preprocess_steps) == 1
     assert subject.is_preprocessed == True
     assert subject.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
@@ -176,7 +176,7 @@ def test_upstream_preprocessor():
     assert len(subject.epochs_per_task) > 0
 
 def test_mne_preprocessor():
-    preprocessor = MnePreprocessorBasic()
+    preprocessor = MnePreprocessorRawToHaemo()
     subject = Subject().load_file(snirf_file1, preprocessor, preprocess=False)
     subject.preprocess(preprocessor)
     assert len(subject.preprocess_steps) > 1
@@ -200,7 +200,7 @@ def test_subject_dyad():
     dyad = Dyad(subject1, subject2)
     assert dyad.is_preprocessed == False
 
-    dyad.preprocess(MnePreprocessorBasic())
+    dyad.preprocess(MnePreprocessorRawToHaemo())
     assert dyad.is_preprocessed == True
 
     pairs = dyad.get_pairs(dyad.s1, dyad.s2)
@@ -398,7 +398,7 @@ def test_dyad_compute_list_per_subject_match_wtc():
     dyad = Dyad(subject, subject)
     ch_list1 = ['S1_D1 760', 'S1_D2 760']
     ch_list2 = ['S2_D1 760', 'S2_D2 760']
-    dyad.compute_wtcs(ch_match=(ch_list1, ch_list2), only_time_range=(0,10))
+    dyad.compute_wtcs(ch_match=(ch_list1, ch_list2), only_time_range=(0,10), with_intra=False)
     assert len(dyad.wtcs) == len(ch_list1) * len(ch_list2)
     assert len(dyad.df['channel1'].unique()) == 2
 

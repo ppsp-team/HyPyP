@@ -1,6 +1,6 @@
 from .preprocessor.base_preprocessor import BasePreprocessor, BaseStep
-from .preprocessor.implementations.mne_preprocessor_basic import MnePreprocessorBasic, MneStep
-from .preprocessor.implementations.mne_preprocessor_upstream import MnePreprocessorUpstream
+from .preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo, MneStep
+from .preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from .data_browser import DataBrowser
 from .subject import Subject
 from .dyad import Dyad
@@ -14,8 +14,8 @@ __all__ = [
     'DataBrowser',
     'BasePreprocessor',
     'BaseStep',
-    'MnePreprocessorUpstream',
-    'MnePreprocessorBasic',
+    'MnePreprocessorAsIs',
+    'MnePreprocessorRawToHaemo',
     'MneStep',
     'ChannelROI',
 ]

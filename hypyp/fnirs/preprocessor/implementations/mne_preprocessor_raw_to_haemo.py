@@ -2,47 +2,37 @@ from itertools import compress
 
 import mne
 
-from ...data_browser import DataBrowser
-from ..base_preprocessor import BasePreprocessor
 from ..base_step import *
 from .mne_step import MneStep
+from .mne_preprocessor_as_is import MnePreprocessorAsIs
 
-class MnePreprocessorBasic(BasePreprocessor[mne.io.Raw]):
+class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
     """
-    The MnePreprocessorBasic class uses mne fNIRS features to run some basic preprocessing steps.
+    The MnePreprocessorRawToHaemo class uses mne fNIRS features to run some basic preprocessing steps.
     
     It does these:
 
     1. Convert raw data to optical density
     2. Remove bad channels scalp_coupling_index
     3. Convert optical density to haemoglobin concentration.
+    4. Filters the haemoglobin concentration based on standard high pass and low pass filters
 
-    Use this basic preprocessor to explore raw data.
-    
+    The steps can then be inspected on a subject, for validation.
+
+    Use this preprocessor to explore raw data.
+
+    NOTE: If the data loaded with MNE contains channels with `hbo` or `hbr`, it will be considered
+    already preprocessed and will be returned as-is.
+
     """
     def __init__(self):
         super().__init__()
-    
-    def read_file(self, path:str, verbose:bool=False):
-        if DataBrowser.is_path_fif(path):
-            return mne.io.read_raw_fif(path, preload=True, verbose=verbose)
-
-        if DataBrowser.is_path_nirx(path):
-            return mne.io.read_raw_nirx(fname=path, preload=True, verbose=verbose)
-
-        if DataBrowser.is_path_snirf(path):
-            return mne.io.read_raw_snirf(path, preload=True, verbose=verbose)
-
-        return None
-    
-    def get_mne_channel(self, file_path, channel_name):
-        s = self.read_file(file_path)
-        return s.copy().pick(mne.pick_channels(s.ch_names, include = [channel_name]))
     
     def run(self, raw: mne.io.Raw, verbose: bool = False) -> list[MneStep]:
         steps = []
         steps.append(MneStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))
 
+        # TODO: should remove short channels
         ## TODO: it seems that .snirf files have a different measurement unit
         #if not self.ignore_distances:
         #    picks = mne.pick_types(raw.info, meg=False, fnirs=True)

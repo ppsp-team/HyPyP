@@ -5,7 +5,7 @@ import mne
 import itertools as itertools
 
 from .preprocessor.base_preprocessor import BasePreprocessor, BaseStep
-from .preprocessor.implementations.mne_preprocessor_upstream import MnePreprocessorUpstream
+from .preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from .channel_roi import ChannelROI
 from ..utils import (
     epochs_from_tasks_annotations,
@@ -157,7 +157,7 @@ class Subject:
             Subject: the object itself. Useful for chaining operations
         """
         if preprocessor is None:
-            preprocessor = MnePreprocessorUpstream()
+            preprocessor = MnePreprocessorAsIs()
 
         if not Path(filepath).is_file():
             raise RuntimeError(f'Cannot find file {filepath}')
