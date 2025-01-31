@@ -33,12 +33,20 @@ try:
         def wavelet_name(self):
             return 'cmor'
 
+        @property
+        def wavelet_name_with_args(self):
+            return 'cmor'
+
+        @property
+        def flambda(self):
+            raise RuntimeError('Not implemented')
+
         def evaluate_psi(self):
             self._psi_x = np.arange(10)
             self._psi = np.zeros((10, ))
             return self._psi, self.psi_x
         
-        def cwt(self, y, dt, dj=DEFAULT_PERIODS_DJ):
+        def cwt(self, y, dt):
             raise RuntimeError('Not implemented')
 
         def wtc(self, pair: PairSignals, bin_seconds:float|None=None, period_cuts:List[float]|None=None, cache_suffix=''):
@@ -71,7 +79,7 @@ try:
                 coi,
                 pair,
                 wavelet_library=self.wavelet_library,
-                wavelet_name=self.wavelet_name,
+                wavelet_name_with_args=self.wavelet_name_with_args,
                 bin_seconds=bin_seconds,
                 period_cuts=period_cuts)
 

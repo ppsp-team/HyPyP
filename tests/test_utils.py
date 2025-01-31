@@ -6,7 +6,7 @@ import numpy as np
 import mne
 from hypyp import utils
 from hypyp.signal import SyntheticSignal
-from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet
+from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
 
 def get_fake_raw():
     sfreq = 100
@@ -112,7 +112,7 @@ def test_task_from_time_range_recurring():
     assert duration == tasks[0][2] - tasks[0][1]
 
 def test_downsampling():
-    wavelet = PywaveletsWavelet()
+    wavelet = ComplexMorletWavelet()
     signal = SyntheticSignal(n_points=2000).add_sin(1)
     res = wavelet.cwt(signal.y, signal.period)
 
@@ -128,7 +128,7 @@ def test_downsampling():
     assert W.shape[1] == bins
 
 def test_downsampling_low_values():
-    wavelet = PywaveletsWavelet()
+    wavelet = ComplexMorletWavelet()
     signal = SyntheticSignal(duration=10, n_points=50).add_sin(1)
     res = wavelet.cwt(signal.y, signal.period)
 
@@ -141,7 +141,7 @@ def test_downsampling_low_values():
     
 def test_downsampling_threshold():
     bins = 1000
-    wavelet = PywaveletsWavelet()
+    wavelet = ComplexMorletWavelet()
     signal = SyntheticSignal(duration=10, n_points=bins+1).add_sin(1)
     res = wavelet.cwt(signal.y, signal.period)
 

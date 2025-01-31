@@ -1,40 +1,48 @@
 
 import numpy as np
 
-from ..base_wavelet import DEFAULT_PERIODS_DJ, DEFAULT_PERIODS_RANGE, BaseWavelet
+from ..base_wavelet import BaseWavelet
 from ..cwt import CWT
 import pywt
-import scipy
 
-
-# mother wavelet similar to pycwt and matlab results. Found by trial and error
-# TODO check these defaults
-#DEFAULT_MORLET_BANDWIDTH = 10
-#DEFAULT_MORLET_CENTER_FREQUENCY = 0.25
 
 # TODO: give reference to the equations
 # See pywt/pywt/_extensions/c/cwt.template.c, search for "_cmor". The bandwidth ("FB") correspond to the /2 in psi equation
-DEFAULT_MORLET_BANDWIDTH = 2
+DEFAULT_MORLET_BANDWIDTH_FREQUENCY = 2
 DEFAULT_MORLET_CENTER_FREQUENCY = 1
+DEFAULT_GAUSSIAN_DEGREE = 2
 
 class PywaveletsWavelet(BaseWavelet):
+    cwt_params: dict
+    _wavelet_name: str
+    lower_bound: float
+    upper_bound: float
+    degree: float | None
+
     def __init__(
         self,
-        wavelet_name=f'cmor{DEFAULT_MORLET_BANDWIDTH},{DEFAULT_MORLET_CENTER_FREQUENCY}',
-        lower_bound=-8,
-        upper_bound=8,
-        cwt_params=None,
+        wavelet_name:str=f'cmor{DEFAULT_MORLET_BANDWIDTH_FREQUENCY},{DEFAULT_MORLET_CENTER_FREQUENCY}',
+        lower_bound:float=-8,
+        upper_bound:float=8,
+        cwt_params:dict|None=None,
         **kwargs,
     ):
-        if cwt_params is None:
-            cwt_params = dict()
-        self.cwt_params = cwt_params
+        """
+        Default Wavelet implementation, using Pywavelets library.
+
+        Args:
+            wavelet_name (str, optional): name of the wavelet to send to pywavelets library. Defaults to f'cmor2,1'.
+            lower_bound (float, optional): _description_. Defaults to -8.
+            upper_bound (float, optional): _description_. Defaults to 8.
+            cwt_params (dict | None, optional): _description_. Defaults to None.
+        """
         self._wavelet_name = wavelet_name
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        self.bandwidth_frequency = None
-        self.center_frequency = None
-        self.degree = None
+
+        if cwt_params is None:
+            cwt_params = dict()
+        self.cwt_params = cwt_params
 
         super().__init__(**kwargs)
 
@@ -43,11 +51,15 @@ class PywaveletsWavelet(BaseWavelet):
         return 'pywavelets'
 
     @property
-    def wavelet_name(self):
+    def wavelet_name_with_args(self):
         name = self._wavelet_name
         if self.wtc_smoothing_win_size is not None:
             name += f'[win:{self.wtc_smoothing_win_size}]'
         return name
+
+    @property
+    def wavelet_name(self):
+        return self._wavelet_name
 
     def evaluate_psi(self):
         wavelet = pywt.ContinuousWavelet(self._wavelet_name)
@@ -55,28 +67,69 @@ class PywaveletsWavelet(BaseWavelet):
         wavelet.upper_bound = self.upper_bound
         self._wavelet = wavelet
 
-        if wavelet.short_family_name == 'cmor':
-            self.center_frequency = wavelet.center_frequency
-            self.bandwidth_frequency = wavelet.bandwidth_frequency
-        elif wavelet.short_family_name == 'cgau':
-            self.degree = int(self._wavelet_name[4:])
-        
         # TODO unhardcode value here
         self._psi, self._psi_x = wavelet.wavefun(10)
         return self._psi, self._psi_x
 
-    def get_scales(self, dt, dj):
-        frequencies = 1 / self.get_periods(dj)
+    def get_scales(self, dt):
+        frequencies = 1 / self.get_periods()
         scales = pywt.frequency2scale(self._wavelet, frequencies*dt)
         return scales
 
-    def cwt(self, y, dt, dj=DEFAULT_PERIODS_DJ, cache_suffix:str='') -> CWT:
+    def cwt(self, y, dt, cache_suffix:str='') -> CWT:
         N = len(y)
         times = np.arange(N) * dt
-        scales = self.get_scales(dt, dj)
-        W, freqs = pywt.cwt(y, scales, self._wavelet, sampling_period=dt, method='conv', **self.cwt_params)
+        scales = self.get_scales(dt)
+        W, freqs = pywt.cwt(y, scales, self._wavelet, sampling_period=dt, method='fft', **self.cwt_params)
         periods = 1 / freqs
 
-        coi = self.get_and_cache_cone_of_influence(N, dt, cache_suffix=cache_suffix)
+        coi = self._get_and_cache_cone_of_influence(N, dt, cache_suffix=cache_suffix)
     
         return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)
+
+class ComplexMorletWavelet(PywaveletsWavelet):
+    bandwidth_frequency: float
+    center_frequency: float
+
+    default_bandwidth_frequency: float = DEFAULT_MORLET_BANDWIDTH_FREQUENCY
+    default_center_frequency: float = DEFAULT_MORLET_CENTER_FREQUENCY
+
+    def __init__(
+        self,
+        bandwidth_frequency:float=DEFAULT_MORLET_BANDWIDTH_FREQUENCY,
+        center_frequency:float=DEFAULT_MORLET_CENTER_FREQUENCY,
+        **kwargs,
+    ):
+        self.bandwidth_frequency = bandwidth_frequency
+        self.center_frequency = center_frequency
+        return super().__init__(wavelet_name=f'cmor{bandwidth_frequency},{center_frequency}', **kwargs)
+    
+    @property
+    def flambda(self):
+        # Equations come from "A Practical Guide to Wavelet Analysis" from Torrence and Compo (1998), Table 1
+        # TODO check this computation. Seems wrong
+        f0 = 2 * np.pi * self.center_frequency
+        #flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+        flambda = 2 * np.pi / f0
+        return flambda
+        
+
+class ComplexGaussianWavelet(PywaveletsWavelet):
+    degree: int
+
+    default_degree: int = DEFAULT_GAUSSIAN_DEGREE
+
+    def __init__(
+        self,
+        degree:int=DEFAULT_GAUSSIAN_DEGREE,
+        **kwargs
+    ):
+        self.degree = degree
+        return super().__init__(wavelet_name=f'cgau{degree}', **kwargs)
+
+    @property
+    def flambda(self):
+        # Equations come from "A Practical Guide to Wavelet Analysis" from Torrence and Compo (1998), Table 1
+        m = self.degree
+        flambda = 2 * np.pi / np.sqrt(m + 0.5)
+        return flambda

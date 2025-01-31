@@ -5,21 +5,23 @@ import numpy as np
 from hypyp.signal import SyntheticSignal
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.base_wavelet import BaseWavelet
-from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY
+from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexGaussianWavelet, ComplexMorletWavelet
 
-def test_instanciate():
-    wavelet_name = 'cgau1'
-    wavelet = PywaveletsWavelet(wavelet_name=wavelet_name)
-    assert wavelet.wtc_smoothing_win_size is None
-    assert wavelet.wavelet_name == wavelet_name
+def test_instanciate_complex_gaussian_wavelet():
+    wavelet = ComplexGaussianWavelet(degree=2)
+    assert wavelet.wavelet_name == 'cgau2'
+    assert wavelet.degree == 2
     assert len(wavelet.psi) == 2 ** 10
     assert isinstance(wavelet.cwt_params, dict)
-    assert wavelet.bandwidth_frequency is None
-    assert wavelet.center_frequency is None
-    assert wavelet.degree == 1
+
+def test_instanciate_complex_morlet_wavelet():
+    wavelet = ComplexMorletWavelet(2, 1)
+    assert wavelet.wavelet_name == 'cmor2,1'
+    assert wavelet.bandwidth_frequency == 2
+    assert wavelet.center_frequency == 1
 
 def test_resolution():
-    wavelet = PywaveletsWavelet(evaluate=False)
+    wavelet = ComplexMorletWavelet(evaluate=False)
     # need to be evaluated before calling .dt
     with pytest.raises(Exception):
         wavelet.psi_dx
@@ -29,14 +31,14 @@ def test_resolution():
     assert wavelet.psi_dx < 1
 
 def test_default_domain():
-    wavelet = PywaveletsWavelet()
+    wavelet = ComplexMorletWavelet()
     assert min(wavelet.psi_x) == wavelet.domain[0]
     assert max(wavelet.psi_x) == wavelet.domain[1]
     
 def test_domain():
     lower_bound = -1
     upper_bound = 1
-    wavelet = PywaveletsWavelet(lower_bound=lower_bound, upper_bound=upper_bound)
+    wavelet = ComplexMorletWavelet(lower_bound=lower_bound, upper_bound=upper_bound)
 
     assert min(wavelet.psi_x) == lower_bound
     assert max(wavelet.psi_x) == upper_bound
@@ -44,7 +46,7 @@ def test_domain():
     assert wavelet.psi_dx < 1
     
 def test_psi():
-    wavelet = PywaveletsWavelet(wavelet_name='cmor2,1')
+    wavelet = ComplexMorletWavelet(bandwidth_frequency=2, center_frequency=1)
     assert len(wavelet.psi_x) == len(wavelet.psi)
     assert len(wavelet.psi_x) == 2 ** 10
 
@@ -53,13 +55,21 @@ def test_psi():
     assert np.sum(np.abs(wavelet.psi) * wavelet.psi_dx) == pytest.approx(1)
 
 def test_number_of_scales():
-    assert len(PywaveletsWavelet(periods_range=(2, 4)).get_periods()) == 12
-    assert len(PywaveletsWavelet(periods_range=(4, 8)).get_periods()) == 12
-    assert len(PywaveletsWavelet(periods_range=(2, 8)).get_periods()) == 24
-    
+    assert len(ComplexMorletWavelet(periods_range=(2, 4)).get_periods()) == 12
+    assert len(ComplexMorletWavelet(periods_range=(4, 8)).get_periods()) == 12
+    assert len(ComplexMorletWavelet(periods_range=(2, 8)).get_periods()) == 24
+    assert len(ComplexMorletWavelet(dj=1/100, periods_range=(2, 4)).get_periods()) == 100
 
-def test_cwt():
-    wavelet = PywaveletsWavelet()
+    with pytest.raises(Exception):
+        # must be < 1
+        ComplexMorletWavelet(dj=2)
+    
+@pytest.mark.parametrize("wavelet_class", [
+   ComplexMorletWavelet, 
+   ComplexGaussianWavelet, 
+])
+def test_cwt(wavelet_class):
+    wavelet = wavelet_class()
     signal = SyntheticSignal(duration=100).add_sin(0.05)
     res = wavelet.cwt(signal.y, signal.period)
     assert len(res.scales) > 0
@@ -84,8 +94,12 @@ def test_pair_signals_epoch():
     assert sub.section_id == pair.section_id+1
     
 
-def test_wtc():
-    wavelet = PywaveletsWavelet(disable_caching=True)
+@pytest.mark.parametrize("wavelet_class", [
+   ComplexMorletWavelet, 
+   ComplexGaussianWavelet, 
+])
+def test_wtc(wavelet_class):
+    wavelet = wavelet_class(disable_caching=True)
     signal1 = SyntheticSignal().add_noise()
     signal2 = SyntheticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
@@ -93,18 +107,18 @@ def test_wtc():
     assert res.coherence_metric < 1
     
 def test_cache_key():
-    assert 'key_foo_bar' in PywaveletsWavelet().get_cache_key('foo', 'bar')
-    assert PywaveletsWavelet(disable_caching=True).get_cache_key('foo', 'bar') is None
+    assert 'key_foo_bar' in ComplexMorletWavelet()._get_cache_key('foo', 'bar')
+    assert ComplexMorletWavelet(disable_caching=True)._get_cache_key('foo', 'bar') is None
     
 def test_cache():
-    wavelet = PywaveletsWavelet(cache=dict())
+    wavelet = ComplexMorletWavelet(cache=dict())
     assert len(list(wavelet.cache.keys())) == 0
-    wavelet.add_cache_item('foo', 'bar')
+    wavelet._add_cache_item('foo', 'bar')
     assert len(list(wavelet.cache.keys())) == 1
-    assert wavelet.get_cache_item('foo') == 'bar'
-    wavelet.clear_cache()
+    assert wavelet._get_cache_item('foo') == 'bar'
+    wavelet._clear_cache()
     assert len(list(wavelet.cache.keys())) == 0
-    assert wavelet.get_cache_item('foo') == None
+    assert wavelet._get_cache_item('foo') == None
 
     zeros = np.zeros((10,))
     x = np.arange(len(zeros))
@@ -120,83 +134,103 @@ def test_cache():
     # add all the keys to a list, then use a set to remove duplicates and make sure we still have the same count
     keys = []
     for pair in pairs:
-        keys.append(wavelet.get_cache_key_pair(pair, 0, 'cwt'))
-        keys.append(wavelet.get_cache_key_pair(pair, 1, 'cwt'))
+        keys.append(wavelet._get_cache_key_pair(pair, 0, 'cwt'))
+        keys.append(wavelet._get_cache_key_pair(pair, 1, 'cwt'))
 
-    keys.append(wavelet.get_cache_key_pair(pairs[0], 0, 'another_suffix'))
+    keys.append(wavelet._get_cache_key_pair(pairs[0], 0, 'another_suffix'))
 
     #print(keys)
     assert len(keys) == len(set(keys))
 
 
-def test_wtc_coi_masked():
-    wavelet = PywaveletsWavelet(disable_caching=True)
+@pytest.mark.parametrize("wavelet_class", [
+   ComplexMorletWavelet, 
+   ComplexGaussianWavelet, 
+])
+def test_wtc_coi_masked(wavelet_class):
+    wavelet = wavelet_class(disable_caching=True)
     signal = SyntheticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal.x, signal.y, signal.y))
     assert res.wtc_masked is not None
     assert res.wtc_masked.mask[0,0] == True
     assert res.wtc_masked.mask[0,len(signal.x)//2] == False
 
-def test_periods_frequencies_range():    
+@pytest.mark.parametrize("wavelet_class", [
+   ComplexMorletWavelet, 
+   ComplexGaussianWavelet, 
+])
+def test_periods_frequencies_range(wavelet_class):    
     frequencies_range = np.array([5., 1.])
     periods_range = 1 / frequencies_range
     signal1 = SyntheticSignal().add_noise()
     signal2 = SyntheticSignal().add_noise()
 
-    wavelet1 = PywaveletsWavelet(periods_range=tuple(periods_range), disable_caching=True)
+    wavelet1 = wavelet_class(periods_range=tuple(periods_range), disable_caching=True)
     res1 = wavelet1.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert np.all(res1.frequencies[[0,-1]] == pytest.approx(frequencies_range))
 
-    wavelet2 = PywaveletsWavelet(frequencies_range=tuple(frequencies_range), disable_caching=True)
+    wavelet2 = wavelet_class(frequencies_range=tuple(frequencies_range), disable_caching=True)
     res2 = wavelet2.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
     
 def test_smooth_in_scale_window():
-    assert np.sum(BaseWavelet.get_smoothing_window(0.6, 10)) == 1
-    assert len(BaseWavelet.get_smoothing_window(1, 1/2)) == 4
-    assert len(BaseWavelet.get_smoothing_window(1.1, 1/2)) == 5
+    assert np.sum(BaseWavelet._get_smoothing_window(0.6, 10)) == 1
+    assert len(BaseWavelet._get_smoothing_window(1, 1/2)) == 4
+    assert len(BaseWavelet._get_smoothing_window(1.1, 1/2)) == 5
 
     # dirac
-    assert len(BaseWavelet.get_smoothing_window(1/12, 1/12)) == 2
+    assert len(BaseWavelet._get_smoothing_window(1/12, 1/12)) == 2
 
-    win10 = BaseWavelet.get_smoothing_window(5, 1)
+    win10 = BaseWavelet._get_smoothing_window(5, 1)
     assert len(win10) == 10
     assert np.mean(win10) == win10[0]
 
-    win10_plus = BaseWavelet.get_smoothing_window(5.1, 1)
+    win10_plus = BaseWavelet._get_smoothing_window(5.1, 1)
     assert len(win10_plus) == 11
     assert np.mean(win10_plus) > win10_plus[0]
 
 def test_fft_kwargs():
-    d = BaseWavelet.get_fft_kwargs(np.zeros((10,)))
+    d = BaseWavelet._get_fft_kwargs(np.zeros((10,)))
     assert d['n'] == 16
 
-    d = BaseWavelet.get_fft_kwargs(np.zeros((10,)), extra='foo')
+    d = BaseWavelet._get_fft_kwargs(np.zeros((10,)), extra='foo')
     assert d['extra'] == 'foo'
     
-def test_smoothing():
+@pytest.mark.parametrize("wavelet_class", [
+   ComplexMorletWavelet, 
+   ComplexGaussianWavelet, 
+])
+def test_smoothing(wavelet_class):
     dt = 0.1
     dj = 0.1
-    wavelet = PywaveletsWavelet()
-    scales = wavelet.get_scales(dt, dj)
+    wavelet = wavelet_class(dj=dj)
+    scales = wavelet.get_scales(dt)
     W = np.zeros((len(scales), 200))
     W[:, np.arange(0, W.shape[1], 2)] = 1
-    smoothed = wavelet.smoothing(W, dt, dj, scales)
+    smoothed = wavelet.smoothing(W, dt, scales)
     assert np.all(smoothed > 0)
     assert np.all(smoothed < 1)
     # TODO Should test more
     
-def test_to_pandas_df():
+@pytest.mark.parametrize("wavelet_class", [
+   ComplexMorletWavelet, 
+   ComplexGaussianWavelet, 
+])
+def test_to_pandas_df(wavelet_class):
     signal1 = SyntheticSignal().add_noise()
     signal2 = SyntheticSignal().add_noise()
-    wavelet = PywaveletsWavelet(disable_caching=True)
+    wavelet = wavelet_class(disable_caching=True)
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     df = res.to_frame()
 
     assert df['coherence'][0] > 0
 
-def test_downsampling():
-    wavelet = PywaveletsWavelet(disable_caching=True)
+@pytest.mark.parametrize("wavelet_class", [
+   ComplexMorletWavelet, 
+   ComplexGaussianWavelet, 
+])
+def test_downsampling(wavelet_class):
+    wavelet = wavelet_class(disable_caching=True)
     signal = SyntheticSignal(n_points=2000).add_sin(1)
     pair = PairSignals(signal.x, signal.y, signal.y)
     wtc = wavelet.wtc(pair)
@@ -217,7 +251,7 @@ def test_wtc_time_slicing():
     n = 1000
     signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
     signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
-    wavelet = PywaveletsWavelet(disable_caching=True)
+    wavelet = ComplexMorletWavelet(disable_caching=True)
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), bin_seconds=10)
     df = res.to_frame()
 
@@ -234,7 +268,7 @@ def test_wtc_period_slicing():
     n = 1000
     signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
     signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
-    wavelet = PywaveletsWavelet(disable_caching=True)
+    wavelet = ComplexMorletWavelet(disable_caching=True)
     period_cuts = [3, 5, 10]
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), period_cuts=period_cuts)
     df = res.to_frame()
@@ -250,7 +284,7 @@ def test_wtc_period_slicing_edge_cases():
     n = 1000
     signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
     signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
-    wavelet = PywaveletsWavelet(disable_caching=True)
+    wavelet = ComplexMorletWavelet(disable_caching=True)
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
     assert wavelet.wtc(pair, period_cuts=[99999]).to_frame().shape[0] == 1
     assert wavelet.wtc(pair, period_cuts=[0]).to_frame().shape[0] == 1
@@ -263,7 +297,7 @@ def test_wtc_period_time_combined_slicing():
     n = 1000
     signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
     signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
-    wavelet = PywaveletsWavelet(disable_caching=True)
+    wavelet = ComplexMorletWavelet(disable_caching=True)
     bin_seconds = 20
     period_cuts = [3, 5, 10]
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), bin_seconds=bin_seconds, period_cuts=period_cuts)
@@ -272,28 +306,32 @@ def test_wtc_period_time_combined_slicing():
     assert df.shape[0] == 5 * 4
     #print(df)
     
-def test_wtc_wavelet_info():
+@pytest.mark.parametrize("wavelet_class", [
+   ComplexMorletWavelet, 
+   ComplexGaussianWavelet, 
+])
+def test_wtc_wavelet_info(wavelet_class):
     signal1 = SyntheticSignal().add_noise()
     signal2 = SyntheticSignal().add_noise()
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
-    wavelet = PywaveletsWavelet(disable_caching=True)
+    wavelet = wavelet_class(disable_caching=True)
     res = wavelet.wtc(pair)
     df = res.to_frame()
 
     assert df.at[0, 'wavelet_library'] == 'pywavelets'
-    assert df.at[0, 'wavelet_name'] == wavelet.wavelet_name
+    assert df.at[0, 'wavelet_name'] == wavelet.wavelet_name_with_args
     
 @pytest.mark.parametrize("wavelet", [
-   PywaveletsWavelet(), 
-   PywaveletsWavelet(wavelet_name='cmor10,1'), 
-   PywaveletsWavelet(wavelet_name='cgau1'), 
-   PywaveletsWavelet(wavelet_name='cgau2'), 
-   PywaveletsWavelet(wavelet_name='cgau3'), 
+   ComplexMorletWavelet(), 
+   ComplexMorletWavelet(bandwidth_frequency=10, center_frequency=1), 
+   ComplexGaussianWavelet(degree=1), 
+   ComplexGaussianWavelet(degree=2), 
+   ComplexGaussianWavelet(degree=3), 
 ])
 def test_cone_of_influence(wavelet):
     n = 11
     dt = 1
-    coi = wavelet.get_cone_of_influence(n, dt)
+    coi = wavelet._get_cone_of_influence(n, dt)
     assert coi[0] == coi[-1]
     assert coi[0] < coi[1]
     assert np.argmax(coi) == n // 2

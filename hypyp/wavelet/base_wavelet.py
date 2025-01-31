@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
 import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 from scipy import fft
 from scipy.ndimage import convolve1d
 from scipy.signal import convolve2d
@@ -21,24 +22,51 @@ DEFAULT_PERIODS_DJ = 1/12
 
 class BaseWavelet(ABC):
     verbose: bool
+    dj: float
     wtc_smoothing_win_size: int|None
+    periods_range: Tuple[float, float]
+    cache: dict|None
+    cache_is_disabled: bool
+
+    default_periods_range: Tuple[float, float] = DEFAULT_PERIODS_RANGE
+    default_periods_dj: float = DEFAULT_PERIODS_DJ
+    default_smooth_win_size: float = DEFAULT_SMOOTH_WIN_SIZE
 
     def __init__(
         self,
-        periods_range=None,
-        frequencies_range=None,
-        evaluate=True,
-        cache=None,
-        disable_caching=False,
-        verbose=False,
-        wtc_smoothing_win_size=None,
+        periods_range:Tuple[float, float]|None=None,
+        frequencies_range:Tuple[float, float]|None=None,
+        evaluate:bool=True,
+        cache:dict|None=None,
+        disable_caching:bool=False,
+        verbose:bool=False,
+        dj:float=DEFAULT_PERIODS_DJ,
+        wtc_smoothing_win_size:float=DEFAULT_SMOOTH_WIN_SIZE,
     ):
+        """
+        Base class for Wavelet implementations. See also ComplexMorletWavelet, which is the default implementation.
+
+        Args:
+            periods_range (Tuple[float, float] | None, optional): The range for which the Wavelet Transform should be computed, in periods. Defaults to (2, 20).
+            frequencies_range (Tuple[float, float] | None, optional): The range for which the Wavelet Transform should be computed, in frequency. Defaults to None, see periods_range instead.
+            evaluate (bool, optional): Should the PSI be evaluated at wavelet instanciation. Defaults to True.
+            cache (dict | None, optional): Cache dictionary to reuse already computed results. Defaults to a new dict().
+            disable_caching (bool, optional): Should the caching be disabled. Defaults to False.
+            verbose (bool, optional): Verbosity flag. Defaults to False.
+            dj (float, optional): Step size between scales in one octave. Defaults to 1/12.
+            wtc_smoothing_win_size (float, optional): The width of window for smooting the CWT in frequency. The value is in "scale" and does not depend on "dj". Defaults to 0.6.
+        """
         self._wavelet = None
         self._psi_x = None
         self._psi = None
         self._wtc = None
         self.verbose = verbose
+
         self.wtc_smoothing_win_size = wtc_smoothing_win_size
+
+        if dj > 1:
+            raise RuntimeError(f'dj must be smaller than 1. Received {dj}')
+        self.dj = dj
 
         if periods_range is not None and frequencies_range is not None:
             raise RuntimeError('Cannot specify both periods_range and frequencies_range')
@@ -50,9 +78,9 @@ class BaseWavelet(ABC):
         else:
             self.periods_range = DEFAULT_PERIODS_RANGE
         
+        # swap to have them in order
         if self.periods_range[0] > self.periods_range[1]:
             self.periods_range = (self.periods_range[1], self.periods_range[0])
-
         
         self.cache = cache
         self.cache_is_disabled = disable_caching
@@ -94,7 +122,7 @@ class BaseWavelet(ABC):
         pass
     
     @abstractmethod
-    def cwt(self, y, dt, dj):
+    def cwt(self, y, dt) -> CWT:
         pass
     
     @property
@@ -107,25 +135,62 @@ class BaseWavelet(ABC):
     def wavelet_name(self):
         pass
     
-    def get_periods(self, dj=DEFAULT_PERIODS_DJ):
+    @property
+    @abstractmethod
+    def wavelet_name_with_args(self):
+        pass
+    
+    @property
+    @abstractmethod
+    def flambda(self):
+        pass
+
+    def get_periods(self) -> np.ndarray:
+        """
+        Get list of period values for this specific wavelet settings
+
+        Returns:
+            np.array: list of periods that should be used with this wavelet
+        """
         low, high =  self.periods_range
         n_scales = np.log2(high/low) 
-        n_steps = int(np.round(n_scales / dj))
+        n_steps = int(np.round(n_scales / self.dj))
         periods = np.logspace(np.log2(low), np.log2(high), n_steps, base=2)
         return periods
         
-    def wtc(self, pair: PairSignals, bin_seconds:float|None=None, period_cuts:List[float]|None=None, cache_suffix=''):
+    def wtc(self,
+            pair: PairSignals,
+            bin_seconds:float|None=None,
+            period_cuts:List[float]|None=None,
+            cache_suffix:str='') -> WTC:
+        """
+        Compute the Wavalet Transform Coherence for a pair of signals. 
         
+        First computes the Continuous Wavelet Transform of both signals,
+        then filters them and finally the coherence between the 2 signals.
+
+        It saves to a cache in memory the intermediary results for reuse on other pairs.
+        For example, if there is a pair made of signal A and signal B and then a pair with 
+        signal A and signal C, we don't have to re-compute the CWT of signal A twice.
+
+        Args:
+            pair (PairSignals): a pair of signals on which to compute coherence
+            bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
+            period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
+            cache_suffix (str, optional): string to add to the caching key. Useful to split intra and inter subject. Defaults to ''.
+
+        Returns:
+            WTC: A Wavelet Transform Coherence object that encapsulates the Weights and the parameters of the resulting transform
+        """
         y1 = pair.y1
         y2 = pair.y2
         dt = pair.dt
+
         if len(y1) != len(y2):
-            raise RuntimeError("Arrays not same size")
+            raise RuntimeError(f'Arrays not same size. y1:{len(y1)}, y2:{len(y2)}')
 
         N = len(y1)
 
-        dj = 1 / 12 # TODO have as parameter, or as class property with default
-    
         # TODO: have detrend as parameter
         # if detrend:
         #     y1 = signal.detrend(y1, type='linear')
@@ -135,11 +200,11 @@ class BaseWavelet(ABC):
         y1 = (y1 - y1.mean()) / y1.std()
         y2 = (y2 - y2.mean()) / y2.std()
     
-        cwt1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'cwt', cache_suffix))
-        cwt1: CWT = self.cwt(y1, dt, dj) if cwt1_cached is None else cwt1_cached
+        cwt1_cached = self._get_cache_item(self._get_cache_key_pair(pair, 0, 'cwt', cache_suffix))
+        cwt1: CWT = self.cwt(y1, dt) if cwt1_cached is None else cwt1_cached
 
-        cwt2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'cwt', cache_suffix))
-        cwt2: CWT = self.cwt(y2, dt, dj) if cwt2_cached is None else cwt2_cached
+        cwt2_cached = self._get_cache_item(self._get_cache_key_pair(pair, 1, 'cwt', cache_suffix))
+        cwt2: CWT = self.cwt(y2, dt) if cwt2_cached is None else cwt2_cached
 
         if (cwt1.scales != cwt2.scales).any():
             raise RuntimeError('The two CWT have different scales')
@@ -164,28 +229,25 @@ class BaseWavelet(ABC):
         scaleMatrix = np.ones([1, N]) * scales[:, None]
         smoothing_kwargs = dict(
             dt=dt,
-            dj=dj,
             scales=scales,
             cache_suffix=cache_suffix,
         )
-        if self.wtc_smoothing_win_size is not None:
-            smoothing_kwargs['boxcar_size'] = self.wtc_smoothing_win_size
 
-        S1_cached = self.get_cache_item(self.get_cache_key_pair(pair, 0, 'smooth', cache_suffix))
+        S1_cached = self._get_cache_item(self._get_cache_key_pair(pair, 0, 'smooth', cache_suffix))
         S1 = self.smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs) if S1_cached is None else S1_cached
 
-        S2_cached = self.get_cache_item(self.get_cache_key_pair(pair, 1, 'smooth', cache_suffix))
+        S2_cached = self._get_cache_item(self._get_cache_key_pair(pair, 1, 'smooth', cache_suffix))
         S2 = self.smoothing(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs) if S2_cached is None else S2_cached
 
         S12 = np.abs(self.smoothing(W12 / scaleMatrix, **smoothing_kwargs))
         wtc = S12 ** 2 / (S1 * S2)
 
-        coi = self.get_and_cache_cone_of_influence(N, dt, cache_suffix=cache_suffix)
+        coi = self._get_and_cache_cone_of_influence(N, dt, cache_suffix=cache_suffix)
 
-        self.update_cache_if_none(self.get_cache_key_pair(pair, 0, 'cwt', cache_suffix), cwt1)
-        self.update_cache_if_none(self.get_cache_key_pair(pair, 1, 'cwt', cache_suffix), cwt2)
-        self.update_cache_if_none(self.get_cache_key_pair(pair, 0, 'smooth', cache_suffix), S1)
-        self.update_cache_if_none(self.get_cache_key_pair(pair, 1, 'smooth', cache_suffix), S2)
+        self._update_cache_if_none(self._get_cache_key_pair(pair, 0, 'cwt', cache_suffix), cwt1)
+        self._update_cache_if_none(self._get_cache_key_pair(pair, 1, 'cwt', cache_suffix), cwt2)
+        self._update_cache_if_none(self._get_cache_key_pair(pair, 0, 'smooth', cache_suffix), S1)
+        self._update_cache_if_none(self._get_cache_key_pair(pair, 1, 'smooth', cache_suffix), S2)
 
         return WTC(
             wtc,
@@ -197,78 +259,70 @@ class BaseWavelet(ABC):
             bin_seconds=bin_seconds,
             period_cuts=period_cuts,
             wavelet_library=self.wavelet_library,
-            wavelet_name=self.wavelet_name,
+            wavelet_name_with_args=self.wavelet_name_with_args,
         )
 
-    def update_cache_if_none(self, key, value):
+    def _update_cache_if_none(self, key, value):
         if not self.use_caching:
             return
 
-        if self.get_cache_item(key) is None:
-            self.add_cache_item(key, value)
+        if self._get_cache_item(key) is None:
+            self._add_cache_item(key, value)
 
-    def get_and_cache_cone_of_influence(self, N, dt, cache_suffix=''):
-        cache_key = self.get_cache_key('coi', N, dt, cache_suffix)
-        coi = self.get_cache_item(cache_key)
+    def _get_and_cache_cone_of_influence(self, N, dt, cache_suffix=''):
+        cache_key = self._get_cache_key('coi', N, dt, cache_suffix)
+        coi = self._get_cache_item(cache_key)
         if coi is not None:
             return coi
-        coi = self.get_cone_of_influence(N, dt)
-        self.add_cache_item(cache_key, coi)
+        coi = self._get_cone_of_influence(N, dt)
+        self._add_cache_item(cache_key, coi)
         return coi
 
 
-    def get_cone_of_influence(self, N, dt):
-        # See "A Practical Guide to Wavelet Analysis" from Torrence and Compo (1998), Table 1
+    def _get_cone_of_influence(self, N:int, dt:float) -> np.ndarray:
+        """
+        Get the cone of influence of a Continuous Wavelet Transform, 
+        that is the region where edge effects become significant due to the finite length of the signal
+
+        Args:
+            N (int): number of times for each scale of the WTC
+            dt (float): delta time of the WTC
+
+        Returns:
+            np.ndarray: for each time, the periods at which the value should be ignored
+        """
+        # Equations come from "A Practical Guide to Wavelet Analysis" from Torrence and Compo (1998), Table 1
 
         # e-folding valid for cmor (complex morlet) and cgau (complex gaussian)
         e_folding_time = 1.0 / np.sqrt(2)
-
-        if self.wavelet_name.startswith('cmor'):
-            # TODO check this computation. Seems wrong
-            f0 = 2 * np.pi * self.center_frequency
-            #flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
-            flambda = 2 * np.pi / f0
-        elif self.wavelet_name.startswith('cgau'):
-            m = self.degree
-            flambda = 2 * np.pi / np.sqrt(m + 0.5)
-        else:
-            raise RuntimeError(f'Unknown cone of influence for wavelet {self.wavelet_name}')
+        flambda = self.flambda
 
         coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
         coi = flambda * e_folding_time * dt * coi
 
         return coi
     
-    
     #
     # Smoothing
     #
-    def smoothing(self, W, dt, dj, scales, boxcar_size=DEFAULT_SMOOTH_WIN_SIZE, cache_suffix=''):
-        """Smoothing function used in coherence analysis.
+    def smoothing(self, W:np.ndarray, dt:float, scales:np.ndarray, cache_suffix:str='') -> np.ndarray:
+        """
+        Smooth the weights of a continuous wavelet transform in time and frequency domains.
 
-        Parameters
-        ----------
-        W :
-        dt :
-        dj :
-        scales :
+        Args:
+            W (np.ndarray): the weights of the transform to be smoothed
+            dt (float): delta time
+            scales (np.ndarray): the normalized scales used with W
+            cache_suffix (str, optional): cache segregation suffix. Defaults to ''.
 
-        Returns
-        -------
-        T :
-
+        Returns:
+            np.ndarray: an numpy array of the same shape as W
         """
         #
         # Filter in time.
         #
-        # The smoothing is performed by using a filter given by the absolute
-        # value of the wavelet function at each scale, normalized to have a
-        # total weight of unity, according to suggestions by Torrence &
-        # Webster (1999) and by Grinsted et al. (2004).
-        fft_kwargs = self.get_fft_kwargs(W[0, :])
-        #scales_norm = scales / dt
+        fft_kwargs = self._get_fft_kwargs(W[0, :])
         scales_norm = scales # scales are already normalized
-        # TODO cleanup the above comment
         
         k = 2 * np.pi * fft.fftfreq(fft_kwargs['n'])
         k2 = k ** 2
@@ -289,14 +343,11 @@ class BaseWavelet(ABC):
         #
         # Filter in scale. 
         # 
-
-        # For the Morlet wavelet it's simply a boxcar with 0.6 width.
-        # TODO find where the above comments come from
-        win_cache_key = self.get_cache_key('boxcar_window', boxcar_size, dj, cache_suffix)
-        win = self.get_cache_item(win_cache_key)
+        win_cache_key = self._get_cache_key('boxcar_window', self.wtc_smoothing_win_size, self.dj, cache_suffix)
+        win = self._get_cache_item(win_cache_key)
         if win is None:
-            win = self.get_smoothing_window(boxcar_size, dj)
-            self.add_cache_item(win_cache_key, win)
+            win = self._get_smoothing_window(self.wtc_smoothing_win_size, self.dj)
+            self._add_cache_item(win_cache_key, win)
 
         T = convolve1d(T, win, axis=0, mode='nearest')
         #T = convolve2d(T, win[:, np.newaxis], 'same')  # Scales are "vertical"
@@ -304,11 +355,11 @@ class BaseWavelet(ABC):
         return T
 
     @staticmethod
-    def get_fft_kwargs(signal, **kwargs):
+    def _get_fft_kwargs(signal, **kwargs):
         return dict(**kwargs, n = int(2 ** np.ceil(np.log2(len(signal)))))
 
     @staticmethod
-    def get_smoothing_window(boxcar_size, dj):
+    def _get_smoothing_window(boxcar_size, dj):
         # Copied from matlab
         # boxcar_size is "in scale"
         #size_in_scales = boxcar_size
@@ -337,8 +388,10 @@ class BaseWavelet(ABC):
 
     #
     # Caching
+    # NOTE: We could use functools.cache instead of a custom caching strategy.
+    #       That would require to have static methods
     #
-    def get_cache_item(self, key):
+    def _get_cache_item(self, key):
         if not self.use_caching:
             return None
         if key is None:
@@ -355,14 +408,14 @@ class BaseWavelet(ABC):
                 pass
             return None
     
-    def add_cache_item(self, key, value):
+    def _add_cache_item(self, key, value):
         if self.use_caching:
             self.cache[key] = value
 
-    def clear_cache(self):
+    def _clear_cache(self):
         self.cache = dict()
 
-    def get_cache_key_pair(self, pair: PairSignals, subject_id: int, obj_id: str, cache_suffix: str = ''):
+    def _get_cache_key_pair(self, pair: PairSignals, subject_id: int, obj_id: str, cache_suffix: str = ''):
         if not self.use_caching:
             return None
 
@@ -388,7 +441,7 @@ class BaseWavelet(ABC):
         
         return key
     
-    def get_cache_key(self, *args):
+    def _get_cache_key(self, *args):
         if not self.use_caching:
             return None
         return f'key_{"_".join([str(arg) for arg in args])}'
@@ -397,7 +450,7 @@ class BaseWavelet(ABC):
     #
     # Plots
     #
-    def plot_mother_wavelet(self, show_legend=True, ax=None):
+    def plot_mother_wavelet(self, show_legend=True, ax:Axes|None=None):
         if ax is None:
             fig, ax = plt.subplots()
         else:
@@ -406,7 +459,7 @@ class BaseWavelet(ABC):
         ax.plot(self.psi_x, np.real(self.psi))
         ax.plot(self.psi_x, np.imag(self.psi))
         ax.plot(self.psi_x, np.abs(self.psi))
-        ax.title.set_text(f"mother wavelet ({self.wavelet_name})")
+        ax.title.set_text(f"mother wavelet ({self.wavelet_name_with_args})")
         if show_legend:
             ax.legend(['real', 'imag', 'abs'])
         return fig

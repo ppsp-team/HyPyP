@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, List
 from collections import OrderedDict
 
 import scipy.io
@@ -6,12 +6,12 @@ import scipy.io
 class ChannelROI:
     rois: OrderedDict
 
-    def __init__(self, rois:OrderedDict=None):
+    def __init__(self, rois:OrderedDict|None=None):
         """
         Structure for grouping channels into regions of interest
 
         Args:
-            rois (OrderedDict, optional): predefined regions of interest. Defaults to None.
+            rois (OrderedDict | None, optional): predefined regions of interest. Defaults to None.
         """
         if rois is None:
             self.rois = OrderedDict()
@@ -19,7 +19,7 @@ class ChannelROI:
             self.rois = rois
 
     @staticmethod
-    def from_lionirs_file(roi_file_path: str) -> Self:
+    def from_lionirs_file(roi_file_path:str) -> Self:
         """
         Create a new ChannelROI object from a file exported 
 
@@ -70,7 +70,7 @@ class ChannelROI:
         boundaries.append(len(self.ordered_ch_names))
         return boundaries
 
-    def get_ch_names_in_order(self, ch_names:str):
+    def get_ch_names_in_order(self, ch_names:str) -> List[str]:
         """
         Given a list of channel names, return them in order of Region of Interest
 
@@ -78,7 +78,7 @@ class ChannelROI:
             names (str): 
 
         Returns:
-            _type_: _description_
+            List[str]: all the received ch_names, ordered according to defined regions of interest
         """
         all_names_found = []
 

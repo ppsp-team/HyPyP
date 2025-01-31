@@ -51,11 +51,14 @@ def plot_wtc(
     periods,
     coi,
     sfreq,
+    bin_seconds=None,
+    period_cuts=None,
     title=None,
     ax=None,
     show_colorbar=True,
     show_coi=True,
     show_nyquist=True,
+    show_bins=True,
 ):
     color_shaded = '0.2'
     # create the figure if needed
@@ -81,6 +84,15 @@ def plot_wtc(
         nyquist_period = 1 / nyquist
         ax.plot(times, nyquist_period, color=color_shaded)
         ax.fill_between(times, nyquist_period, y2=np.min(periods), step="mid", color=color_shaded, alpha=0.4)
+    
+    if show_bins:
+        if bin_seconds is not None:
+            for time_cut in np.arange(0, max(times), bin_seconds):
+                plt.axvline(x=time_cut, color='red', lw=0.5)
+
+        if period_cuts is not None:
+            for period_cut in period_cuts:
+                plt.axhline(y=period_cut, color='red', lw=0.5)
     
     # Dynamically set ticks based on the current range
     ymin, ymax = ax.get_ylim()  # Get the y-axis limits

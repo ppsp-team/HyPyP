@@ -35,7 +35,7 @@ class Subject:
         label:str='',
         tasks_annotations:TaskList=[],
         tasks_time_range:TaskList=[],
-        channel_roi:ChannelROI=None
+        channel_roi:ChannelROI|None=None
     ):
         """
         The Subject object encapsulates the logic around the recording for one participant.
@@ -45,7 +45,7 @@ class Subject:
             label (str, optional): unique label for the subject. Defaults to a random string.
             tasks_annotations (TaskList, optional): list of tasks during the recording of the participant, that will be extracted from events in the raw files to build epochs. Defaults to [].
             tasks_time_range (TaskList, optional): defines a list of task from timecodes instead of annotations. Defaults to [].
-            channel_roi (ChannelROI, optional): region of interest object to group channels. Defaults to None.
+            channel_roi (ChannelROI | None, optional): region of interest object to group channels. Defaults to None.
         """
         self.filepath = None
         self.label = label if label != '' else generate_random_label(10)

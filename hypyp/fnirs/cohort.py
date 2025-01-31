@@ -1,11 +1,13 @@
-from typing import List, Self
+from typing import List, Self, Tuple
 import pickle
+
+from hypyp.wavelet.base_wavelet import BaseWavelet
 
 from .preprocessor.base_preprocessor import BasePreprocessor
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from ..profiling import TimeTracker
 
-from .dyad import Dyad
+from .dyad import Dyad, PairMatchType
 
 class Cohort():
     dyads: List[Dyad]
@@ -59,9 +61,34 @@ class Cohort():
                 dyad.preprocess(preprocessor)
         return self
     
-    def compute_wtcs(self, *args, **kwargs) -> Self:
+    def compute_wtcs(
+        self,
+        # All the arguments are a copy from Dyad.compute_wtcs, but we need them explicitely for type hinting
+        wavelet:BaseWavelet|None=None,
+        ch_match:PairMatchType|None=None,
+        only_time_range:Tuple[float,float]|None=None,
+        bin_seconds:float|None=None,
+        period_cuts:List[float]|None=None,
+        verbose:bool=False,
+        with_intra:bool=True,
+        downsample:int|None=None,
+        keep_wtcs:bool=True,
+    ) -> Self:
         """
         Wraps the `compute_wtcs` of all the dyads. Arguments are directly passed to the dyads method
+
+        Args:
+            wavelet (BaseWavelet | None): the wavelet to use for the wavelet transform. Defaults to ComplexMorletWavelet() without arguments.
+            ch_match (PairMatchType | None, optional): string, list or regex to match channel name.
+                                                Can be a tuple of 2 items if subject1 and subject2 have different matches.
+                                                Defaults to None, which means all channels.
+            only_time_range (Tuple[float,float] | None, optional): _description_. Defaults to None.
+            bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
+            period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
+            verbose (bool, optional): verbose flag. Defaults to False.
+            with_intra (bool, optional): compute intra-subject as well. Defaults to False.
+            downsample (int | None, optional): downsample in time the resulting WTC. Useful to save memory space and faster display. Defaults to None.
+            keep_wtcs (bool, optional): if False, all the WTCs will be removed from object after the coherence dataframe has been computed. Useful to save memory space. Defaults to True.
 
         Returns:
             Cohort: the object itself. Useful for chaining operations
@@ -71,18 +98,28 @@ class Cohort():
                 tracker = TimeTracker()
                 tracker.start()
 
-            dyad.compute_wtcs(*args, **kwargs)
+            dyad.compute_wtcs(
+                wavelet,
+                ch_match,
+                only_time_range,
+                bin_seconds,
+                period_cuts,
+                verbose,
+                with_intra,
+                downsample,
+                keep_wtcs,
+            )
 
             if i == 0:
                 tracker.stop()
-                self.print_time_estimation(tracker.duration, len(self.dyads))
+                if verbose:
+                    self._print_time_estimation(tracker.duration, len(self.dyads))
                 
         return self
     
-    def print_time_estimation(self, single_duration, count):
+    def _print_time_estimation(self, single_duration, count):
             print(f'Time for computing one dyad: {TimeTracker.human_readable_duration(single_duration)}')
             print(f'Expected time for {count} dyads: {TimeTracker.human_readable_duration(single_duration * count)}')
-        
     
     def estimate_wtcs_run_time(self, *args, **kwargs) -> Self:
         """
@@ -96,7 +133,7 @@ class Cohort():
         tracker.start()
         dyad.compute_wtcs(*args, **kwargs)
         tracker.stop()
-        self.print_time_estimation(tracker.duration, len(self.dyads))
+        self._print_time_estimation(tracker.duration, len(self.dyads))
 
         return self
     

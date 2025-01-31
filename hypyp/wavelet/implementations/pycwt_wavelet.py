@@ -6,7 +6,7 @@ DEFAULT_CENTER_FREQUENCY = 6
 try:
     import pycwt
 
-    from ..base_wavelet import BaseWavelet, DEFAULT_PERIODS_DJ
+    from ..base_wavelet import BaseWavelet
     from ..wtc import WTC
     from ..cwt import CWT
     from ..pair_signals import PairSignals
@@ -33,7 +33,15 @@ try:
 
         @property
         def wavelet_name(self):
+            return f'cmor'
+
+        @property
+        def wavelet_name_with_args(self):
             return f'cmor{self.center_frequency}'
+
+        @property
+        def flambda(self):
+            return self._wavelet.flambda()
 
         def evaluate_psi(self):
             self._psi_x = np.linspace(self.lower_bound, self.upper_bound, 2**self.precision)
@@ -44,16 +52,16 @@ try:
             self._psi = wavelet.psi(self._psi_x)
             return self._psi, self._psi_x
         
-        def cwt(self, y, dt, dj=DEFAULT_PERIODS_DJ) -> CWT:
-            periods = self.get_periods(dj)
+        def cwt(self, y, dt) -> CWT:
+            periods = self.get_periods()
 
             W, scales, freqs, coi, _, _ = pycwt.cwt(y, dt=dt, freqs=1/periods, wavelet=self._wavelet)
             periods = 1 / freqs
             times = np.arange(len(y)) * dt
             return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)
 
-        def smoothing(self, W, dt, dj, scales, _win_size=0, _cache_suffix=''):
-            return self._wavelet.smooth(W, dt, dj, scales)
+        def smoothing(self, W, dt, scales, _win_size=0, _cache_suffix=''):
+            return self._wavelet.smooth(W, dt, self.dj, scales)
 
         def wtc(self, pair: PairSignals, bin_seconds:float|None=None, period_cuts:List[float]|None=None, cache_suffix=''):
             y1 = pair.y1
@@ -83,7 +91,7 @@ try:
                 coi,
                 pair,
                 wavelet_library=self.wavelet_library,
-                wavelet_name=self.wavelet_name,
+                wavelet_name_with_args=self.wavelet_name_with_args,
                 bin_seconds=bin_seconds,
                 period_cuts=period_cuts)
 

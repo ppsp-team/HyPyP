@@ -1,6 +1,8 @@
 from typing import Self
 
 from matplotlib.figure import Figure
+from matplotlib.axes import Axes
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.fft import fft, fftfreq
@@ -83,7 +85,7 @@ class SyntheticSignal:
     #
     # Plots
     #
-    def plot(self, t=None, ax=None) -> Figure:
+    def plot(self, t:np.ndarray|None=None, ax:Axes|None=None) -> Figure:
         if ax is None:
             fig, ax = plt.subplots()
         else:
@@ -98,7 +100,7 @@ class SyntheticSignal:
         ax.set_xlabel('Time (s)')
         return fig
     
-    def plot_fft(self, ax=None) -> Figure:
+    def plot_fft(self, ax:Axes|None=None) -> Figure:
         if ax is None:
             fig, ax = plt.subplots()
         else:

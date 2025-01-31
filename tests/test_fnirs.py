@@ -12,7 +12,7 @@ import mne
 from hypyp.fnirs.cohort import Cohort
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 from hypyp.wavelet.pair_signals import PairSignals
-from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet
+from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
 from hypyp.fnirs.subject import Subject
 from hypyp.fnirs.channel_roi import ChannelROI
 from hypyp.fnirs.dyad import Dyad
@@ -278,7 +278,7 @@ def test_dyad_compute_pair_wtc():
     subject = get_test_subject()
     dyad = Dyad(subject, subject)
     pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
-    wtc = dyad.get_pair_wtc(pair, PywaveletsWavelet())
+    wtc = ComplexMorletWavelet().wtc(pair)
     # Should have a mean of 1 since the first pair is the same signal
     assert np.mean(wtc.W) == pytest.approx(1)
     assert wtc.label_dyad == dyad.label
@@ -287,33 +287,33 @@ def test_dyad_cwt_cache_during_wtc():
     subject1, subject2 = get_test_subjects()
     dyad = Dyad(subject1, subject2)
     pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
-    wavelet = PywaveletsWavelet(cache=dict())
+    wavelet = ComplexMorletWavelet(cache=dict())
     with patch.object(wavelet, 'cwt', wraps=wavelet.cwt) as spy_method:
-        wtc_no_cache = dyad.get_pair_wtc(pair, wavelet)
+        wtc_no_cache = wavelet.wtc(pair)
         assert spy_method.call_count == 2
-        wtc_with_cache = dyad.get_pair_wtc(pair, wavelet) # this should not call cwt, but use the cache
+        wtc_with_cache = wavelet.wtc(pair) # this should not call cwt, but use the cache
         assert spy_method.call_count == 2
         assert np.all(wtc_no_cache.W == wtc_with_cache.W)
         # make sure we can clear the cache
-        wavelet.clear_cache()
-        dyad.get_pair_wtc(pair, wavelet)
+        wavelet._clear_cache()
+        wavelet.wtc(pair)
         assert spy_method.call_count == 4
 
 def test_dyad_coi_cache_during_wtc():
     subject1, subject2 = get_test_subjects()
     dyad = Dyad(subject1, subject2)
     pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
-    wavelet = PywaveletsWavelet(cache=dict())
-    with patch.object(wavelet, 'get_cone_of_influence', wraps=wavelet.get_cone_of_influence) as spy_method:
-        wtc_no_cache = dyad.get_pair_wtc(pair, wavelet)
+    wavelet = ComplexMorletWavelet(cache=dict())
+    with patch.object(wavelet, '_get_cone_of_influence', wraps=wavelet._get_cone_of_influence) as spy_method:
+        wtc_no_cache = wavelet.wtc(pair)
         assert spy_method.call_count == 1
-        wtc_with_cache = dyad.get_pair_wtc(pair, wavelet)
+        wtc_with_cache = wavelet.wtc(pair)
         assert spy_method.call_count == 1
         assert np.all(wtc_no_cache.coi == wtc_with_cache.coi)
         assert np.all(wtc_no_cache.coif == wtc_with_cache.coif)
         # make sure we can clear the cache
-        wavelet.clear_cache()
-        _ = dyad.get_pair_wtc(pair, wavelet)
+        wavelet._clear_cache()
+        _ = wavelet.wtc(pair)
         assert spy_method.call_count == 2
 
 def test_dyad_cwt_cache_with_different_times():
@@ -523,7 +523,7 @@ def test_dyad_coherence_pandas_with_intra():
     dyad = Dyad(subject1, subject2)
 
     with pytest.raises(Exception):
-        dyad.compute_wtcs(ch_match=get_test_ch_match_few())
+        dyad.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=False)
         # Since intra subject is not computed, it should raise
         dyad._get_coherence_df(with_intra=True)
 
@@ -540,7 +540,7 @@ def test_cohort_coherence_pandas():
     dyad2 = Dyad(subject1, subject3, label='dyad2')
     dyad3 = Dyad(subject2, subject3, label='dyad3')
     cohort = Cohort([dyad1, dyad2, dyad3])
-    cohort.compute_wtcs(ch_match=get_test_ch_match_few())
+    cohort.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=False)
     df = cohort.df
     assert len(df['task'].unique()) == len(dyad1.s1.task_keys)
     assert len(df['channel1'].unique()) == 2

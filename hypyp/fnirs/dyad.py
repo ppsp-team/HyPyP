@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ..wavelet.base_wavelet import BaseWavelet
-from ..wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet
+from ..wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
 from ..wavelet.wtc import WTC
 from ..wavelet.pair_signals import PairSignals
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
@@ -99,29 +99,6 @@ class Dyad:
             subject.preprocess(preprocessor)
         return self
 
-    def get_pair_wtc(
-        self,
-        pair:PairSignals,
-        wavelet:BaseWavelet,
-        bin_seconds:float | None = None,
-        period_cuts:List[float] | None = None,
-        cache_suffix='',
-    ) -> WTC: 
-        """
-        Compute the Wavelet Transform Coherence for a signal pair
-
-        Args:
-            pair (PairSignals): pair of signals from 2 subjects channels
-            wavelet (BaseWavelet): the wavelet to use for the wavelet transform
-            bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
-            period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
-            cache_suffix (str, optional): string to add to the caching key. Useful to split intra and inter subject. Defaults to ''.
-
-        Returns:
-            WTC: Wavelet Transform Coherence object resulting from the computation
-        """
-        return wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix=cache_suffix)
-    
     def _append_pairs(self,
                       label_dyad,
                       s1_ch_names,
@@ -191,14 +168,14 @@ class Dyad:
                     ))
             
     
-    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str=None, ch_match:PairMatchType=None, is_shuffle:bool=False) -> List[PairSignals]:
+    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str|None=None, ch_match:PairMatchType=None, is_shuffle:bool=False) -> List[PairSignals]:
         """
         Generate all the signal pairs between the 2 subjects and returns them in a format suitable for signal processing
 
         Args:
             s1 (Subject): subject 1 of the dyad
             s2 (Subject): subject 2 of the dyad
-            label_dyad (str, optional): custom label for the dyad. Defaults to self.label.
+            label_dyad (str | None, optional): custom label for the dyad. Defaults to self.label.
             ch_match (PairMatchType, optional): string, list or regex to match channel name.
                                                 Can be a tuple of 2 items if subject1 and subject2 have different matches.
                                                 Defaults to None, which means all channels.
@@ -285,36 +262,36 @@ class Dyad:
     def compute_wtcs(
         self,
         wavelet:BaseWavelet|None=None,
-        ch_match:PairMatchType=None,
-        only_time_range:Tuple[float,float]=None,
-        bin_seconds: float | None = None,
-        period_cuts: List[float] | None = None,
-        verbose=False,
-        with_intra=False,
-        downsample=None,
-        keep_wtcs=True,
+        ch_match:PairMatchType|None=None,
+        only_time_range:Tuple[float,float]|None=None,
+        bin_seconds:float|None=None,
+        period_cuts:List[float]|None=None,
+        verbose:bool=False,
+        with_intra:bool=True,
+        downsample:int|None=None,
+        keep_wtcs:bool=True,
     ) -> Self:
         """
         Compute the Wavelet Transform Coherence for every channel pairs on the dyad
 
         Args:
-            wavelet (BaseWavelet): the wavelet to use for the wavelet transform
-            ch_match (PairMatchType, optional): string, list or regex to match channel name.
+            wavelet (BaseWavelet | None): the wavelet to use for the wavelet transform. Defaults to ComplexMorletWavelet() without arguments.
+            ch_match (PairMatchType | None, optional): string, list or regex to match channel name.
                                                 Can be a tuple of 2 items if subject1 and subject2 have different matches.
                                                 Defaults to None, which means all channels.
-            only_time_range (Tuple[float,float], optional): _description_. Defaults to None.
+            only_time_range (Tuple[float,float] | None, optional): _description_. Defaults to None.
             bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
             period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
             verbose (bool, optional): verbose flag. Defaults to False.
             with_intra (bool, optional): compute intra-subject as well. Defaults to False.
-            downsample (_type_, optional): downsample in time the resulting WTC. Useful to save memory space and faster display. Defaults to None.
+            downsample (int | None, optional): downsample in time the resulting WTC. Useful to save memory space and faster display. Defaults to None.
             keep_wtcs (bool, optional): if False, all the WTCs will be removed from object after the coherence dataframe has been computed. Useful to save memory space. Defaults to True.
 
         Returns:
             Dyad: the object itself. Useful for chaining operations
         """
         if wavelet is None:
-            wavelet = PywaveletsWavelet()
+            wavelet = ComplexMorletWavelet()
 
         self.wtcs = []
 
@@ -325,7 +302,7 @@ class Dyad:
                 print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
             if only_time_range is not None:
                 pair = pair.sub(only_time_range)
-            wtc = self.get_pair_wtc(pair, wavelet, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix='dyad')
+            wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix='dyad')
             if downsample is not None:
                 wtc.downsample_in_time(downsample)
 
@@ -344,7 +321,7 @@ class Dyad:
                         print(f'Running Wavelet Coherence intra-subject "{subject.label}" on pair "{pair.label}"')
                     if only_time_range is not None:
                         pair = pair.sub(only_time_range)
-                    wtc = self.get_pair_wtc(pair, wavelet, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix='intra')
+                    wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix='intra')
                     if downsample is not None:
                         wtc.downsample_in_time(downsample)
                     subject.intra_wtcs.append(wtc)
@@ -393,14 +370,14 @@ class Dyad:
             title=wtc.label_pair,
             **kwargs)
 
-    def plot_coherence_matrix(self, field1:str, field2:str, query:str=None, **kwargs):
+    def plot_coherence_matrix(self, field1:str='channel1', field2:str='channel2', query:str|None=None, **kwargs):
         """
         Plot the computed coherence metric for pair of fields (channel or roi) in a matrix format
 
         Args:
-            field1 (str): name of the field in dataframe for x axis
-            field2 (str): name of the field in dataframe for y axis
-            query (str, optional): query to filter the dataframe. Defaults to None.
+            field1 (str): name of the field in dataframe for x axis. Defaults to 'channel1'.
+            field2 (str): name of the field in dataframe for y axis. Defaults to 'channel2'.
+            query (str | None, optional): pandas query to filter the dataframe. Defaults to None.
         """
         df = self.df
         if query is not None:
@@ -415,12 +392,12 @@ class Dyad:
             self.s1.ordered_ch_names, # TODO we should also add self.s2.ordered_ch_names somehow
             **kwargs)
         
-    def plot_coherence_matrix_per_channel(self, query:str=None, **kwargs):
+    def plot_coherence_matrix_per_channel(self, query:str|None=None, **kwargs):
         """
         Wraps plot_coherence_matrix to plot per channel
 
         Args:
-            query (str, optional): pandas query to filter the dataframe. Defaults to None.
+            query (str | None, optional): pandas query to filter the dataframe. Defaults to None.
         """
         return self.plot_coherence_matrix(
             'channel1',
@@ -428,12 +405,12 @@ class Dyad:
             query,
             **kwargs)
         
-    def plot_coherence_matrix_per_roi(self, query:str=None, **kwargs):
+    def plot_coherence_matrix_per_roi(self, query:str|None=None, **kwargs):
         """
         Wraps plot_coherence_matrix to plot per region of interest
 
         Args:
-            query (str, optional): pandas query to filter the dataframe. Defaults to None.
+            query (str | None, optional): pandas query to filter the dataframe. Defaults to None.
         """
         return self.plot_coherence_matrix(
             'roi1',
@@ -482,7 +459,7 @@ class Dyad:
     #
     # Plot connectogram (Proof of Concept)
     # 
-    def plot_coherence_connectogram_intra(self, subject, query=None, **kwargs):
+    def plot_coherence_connectogram_intra(self, subject:Subject, query:str|None=None, **kwargs):
         df = self.df
         selector = (df['subject1']==subject.label) & (df['subject2']==subject.label)
         df_filtered = df[selector]
@@ -496,13 +473,13 @@ class Dyad:
             title=subject.label,
             **kwargs)
 
-    def plot_coherence_connectogram_s1(self, query=None, **kwargs):
+    def plot_coherence_connectogram_s1(self, query:str|None=None, **kwargs):
         return self.plot_coherence_connectogram_intra(
             self.s1,
             query,
             **kwargs)
 
-    def plot_coherence_connectogram_s2(self, query=None, **kwargs):
+    def plot_coherence_connectogram_s2(self, query:str|None=None, **kwargs):
         return self.plot_coherence_connectogram_intra(
             self.s2,
             query,

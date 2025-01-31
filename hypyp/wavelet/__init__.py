@@ -1,5 +1,5 @@
 from .base_wavelet import BaseWavelet
-from .implementations.pywavelets_wavelet import PywaveletsWavelet
+from .implementations.pywavelets_wavelet import ComplexMorletWavelet
 from .coherence_data_frame import CoherenceDataFrame
 from .cwt import CWT
 from .pair_signals import PairSignals
@@ -7,8 +7,9 @@ from .wtc import WTC
 
 __all__ = [
     'BaseWavelet',
-    # Only expose PywaveletsWavelet to avoid confusion. This is the one that should always be used
-    'PywaveletsWavelet',
+    # Only expose wavelets from pywavelets_wavelet to avoid confusion. This is the one that should always be used
+    'ComplexMorletWavelet',
+    'ComplexGaussianWavelet',
     'CoherenceDataFrame',
     'CWT',
     'PairSignals',

@@ -103,13 +103,13 @@ class PairSignals:
         
         return ret
 
-    def sub(self, time_range:Tuple[float, float], section_id=None) -> Self:
+    def sub(self, time_range:Tuple[float, float], section_id:int|None=None) -> Self:
         """
         Get a new PairSignals from a portion of the initial PairSignals
 
         Args:
             time_range (Tuple[float, float]): from_time and to_time in a tuple
-            section_id (int): new section_id to set on the pair, useful for splitting a signal
+            section_id (int | None, optional): new section_id to set on the pair, useful for splitting a signal. Defaults to self.section_id.
 
         Returns:
             PairSignals: a new PairSignals

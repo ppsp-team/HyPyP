@@ -51,30 +51,30 @@ class WTC:
     coherence_bins: List[Tuple[float, float, str, str]]
 
     wavelet_library: str
-    wavelet_name: str
+    wavelet_name_with_args: str
 
     def __init__(
         self,
-        W,
-        times,
-        scales,
-        periods,
-        coi,
+        W:np.ndarray,
+        times:np.ndarray,
+        scales:np.ndarray,
+        periods:np.ndarray,
+        coi:np.ndarray,
         pair: PairSignals,
         bin_seconds:float|None=None,
         period_cuts:List[float]|None=None,
         wavelet_library:str='',
-        wavelet_name:str='',
+        wavelet_name_with_args:str='',
     ):
         """
         The WTC object holds the results of a Wavelet Transform Coherence
 
         Args:
-            wtc (_type_): weights of the coherence
-            times (_type_): timecodes
-            scales (_type_): scales used
-            periods (_type_): scales in "seconds"
-            coi (_type_): cone of influence
+            wtc (np.ndarray): weights of the coherence
+            times (np.ndarray): timecodes
+            scales (np.ndarray): scales used
+            periods (np.ndarray): scales in "seconds"
+            coi (np.ndarray): cone of influence
             pair (PairSignals): pair of signals used
             bin_seconds (float | None, optional): split in bins every X seconds. Defaults to None.
             period_cuts (List[float] | None, optional): split in bins in frequency domain at the specified periods. Defaults to None.
@@ -118,7 +118,7 @@ class WTC:
         self.coherence_bins = []
 
         self.wavelet_library = wavelet_library
-        self.wavelet_name = wavelet_name
+        self.wavelet_name_with_args = wavelet_name_with_args
 
         self._compute_coherence_in_coi()
     
@@ -232,7 +232,7 @@ class WTC:
                 self.coherence_bins[bin_id][2], # time range
                 self.coherence_bins[bin_id][3], # period range
                 self.wavelet_library,
-                self.wavelet_name,
+                self.wavelet_name_with_args,
             ])
         return frames
     
@@ -256,5 +256,16 @@ class WTC:
         Returns:
             Figure: matplotlib.Figure
         """
-        return plot_wtc(self.W, self.times, self.periods, self.coi, self.sfreq, **kwargs)
+        if 'title' not in kwargs:
+            kwargs['title'] = f'{self.label_s1}[{self.label_ch1}] - {self.label_s2}[{self.label_ch2}]'
+
+        return plot_wtc(
+            self.W,
+            self.times,
+            self.periods,
+            self.coi,
+            self.sfreq,
+            bin_seconds=self.bin_seconds,
+            period_cuts=self.period_cuts,
+            **kwargs)
 

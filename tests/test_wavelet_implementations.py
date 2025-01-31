@@ -3,7 +3,7 @@ import warnings
 
 from hypyp.signal import SyntheticSignal
 from hypyp.wavelet.pair_signals import PairSignals
-from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet
+from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
 from hypyp.wavelet.implementations.scipy_wavelet import ScipyWavelet
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -13,7 +13,7 @@ from hypyp.wavelet.implementations.pycwt_wavelet import PycwtWavelet
 # TODO: test values with sinusoid signal
 
 def test_pywavelets():
-    wavelet = PywaveletsWavelet(disable_caching=True)
+    wavelet = ComplexMorletWavelet(disable_caching=True)
     psi, x = wavelet.evaluate_psi()
     assert psi.dtype.kind == 'c'
     assert min(x) == wavelet.lower_bound

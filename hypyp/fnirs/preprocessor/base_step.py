@@ -24,14 +24,14 @@ class BaseStep(ABC, Generic[T]):
     key: str
     desc: str
 
-    def __init__(self, obj:T, key:str, desc:str=None):
+    def __init__(self, obj:T, key:str, desc:str|None=None):
         """
         stores the results of a step in a preprocess pipeline
 
         Args:
             obj (T): the implementation dependent object representing the step processed data
             key (str): identifier for the step
-            desc (str, optional): description of the setup. Defaults to "key" value.
+            desc (str | None, optional): description of the setup. Defaults to "key" value.
         """
         self.obj = obj
         self.key = key

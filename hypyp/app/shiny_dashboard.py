@@ -19,9 +19,9 @@ from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_basic import MneP
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_upstream import MnePreprocessorUpstream
 from hypyp.fnirs.preprocessor.implementations.cedalion_preprocessor import CedalionPreprocessor
 from hypyp.signal import SyntheticSignal
-from hypyp.wavelet.base_wavelet import DEFAULT_SMOOTH_WIN_SIZE
+from hypyp.wavelet.base_wavelet import BaseWavelet
 from hypyp.wavelet.implementations.matlab_wavelet import MatlabWavelet
-from hypyp.wavelet.implementations.pywavelets_wavelet import PywaveletsWavelet, DEFAULT_MORLET_BANDWIDTH, DEFAULT_MORLET_CENTER_FREQUENCY, DEFAULT_PERIODS_RANGE
+from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexGaussianWavelet, ComplexMorletWavelet
 from hypyp.wavelet.implementations.pycwt_wavelet import PycwtWavelet
 from hypyp.wavelet.implementations.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
 import hypyp.plots
@@ -222,14 +222,22 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.wavelet_library() == 'pywavelets':
             wavelet_name = input.wavelet_name()
             if wavelet_name == 'cmor':
-                wavelet_name = f'cmor{input.wavelet_bandwidth()}, {input.wavelet_center_frequency()}'
-
-            return PywaveletsWavelet(
-                wavelet_name=wavelet_name,
-                periods_range=(input.wavelet_periods_range_low(), input.wavelet_periods_range_high()),
-                wtc_smoothing_win_size=input.smoothing_win_size(),
-                disable_caching=True,
-            )
+                return ComplexMorletWavelet(
+                    bandwidth_frequency=input.wavelet_bandwidth(),
+                    center_frequency=input.wavelet_center_frequency(),
+                    periods_range=(input.wavelet_periods_range_low(), input.wavelet_periods_range_high()),
+                    wtc_smoothing_win_size=input.smoothing_win_size(),
+                    disable_caching=True,
+                )
+            elif wavelet_name == 'cgau':
+                return ComplexGaussianWavelet(
+                    degree=int(input.wavelet_degree()),
+                    periods_range=(input.wavelet_periods_range_low(), input.wavelet_periods_range_high()),
+                    wtc_smoothing_win_size=input.smoothing_win_size(),
+                    disable_caching=True,
+                )
+            else:
+                raise RuntimeError(f'Unknown wavelet_name: {wavelet_name}')
 
         if input.wavelet_library() == 'pycwt':
             return PycwtWavelet()
@@ -521,7 +529,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.plot(wav.psi_x, np.real(wav.psi))
         ax.plot(wav.psi_x, np.imag(wav.psi))
         ax.plot(wav.psi_x, np.abs(wav.psi))
-        ax.title.set_text(f"mother wavelet ({wav.wavelet_name})")
+        ax.title.set_text(f"mother wavelet ({wav.wavelet_name_with_args})")
         ax.legend(['real', 'imag', 'abs'])
         return fig
 
@@ -551,14 +559,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "",
                 choices={
                     'cmor': 'Complex Morlet',
-                    'cgau1': 'Complex Gaussian 1',
-                    'cgau2': 'Complex Gaussian 2',
-                    'cgau3': 'Complex Gaussian 3',
-                    'cgau4': 'Complex Gaussian 4',
-                    'cgau5': 'Complex Gaussian 5',
-                    'cgau6': 'Complex Gaussian 6',
-                    'cgau7': 'Complex Gaussian 7',
-                    'cgau8': 'Complex Gaussian 8',
+                    'cgau': 'Complex Gaussian',
                 },
             ))
         return options
@@ -570,16 +571,25 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.wavelet_library() == 'pywavelets':
             if input.wavelet_name() == 'cmor':
                 options.append(ui_option_row("Bandwidth/Center Freq.", ui.row(
-                    ui.column(6, ui.input_numeric("wavelet_bandwidth", "", value=DEFAULT_MORLET_BANDWIDTH)),
-                    ui.column(6, ui.input_numeric("wavelet_center_frequency", "", value=DEFAULT_MORLET_CENTER_FREQUENCY)),
-                ))),
-            options.append(ui_option_row("Periods range", ui.row(
-                ui.column(6, ui.input_numeric("wavelet_periods_range_low", "", value=DEFAULT_PERIODS_RANGE[0])),
-                ui.column(6, ui.input_numeric("wavelet_periods_range_high", "", value=DEFAULT_PERIODS_RANGE[1])),
-            ))),
+                    ui.column(6, ui.input_numeric("wavelet_bandwidth", "", value=ComplexMorletWavelet.default_bandwidth_frequency)),
+                    ui.column(6, ui.input_numeric("wavelet_center_frequency", "", value=ComplexMorletWavelet.default_center_frequency)),
+                )))
+            if input.wavelet_name() == 'cgau':
+                options.append(ui_option_row("Gaussian degree", ui.row(
+                   ui.input_select(
+                        "wavelet_degree",
+                        "",
+                        choices=list(range(1,9)),
+                        selected=ComplexGaussianWavelet.default_degree,
+                    ))))
 
         if input.wavelet_library() == 'scipy':
             options.append(ui_option_row("Center frequency", ui.input_numeric("wavelet_scipy_center_frequency", "", value=DEFAULT_SCIPY_CENTER_FREQUENCY)))
+
+        options.append(ui_option_row("Periods range", ui.row(
+            ui.column(6, ui.input_numeric("wavelet_periods_range_low", "", value=BaseWavelet.default_periods_range[0])),
+            ui.column(6, ui.input_numeric("wavelet_periods_range_high", "", value=BaseWavelet.default_periods_range[1])),
+        )))
 
         return options
     
@@ -587,7 +597,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def ui_input_coherence_options():
         options = []
         if input.wavelet_library() in ['pywavelets','scipy']:
-            options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_win_size", "", value=DEFAULT_SMOOTH_WIN_SIZE)))
+            options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_win_size", "", value=BaseWavelet.default_smooth_win_size)))
         if input.wavelet_library() in ['pycwt']:
             pass
         return options
