@@ -12,10 +12,11 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
     
     It does these:
 
-    1. Convert raw data to optical density
-    2. Remove bad channels scalp_coupling_index
-    3. Convert optical density to haemoglobin concentration.
-    4. Filters the haemoglobin concentration based on standard high pass and low pass filters
+    1. Store the raw data as a step
+    2. Convert raw data to optical density
+    3. Remove bad channels scalp_coupling_index
+    4. Convert optical density to haemoglobin concentration.
+    5. Filters the haemoglobin concentration based on standard high pass and low pass filters
 
     The steps can then be inspected on a subject, for validation.
 
@@ -49,10 +50,10 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
             return steps
 
         raw_od = mne.preprocessing.nirs.optical_density(raw)
-        quality_sci = mne.preprocessing.nirs.scalp_coupling_index(raw_od)
-        raw_od.info['bads'] = list(compress(raw_od.ch_names, quality_sci < 0.1))
         steps.append(MneStep(raw_od, PREPROCESS_STEP_OD_KEY, PREPROCESS_STEP_OD_DESC))
 
+        quality_sci = mne.preprocessing.nirs.scalp_coupling_index(raw_od)
+        raw_od.info['bads'] = list(compress(raw_od.ch_names, quality_sci < 0.1))
         picks = mne.pick_types(raw_od.info, fnirs=True, exclude='bads')
         raw_od_clean = raw_od.copy().pick(picks)
         steps.append(MneStep(raw_od_clean, PREPROCESS_STEP_OD_CLEAN_KEY, PREPROCESS_STEP_OD_CLEAN_DESC))

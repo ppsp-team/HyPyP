@@ -23,7 +23,7 @@ keywords=["hyperscanning", "neuroscience", "pipeline", "statistics", "visualizat
 include=["hypyp/data/Basehead.obj"]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12" # changed for testing matlabengine
+python = ">=3.10,<3.13"
 statsmodels = "^0.13.2"
 autoreject = ">=0.3.1"
 matplotlib = "^3.7.2"
