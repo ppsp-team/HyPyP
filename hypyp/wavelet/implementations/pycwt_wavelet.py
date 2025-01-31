@@ -86,7 +86,7 @@ try:
             return WTC(
                 wtc,
                 times,
-                [],
+                np.array([]),
                 periods,
                 coi,
                 pair,

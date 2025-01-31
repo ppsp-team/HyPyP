@@ -103,7 +103,7 @@ class PairSignals:
         
         return ret
 
-    def sub(self, time_range:Tuple[float, float], section_id:int|None=None) -> Self:
+    def sub(self, time_range:Tuple[float, float], section_id:int|None=None):
         """
         Get a new PairSignals from a portion of the initial PairSignals
 
@@ -127,6 +127,7 @@ class PairSignals:
             self.x[signal_from:signal_to],
             self.y1[signal_from:signal_to],
             self.y2[signal_from:signal_to],
+            is_intra=self.is_intra,
             is_shuffle=self.is_shuffle,
             label_dyad=self.label_dyad,
             label_s1=self.label_s1,

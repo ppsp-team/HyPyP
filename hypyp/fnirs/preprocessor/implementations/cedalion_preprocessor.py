@@ -47,8 +47,8 @@ try:
             #plt.tight_layout()
             return f
 
-    class CedalionPreprocessor(BasePreprocessor):
-        def read_file(self, path, verbose:str=False) -> cdc.Recording:
+    class CedalionPreprocessor(BasePreprocessor[cdc.Recording]):
+        def read_file(self, path, verbose:bool=False) -> cdc.Recording:
             # TODO honor verbose arg
             if not DataBrowser.is_path_snirf(path):
                 raise RuntimeError('Not implemented: only snirf file is supported for now')

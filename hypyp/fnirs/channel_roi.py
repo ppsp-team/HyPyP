@@ -19,7 +19,7 @@ class ChannelROI:
             self.rois = rois
 
     @staticmethod
-    def from_lionirs_file(roi_file_path:str) -> Self:
+    def from_lionirs_file(roi_file_path:str):
         """
         Create a new ChannelROI object from a file exported 
 

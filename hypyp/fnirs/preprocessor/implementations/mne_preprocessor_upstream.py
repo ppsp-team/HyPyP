@@ -9,7 +9,7 @@ class MnePreprocessorUpstream(MnePreprocessorBasic):
     def __init__(self):
         super().__init__()
     
-    def run(self, raw: mne.io.Raw, verbose: bool = False):
+    def run(self, raw: mne.io.Raw, verbose: bool = False) -> list[MneStep]:
         # TODO honor verbose
         step = MneStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC)
         steps = [step]

@@ -22,7 +22,7 @@ class BasePreprocessor(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def run(self, raw:T, verbose:bool=False) -> List[BaseStep[T]]:
+    def run(self, raw:T, verbose:bool=False):
         """
         run all the preprocessing steps on a raw object
 

@@ -145,6 +145,7 @@ class Cohort():
             Cohort: _description_
         """
         self.dyads_shuffle = None
+        return self
     
     def get_dyads_shuffle(self) -> List[Dyad]:
         """
@@ -203,7 +204,7 @@ class Cohort():
     # Disk serialisation
     #
     @staticmethod
-    def from_pickle(file_path: str)-> Self:
+    def from_pickle(file_path: str):
         """
         Reload a Cohort object from a serialized file
 

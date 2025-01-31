@@ -350,6 +350,18 @@ def test_dyad_computes_intra_subject():
     assert len(dyad.wtcs) == len(subject1.intra_wtcs)
     assert len(dyad.wtcs) == len(subject2.intra_wtcs)
     
+def test_dyad_computes_intra_subject_channel_match():
+    subject1 = Subject().load_file(snirf_file1)
+    subject2 = Subject().load_file(snirf_file2)
+    dyad = Dyad(subject1, subject2)
+    # have a different channel for each subject
+    ch_match = ('S1_D1 760', 'S1_D2 760')
+    dyad.compute_wtcs(ch_match=ch_match, only_time_range=(0,10), with_intra=True)
+    df_intra = dyad.df[dyad.df['is_intra'] == True]
+    df_inter = dyad.df[dyad.df['is_intra'] == False]
+    assert len(df_intra) > 0
+    assert np.all(df_intra['channel1'] == df_intra['channel2'])
+    assert np.all(df_inter['channel1'] != df_inter['channel2'])
 
 def test_dyad_compute_str_match_wtc():
     subject = Subject().load_file(snirf_file1)

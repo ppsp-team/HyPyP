@@ -26,8 +26,8 @@ PairMatchType = PairMatchSingleType | Tuple[PairMatchSingleType, PairMatchSingle
 class Dyad:
     s1: Subject
     s2: Subject
-    wtcs: List[WTC]
-    df: CoherenceDataFrame|None
+    wtcs: List[WTC] | None
+    df: CoherenceDataFrame | None
     is_shuffle: bool
     label: str
     tasks: TaskList
@@ -168,7 +168,7 @@ class Dyad:
                     ))
             
     
-    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str|None=None, ch_match:PairMatchType=None, is_shuffle:bool=False) -> List[PairSignals]:
+    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str|None=None, ch_match:PairMatchType|None=None, is_shuffle:bool=False) -> List[PairSignals]:
         """
         Generate all the signal pairs between the 2 subjects and returns them in a format suitable for signal processing
 
@@ -187,13 +187,13 @@ class Dyad:
         if label_dyad is None:
             label_dyad = self.label
 
-        pairs = []
+        pairs: List[PairSignals] = []
 
         if s1.pre.info['sfreq'] != s2.pre.info['sfreq']:
             raise RuntimeError('Subjects must have the same sampling frequency')
 
         # Force match in tuple for leaner code below
-        if not isinstance(ch_match, Tuple):
+        if not isinstance(ch_match, tuple):
             ch_match = (ch_match, ch_match)
 
         def check_match(ch_name, m):
@@ -311,12 +311,17 @@ class Dyad:
         # TODO should test this "is_shuffle" condition
         # TODO check if we are already is_intra (same subject) to avoid computing again
         if with_intra and not self.is_shuffle:
-            self.s1.intra_wtcs = []
-            self.s2.intra_wtcs = []
             # TODO see if we are computing more than once
             #if not self.s1.is_wtc_computed:
-            for subject in [self.s1, self.s2]:
-                for pair in self.get_pairs(subject, subject, f'{subject.label}(intra)', ch_match=ch_match):
+            for i, subject in enumerate([self.s1, self.s2]):
+                subject.intra_wtcs = []
+                # if we have different channels for each subject, the intra wtc should use only the ones for this subject
+                if isinstance(ch_match, tuple):
+                    ch_match_intra = ch_match[i]
+                else:
+                    ch_match_intra = ch_match
+                    
+                for pair in self.get_pairs(subject, subject, f'{subject.label}(intra)', ch_match=ch_match_intra):
                     if verbose:
                         print(f'Running Wavelet Coherence intra-subject "{subject.label}" on pair "{pair.label}"')
                     if only_time_range is not None:

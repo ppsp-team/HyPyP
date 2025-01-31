@@ -27,7 +27,7 @@ class MnePreprocessorBasic(BasePreprocessor[mne.io.Raw]):
         s = self.read_file(file_path)
         return s.copy().pick(mne.pick_channels(s.ch_names, include = [channel_name]))
     
-    def run(self, raw: mne.io.Raw, verbose: bool = False):
+    def run(self, raw: mne.io.Raw, verbose: bool = False) -> list[MneStep]:
         steps = []
         steps.append(MneStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))
 

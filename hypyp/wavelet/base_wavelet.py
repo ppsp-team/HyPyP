@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from scipy import fft
 from scipy.ndimage import convolve1d
 from scipy.signal import convolve2d
@@ -23,7 +24,7 @@ DEFAULT_PERIODS_DJ = 1/12
 class BaseWavelet(ABC):
     verbose: bool
     dj: float
-    wtc_smoothing_win_size: int|None
+    wtc_smoothing_win_size: float
     periods_range: Tuple[float, float]
     cache: dict|None
     cache_is_disabled: bool
@@ -450,7 +451,7 @@ class BaseWavelet(ABC):
     #
     # Plots
     #
-    def plot_mother_wavelet(self, show_legend=True, ax:Axes|None=None):
+    def plot_mother_wavelet(self, show_legend=True, ax:Axes|None=None) -> Figure:
         if ax is None:
             fig, ax = plt.subplots()
         else:
