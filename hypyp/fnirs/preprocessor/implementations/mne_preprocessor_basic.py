@@ -8,6 +8,18 @@ from ..base_step import *
 from .mne_step import MneStep
 
 class MnePreprocessorBasic(BasePreprocessor[mne.io.Raw]):
+    """
+    The MnePreprocessorBasic class uses mne fNIRS features to run some basic preprocessing steps.
+    
+    It does these:
+
+    1. Convert raw data to optical density
+    2. Remove bad channels scalp_coupling_index
+    3. Convert optical density to haemoglobin concentration.
+
+    Use this basic preprocessor to explore raw data.
+    
+    """
     def __init__(self):
         super().__init__()
     

@@ -5,7 +5,6 @@ from ..base_wavelet import BaseWavelet
 from ..cwt import CWT
 import pywt
 
-
 # TODO: give reference to the equations
 # See pywt/pywt/_extensions/c/cwt.template.c, search for "_cmor". The bandwidth ("FB") correspond to the /2 in psi equation
 DEFAULT_MORLET_BANDWIDTH_FREQUENCY = 2
@@ -13,6 +12,17 @@ DEFAULT_MORLET_CENTER_FREQUENCY = 1
 DEFAULT_GAUSSIAN_DEGREE = 2
 
 class PywaveletsWavelet(BaseWavelet):
+    """
+    Parent class for the default Wavelet implementation, using Pywavelets library.
+
+    ComplexMorletWavelet or ComplexGaussian Wavelet should be used instead of this class directly.
+
+    Args:
+        wavelet_name (str, optional): name of the wavelet to send to pywavelets library. Defaults to f'cmor2,1'.
+        lower_bound (float, optional): lower bound for mother wavelet evaluation. Defaults to -8.
+        upper_bound (float, optional): upper bound for mother wavelet evaluation. Defaults to 8.
+        cwt_params (dict | None, optional): params to be sent to cwt(), the Continuous Wavelet Transform. Defaults to None.
+    """
     cwt_params: dict
     _wavelet_name: str
     lower_bound: float
@@ -27,15 +37,6 @@ class PywaveletsWavelet(BaseWavelet):
         cwt_params:dict|None=None,
         **kwargs,
     ):
-        """
-        Default Wavelet implementation, using Pywavelets library.
-
-        Args:
-            wavelet_name (str, optional): name of the wavelet to send to pywavelets library. Defaults to f'cmor2,1'.
-            lower_bound (float, optional): _description_. Defaults to -8.
-            upper_bound (float, optional): _description_. Defaults to 8.
-            cwt_params (dict | None, optional): _description_. Defaults to None.
-        """
         self._wavelet_name = wavelet_name
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
@@ -88,6 +89,15 @@ class PywaveletsWavelet(BaseWavelet):
         return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi)
 
 class ComplexMorletWavelet(PywaveletsWavelet):
+    """
+    A complex morlet wavelet to compute Continuous Wavelet Transform and Wavelet Transform Coherence
+
+    See PywaveletsWavelet and BaseWavelet classes for possible arguments to constructor
+
+    Args:
+        bandwidth_frequency (float, optional): Defaults to 2.
+        center_frequency (float, optional): Defaults to 1.
+    """
     bandwidth_frequency: float
     center_frequency: float
 
@@ -115,6 +125,14 @@ class ComplexMorletWavelet(PywaveletsWavelet):
         
 
 class ComplexGaussianWavelet(PywaveletsWavelet):
+    """
+    A complex gaussian wavelet to compute Continuous Wavelet Transform and Wavelet Transform Coherence
+
+    See PywaveletsWavelet and BaseWavelet classes for possible arguments to constructor
+
+    Args:
+        degree (int, optional): the "degree" of "Degree of Gaussian" (DOG). Defaults to 2.
+    """
     degree: int
 
     default_degree: int = DEFAULT_GAUSSIAN_DEGREE

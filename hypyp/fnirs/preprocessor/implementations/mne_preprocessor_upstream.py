@@ -6,6 +6,13 @@ from .mne_step import MneStep
 
 # This is the same as MnePreprocessorBasic, but without the default preprocessor
 class MnePreprocessorUpstream(MnePreprocessorBasic):
+    """
+    The MnePreprocessorUpstream class uses the loaded data as-is, which means that
+    one should provide haemoglobin concentration already prepared in a previous
+    preprocessing pipeline.    
+
+    This is the default preprocessor.
+    """
     def __init__(self):
         super().__init__()
     

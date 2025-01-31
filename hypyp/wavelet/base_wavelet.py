@@ -22,6 +22,20 @@ DEFAULT_PERIODS_RANGE = (2, 20)
 DEFAULT_PERIODS_DJ = 1/12
 
 class BaseWavelet(ABC):
+    """
+    Base class for Wavelet implementations. See also ComplexMorletWavelet, which is the default implementation.
+
+    Args:
+        periods_range (Tuple[float, float] | None, optional): The range for which the Wavelet Transform should be computed, in periods. Defaults to (2, 20).
+        frequencies_range (Tuple[float, float] | None, optional): The range for which the Wavelet Transform should be computed, in frequency. Defaults to None, see periods_range instead.
+        evaluate (bool, optional): Should the PSI be evaluated at wavelet instanciation. Defaults to True.
+        cache (dict | None, optional): Cache dictionary to reuse already computed results. Defaults to a new dict().
+        disable_caching (bool, optional): Should the caching be disabled. Defaults to False.
+        verbose (bool, optional): Verbosity flag. Defaults to False.
+        dj (float, optional): Step size between scales in one octave. Defaults to 1/12.
+        wtc_smoothing_win_size (float, optional): The width of window for smooting the CWT in frequency. The value is in "scale" and does not depend on "dj". Defaults to 0.6.
+    """
+
     verbose: bool
     dj: float
     wtc_smoothing_win_size: float
@@ -44,19 +58,6 @@ class BaseWavelet(ABC):
         dj:float=DEFAULT_PERIODS_DJ,
         wtc_smoothing_win_size:float=DEFAULT_SMOOTH_WIN_SIZE,
     ):
-        """
-        Base class for Wavelet implementations. See also ComplexMorletWavelet, which is the default implementation.
-
-        Args:
-            periods_range (Tuple[float, float] | None, optional): The range for which the Wavelet Transform should be computed, in periods. Defaults to (2, 20).
-            frequencies_range (Tuple[float, float] | None, optional): The range for which the Wavelet Transform should be computed, in frequency. Defaults to None, see periods_range instead.
-            evaluate (bool, optional): Should the PSI be evaluated at wavelet instanciation. Defaults to True.
-            cache (dict | None, optional): Cache dictionary to reuse already computed results. Defaults to a new dict().
-            disable_caching (bool, optional): Should the caching be disabled. Defaults to False.
-            verbose (bool, optional): Verbosity flag. Defaults to False.
-            dj (float, optional): Step size between scales in one octave. Defaults to 1/12.
-            wtc_smoothing_win_size (float, optional): The width of window for smooting the CWT in frequency. The value is in "scale" and does not depend on "dj". Defaults to 0.6.
-        """
         self._wavelet = None
         self._psi_x = None
         self._psi = None

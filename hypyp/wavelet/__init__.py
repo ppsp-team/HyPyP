@@ -7,7 +7,7 @@ from .wtc import WTC
 
 __all__ = [
     'BaseWavelet',
-    # Only expose wavelets from pywavelets_wavelet to avoid confusion. This is the one that should always be used
+    # Only expose wavelets from pywavelets_wavelet to avoid confusion. This is the default implementation.
     'ComplexMorletWavelet',
     'ComplexGaussianWavelet',
     'CoherenceDataFrame',

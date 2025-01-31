@@ -20,19 +20,19 @@ PREPROCESS_STEP_HAEMO_FILTERED_DESC = 'Hemoglobin Band-pass Filtered'
 T = TypeVar('T')
 
 class BaseStep(ABC, Generic[T]):
+    """
+    Stores the results of a step in a preprocess pipeline
+
+    Args:
+        obj (T): the implementation dependent object representing the step processed data
+        key (str): identifier for the step
+        desc (str | None, optional): description of the setup. Defaults to "key" value.
+    """
     obj: T
     key: str
     desc: str
 
     def __init__(self, obj:T, key:str, desc:str|None=None):
-        """
-        stores the results of a step in a preprocess pipeline
-
-        Args:
-            obj (T): the implementation dependent object representing the step processed data
-            key (str): identifier for the step
-            desc (str | None, optional): description of the setup. Defaults to "key" value.
-        """
         self.obj = obj
         self.key = key
         if desc is None:
