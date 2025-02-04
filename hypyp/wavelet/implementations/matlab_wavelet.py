@@ -4,7 +4,7 @@ import numpy as np
 try:
     import matlab.engine
 
-    from ..base_wavelet import BaseWavelet, DEFAULT_PERIODS_DJ
+    from ..base_wavelet import BaseWavelet, DEFAULT_PERIOD_DJ
     from ..wtc import WTC
     from ..pair_signals import PairSignals
 
@@ -64,9 +64,9 @@ try:
             scales = np.array(self.eng.workspace['scale']).flatten()
             coi = np.array(self.eng.workspace['coi']).flatten()
 
-            # Remove the periods that are out of our periods_range
-            start = np.searchsorted(periods, self.periods_range[0])
-            stop = np.searchsorted(periods, self.periods_range[1])
+            # Remove the periods that are out of our period_range
+            start = np.searchsorted(periods, self.period_range[0])
+            stop = np.searchsorted(periods, self.period_range[1])
             periods = periods[start:stop]
             scales = scales[start:stop]
             wtc = wtc[start:stop,:]

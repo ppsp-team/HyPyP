@@ -55,10 +55,10 @@ def test_psi():
     assert np.sum(np.abs(wavelet.psi) * wavelet.psi_dx) == pytest.approx(1)
 
 def test_number_of_scales():
-    assert len(ComplexMorletWavelet(periods_range=(2, 4)).get_periods()) == 12
-    assert len(ComplexMorletWavelet(periods_range=(4, 8)).get_periods()) == 12
-    assert len(ComplexMorletWavelet(periods_range=(2, 8)).get_periods()) == 24
-    assert len(ComplexMorletWavelet(dj=1/100, periods_range=(2, 4)).get_periods()) == 100
+    assert len(ComplexMorletWavelet(period_range=(2, 4)).get_periods()) == 12
+    assert len(ComplexMorletWavelet(period_range=(4, 8)).get_periods()) == 12
+    assert len(ComplexMorletWavelet(period_range=(2, 8)).get_periods()) == 24
+    assert len(ComplexMorletWavelet(dj=1/100, period_range=(2, 4)).get_periods()) == 100
 
     with pytest.raises(Exception):
         # must be < 1
@@ -159,19 +159,19 @@ def test_wtc_coi_masked(wavelet_class):
    ComplexMorletWavelet, 
    ComplexGaussianWavelet, 
 ])
-def test_periods_frequencies_range(wavelet_class):    
-    frequencies_range = np.array([5., 1.])
-    periods_range = 1 / frequencies_range
+def test_period_frequency_range(wavelet_class):    
+    frequency_range = np.array([5., 1.])
+    period_range = 1 / frequency_range
     signal1 = SyntheticSignal().add_noise()
     signal2 = SyntheticSignal().add_noise()
 
-    wavelet1 = wavelet_class(periods_range=tuple(periods_range), disable_caching=True)
+    wavelet1 = wavelet_class(period_range=tuple(period_range), disable_caching=True)
     res1 = wavelet1.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
-    assert np.all(res1.frequencies[[0,-1]] == pytest.approx(frequencies_range))
+    assert np.all(res1.frequencies[[0,-1]] == pytest.approx(frequency_range))
 
-    wavelet2 = wavelet_class(frequencies_range=tuple(frequencies_range), disable_caching=True)
+    wavelet2 = wavelet_class(frequency_range=tuple(frequency_range), disable_caching=True)
     res2 = wavelet2.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
-    assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequencies_range))
+    assert np.all(res2.frequencies[[0,-1]] == pytest.approx(frequency_range))
     
 def test_smooth_in_scale_window():
     assert np.sum(BaseWavelet._get_smoothing_window(0.6, 10)) == 1

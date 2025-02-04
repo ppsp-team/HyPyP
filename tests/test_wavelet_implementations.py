@@ -50,6 +50,6 @@ def test_pycwt():
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
 
     # make sure we do not exceed the period range
-    assert res.periods[0] >= wavelet.periods_range[0]
-    assert res.periods[-1] <= wavelet.periods_range[1]
+    assert res.periods[0] >= wavelet.period_range[0]
+    assert res.periods[-1] <= wavelet.period_range[1]
 

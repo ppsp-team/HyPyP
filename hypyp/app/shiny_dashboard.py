@@ -225,14 +225,14 @@ def server(input: Inputs, output: Outputs, session: Session):
                 return ComplexMorletWavelet(
                     bandwidth_frequency=input.wavelet_bandwidth(),
                     center_frequency=input.wavelet_center_frequency(),
-                    periods_range=(input.wavelet_periods_range_low(), input.wavelet_periods_range_high()),
+                    period_range=(input.wavelet_period_range_low(), input.wavelet_period_range_high()),
                     wtc_smoothing_win_size=input.smoothing_win_size(),
                     disable_caching=True,
                 )
             elif wavelet_name == 'cgau':
                 return ComplexGaussianWavelet(
                     degree=int(input.wavelet_degree()),
-                    periods_range=(input.wavelet_periods_range_low(), input.wavelet_periods_range_high()),
+                    period_range=(input.wavelet_period_range_low(), input.wavelet_period_range_high()),
                     wtc_smoothing_win_size=input.smoothing_win_size(),
                     disable_caching=True,
                 )
@@ -586,9 +586,9 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.wavelet_library() == 'scipy':
             options.append(ui_option_row("Center frequency", ui.input_numeric("wavelet_scipy_center_frequency", "", value=DEFAULT_SCIPY_CENTER_FREQUENCY)))
 
-        options.append(ui_option_row("Periods range", ui.row(
-            ui.column(6, ui.input_numeric("wavelet_periods_range_low", "", value=BaseWavelet.default_periods_range[0])),
-            ui.column(6, ui.input_numeric("wavelet_periods_range_high", "", value=BaseWavelet.default_periods_range[1])),
+        options.append(ui_option_row("Period range", ui.row(
+            ui.column(6, ui.input_numeric("wavelet_period_range_low", "", value=BaseWavelet.default_period_range[0])),
+            ui.column(6, ui.input_numeric("wavelet_period_range_high", "", value=BaseWavelet.default_period_range[1])),
         )))
 
         return options

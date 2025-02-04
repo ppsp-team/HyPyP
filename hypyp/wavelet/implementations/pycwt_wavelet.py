@@ -74,10 +74,10 @@ try:
             wtc, _awtc, coi, freqs, _sig = pycwt.wct(y1, y2, dt=dt, wavelet=self._wavelet, sig=False)
             periods = 1 / freqs
 
-            # Remove the periods that are out of our periods_range
+            # Remove the periods that are out of our period_range
             # IMPROVEMENT: This would be better done by sending s0 and J to pycwt.wct()
-            start = np.searchsorted(periods, self.periods_range[0])
-            stop = np.searchsorted(periods, self.periods_range[1])
+            start = np.searchsorted(periods, self.period_range[0])
+            stop = np.searchsorted(periods, self.period_range[1])
             periods = periods[start:stop]
             freqs = freqs[start:stop]
             wtc = wtc[start:stop,:]

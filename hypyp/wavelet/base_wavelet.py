@@ -18,16 +18,16 @@ from ..profiling import TimeTracker
 # Window size is in "scale"
 DEFAULT_SMOOTH_WIN_SIZE = 0.6
 
-DEFAULT_PERIODS_RANGE = (2, 20)
-DEFAULT_PERIODS_DJ = 1/12
+DEFAULT_PERIOD_RANGE = (2, 20)
+DEFAULT_PERIOD_DJ = 1/12
 
 class BaseWavelet(ABC):
     """
     Base class for Wavelet implementations. See also ComplexMorletWavelet, which is the default implementation.
 
     Args:
-        periods_range (Tuple[float, float] | None, optional): The range for which the Wavelet Transform should be computed, in periods. Defaults to (2, 20).
-        frequencies_range (Tuple[float, float] | None, optional): The range for which the Wavelet Transform should be computed, in frequency. Defaults to None, see periods_range instead.
+        period_range (Tuple[float, float] | None, optional): The range for which the Wavelet Transform should be computed, in period_range. Defaults to (2, 20).
+        frequency_range (Tuple[float, float] | None, optional): The range for which the Wavelet Transform should be computed, in frequency. Defaults to None, see period_range instead.
         evaluate (bool, optional): Should the PSI be evaluated at wavelet instanciation. Defaults to True.
         cache (dict | None, optional): Cache dictionary to reuse already computed results. Defaults to a new dict().
         disable_caching (bool, optional): Should the caching be disabled. Defaults to False.
@@ -39,23 +39,23 @@ class BaseWavelet(ABC):
     verbose: bool
     dj: float
     wtc_smoothing_win_size: float
-    periods_range: Tuple[float, float]
+    period_range: Tuple[float, float]
     cache: dict|None
     cache_is_disabled: bool
 
-    default_periods_range: Tuple[float, float] = DEFAULT_PERIODS_RANGE
-    default_periods_dj: float = DEFAULT_PERIODS_DJ
+    default_period_range: Tuple[float, float] = DEFAULT_PERIOD_RANGE
+    default_period_dj: float = DEFAULT_PERIOD_DJ
     default_smooth_win_size: float = DEFAULT_SMOOTH_WIN_SIZE
 
     def __init__(
         self,
-        periods_range:Tuple[float, float]|None=None,
-        frequencies_range:Tuple[float, float]|None=None,
+        period_range:Tuple[float, float]|None=None,
+        frequency_range:Tuple[float, float]|None=None,
         evaluate:bool=True,
         cache:dict|None=None,
         disable_caching:bool=False,
         verbose:bool=False,
-        dj:float=DEFAULT_PERIODS_DJ,
+        dj:float=DEFAULT_PERIOD_DJ,
         wtc_smoothing_win_size:float=DEFAULT_SMOOTH_WIN_SIZE,
     ):
         self._wavelet = None
@@ -70,19 +70,19 @@ class BaseWavelet(ABC):
             raise RuntimeError(f'dj must be smaller than 1. Received {dj}')
         self.dj = dj
 
-        if periods_range is not None and frequencies_range is not None:
-            raise RuntimeError('Cannot specify both periods_range and frequencies_range')
+        if period_range is not None and frequency_range is not None:
+            raise RuntimeError('Cannot specify both period_range and frequency_range')
 
-        if periods_range is not None:
-            self.periods_range = periods_range
-        elif frequencies_range is not None:
-            self.periods_range = (1 / frequencies_range[0], 1 / frequencies_range[1])
+        if period_range is not None:
+            self.period_range = period_range
+        elif frequency_range is not None:
+            self.period_range = (1 / frequency_range[0], 1 / frequency_range[1])
         else:
-            self.periods_range = DEFAULT_PERIODS_RANGE
+            self.period_range = DEFAULT_PERIOD_RANGE
         
         # swap to have them in order
-        if self.periods_range[0] > self.periods_range[1]:
-            self.periods_range = (self.periods_range[1], self.periods_range[0])
+        if self.period_range[0] > self.period_range[1]:
+            self.period_range = (self.period_range[1], self.period_range[0])
         
         self.cache = cache
         self.cache_is_disabled = disable_caching
@@ -154,7 +154,7 @@ class BaseWavelet(ABC):
         Returns:
             np.array: list of periods that should be used with this wavelet
         """
-        low, high =  self.periods_range
+        low, high =  self.period_range
         n_scales = np.log2(high/low) 
         n_steps = int(np.round(n_scales / self.dj))
         periods = np.logspace(np.log2(low), np.log2(high), n_steps, base=2)
