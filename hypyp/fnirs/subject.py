@@ -129,7 +129,7 @@ class Subject:
         Load a raw NIRS file as the recording of the Subject
 
         Args:
-            filepath (str): _description_
+            filepath (str): disk path of the file to load
             preprocessor (BasePreprocess, optional): which preprocessor to use. Defaults to MnePreprocessUpstream which only load the data as-is.
             preprocess (bool, optional): if the preprocessing should be done right away, or if the file should only be loaded and the preprocessing would be run later. Defaults to True.
             verbose (bool, optional): verbosity flag. Defaults to False.

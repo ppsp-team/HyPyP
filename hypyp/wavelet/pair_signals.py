@@ -8,7 +8,7 @@ class PairSignals:
     y2: np.ndarray
     n: int
     dt: float
-    fs: float
+    sfreq: float
 
     is_intra: bool
     is_shuffle: bool
@@ -66,7 +66,7 @@ class PairSignals:
         self.x = x
         self.n = len(x)
         self.dt = x[1] - x[0]
-        self.fs = 1 / self.dt
+        self.sfreq = 1 / self.dt
 
         self.y1 = y1
         self.y2 = y2
@@ -114,11 +114,11 @@ class PairSignals:
         Returns:
             PairSignals: a new PairSignals
         """
-        if time_range[0] == 0 and time_range[1] == self.n/self.fs:
+        if time_range[0] == 0 and time_range[1] == self.n/self.sfreq:
             return self
 
-        signal_from = int(self.fs * time_range[0])
-        signal_to = int(self.fs * time_range[1]) + 1
+        signal_from = int(self.sfreq * time_range[0])
+        signal_to = int(self.sfreq * time_range[1]) + 1
 
         if section_id is None:
             section_id = self.section_id

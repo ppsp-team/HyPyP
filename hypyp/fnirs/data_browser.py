@@ -49,7 +49,7 @@ class DataBrowser:
             path (str): absolute path to add
 
         Returns:
-            DataBrowser: _description_
+            DataBrowser: the object itself. Useful for chaining operations
         """
         self.paths.append(path)
         return self

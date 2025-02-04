@@ -279,7 +279,7 @@ class Dyad:
             ch_match (PairMatchType | None, optional): string, list or regex to match channel name.
                                                 Can be a tuple of 2 items if subject1 and subject2 have different matches.
                                                 Defaults to None, which means all channels.
-            only_time_range (Tuple[float,float] | None, optional): _description_. Defaults to None.
+            only_time_range (Tuple[float,float] | None, optional): compute only a portion of the signal, defined as time range tuple (start, stop). Defaults to None.
             bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
             period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
             verbose (bool, optional): verbose flag. Defaults to False.

@@ -4,7 +4,7 @@ The **Hy**perscanning **Py**thon **P**ipeline
 
 [![PyPI version shields.io](https://img.shields.io/pypi/v/hypyp.svg)](https://pypi.org/project/HyPyP/) [![CI](https://github.com/ppsp-team/HyPyP/actions/workflows/Build.yml/badge.svg)](https://github.com/ppsp-team/HyPyP/actions/workflows/Build.yml) <a href="https://hypyp.readthedocs.io"><img src="https://readthedocs.org/projects/hypyp/badge/?version=latest"></a> [![license](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Mattermost](https://img.shields.io/discord/1065810348944408616?color=blue)](https://discord.gg/zYzjeGj7D6)
 
-⚠️ This software is in beta and thus should be considered with caution. While we have done our best to test all the functionalities, there is no guarantee that the pipeline is entirely bug-free. 
+⚠️ This software is in beta and thus should be considered with caution. While we have done our best to test all the functionalities, there is no guarantee that the pipeline is entirely bug-free.
 
 📖 See our [paper](https://academic.oup.com/scan/advance-article/doi/10.1093/scan/nsaa141/5919711) for more explanation and our plan for upcoming functionalities (aka Roadmap).
 
@@ -13,6 +13,7 @@ The **Hy**perscanning **Py**thon **P**ipeline
 🤓 For the motivated contributors, you can even help directly in the developpment of HyPyP. You will need to install [Poetry](https://python-poetry.org/) (see section below).
 
 ## Contributors
+
 Original authors: Florence BRUN, Anaël AYROLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS
 New contributors: Ghazaleh RANJBARAN, Quentin MOREAU, Caitriona DOUGLAS, Franck PORTEOUS, Jonas MAGO, Juan C. AVENDANO, Julie BONNAIRE
 
@@ -44,18 +45,24 @@ For getting started with HyPyP, we have designed a little walkthrough: [getting_
 
 🎓 [Tutorials](https://github.com/ppsp-team/HyPyP/tree/master/tutorial) - Examples & documentation (Anaël, Florence, Yann, Ghazaleh, Caitriona, Guillaume)
 
+## fNIRS hyperscanning
+
+🔦 [fnirs](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/fnirs) — Functional Near Infrared Spectroscopy hyperscanning features (Patrice)
+
+🌊 [wavelet](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/wavelet) — Continuous Wavelet Transform and Wavelet Transform Coherence (Patrice)
+
 ## Poetry installation (only for developpers and adventurous users)
 
-Step 1: ```pip install poetry```
+Step 1: `pip install poetry poetry-plugin-shell poetry-plugin-export`
 
-Step 2: ```git clone git@github.com:ppsp-team/HyPyP.git```
+Step 2: `git clone git@github.com:ppsp-team/HyPyP.git`
 
-Step 3: ```cd HyPyP```
+Step 3: `cd HyPyP`
 
-Step 4: ```poetry install```
+Step 4: `poetry install`
 
-Step 5: ```poetry shell```
+Step 5: `poetry shell`
 
-You can now use ```jupyter notebook``` or ```ipython```!
+You can now use `jupyter notebook` or `ipython`!
 
 ⚠️ If you need to install a new dependency (not recommended), you have to use `poetry add THE_NAME_OF_THE_LIBRARY` instead of your usual package manager.
