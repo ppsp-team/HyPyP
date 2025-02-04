@@ -1,4 +1,4 @@
-from typing import Self, List
+from typing import List
 from collections import OrderedDict
 
 import scipy.io

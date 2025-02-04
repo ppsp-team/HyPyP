@@ -1,4 +1,4 @@
-from typing import Tuple, List, Self
+from typing import Tuple, List
 import re
 import warnings
 
@@ -85,7 +85,7 @@ class Dyad:
     def _get_label_from_subjects(s1:Subject, s2:Subject) -> str:
         return f'{s1.label}-{s2.label}'
 
-    def preprocess(self, preprocessor: BasePreprocessor) -> Self:
+    def preprocess(self, preprocessor: BasePreprocessor):
         """
         Run the preprocess pipeline on every subject in the dyad
 
@@ -270,7 +270,7 @@ class Dyad:
         with_intra:bool=True,
         downsample:int|None=None,
         keep_wtcs:bool=True,
-    ) -> Self:
+    ):
         """
         Compute the Wavelet Transform Coherence for every channel pairs on the dyad
 

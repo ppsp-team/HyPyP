@@ -1,4 +1,4 @@
-from typing import List, Self, Tuple
+from typing import List, Tuple
 import pickle
 
 from hypyp.wavelet.base_wavelet import BaseWavelet
@@ -46,7 +46,7 @@ class Cohort():
         """The pandas dataframe object from computed WTCs"""
         return self.get_coherence_df()
 
-    def preprocess(self, preprocessor: BasePreprocessor) -> Self:
+    def preprocess(self, preprocessor: BasePreprocessor):
         """
         Run the preprocess steps on every subject in the cohort
 
@@ -73,7 +73,7 @@ class Cohort():
         with_intra:bool=True,
         downsample:int|None=None,
         keep_wtcs:bool=True,
-    ) -> Self:
+    ):
         """
         Wraps the `compute_wtcs` of all the dyads. Arguments are directly passed to the dyads method
 
@@ -121,7 +121,7 @@ class Cohort():
             print(f'Time for computing one dyad: {TimeTracker.human_readable_duration(single_duration)}')
             print(f'Expected time for {count} dyads: {TimeTracker.human_readable_duration(single_duration * count)}')
     
-    def estimate_wtcs_run_time(self, *args, **kwargs) -> Self:
+    def estimate_wtcs_run_time(self, *args, **kwargs):
         """
         Computes the WTC for one dyad and print the expected run time for the whole cohort
 
@@ -137,7 +137,7 @@ class Cohort():
 
         return self
     
-    def clear_dyads_shuffle(self) -> Self:
+    def clear_dyads_shuffle(self):
         """
         Delete all the shuffle dyads that have been created
 
@@ -163,7 +163,7 @@ class Cohort():
         return dyads_shuffle
 
     # TODO add as argument the number of shuffle dyads
-    def compute_wtcs_shuffle(self, *args, **kwargs) -> Self:
+    def compute_wtcs_shuffle(self, *args, **kwargs):
         """
         Wraps the `compute_wtcs` of all the dyads_shuffle. Arguments are directly passed to the dyads_shuffle method
 

@@ -1,4 +1,4 @@
-from typing import TypedDict, cast, Self, List
+from typing import TypedDict, cast, List
 
 import pandas as pd
 import pyarrow.feather as feather
@@ -53,7 +53,7 @@ class CoherenceDataFrame(TypedDict, total=False):
     wavelet_name: pd.Categorical
 
     @staticmethod
-    def from_wtc_frame_rows(data:list) -> Self:
+    def from_wtc_frame_rows(data:list):
         """
         Get a typed pandas DataFrame from wavelet transform coherence data
 
@@ -88,21 +88,21 @@ class CoherenceDataFrame(TypedDict, total=False):
         
     
     @staticmethod
-    def concat(dfs: List[Self]) -> Self:
+    def concat(dfs: list[pd.DataFrame]):
         """
         Takes a list of dataframes and concatenate them into one dataframe
 
         Args:
-            dfs (List[Self]): the list of dataframes (CoherenceDataFrame)
+            dfs (List[CoherenceDataFrame]): the list of dataframes (CoherenceDataFrame)
 
         Returns:
-            CoherenceDataFrame: _description_
+            CoherenceDataFrame: a new CoherenceDataFrame
         """
         df = pd.concat(dfs, ignore_index=True)
         return cast(CoherenceDataFrame, df)
         
     @staticmethod
-    def from_feather(feather_path:str) -> Self:
+    def from_feather(feather_path:str):
         """
         Read pandas feather file and return as CoherenceDataFrame
 
@@ -118,7 +118,7 @@ class CoherenceDataFrame(TypedDict, total=False):
         return cast(CoherenceDataFrame, df)
     
     @staticmethod
-    def save_feather(df:Self, feather_path:str):
+    def save_feather(df:pd.DataFrame, feather_path:str):
         """
         Save to disk
 

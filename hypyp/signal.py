@@ -1,5 +1,3 @@
-from typing import Self
-
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 
@@ -29,7 +27,7 @@ class SyntheticSignal:
         self.period = 1.0 / self.sampling_rate
         self.y = np.zeros_like(self.x)
     
-    def add_chirp(self, f0:float, f1:float) -> Self:
+    def add_chirp(self, f0:float, f1:float):
         """
         Add a chirp signal from frequencies f0 to f1
 
@@ -43,7 +41,7 @@ class SyntheticSignal:
         self.y += chirp(self.x, f0=f0, f1=f1, t1=np.max(self.x), method='linear')
         return self
     
-    def add_sin(self, freq: float) -> Self:
+    def add_sin(self, freq: float):
         """
         Add a sinusoid to the signal at a specific frequency
 
@@ -56,7 +54,7 @@ class SyntheticSignal:
         self.y += np.sin(self.x * 2 * np.pi * freq)
         return self
     
-    def add_noise(self, level:float=0.1) -> Self:
+    def add_noise(self, level:float=0.1):
         """
         Add noise to the signal
 
@@ -69,7 +67,7 @@ class SyntheticSignal:
         self.y += level * np.random.normal(0, 1, self.n_points)
         return self
     
-    def add_custom(self, y:np.ndarray) -> Self:
+    def add_custom(self, y:np.ndarray):
         """
         Add all the received values to the signal
 

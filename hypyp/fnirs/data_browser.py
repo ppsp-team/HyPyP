@@ -1,4 +1,4 @@
-from typing import List, Self
+from typing import List
 import os
 from pathlib import Path
 from zipfile import ZipFile
@@ -41,7 +41,7 @@ class DataBrowser:
         """
         return os.path.join(self.absolute_root_path, relative_path)
 
-    def add_source(self, path:str) -> Self:
+    def add_source(self, path:str):
         """
         Add a folder to look for NIRS files
 

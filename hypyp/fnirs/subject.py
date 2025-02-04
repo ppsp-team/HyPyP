@@ -1,4 +1,4 @@
-from typing import List, Self
+from typing import List
 from pathlib import Path
 
 import mne
@@ -124,7 +124,7 @@ class Subject:
         preprocessor:BasePreprocessor|None=None,
         preprocess=True,
         verbose=False
-    ) -> Self:
+    ):
         """
         Load a raw NIRS file as the recording of the Subject
 
@@ -184,7 +184,7 @@ class Subject:
 
         raise RuntimeError(f'No preprocess step named "{key}"')
     
-    def populate_epochs_from_tasks(self, verbose:bool=False) -> Self:
+    def populate_epochs_from_tasks(self, verbose:bool=False):
         """
         Given the list of tasks (annotations and timed) of the Subject,
         find the given data in the preprocessed channels and load as epochs that will be compared between subjects
