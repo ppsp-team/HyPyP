@@ -21,6 +21,18 @@ def get_fake_raw():
     raw = mne.io.RawArray(data, info)
     return raw
 
+def test_task_with_onset_event_id():
+    task = utils.Task('my_task', onset_event_id=1, offset_event_id=1)
+    assert task.name == 'my_task'
+    assert task.is_event_based == True
+    assert task.is_time_based == False
+
+def test_task_with_onset_time():
+    task = utils.Task('my_task', onset_time=1, duration=10)
+    assert task.name == 'my_task'
+    assert task.is_event_based == False
+    assert task.is_time_based == True
+
 def test_epochs_per_task():
     raw = get_fake_raw()
     # Define events using annotations (e.g., at 2s, 5s, and 8s with a duration of 0s)
@@ -30,12 +42,12 @@ def test_epochs_per_task():
     raw.set_annotations(mne.Annotations(onset=onsets, duration=durations, description=descriptions))
 
     tasks = [
-        ('task1', 1, 2),
-        ('rest', 2, 3),
-        ('task2', 3, 4),
+        utils.Task('task1', onset_event_id=1, offset_event_id=2),
+        utils.Task('rest', onset_event_id=2, offset_event_id=3),
+        utils.Task('task2', onset_event_id=3, offset_event_id=4),
     ]
 
-    all_epochs = utils.epochs_from_tasks_annotations(raw, tasks)
+    all_epochs = utils.epochs_from_tasks(raw, tasks)
     assert len(all_epochs) == len(tasks)
     assert all_epochs[0].tmax == pytest.approx(3)
     assert all_epochs[2].tmax == pytest.approx(1)
@@ -48,10 +60,10 @@ def test_epochs_recurring_task():
     raw.set_annotations(mne.Annotations(onset=onsets, duration=durations, description=descriptions))
 
     tasks = [
-        ('task1', 1, 2),
+        utils.Task('task1', onset_event_id=1, offset_event_id=2),
     ]
 
-    all_epochs = utils.epochs_from_tasks_annotations(raw, tasks)
+    all_epochs = utils.epochs_from_tasks(raw, tasks)
     assert len(all_epochs) == 1
     assert len(all_epochs[0]) == 2
 
@@ -63,10 +75,10 @@ def test_epochs_recurring_task_crop_time():
     raw.set_annotations(mne.Annotations(onset=onsets, duration=durations, description=descriptions))
 
     tasks = [
-        ('task1', 1, 2),
+        utils.Task('task1', onset_event_id=1, offset_event_id=2),
     ]
 
-    all_epochs = utils.epochs_from_tasks_annotations(raw, tasks)
+    all_epochs = utils.epochs_from_tasks(raw, tasks)
     epochs = all_epochs[0]
     # The epochs time should match the shortest epoch
     assert len(epochs.times) >= 100
@@ -80,36 +92,76 @@ def test_task_start_end_combinaison():
     descriptions = np.arange(1, len(onsets)+1)
     raw.set_annotations(mne.Annotations(onset=onsets, duration=durations, description=descriptions))
 
-    assert utils.epochs_from_tasks_annotations(raw, [('task1', 1, utils.TASK_NEXT_EVENT)])[0].tmax == pytest.approx(3)
-    assert utils.epochs_from_tasks_annotations(raw, [('task1', 1, utils.TASK_END)])[0].tmax == pytest.approx(8, abs=0.01)
-    assert utils.epochs_from_tasks_annotations(raw, [('task1', utils.TASK_BEGINNING, utils.TASK_NEXT_EVENT)])[0].tmax == pytest.approx(2, abs=0.01)
-    assert utils.epochs_from_tasks_annotations(raw, [('task1', utils.TASK_BEGINNING, utils.TASK_END)])[0].tmax == pytest.approx(10, abs=0.01)
+    assert utils.epochs_from_tasks(raw, [utils.Task('task1', onset_event_id=1, offset_event_id=utils.TASK_NEXT_EVENT)])[0].tmax == pytest.approx(3)
+    assert utils.epochs_from_tasks(raw, [utils.Task('task1', onset_event_id=1, offset_event_id=utils.TASK_END)])[0].tmax == pytest.approx(8, abs=0.01)
+    assert utils.epochs_from_tasks(raw, [utils.Task('task1', onset_event_id=utils.TASK_BEGINNING, offset_event_id=utils.TASK_NEXT_EVENT)])[0].tmax == pytest.approx(2, abs=0.01)
+    assert utils.epochs_from_tasks(raw, [utils.Task('task1', onset_event_id=utils.TASK_BEGINNING, offset_event_id=utils.TASK_END)])[0].tmax == pytest.approx(10, abs=0.01)
+
 
 def test_task_from_time_range():
     raw = get_fake_raw()
     tasks = [
-        ('task1', 0, 1), # task from start to 1 second
-        ('task2', 3, 10), # task from 3 seconds to 5 seconds
+        utils.Task('task1', onset_time=0, duration=1), # task from start to 1 second
+        utils.Task('task2', onset_time=3, duration=2), # task from 3 seconds to 5 seconds
     ]
 
-    all_epochs = utils.epochs_from_tasks_time_range(raw, tasks)
+    all_epochs = utils.epochs_from_tasks(raw, tasks)
     assert len(all_epochs) == 2
     duration = all_epochs[1].times[-1] - all_epochs[1].times[0]
-    assert duration == tasks[1][2] - tasks[1][1]
+    assert duration == tasks[1].duration
 
 def test_task_from_time_range_recurring():
     raw = get_fake_raw()
     tasks = [
-        ('task1', 0, 1), # task from start to 1 second
-        ('task1', 8, 10), # task from 3 seconds to 5 seconds
+        utils.Task('task1', onset_time=0, duration=1), # task from start to 1 second
+        utils.Task('task1', onset_time=3, duration=2), # task from 3 seconds to 5 seconds
     ]
 
-    all_epochs = utils.epochs_from_tasks_time_range(raw, tasks)
+    all_epochs = utils.epochs_from_tasks(raw, tasks)
     assert len(all_epochs) == 1
     assert len(all_epochs[0]) == 2
     # Duration should be the shortest one
     duration = all_epochs[0].times[-1] - all_epochs[0].times[0]
-    assert duration == tasks[0][2] - tasks[0][1]
+    assert duration == tasks[0].duration
+
+#def test_task_onset_id_with_offset_duration():
+    raw = get_fake_raw()
+    # Define events using annotations (e.g., at 2s, 5s, and 8s with a duration of 0s)
+    onsets = [2, 5, 8, 9]
+    durations = [0, 0, 0, 0]
+    descriptions = np.arange(1, len(onsets)+1)
+    raw.set_annotations(mne.Annotations(onset=onsets, duration=durations, description=descriptions))
+
+    tasks = [
+        utils.Task('task1', onset_event_id=1, duration=2),
+        utils.Task('rest', onset_event_id=2, duration=1),
+    ]
+
+    all_epochs = utils.epochs_from_tasks(raw, tasks)
+    assert len(all_epochs) == len(tasks)
+    assert all_epochs[0].tmax == pytest.approx(2)
+    assert all_epochs[1].tmax == pytest.approx(1)
+
+def test_mutually_exclusive_task_arguments():
+    # no start
+    with pytest.raises(Exception):
+        utils.Task('task1')
+
+    # both start
+    with pytest.raises(Exception):
+        utils.Task('task1', onset_event_id=1, onset_time=1, duration=1)
+
+    # no end
+    with pytest.raises(Exception):
+        utils.Task('task1', onset_event_id=1)
+
+    # both end
+    with pytest.raises(Exception):
+        utils.Task('task1', onset_time=1, offset_event_id=2, duration=2)
+
+    # invalid combo
+    with pytest.raises(Exception):
+        utils.Task('task1', onset_time=1, offset_event_id=1)
 
 def test_downsampling():
     wavelet = ComplexMorletWavelet()

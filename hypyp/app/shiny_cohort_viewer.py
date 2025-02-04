@@ -202,7 +202,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         return ui.input_select(
             "select_task",
             f"Select Task",
-            choices=[STR_TASK_ALL] + [task[0] for task in dyad.tasks],
+            choices=[STR_TASK_ALL] + [task.name for task in dyad.tasks],
         )
     
     @render.ui
@@ -224,7 +224,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             return None
         return pd.DataFrame({
             'Dyad Label': [dyad.label for dyad in cohort.dyads],
-            'Tasks': [', '.join([task[0] for task in dyad.tasks]) for dyad in cohort.dyads],
+            'Tasks': [', '.join([task.name for task in dyad.tasks]) for dyad in cohort.dyads],
             'Subject 1': [dyad.s1.label for dyad in cohort.dyads],
             'Subject 2': [dyad.s2.label for dyad in cohort.dyads],
         })

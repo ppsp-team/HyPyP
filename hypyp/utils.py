@@ -404,27 +404,159 @@ def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: flo
     
     return simulation
 
+class Task:
+    name: str
+    onset_event_id: int | None
+    onset_time: float | None
+
+    offset_event_id: int | None
+    duration: float | None
+    
+    def __init__(
+        self,
+        name:str,
+        onset_event_id:int|None=None,
+        onset_time:float|None=None,
+        offset_event_id:int|None=None,
+        duration:float|None=None,
+    ):
+        self.name = name
+        self.onset_event_id = None
+        self.onset_time = None
+        self.offset_event_id = None
+        self.duration = None
+
+        if onset_event_id is not None:
+            self.onset_event_id = onset_event_id
+
+        if onset_time is not None:
+            self.onset_time = onset_time
+
+        if offset_event_id is not None:
+            self.offset_event_id = offset_event_id
+
+        if duration is not None:
+            self.duration = duration
+        
+        # Need one start
+        if self.onset_event_id is None and self.onset_time is None:
+            raise RuntimeError('Must set either onset_event_id or onset_time')
+
+        if self.onset_event_id is not None and self.onset_time is not None:
+            raise RuntimeError('Cannot set both onset_event_id and onset_time')
+
+        # Need one end
+        if self.offset_event_id is None and self.duration is None:
+            raise RuntimeError('Must set either offset_event_id or duration')
+
+        if self.offset_event_id is not None and self.duration is not None:
+            raise RuntimeError('Cannot set both offset_event_id and duration')
+
+        # invalid
+        if self.onset_time is not None and self.offset_event_id is not None:
+            raise RuntimeError('Cannot use offset_event_id with onset_time')
+
+        #if self.onset_event_id is not None and self.onset
+
+    @property
+    def is_event_based(self):
+        return self.onset_event_id is not None
+
+    @property
+    def is_time_based(self):
+        return self.onset_time is not None
+
 # typing
-Task = tuple[str, int, int|None]
+TaskTuple = tuple[str, int, int|None]
 TaskList = list[Task]
 
 # Constants for task description
-TASK_NEXT_EVENT = None
+TASK_NEXT_EVENT = -2
 TASK_BEGINNING = -1
 TASK_END = -1
 TASK_NAME_WHOLE_RECORD = 'whole_record'
 
-def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -> List[mne.Epochs]:
+def epochs_from_tasks(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -> List[mne.Epochs]:
+    events, events_map = mne.events_from_annotations(raw)
+    #print(events)
+
     all_epochs = []
+    sfreq = raw.info['sfreq']
+
+    for task in [t for t in tasks if t.is_event_based]:
+        task_key = task.name
+        onset_event_id = task.onset_event_id
+        offset_event_id = task.offset_event_id
+        t_starts = []
+        t_durations = []
+        task_events = []
+
+        # To handle start of raw as "event" for task
+        if onset_event_id == TASK_BEGINNING:
+            events_loop = [[0]]
+        else:
+            events_loop = events[events[:, 2] == events_map[str(onset_event_id)]]
+
+        for event_start in events_loop:
+            t_start = event_start[0]
+            if task.duration is not None:
+                t_duration = task.duration
+            else:
+                # Find end of task
+                if offset_event_id == TASK_END:
+                    t_end = raw.n_times - 1
+                else:
+                    where_gt_start = events[:, 0] > t_start
+                    if offset_event_id == TASK_NEXT_EVENT:
+                        # until next event
+                        where = where_gt_start
+                    else:
+                        where_task_end = events[:, 2] == events_map[str(offset_event_id)]
+                        where = where_gt_start & where_task_end
+
+                    event_end = events[where]
+                    if len(event_end) == 0:
+                        raise RuntimeError(f'Cannot find end of task "{task_key}" with trigger_id "{offset_event_id}" (event_id "{events_map[str(offset_event_id)]}")')
+                    t_end = event_end[0, 0] # use the first
+
+                t_min = (t_start - raw.first_samp) / sfreq
+                t_max = (t_end - raw.first_samp) / sfreq
+                t_duration = t_max - t_min
+
+            t_starts.append(t_start)
+            t_durations.append(t_duration)
+            task_events.append([t_start, 0, onset_event_id])
+
+        all_epochs.append(mne.Epochs(raw,
+            task_events,
+            event_id={ task_key: onset_event_id},
+            tmin=0,
+            tmax=min(t_durations),
+            baseline=None,
+            preload=True,
+            event_repeated='merge',
+            verbose=verbose,
+            ))
+
+    # time based
     events_per_task = dict()
     duration_per_task = dict()
-    for i, task in enumerate(tasks):
-        task_name, task_start, task_end = task
+    event_id_per_task = dict()
+    next_event_id = 1000 # start our event_id at 1000 for time based
 
-        event_id = i + 1
-        duration = task_end - task_start
+    for i, task in enumerate([t for t in tasks if t.is_time_based]):
+        task_name = task.name
+        task_start = task.onset_time
+        duration = task.duration
+        task_end = task_start + duration
+
+        if task_name not in event_id_per_task.keys():
+            event_id_per_task[task_name] = next_event_id
+            next_event_id += 1
+        event_id = event_id_per_task[task_name]
+
         events = mne.make_fixed_length_events(raw,
-                                            id=1,
+                                            id=event_id,
                                             start=task_start,
                                             stop=task_end,
                                             duration=duration,
@@ -440,10 +572,10 @@ def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList, verbose: bool
 
 
     for task_name in events_per_task.keys():
-        event_id_map = {task[0]: 1}
+        event_id_map = {task_name: event_id_per_task[task_name]}
         epochs = mne.Epochs(raw,
                             events_per_task[task_name],
-                            event_id=event_id_map, # TODO this doesn't seem to work. The event_id is always 1
+                            event_id=event_id_map,
                             tmin=0,
                             tmax=duration_per_task[task_name],
                             baseline=None,
@@ -452,66 +584,8 @@ def epochs_from_tasks_time_range(raw: mne.io.Raw, tasks: TaskList, verbose: bool
                             proj=True,
                             verbose=verbose)
         all_epochs.append(epochs)
+
     return all_epochs
-
-def epochs_from_tasks_annotations(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -> List[mne.Epochs]:
-    events, events_map = mne.events_from_annotations(raw)
-    #print(events)
-
-    epochs_per_tasks = []
-    sfreq = raw.info['sfreq']
-
-    for task_key, trigger_id_task_start, trigger_id_task_end in tasks:
-        t_starts = []
-        t_durations = []
-        task_events = []
-
-        # To handle start of raw as "event" for task
-        if trigger_id_task_start == TASK_BEGINNING:
-            events_loop = [[0]]
-        else:
-            events_loop = events[events[:, 2] == events_map[str(trigger_id_task_start)]]
-
-        for event_start in events_loop:
-            t_start = event_start[0]
-
-            # Find end of task
-            if trigger_id_task_end == TASK_END:
-                t_end = raw.n_times - 1
-            else:
-                where_gt_start = events[:, 0] > t_start
-                if trigger_id_task_end == TASK_NEXT_EVENT:
-                    # until next event
-                    where = where_gt_start
-                else:
-                    where_task_end = events[:, 2] == events_map[str(trigger_id_task_end)]
-                    where = where_gt_start & where_task_end
-
-                event_end = events[where]
-                if len(event_end) == 0:
-                    raise RuntimeError(f'Cannot find end of task "{task_key}" with trigger_id "{trigger_id_task_end}" (event_id "{events_map[str(trigger_id_task_end)]}")')
-                t_end = event_end[0, 0] # use the first
-
-            t_min = (t_start - raw.first_samp) / sfreq
-            t_max = (t_end - raw.first_samp) / sfreq
-            t_duration = t_max - t_min
-
-            t_starts.append(t_start)
-            t_durations.append(t_duration)
-            task_events.append([t_start, 0, trigger_id_task_start])
-
-        epochs_per_tasks.append(mne.Epochs(raw,
-            task_events,
-            event_id={ task_key: trigger_id_task_start},
-            tmin=0,
-            tmax=min(t_durations),
-            baseline=None,
-            preload=True,
-            event_repeated='merge',
-            verbose=verbose,
-            ))
-
-    return epochs_per_tasks
 
 def downsample_in_time(times, *args, bins=500):
     ret = []

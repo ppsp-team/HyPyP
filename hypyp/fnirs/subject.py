@@ -8,11 +8,11 @@ from .preprocessor.base_preprocessor import BasePreprocessor, BaseStep
 from .preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from .channel_roi import ChannelROI
 from ..utils import (
-    epochs_from_tasks_annotations,
-    epochs_from_tasks_time_range,
+    epochs_from_tasks,
     TASK_BEGINNING,
     TASK_END,
     TASK_NAME_WHOLE_RECORD,
+    Task,
     TaskList,
     generate_random_label,
 )
@@ -25,16 +25,14 @@ class Subject:
     raw: mne.io.Raw|None
     intra_wtcs: List[WTC]|None # intra-subject wtc
     epochs_per_task: List[mne.Epochs]|None
-    tasks_annotations: TaskList
-    tasks_time_range: TaskList
+    tasks: TaskList
 
     preprocess_steps: List[BaseStep]|None
 
     def __init__(
         self,
         label:str='',
-        tasks_annotations:TaskList=[],
-        tasks_time_range:TaskList=[],
+        tasks:TaskList=[],
         channel_roi:ChannelROI|None=None
     ):
         """
@@ -43,8 +41,7 @@ class Subject:
 
         Args:
             label (str, optional): unique label for the subject. Defaults to a random string.
-            tasks_annotations (TaskList, optional): list of tasks during the recording of the participant, that will be extracted from events in the raw files to build epochs. Defaults to [].
-            tasks_time_range (TaskList, optional): defines a list of task from timecodes instead of annotations. Defaults to [].
+            tasks (TaskList, optional): list of tasks during the recording of the participant, that will be extracted from events in the raw files to build epochs. Defaults to [].
             channel_roi (ChannelROI | None, optional): region of interest object to group channels. Defaults to None.
         """
         self.filepath = None
@@ -54,25 +51,12 @@ class Subject:
         self.intra_wtcs = None
         self.epochs_per_task = None
         self.preprocess_steps = None
-        self.tasks_annotations = []
-        self.tasks_time_range = []
+        self.tasks = tasks
 
-        if len(tasks_annotations) > 0:
-            for task in tasks_annotations:
-                assert isinstance(task[0], str)
-                assert len(task) == 3
-            self.tasks_annotations = tasks_annotations
-
-        if len(tasks_time_range) > 0:
-            for task in tasks_time_range:
-                assert isinstance(task[0], str)
-                assert len(task) == 3
-            self.tasks_time_range = tasks_time_range
-
-        if len(tasks_annotations) == 0 and len(tasks_time_range) == 0:
-            # Use tasks_annotations with special values instead of time_range,
+        if len(tasks) == 0:
+            # Use tasks with special values instead of time_range,
             # since we don't know yet the duration of the record
-            self.tasks_annotations = [(TASK_NAME_WHOLE_RECORD, TASK_BEGINNING, TASK_END)]
+            self.tasks = [Task(TASK_NAME_WHOLE_RECORD, onset_event_id=TASK_BEGINNING, offset_event_id=TASK_END)]
 
     def _assert_is_preprocessed(self):
         if not self.is_preprocessed:
@@ -84,7 +68,7 @@ class Subject:
 
     @property
     def task_keys(self):
-        return [task[0] for task in self.tasks_annotations + self.tasks_time_range]
+        return [task.name for task in self.tasks]
 
     @property
     def is_preprocessed(self) -> bool:
@@ -212,11 +196,7 @@ class Subject:
         Returns:
             Subject: the object itself. Useful for chaining operations
         """
-        self.epochs_per_task = []
-        if len(self.tasks_annotations) > 0:
-            self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_annotations(self.pre, self.tasks_annotations, verbose=verbose)
-        if len(self.tasks_time_range) > 0:
-            self.epochs_per_task = self.epochs_per_task + epochs_from_tasks_time_range(self.pre, self.tasks_time_range, verbose=verbose)
+        self.epochs_per_task = epochs_from_tasks(self.pre, self.tasks, verbose=verbose)
         return self
     
     def get_epochs_for_task(self, task_name:str) -> List[mne.Epochs]:

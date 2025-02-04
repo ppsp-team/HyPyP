@@ -21,7 +21,7 @@ from hypyp.fnirs.preprocessor.base_step import PREPROCESS_STEP_BASE_KEY, PREPROC
 from hypyp.fnirs.preprocessor.implementations.mne_step import MneStep
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
-from hypyp.utils import TASK_NEXT_EVENT
+from hypyp.utils import TASK_NEXT_EVENT, Task
 
 fif_file = './data/sub-110_session-1_pre.fif'
 snirf_file1 = './data/fNIRS/DCARE_02_sub1.snirf'
@@ -33,13 +33,13 @@ logging.disable()
 
 # Test helpers
 def get_test_subject():
-    tasks = [('task1', 0, 20)]
-    return Subject(tasks_time_range=tasks).load_file(snirf_file1)
+    tasks = [Task('task1', onset_time=0, duration=20)]
+    return Subject(tasks=tasks).load_file(snirf_file1)
 
 def get_test_subjects():
-    tasks = [('task1', 0, 20)]
-    subject1 = Subject(tasks_time_range=tasks).load_file(snirf_file1)
-    subject2 = Subject(tasks_time_range=tasks).load_file(snirf_file2)
+    tasks = [Task('task1', onset_time=0, duration=20)]
+    subject1 = Subject(tasks=tasks).load_file(snirf_file1)
+    subject2 = Subject(tasks=tasks).load_file(snirf_file2)
     return subject1, subject2
 
 def get_test_ch_match_one():
@@ -105,34 +105,22 @@ def test_subject():
     assert subject.label == 'my_subject'
     assert subject.filepath == filepath
     assert subject.raw is not None
-    assert len(subject.tasks_annotations) == 1 # default task, which is the complete record
+    assert len(subject.tasks) == 1 # default task, which is the complete record
     assert subject.preprocess_steps is None
     assert subject.is_preprocessed == False
     assert subject.epochs_per_task is None # need preprocessing to extract epochs
 
-def test_subject_tasks_annotations():
-    subject = Subject(tasks_annotations=[('my_task', 1, 2)])
-    assert len(subject.tasks_annotations) == 1
-    assert subject.task_keys[0] == 'my_task'
-
-def test_subject_tasks_time_range():
-    subject = Subject(tasks_time_range=[('my_task_in_time', 1, 2)])
-    assert len(subject.tasks_time_range) == 1
+def test_subject_tasks():
+    subject = Subject(tasks=[Task('my_task_in_time', onset_time=1, duration=2)])
+    assert len(subject.tasks) == 1
     assert subject.task_keys[0] == 'my_task_in_time'
-
-def test_subject_tasks_combined():
-    subject = Subject(
-        tasks_annotations=[('my_task', 1, 2)],
-        tasks_time_range=[('my_task_in_time', 1, 2)]
-    )
-    assert len(subject.task_keys) == 2
 
 def test_subject_epochs():
     tasks = [
-        ('task1', 1, TASK_NEXT_EVENT),
-        ('task2', 3, TASK_NEXT_EVENT),
+        Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT),
+        Task('task2', onset_event_id=3, offset_event_id=TASK_NEXT_EVENT),
     ]
-    subject = Subject(tasks_annotations=tasks)
+    subject = Subject(tasks=tasks)
     subject.load_file(snirf_file1, MnePreprocessorRawToHaemo())
     assert len(subject.get_epochs_for_task('task1')) == 2
     n_events = subject.get_epochs_for_task('task1').events.shape[0]
@@ -141,10 +129,10 @@ def test_subject_epochs():
 
 def test_subject_time_range_task():
     tasks = [
-        ('task1', 1, 2),
-        ('task2', 4, 5),
+        Task('task1', onset_time=1, duration=1),
+        Task('task2', onset_time=4, duration=1),
     ]
-    subject = Subject(tasks_time_range=tasks)
+    subject = Subject(tasks=tasks)
     subject.load_file(snirf_file1, MnePreprocessorRawToHaemo())
     epochs_task1 = subject.get_epochs_for_task('task1')
     epochs_task2 = subject.get_epochs_for_task('task2')
@@ -155,11 +143,11 @@ def test_subject_time_range_task():
     
 def test_subject_time_range_task_recurring_event():
     tasks = [
-        ('task1', 1, 2),
-        ('task1', 4, 5),
-        ('task1', 8, 10),
+        Task('task1', onset_time=1, duration=1),
+        Task('task1', onset_time=4, duration=1),
+        Task('task1', onset_time=8, duration=1),
     ]
-    subject = Subject(tasks_time_range=tasks)
+    subject = Subject(tasks=tasks)
     subject.load_file(snirf_file1, MnePreprocessorRawToHaemo())
     epochs = subject.get_epochs_for_task('task1')
     assert len(epochs) == 3
@@ -168,7 +156,7 @@ def test_subject_time_range_task_recurring_event():
     
 
 def test_upstream_preprocessor():
-    subject = Subject(tasks_annotations=[('task1', 1, TASK_NEXT_EVENT)]).load_file(snirf_file1, MnePreprocessorAsIs())
+    subject = Subject(tasks=[Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT)]).load_file(snirf_file1, MnePreprocessorAsIs())
     assert len(subject.preprocess_steps) == 1
     assert subject.is_preprocessed == True
     assert subject.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
@@ -213,13 +201,13 @@ def test_subject_dyad():
 
 def test_dyad_pairs_recurring_event():
     tasks = [
-        ('task1', 1, 2),
-        ('task1', 3, 4),
-        ('task1', 5, 6),
+        Task('task1', onset_time=1, duration=1),
+        Task('task1', onset_time=3, duration=1),
+        Task('task1', onset_time=5, duration=1),
     ]
     # Use the same file for the 2 subjects
-    subject1 = Subject(tasks_time_range=tasks).load_file(snirf_file1)
-    subject2 = Subject(tasks_time_range=tasks).load_file(snirf_file2)
+    subject1 = Subject(tasks=tasks).load_file(snirf_file1)
+    subject2 = Subject(tasks=tasks).load_file(snirf_file2)
     dyad = Dyad(subject1, subject2)
 
     pairs = dyad.get_pairs(dyad.s1, dyad.s2, ch_match=get_test_ch_match_one())
@@ -232,12 +220,12 @@ def test_dyad_pairs_recurring_event():
     
 def test_dyad_tasks_intersection():
     tasks = [
-        ('my_task1', 1, 2),
-        ('my_task2', 3, 4),
-        ('my_task3', 5, 6),
+        Task('my_task1', onset_time=1, duration=1),
+        Task('my_task2', onset_time=3, duration=1),
+        Task('my_task3', onset_time=5, duration=1),
     ]
-    s1 = Subject(tasks_annotations=[tasks[0], tasks[1]])
-    s2 = Subject(tasks_annotations=[tasks[1], tasks[2]])
+    s1 = Subject(tasks=[tasks[0], tasks[1]])
+    s2 = Subject(tasks=[tasks[1], tasks[2]])
     assert len(Dyad(s1, s1).tasks) == 2
     assert len(Dyad(s2, s2).tasks) == 2
     assert len(Dyad(s1, s2).tasks) == 1
@@ -245,20 +233,20 @@ def test_dyad_tasks_intersection():
 def test_dyad_tasks_with_same_name_different_definition():
     # tasks with the same name should be considered to be the same task, even if they have a different "definition" (e.g. start at different times)
     tasks1 = [
-        ('my_task1', 1, 2),
-        ('my_task2', 3, 4),
-        ('my_task3', 5, 6),
-        ('different_name', 99, 100),
+        Task('my_task1', onset_event_id=1, duration=1),
+        Task('my_task2', onset_event_id=3, duration=1),
+        Task('my_task3', onset_event_id=5, duration=1),
+        Task('different_name', onset_event_id=99, duration=1),
     ]
     tasks2 = [
-        ('my_task1', 11, 12),
-        ('my_task2', 13, 14),
-        ('my_task3', 15, 16),
-        ('unknown_task', 99, 100),
+        Task('my_task1', onset_event_id=11, duration=1),
+        Task('my_task2', onset_event_id=13, duration=1),
+        Task('my_task3', onset_event_id=15, duration=1),
+        Task('unknown_task', onset_event_id=99, duration=1),
     ]
-    s1 = Subject(tasks_annotations=tasks1)
-    s2 = Subject(tasks_annotations=tasks2)
-    merged_task_names = [t[0] for t in Dyad(s1, s2).tasks]
+    s1 = Subject(tasks=tasks1)
+    s2 = Subject(tasks=tasks2)
+    merged_task_names = [task.name for task in Dyad(s1, s2).tasks]
     assert 'my_task1' in merged_task_names
     assert 'my_task2' in merged_task_names
     assert 'my_task3' in merged_task_names
@@ -321,8 +309,8 @@ def test_dyad_cwt_cache_with_different_times():
     # We would have this error if the cache is not invalidated and we have different length
     #   "ValueError: operands could not be broadcast together with shapes (40,79) (40,157)"
     # This can happen for annotation based tasks. Here we force a different task by changing the 2nd subject
-    subject1 = Subject(label='subject1', tasks_time_range=[('my_task', 0, 10)]).load_file(snirf_file1)
-    subject2 = Subject(label='subject2', tasks_time_range=[('my_task', 0, 20)]).load_file(snirf_file2)
+    subject1 = Subject(label='subject1', tasks=[Task('my_task', onset_time=0, duration=10)]).load_file(snirf_file1)
+    subject2 = Subject(label='subject2', tasks=[Task('my_task', onset_time=0, duration=20)]).load_file(snirf_file2)
     # Force a different task length for subject2 to have a different lenght
     dyad = Dyad(subject1, subject1)
     dyad.s2 = subject2 # hack for the test
@@ -411,10 +399,10 @@ def test_dyad_compute_list_per_subject_match_wtc():
 
 def test_dyad_wtc_per_task():
     tasks = [
-        ('task1', 1, TASK_NEXT_EVENT), # these 2 events have different duration
-        ('task3', 3, TASK_NEXT_EVENT),
+        Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT), # these 2 events have different duration
+        Task('task3', onset_event_id=3, offset_event_id=TASK_NEXT_EVENT),
     ]
-    subject = Subject(tasks_annotations=tasks).load_file(snirf_file1)
+    subject = Subject(tasks=tasks).load_file(snirf_file1)
     dyad = Dyad(subject, subject)
     ch_name = get_test_ch_match_one()
     pairs = dyad.get_pairs(dyad.s1, dyad.s2, ch_match=ch_name)
@@ -427,13 +415,11 @@ def test_dyad_wtc_per_task():
     assert 'task1' in [wtc.task for wtc in dyad.wtcs] # order may have changed because of task intersection
 
 def test_dyad_task_annotations_and_time_range_combined():
-    tasks_annotations = [
-        ('task_annotation1', 1, TASK_NEXT_EVENT),
+    tasks = [
+        Task('task_annotation1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT),
+        Task('task_time_range', onset_time=10, duration=20),
     ]
-    tasks_time_range = [
-        ('task_time_range', 10, 20),
-    ]
-    subject = Subject(tasks_annotations=tasks_annotations, tasks_time_range=tasks_time_range)
+    subject = Subject(tasks=tasks)
     subject.load_file(snirf_file1)
     dyad = Dyad(subject, subject)
     ch_name = get_test_ch_match_one()
@@ -448,11 +434,11 @@ def test_dyad_task_annotations_and_time_range_combined():
 
 def test_dyad_wtc_nan_channel_section():
     tasks = [
-        ('task1', 0, 500),
+        Task('task1', onset_time=0, duration=500),
     ]
     # Use the same file for the 2 subjects
-    subject1 = Subject(tasks_time_range=tasks).load_file(snirf_file1)
-    subject2 = Subject(tasks_time_range=tasks).load_file(snirf_file2)
+    subject1 = Subject(tasks=tasks).load_file(snirf_file1)
+    subject2 = Subject(tasks=tasks).load_file(snirf_file2)
     dyad = Dyad(subject1, subject2)
 
     epochs = subject1.get_epochs_for_task('task1')
@@ -511,7 +497,7 @@ def test_dyad_computes_whole_record_by_default():
     assert len(dyad.wtcs) == 1
 
 def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
-    subject = Subject(tasks_annotations=[('task1', 1, TASK_NEXT_EVENT)])
+    subject = Subject(tasks=[Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT)])
     subject.load_file(snirf_file1, preprocess=False)
     dyad = Dyad(subject, subject)
     with pytest.raises(Exception):

@@ -1,5 +1,5 @@
 from .base_wavelet import BaseWavelet
-from .implementations.pywavelets_wavelet import ComplexMorletWavelet
+from .implementations.pywavelets_wavelet import ComplexMorletWavelet, ComplexGaussianWavelet
 from .coherence_data_frame import CoherenceDataFrame
 from .cwt import CWT
 from .pair_signals import PairSignals

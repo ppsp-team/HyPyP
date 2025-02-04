@@ -55,13 +55,13 @@ class Dyad:
 
         # Intersect the tasks
         self.tasks = []
-        s1_tasks = s1.tasks_annotations + s1.tasks_time_range
-        s2_tasks = s2.tasks_annotations + s2.tasks_time_range
+        s1_tasks = s1.tasks
+        s2_tasks = s2.tasks
 
-        s2_tasks_names = [t[0] for t in s2_tasks]
+        s2_tasks_names = [t.name for t in s2_tasks]
         found_tasks_names = []
         for task in s1_tasks:
-            task_name = task[0]
+            task_name = task.name
             if task_name in s2_tasks_names:
                 self.tasks.append(task)
                 found_tasks_names.append(task_name)
@@ -210,11 +210,11 @@ class Dyad:
         s2_ch_names = [ch_name for ch_name in s2.ordered_ch_names if check_match(ch_name, ch_match[1])]
 
         seen_tasks = set()
-        for task_name, _, _ in self.tasks:
-            if task_name in seen_tasks:
+        for task in self.tasks:
+            if task.name in seen_tasks:
                 continue
-            seen_tasks.add(task_name)
-            if task_name == TASK_NAME_WHOLE_RECORD:
+            seen_tasks.add(task.name)
+            if task.name == TASK_NAME_WHOLE_RECORD:
                 # TODO see if copy() slows down our computation or takes memory
                 s1_task_data = s1.pre.copy().pick(s1_ch_names).get_data()
                 s2_task_data = s2.pre.copy().pick(s2_ch_names).get_data()
@@ -227,14 +227,14 @@ class Dyad:
                     s2_task_data,
                     s1,
                     s2,
-                    task_name,
+                    task.name,
                     epoch_id,
                     is_shuffle,
                     pairs,
                 )
             else:
-                epochs1 = s1.get_epochs_for_task(task_name).copy().pick(s1_ch_names)
-                epochs2 = s2.get_epochs_for_task(task_name).copy().pick(s2_ch_names)
+                epochs1 = s1.get_epochs_for_task(task.name).copy().pick(s1_ch_names)
+                epochs2 = s2.get_epochs_for_task(task.name).copy().pick(s2_ch_names)
                 if len(epochs1) != len(epochs2):
                     warnings.warn("The 2 subjects do not have the same epochs count. Some epochs will be skipped in pairs.")
                 
@@ -251,7 +251,7 @@ class Dyad:
                         s2_task_data,
                         s1,
                         s2,
-                        task_name,
+                        task.name,
                         epoch_id,
                         is_shuffle,
                         pairs,
