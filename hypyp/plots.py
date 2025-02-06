@@ -161,12 +161,14 @@ def plot_coherence_matrix(
         subplot_heatmap_from_pivot(pivot_s1.rename_axis(index=s1_label, columns=s1_label), ordered_fields=ordered_fields, ax=ax)
     else:
         fig, axes = plt.subplots(2, 2, figsize=(8, 8), sharex=False, sharey=False)
-        subplot_heatmap_from_pivot(pivot_s1.rename_axis(index=s1_label, columns=s1_label), ordered_fields=ordered_fields, ax=axes[0,0])
-        subplot_heatmap_from_pivot(pivot_dyad.rename_axis(index=s1_label, columns=s2_label), ordered_fields=ordered_fields, ax=axes[0,1])
-        subplot_heatmap_from_pivot(pivot_dyad.T.rename_axis(index=s2_label, columns=s1_label), ordered_fields=ordered_fields, ax=axes[1,0])
-        subplot_heatmap_from_pivot(pivot_s2.rename_axis(index=s2_label, columns=s2_label), ordered_fields=ordered_fields, ax=axes[1,1])
+        subplot_heatmap_from_pivot(pivot_s1.rename_axis(index=s1_label, columns=s1_label), ordered_fields=ordered_fields, ax=axes[0,0]) # top left
+        subplot_heatmap_from_pivot(pivot_dyad.rename_axis(index=s1_label, columns=s2_label), ordered_fields=ordered_fields, ax=axes[0,1]) # top right
+        subplot_heatmap_from_pivot(pivot_dyad.T.rename_axis(index=s2_label, columns=s1_label), ordered_fields=ordered_fields, ax=axes[1,0]) # bottom left
+        subplot_heatmap_from_pivot(pivot_s2.rename_axis(index=s2_label, columns=s2_label), ordered_fields=ordered_fields, ax=axes[1,1]) # bottom right
 
-    fig.subplots_adjust(wspace=0.1, hspace=0.1)
+    #fig.subplots_adjust(wspace=0.1, hspace=0.1)
+
+    plt.tight_layout()
     return fig
     
 

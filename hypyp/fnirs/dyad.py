@@ -23,6 +23,8 @@ from ..plots import (
 PairChannelMatchSingleType = str | List[str] | re.Pattern
 PairChannelMatchType = PairChannelMatchSingleType | Tuple[PairChannelMatchSingleType, PairChannelMatchSingleType]
 
+MIN_SECTION_LENGTH = 10
+
 class Dyad:
     """
     The Dyad object is a pair of subjects of an hyperscanning recording.
@@ -122,27 +124,24 @@ class Dyad:
                 y1 = y1[:stop] 
                 y2 = y2[:stop] 
 
-                # TODO too much code for this. This is inefficient, we can do better
                 # Look for NaN, and split in section
                 section_id = 0
-                nan_mask1 = np.isnan(y1)
-                nan_mask2 = np.isnan(y2)
-                nan_mask = nan_mask1 | nan_mask2
+                nan_mask = np.isnan(y1) | np.isnan(y2)
                 has_nan = np.any(nan_mask)
-                # TODO we should have a bigger min_length, and it should not be hardcoded here
-                min_length = 10
+
                 if has_nan:
                     nan_idx = np.where(nan_mask)[0]+1
                     # We have to drop the first item of every split but the first split, because it contains the NaN
-                    x_sections = [item for item in np.split(x, nan_idx) if len(item)>min_length]
-                    y1_sections = [item for item in np.split(y1, nan_idx) if len(item)>min_length]
-                    y2_sections = [item for item in np.split(y2, nan_idx) if len(item)>min_length]
-                    # remove the lurking NaN in edges of our arrayes
+                    x_sections = [section for section in np.split(x, nan_idx) if len(section)>MIN_SECTION_LENGTH]
+                    y1_sections = [section for section in np.split(y1, nan_idx) if len(section)>MIN_SECTION_LENGTH]
+                    y2_sections = [section for section in np.split(y2, nan_idx) if len(section)>MIN_SECTION_LENGTH]
+                    
+                    # remove the lurking NaN in edges of our arrays
                     for i in range(len(x_sections)):
-                        delete = np.isnan(y1_sections[i]) | np.isnan(y2_sections[i])
-                        x_sections[i] = np.delete(x_sections[i], delete)
-                        y1_sections[i] = np.delete(y1_sections[i], delete)
-                        y2_sections[i] = np.delete(y2_sections[i], delete)
+                        delete_flags = np.isnan(y1_sections[i]) | np.isnan(y2_sections[i])
+                        x_sections[i] = np.delete(x_sections[i], delete_flags)
+                        y1_sections[i] = np.delete(y1_sections[i], delete_flags)
+                        y2_sections[i] = np.delete(y2_sections[i], delete_flags)
                 else:
                     x_sections = [x]
                     y1_sections = [y1]
@@ -215,7 +214,6 @@ class Dyad:
                 continue
             seen_tasks.add(task.name)
             if task.name == TASK_NAME_WHOLE_RECORD:
-                # TODO see if copy() slows down our computation or takes memory
                 s1_task_data = s1.pre.copy().pick(s1_ch_names).get_data()
                 s2_task_data = s2.pre.copy().pick(s2_ch_names).get_data()
                 epoch_id = 0
@@ -383,13 +381,17 @@ class Dyad:
         if query is not None:
             df = df.query(query)
             
+        ch_names1 = self.s1.ordered_ch_names
+        ch_names2 = self.s2.ordered_ch_names
+        ordered_names = ch_names1 + [name for name in ch_names2 if name not in ch_names1] 
+
         return plot_coherence_matrix(
             df,
             self.s1.label,
             self.s2.label,
             field1,
             field2,
-            self.s1.ordered_ch_names, # TODO we should also add self.s2.ordered_ch_names somehow
+            ordered_names,
             **kwargs)
         
     def plot_coherence_matrix_per_channel(self, query:str|None=None, **kwargs):
