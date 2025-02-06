@@ -20,29 +20,29 @@ from ..plots import (
     plot_coherence_connectogram
 )
 
-PairMatchSingleType = str | List[str] | re.Pattern
-PairMatchType = PairMatchSingleType | Tuple[PairMatchSingleType, PairMatchSingleType]
+PairChannelMatchSingleType = str | List[str] | re.Pattern
+PairChannelMatchType = PairChannelMatchSingleType | Tuple[PairChannelMatchSingleType, PairChannelMatchSingleType]
 
 class Dyad:
+    """
+    The Dyad object is a pair of subjects of an hyperscanning recording.
+    Their recorded channels should be time aligned.
+
+    Args:
+        s1 (Subject): subject 1 of the dyad
+        s2 (Subject): subject 2 of the dyad
+        label (str, optional): Custom label for the dyad. Defaults to `s1.label`-`s2.label`.
+        is_shuffle (bool, optional): If the dyad is a permutated pair created for comparison. Used to track dyad "type" in results. Defaults to False.
+    """
     s1: Subject
     s2: Subject
-    wtcs: List[WTC] | None
-    df: CoherenceDataFrame | None
-    is_shuffle: bool
     label: str
-    tasks: TaskList
+    is_shuffle: bool
+    tasks: TaskList # intersection of tasks of subject 1 and subject 2
+    wtcs: List[WTC] | None # the computed Wavelet Transform Coherence for each channel pairs in the dyad
+    df: CoherenceDataFrame | None # pandas dataframe from computed coherence
 
     def __init__(self, s1:Subject, s2:Subject, label:str='', is_shuffle:bool=False):
-        """
-        The Dyad object is a pair of subjects of an hyperscanning recording.
-        Their recorded channels should be time aligned.
-
-        Args:
-            s1 (Subject): subject 1 of the dyad
-            s2 (Subject): subject 2 of the dyad
-            label (str, optional): Custom label for the dyad. Defaults to `s1.label`-`s2.label`.
-            is_shuffle (bool, optional): If the dyad is a permutated pair created for comparison. Defaults to False.
-        """
         self.s1 = s1
         self.s2 = s2
         self.wtcs = None
@@ -93,7 +93,7 @@ class Dyad:
             preprocessor (BasePreprocessor): Which preprocessor class to use. If no preprocessing is necessary, use MnePreprocessorUpstream()
 
         Returns:
-            Dyad: the object itself. Useful for chaining operations
+            self: the Dyad object itself. Useful for chaining operations
         """
         for subject in self.subjects:
             subject.preprocess(preprocessor)
@@ -168,7 +168,7 @@ class Dyad:
                     ))
             
     
-    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str|None=None, ch_match:PairMatchType|None=None, is_shuffle:bool=False) -> List[PairSignals]:
+    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str|None=None, ch_match:PairChannelMatchType|None=None, is_shuffle:bool=False) -> List[PairSignals]:
         """
         Generate all the signal pairs between the 2 subjects and returns them in a format suitable for signal processing
 
@@ -262,7 +262,7 @@ class Dyad:
     def compute_wtcs(
         self,
         wavelet:BaseWavelet|None=None,
-        ch_match:PairMatchType|None=None,
+        ch_match:PairChannelMatchType|None=None,
         only_time_range:Tuple[float,float]|None=None,
         bin_seconds:float|None=None,
         period_cuts:List[float]|None=None,
@@ -288,7 +288,7 @@ class Dyad:
             keep_wtcs (bool, optional): if False, all the WTCs will be removed from object after the coherence dataframe has been computed. Useful to save memory space. Defaults to True.
 
         Returns:
-            Dyad: the object itself. Useful for chaining operations
+            self: the Dyad object itself. Useful for chaining operations
         """
         if wavelet is None:
             wavelet = ComplexMorletWavelet()
@@ -302,17 +302,13 @@ class Dyad:
                 print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
             if only_time_range is not None:
                 pair = pair.sub(only_time_range)
-            wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix='dyad')
+            wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts)
             if downsample is not None:
                 wtc.downsample_in_time(downsample)
 
             self.wtcs.append(wtc)
 
-        # TODO should test this "is_shuffle" condition
-        # TODO check if we are already is_intra (same subject) to avoid computing again
-        if with_intra and not self.is_shuffle:
-            # TODO see if we are computing more than once
-            #if not self.s1.is_wtc_computed:
+        if with_intra:
             for i, subject in enumerate([self.s1, self.s2]):
                 subject.intra_wtcs = []
                 # if we have different channels for each subject, the intra wtc should use only the ones for this subject
@@ -326,7 +322,7 @@ class Dyad:
                         print(f'Running Wavelet Coherence intra-subject "{subject.label}" on pair "{pair.label}"')
                     if only_time_range is not None:
                         pair = pair.sub(only_time_range)
-                    wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, cache_suffix='intra')
+                    wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts)
                     if downsample is not None:
                         wtc.downsample_in_time(downsample)
                     subject.intra_wtcs.append(wtc)
@@ -341,8 +337,7 @@ class Dyad:
         return self
     
     def _get_coherence_df(self, with_intra=False) -> pd.DataFrame:
-        # TODO test this "is_shuffle" condition
-        if with_intra and not self.is_shuffle:
+        if with_intra:
             if not self.s1.is_wtc_computed or not self.s2.is_wtc_computed:
                 raise RuntimeError('Intra subject WTCs are not computed. Please check "compute_wtcs" arguments')
             wtcs = self.wtcs + self.s1.intra_wtcs + self.s2.intra_wtcs

@@ -489,7 +489,6 @@ def test_cohort_wtc():
     assert len(cohort.dyads_shuffle[0].wtcs) == 1
     assert len(df_with_shuffle['is_shuffle'].unique()) == 2
 
-
 def test_dyad_computes_whole_record_by_default():
     subject = get_test_subject()
     dyad = Dyad(subject, subject)

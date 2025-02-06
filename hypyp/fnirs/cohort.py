@@ -7,7 +7,7 @@ from .preprocessor.base_preprocessor import BasePreprocessor
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from ..profiling import TimeTracker
 
-from .dyad import Dyad, PairMatchType
+from .dyad import Dyad, PairChannelMatchType
 
 class Cohort():
     dyads: List[Dyad]
@@ -54,7 +54,7 @@ class Cohort():
             preprocessor (BasePreprocessor): Which preprocessor to use. If no preprocessing is necessary, use MnePreprocessorUpstream()
 
         Returns:
-            Cohort: the object itself. Useful for chaining operations
+            self: the Cohort object itself. Useful for chaining operations
         """
         for dyad in self.dyads:
             if not dyad.is_preprocessed:
@@ -65,7 +65,7 @@ class Cohort():
         self,
         # All the arguments are a copy from Dyad.compute_wtcs, but we need them explicitely for type hinting
         wavelet:BaseWavelet|None=None,
-        ch_match:PairMatchType|None=None,
+        ch_match:PairChannelMatchType|None=None,
         only_time_range:Tuple[float,float]|None=None,
         bin_seconds:float|None=None,
         period_cuts:List[float]|None=None,
@@ -92,7 +92,7 @@ class Cohort():
             keep_wtcs (bool, optional): if False, all the WTCs will be removed from object after the coherence dataframe has been computed. Useful to save memory space. Defaults to True.
 
         Returns:
-            Cohort: the object itself. Useful for chaining operations
+            self: the Cohort object itself. Useful for chaining operations
         """
         for i, dyad in enumerate(self.dyads):
             if i == 0:
@@ -127,7 +127,7 @@ class Cohort():
         Computes the WTC for one dyad and print the expected run time for the whole cohort
 
         Returns:
-            Cohort: the object itself. Useful for chaining operations
+            self: the Cohort object itself. Useful for chaining operations
         """
         dyad = self.dyads[0]
         tracker = TimeTracker()
@@ -143,7 +143,7 @@ class Cohort():
         Delete all the shuffle dyads that have been created
 
         Returns:
-            Cohort: the object itself. Useful for chaining operations
+            self: the Cohort object itself. Useful for chaining operations
         """
         self.dyads_shuffle = None
         return self
@@ -169,7 +169,7 @@ class Cohort():
         Wraps the `compute_wtcs` of all the dyads_shuffle. Arguments are directly passed to the dyads_shuffle method
 
         Returns:
-            Cohort: the object itself. Useful for chaining operations
+            self: the Cohort object itself. Useful for chaining operations
         """
         self.dyads_shuffle = self.get_dyads_shuffle()
         for dyad_shuffle in self.dyads_shuffle:

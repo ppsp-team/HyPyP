@@ -138,7 +138,7 @@ class Subject:
             RuntimeError: When file is not found
 
         Returns:
-            Subject: the object itself. Useful for chaining operations
+            self: the Subject object itself. Useful for chaining operations
         """
         if preprocessor is None:
             preprocessor = MnePreprocessorAsIs()
@@ -161,7 +161,7 @@ class Subject:
             verbose (bool, optional): verbosity flag. Defaults to False.
 
         Returns:
-            Subject: the object itself. Useful for chaining operations
+            self: the Subject object itself. Useful for chaining operations
         """
         self.preprocess_steps = preprocessor.run(self.raw, verbose=verbose)
         self.populate_epochs_from_tasks(verbose=verbose)
@@ -194,7 +194,7 @@ class Subject:
             verbose (bool, optional): verbosity flag. Defaults to False.
 
         Returns:
-            Subject: the object itself. Useful for chaining operations
+            self: the Subject object itself. Useful for chaining operations
         """
         self.epochs_per_task = epochs_from_tasks(self.pre, self.tasks, verbose=verbose)
         return self

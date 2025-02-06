@@ -179,7 +179,7 @@ class BaseWavelet(ABC):
             pair (PairSignals): a pair of signals on which to compute coherence
             bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
             period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
-            cache_suffix (str, optional): string to add to the caching key. Useful to split intra and inter subject. Defaults to ''.
+            cache_suffix (str, optional): string to add to the caching key. Defaults to ''.
 
         Returns:
             WTC: A Wavelet Transform Coherence object that encapsulates the Weights and the parameters of the resulting transform
