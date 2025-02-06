@@ -1,3 +1,5 @@
+# This Cedalion Preprocessor is a sandbox and is provided as inspiration only for further development
+# See https://openfnirs.org/training/cedalion/ for more info about the Cedalion project
 try:
     import xarray as xr
     import cedalion

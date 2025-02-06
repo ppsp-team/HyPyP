@@ -29,7 +29,10 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
     def __init__(self):
         super().__init__()
     
-    def run(self, raw: mne.io.Raw, verbose: bool = False) -> list[MneStep]:
+    def run(self, raw:mne.io.Raw, verbose:bool=False) -> list[MneStep]:
+        if verbose:
+            print('Using MnePreprocessorRawToHaemo, converting fNIRS raw data to haemoglobin concentrations')
+
         steps = []
         steps.append(MneStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))
 
@@ -45,8 +48,14 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
         # If we have haemo_picks, it means it is already preprocessed
         # TODO: this code flow if confusing
         if len(haemo_picks) > 0:
-            raw_haemo = raw.copy().pick(haemo_picks)
-            steps.append(MneStep(raw_haemo, PREPROCESS_STEP_HAEMO_FILTERED_KEY, PREPROCESS_STEP_HAEMO_FILTERED_DESC))
+            if verbose:
+                print('Data loaded using MNE seems to already be converted to haemoglobin concentrations')
+                
+            steps.append(MneStep(
+                raw.copy().pick(haemo_picks),
+                PREPROCESS_STEP_HAEMO_FILTERED_KEY,
+                PREPROCESS_STEP_HAEMO_FILTERED_DESC
+            ))
             return steps
 
         raw_od = mne.preprocessing.nirs.optical_density(raw)
@@ -66,6 +75,8 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
                                                 h_trans_bandwidth=0.2,
                                                 l_trans_bandwidth=0.02,
                                                 verbose=verbose)
+
         steps.append(MneStep(raw_haemo_filtered, PREPROCESS_STEP_HAEMO_FILTERED_KEY, PREPROCESS_STEP_HAEMO_FILTERED_DESC))
+
         return steps
         

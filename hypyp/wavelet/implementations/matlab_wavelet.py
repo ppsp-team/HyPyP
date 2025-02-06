@@ -1,5 +1,7 @@
+import os
 from typing import List
 import numpy as np
+from pathlib import Path
 
 try:
     import matlab.engine
@@ -12,6 +14,9 @@ try:
     # Add something like this to ~/.bashrc
     # export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<your_path_to_matlab>/R2023b/bin/glnxa64
 
+    # You also have to download wavelet-coherence code
+    # cd <root-of-project>
+    # git clone https://github.com/grinsted/wavelet-coherence
 
     class MatlabWavelet(BaseWavelet):
         def __init__(
@@ -21,8 +26,13 @@ try:
             print("Starting matlab engine")
             self.eng = matlab.engine.start_matlab()
             print("Matlab engine started")
-            # TODO unhardcode path
-            self.eng.cd('/home/patrice/work/ppsp/matlab-wtc/Archive/wavelet-coherence/wavelet-coherence-master/')
+
+            current_file_path = Path(__file__).resolve()
+            root_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file_path))))
+            wavelet_coherence_code_path = os.path.join(root_path, 'wavelet-coherence')
+
+            self.eng.cd(wavelet_coherence_code_path)
+            print(f'Changed matlab working directory to {self.eng.pwd()}')
             super().__init__(**kwargs)
 
         @property

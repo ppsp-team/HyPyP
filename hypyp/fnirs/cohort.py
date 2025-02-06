@@ -64,17 +64,17 @@ class Cohort():
     def compute_wtcs(
         self,
         # All the arguments are a copy from Dyad.compute_wtcs, but we need them explicitely for type hinting
-        wavelet:BaseWavelet|None=None,
-        ch_match:PairChannelMatchType|None=None,
-        only_time_range:Tuple[float,float]|None=None,
-        bin_seconds:float|None=None,
-        period_cuts:List[float]|None=None,
-        verbose:bool=False,
-        with_intra:bool=True,
-        downsample:int|None=None,
-        keep_wtcs:bool=True,
-        show_time_estimation:bool=True,
-    ):
+        wavelet: BaseWavelet|None = None,
+        ch_match: PairChannelMatchType|None = None,
+        only_time_range: Tuple[float,float]|None = None,
+        bin_seconds: float|None = None,
+        period_cuts: List[float]|None = None,
+        verbose: bool = False,
+        with_intra: bool = True,
+        downsample: int|None = None,
+        keep_wtcs: bool = True,
+        show_time_estimation: bool = True,
+    ): 
         """
         Wraps the `compute_wtcs` of all the dyads. Arguments are directly passed to the dyads method
 

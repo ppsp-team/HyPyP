@@ -259,15 +259,15 @@ class Dyad:
     
     def compute_wtcs(
         self,
-        wavelet:BaseWavelet|None=None,
-        ch_match:PairChannelMatchType|None=None,
-        only_time_range:Tuple[float,float]|None=None,
-        bin_seconds:float|None=None,
-        period_cuts:List[float]|None=None,
-        verbose:bool=False,
-        with_intra:bool=True,
-        downsample:int|None=None,
-        keep_wtcs:bool=True,
+        wavelet: BaseWavelet | None = None,
+        ch_match: PairChannelMatchType | None = None,
+        only_time_range: Tuple[float,float] | None = None,
+        bin_seconds: float | None = None,
+        period_cuts: List[float] | None = None,
+        verbose: bool = False,
+        with_intra: bool = True,
+        downsample: int | None = None,
+        keep_wtcs: bool = True,
     ):
         """
         Compute the Wavelet Transform Coherence for every channel pairs on the dyad
@@ -368,7 +368,7 @@ class Dyad:
             title=wtc.label_pair,
             **kwargs)
 
-    def plot_coherence_matrix(self, field1:str='channel1', field2:str='channel2', query:str|None=None, **kwargs):
+    def plot_coherence_matrix(self, field1:str='channel1', field2:str='channel2', query:str | None=None, **kwargs):
         """
         Plot the computed coherence metric for pair of fields (channel or roi) in a matrix format
 

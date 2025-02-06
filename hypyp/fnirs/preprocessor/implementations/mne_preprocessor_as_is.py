@@ -32,7 +32,9 @@ class MnePreprocessorAsIs(BasePreprocessor[mne.io.Raw]):
         return None
     
     def run(self, raw: mne.io.Raw, verbose: bool = False) -> list[MneStep]:
-        # TODO honor verbose
+        if verbose:
+            print('Using MnePreprocessorAsIs, using raw data as already preprocessed')
+
         step = MneStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC)
         steps = [step]
         return steps
