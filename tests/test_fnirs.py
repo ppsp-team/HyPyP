@@ -471,7 +471,7 @@ def test_cohort_wtc():
 
     wtcs_kwargs = dict(ch_match=get_test_ch_match_one())
 
-    cohort.compute_wtcs(**wtcs_kwargs)
+    cohort.compute_wtcs(**wtcs_kwargs, show_time_estimation=False)
     df = cohort.df
     assert cohort.is_wtc_computed == True
     assert len(dyad1.wtcs) == 1
@@ -538,7 +538,7 @@ def test_cohort_coherence_pandas():
     dyad2 = Dyad(subject1, subject3, label='dyad2')
     dyad3 = Dyad(subject2, subject3, label='dyad3')
     cohort = Cohort([dyad1, dyad2, dyad3])
-    cohort.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=False)
+    cohort.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=False, show_time_estimation=False)
     df = cohort.df
     assert len(df['task'].unique()) == len(dyad1.s1.task_keys)
     assert len(df['channel1'].unique()) == 2
@@ -548,7 +548,7 @@ def test_cohort_coherence_pandas():
 
 def test_cohort_coherence_pandas_with_intra():
     cohort = Cohort([Dyad(*get_test_subjects(), label='dyad1')])
-    cohort.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True)
+    cohort.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True, show_time_estimation=False)
     df = cohort.df
     assert len(df['is_intra'].unique()) == 2
 
@@ -585,7 +585,7 @@ def test_save_cohort_df_to_disk():
     subject = get_test_subject()
     dyad = Dyad(subject, subject)
     cohort = Cohort([dyad])
-    cohort.compute_wtcs()
+    cohort.compute_wtcs(show_time_estimation=False)
 
     with tempfile.NamedTemporaryFile(suffix='.feather') as temp_file:
         file_path = temp_file.name

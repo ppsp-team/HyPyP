@@ -495,11 +495,11 @@ def epochs_from_tasks(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -
         if onset_event_id == TASK_BEGINNING:
             events_loop = [[0]]
         else:
-            events_loop = events[events[:, 2] == events_map[str(onset_event_id)]]
+            events_loop = events[events[:, 2] == onset_event_id]
 
         for event_start in events_loop:
             t_start = event_start[0]
-            if task.duration is not None:
+            if task.duration is not None: # will not use offset_event_id
                 t_duration = task.duration
             else:
                 # Find end of task
@@ -511,12 +511,12 @@ def epochs_from_tasks(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -
                         # until next event
                         where = where_gt_start
                     else:
-                        where_task_end = events[:, 2] == events_map[str(offset_event_id)]
+                        where_task_end = events[:, 2] == offset_event_id
                         where = where_gt_start & where_task_end
 
                     event_end = events[where]
                     if len(event_end) == 0:
-                        raise RuntimeError(f'Cannot find end of task "{task_key}" with trigger_id "{offset_event_id}" (event_id "{events_map[str(offset_event_id)]}")')
+                        raise RuntimeError(f'Cannot find end of task "{task_key}" with trigger_id "{offset_event_id}" (event_id "{offset_event_id}")')
                     t_end = event_end[0, 0] # use the first
 
                 t_min = (t_start - raw.first_samp) / sfreq

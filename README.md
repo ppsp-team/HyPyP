@@ -51,6 +51,8 @@ For getting started with HyPyP, we have designed a little walkthrough: [getting_
 
 🌊 [wavelet](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/wavelet) — Continuous Wavelet Transform and Wavelet Transform Coherence (Patrice)
 
+📊 [app](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/app) — Shiny dashboards, install using `poetry install --extras dashboard` (Patrice)
+
 ## Poetry installation (only for developpers and adventurous users)
 
 Step 1: `pip install poetry poetry-plugin-shell poetry-plugin-export`
@@ -66,3 +68,5 @@ Step 5: `poetry shell`
 You can now use `jupyter notebook` or `ipython`!
 
 ⚠️ If you need to install a new dependency (not recommended), you have to use `poetry add THE_NAME_OF_THE_LIBRARY` instead of your usual package manager.
+
+## Extra packages

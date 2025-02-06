@@ -73,6 +73,7 @@ class Cohort():
         with_intra:bool=True,
         downsample:int|None=None,
         keep_wtcs:bool=True,
+        show_time_estimation:bool=True,
     ):
         """
         Wraps the `compute_wtcs` of all the dyads. Arguments are directly passed to the dyads method
@@ -112,7 +113,7 @@ class Cohort():
 
             if i == 0:
                 tracker.stop()
-                if verbose:
+                if show_time_estimation:
                     self._print_time_estimation(tracker.duration, len(self.dyads))
                 
         return self
