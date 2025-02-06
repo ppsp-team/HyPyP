@@ -491,6 +491,12 @@ def epochs_from_tasks(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -
         t_durations = []
         task_events = []
 
+        if onset_event_id is not None and not isinstance(onset_event_id, int):
+            raise ValueError(f'onset_event_id must be an integer. Received {type(onset_event_id)}')
+
+        if offset_event_id is not None and not isinstance(offset_event_id, int):
+            raise ValueError(f'offset_event_id must be an integer. Received {type(offset_event_id)}')
+
         # To handle start of raw as "event" for task
         if onset_event_id == TASK_BEGINNING:
             events_loop = [[0]]

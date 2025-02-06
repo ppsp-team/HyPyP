@@ -162,9 +162,8 @@ def test_mutually_exclusive_task_arguments():
     with pytest.raises(Exception):
         utils.Task('task1', onset_time=1, offset_event_id=1)
 
-def test_task_with_events_as_int_str():
+def test_task_with_events_as_float_str():
     raw = get_fake_raw()
-    # Define events using annotations (e.g., at 2s, 5s, and 8s with a duration of 0s)
     onsets = [2, 5, 8, 9]
     durations = [0, 0, 0, 0]
     descriptions = [f'{x}.0' for x in np.arange(1, len(onsets)+1)]
@@ -182,25 +181,19 @@ def test_task_with_events_as_int_str():
     assert all_epochs[0].tmax == pytest.approx(3)
     assert all_epochs[2].tmax == pytest.approx(1)
 
-def test_task_with_events_as_float_str():
+def test_task_enforce_id_as_int():
     raw = get_fake_raw()
-    # Define events using annotations (e.g., at 2s, 5s, and 8s with a duration of 0s)
     onsets = [2, 5, 8, 9]
     durations = [0, 0, 0, 0]
     descriptions = [f'{x}' for x in np.arange(1, len(onsets)+1)]
     annotations = mne.Annotations(onset=onsets, duration=durations, description=descriptions)
     raw.set_annotations(annotations)
 
-    tasks = [
-        utils.Task('task1', onset_event_id=1, offset_event_id=2),
-        utils.Task('rest', onset_event_id=2, offset_event_id=3),
-        utils.Task('task2', onset_event_id=3, offset_event_id=4),
-    ]
+    with pytest.raises(ValueError):
+        utils.epochs_from_tasks(raw, [utils.Task('task1', onset_event_id='1', offset_event_id=2)])
 
-    all_epochs = utils.epochs_from_tasks(raw, tasks)
-    assert len(all_epochs) == len(tasks)
-    assert all_epochs[0].tmax == pytest.approx(3)
-    assert all_epochs[2].tmax == pytest.approx(1)
+    with pytest.raises(ValueError):
+        utils.epochs_from_tasks(raw, [utils.Task('task1', onset_event_id=1, offset_event_id='2')])
 
 def test_downsampling():
     wavelet = ComplexMorletWavelet()
