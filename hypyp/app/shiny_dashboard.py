@@ -454,8 +454,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.signal_type() == 'data_files':
             # TODO this try-except is here to have a PoC of Cedalion integration
             try:
-                ch_names1 = get_subject1().pre.ch_names
-                ch_names2 = get_subject2().pre.ch_names
+                ch_names1 = get_subject1().preprocessed.ch_names
+                ch_names2 = get_subject2().preprocessed.ch_names
             except:
                 ch_names1 = []
                 ch_names2 = []

@@ -102,19 +102,19 @@ class Dyad:
         return self
 
     def _append_pairs(self,
-                      label_dyad,
-                      s1_ch_names,
-                      s2_ch_names,
-                      s1_task_data,
-                      s2_task_data,
-                      s1,
-                      s2,
-                      task_name,
-                      epoch_id,
-                      is_shuffle,
-                      pairs):
+                      label_dyad:str,
+                      s1_ch_names:List[str],
+                      s2_ch_names:List[str],
+                      s1_task_data:np.ndarray,
+                      s2_task_data:np.ndarray,
+                      s1:Subject,
+                      s2:Subject,
+                      task_name:str,
+                      epoch_id:int,
+                      is_shuffle:bool,
+                      pairs:List[PairSignals]):
         n = s1_task_data.shape[1]
-        x = np.linspace(0, n/s1.pre.info['sfreq'], n)
+        x = np.linspace(0, n/s1.preprocessed.info['sfreq'], n)
         for s1_i, s1_ch_name in enumerate(s1_ch_names):
             for s2_i, s2_ch_name in enumerate(s2_ch_names):
                 y1 = s1_task_data[s1_i,:]
@@ -188,7 +188,7 @@ class Dyad:
 
         pairs: List[PairSignals] = []
 
-        if s1.pre.info['sfreq'] != s2.pre.info['sfreq']:
+        if s1.preprocessed.info['sfreq'] != s2.preprocessed.info['sfreq']:
             raise RuntimeError('Subjects must have the same sampling frequency')
 
         # Force match in tuple for leaner code below
@@ -214,8 +214,8 @@ class Dyad:
                 continue
             seen_tasks.add(task.name)
             if task.name == TASK_NAME_WHOLE_RECORD:
-                s1_task_data = s1.pre.copy().pick(s1_ch_names).get_data()
-                s2_task_data = s2.pre.copy().pick(s2_ch_names).get_data()
+                s1_task_data = s1.preprocessed.copy().pick(s1_ch_names).get_data()
+                s2_task_data = s2.preprocessed.copy().pick(s2_ch_names).get_data()
                 epoch_id = 0
                 self._append_pairs(
                     label_dyad,

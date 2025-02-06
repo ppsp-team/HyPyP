@@ -171,7 +171,7 @@ def test_mne_preprocessor():
     assert subject.is_preprocessed == True
     assert subject.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
     assert subject.preprocess_steps[-1].key == PREPROCESS_STEP_HAEMO_FILTERED_KEY
-    assert subject.pre is not None
+    assert subject.preprocessed is not None
     assert subject.preprocess_step_keys[0] == subject.preprocess_steps[-1].key
 
     # can get step by key
@@ -193,10 +193,10 @@ def test_subject_dyad():
 
     pairs = dyad.get_pairs(dyad.s1, dyad.s2)
     #assert len(pairs) == n_channels * n_channels * n_epochs # TODO this is the test we with, with epochs
-    assert len(pairs) == len(subject1.pre.ch_names) * len(subject2.pre.ch_names)
+    assert len(pairs) == len(subject1.preprocessed.ch_names) * len(subject2.preprocessed.ch_names)
     assert pairs[0].label is not None
-    assert pairs[0].label_ch1 == subject1.pre.ch_names[0]
-    assert pairs[0].label_ch2 == subject2.pre.ch_names[0]
+    assert pairs[0].label_ch1 == subject1.preprocessed.ch_names[0]
+    assert pairs[0].label_ch2 == subject2.preprocessed.ch_names[0]
     assert subject1.label in dyad.label
 
 def test_dyad_pairs_recurring_event():
@@ -255,7 +255,7 @@ def test_dyad_tasks_with_same_name_different_definition():
 
 def test_dyad_check_sfreq_same():
     subject1 = Subject().load_file(snirf_file1)
-    subject1.pre.resample(sfreq=5)
+    subject1.preprocessed.resample(sfreq=5)
     subject2 = Subject().load_file(snirf_file2)
     dyad = Dyad(subject1, subject2)
     with pytest.raises(Exception):
@@ -322,7 +322,7 @@ def test_dyad_compute_all_wtc():
     assert dyad.is_wtc_computed == False
     dyad.compute_wtcs(only_time_range=(0,10))
     assert dyad.is_wtc_computed == True
-    assert len(dyad.wtcs) == len(subject.pre.ch_names)**2
+    assert len(dyad.wtcs) == len(subject.preprocessed.ch_names)**2
     # Should have a mean of 1 since the first pair is the same signal
     assert np.mean(dyad.wtcs[0].W) == pytest.approx(1)
 
@@ -356,7 +356,7 @@ def test_dyad_compute_str_match_wtc():
     dyad = Dyad(subject, subject)
     dyad.compute_wtcs(ch_match='760', only_time_range=(0,10))
     assert dyad.is_wtc_computed == True
-    assert len(dyad.wtcs) == (len(subject.pre.pick('all').ch_names)/2)**2
+    assert len(dyad.wtcs) == (len(subject.preprocessed.pick('all').ch_names)/2)**2
 
 def test_dyad_compute_regex_match_wtc():
     subject = Subject().load_file(snirf_file1)

@@ -19,15 +19,23 @@ from ..utils import (
 from ..wavelet.base_wavelet import WTC
 
 class Subject:
-    filepath: str|None
-    label: str
-    channel_roi: ChannelROI|None
-    raw: mne.io.Raw|None
-    intra_wtcs: List[WTC]|None # intra-subject wtc
-    epochs_per_task: List[mne.Epochs]|None
-    tasks: TaskList
+    """
+    The Subject object encapsulates the logic around the recording for one participant.
+    The preprocessing is run on the channels of the Subject
 
-    preprocess_steps: List[BaseStep]|None
+    Args:
+        label (str, optional): unique label for the subject. Defaults to a random string.
+        tasks (TaskList, optional): list of tasks during the recording of the participant, that will be extracted from events in the raw files to build epochs. Defaults to [].
+        channel_roi (ChannelROI | None, optional): region of interest object to group channels. Defaults to None.
+    """
+    filepath: str | None
+    label: str
+    channel_roi: ChannelROI | None
+    raw: mne.io.Raw | None
+    intra_wtcs: List[WTC] | None # intra-subject wtc
+    epochs_per_task: List[mne.Epochs] | None
+    tasks: TaskList
+    preprocess_steps: List[BaseStep] | None
 
     def __init__(
         self,
@@ -35,15 +43,6 @@ class Subject:
         tasks:TaskList=[],
         channel_roi:ChannelROI|None=None
     ):
-        """
-        The Subject object encapsulates the logic around the recording for one participant.
-        The preprocessing is run on the channels of the Subject
-
-        Args:
-            label (str, optional): unique label for the subject. Defaults to a random string.
-            tasks (TaskList, optional): list of tasks during the recording of the participant, that will be extracted from events in the raw files to build epochs. Defaults to [].
-            channel_roi (ChannelROI | None, optional): region of interest object to group channels. Defaults to None.
-        """
         self.filepath = None
         self.label = label if label != '' else generate_random_label(10)
         self.channel_roi = channel_roi
@@ -83,16 +82,20 @@ class Subject:
         return self.intra_wtcs is not None
 
     @property
-    def pre(self) -> mne.io.Raw:
+    def preprocessed(self) -> mne.io.Raw:
         self._assert_is_preprocessed()
         # We want the last step of all the preprocessing
         return self.preprocess_steps[-1].obj
+
+    @property
+    def pre(self) -> mne.io.Raw:
+        return self.preprocessed
     
     @property
     def ordered_ch_names(self) -> List[str]:
         if self.channel_roi is None:
-            return self.pre.ch_names
-        return self.channel_roi.get_ch_names_in_order(self.pre.ch_names)
+            return self.preprocessed.ch_names
+        return self.channel_roi.get_ch_names_in_order(self.preprocessed.ch_names)
 
     @property
     def ordered_roi_names(self) -> List[str]:
@@ -196,7 +199,7 @@ class Subject:
         Returns:
             self: the Subject object itself. Useful for chaining operations
         """
-        self.epochs_per_task = epochs_from_tasks(self.pre, self.tasks, verbose=verbose)
+        self.epochs_per_task = epochs_from_tasks(self.preprocessed, self.tasks, verbose=verbose)
         return self
     
     def get_epochs_for_task(self, task_name:str) -> List[mne.Epochs]:
@@ -234,6 +237,3 @@ class Subject:
         if self.channel_roi is None:
             return ''
         return self.channel_roi.get_roi_from_channel(ch_name)
-        
-#    def set_event_ids(self, foo):
-#        pass
