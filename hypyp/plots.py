@@ -190,13 +190,14 @@ def plot_coherence_connectogram(df_pivot, title='', ax=None):
         df_pivot.columns,
         #node_angles=node_angles,
         title=title,
-        vmin=0,
-        vmax=1,
+        #vmin=0,
+        #vmax=1,
         colormap='Greys',
         ax=ax,
         facecolor='white',
         textcolor='black',
         node_edgecolor='black',
+        node_colors=['white'],
     )
     return fig
     
@@ -240,13 +241,14 @@ def plot_coherence_connectogram_split(df_pivot, title='', ax=None):
         indices = indices,
         node_angles=node_angles,
         title=title,
-        vmin=0,
-        vmax=1,
+        #vmin=0,
+        #vmax=1,
         colormap='Greys',
         ax=ax,
         facecolor='white',
         textcolor='black',
         node_edgecolor='black',
+        node_colors=['white'],
     )
     return fig
     

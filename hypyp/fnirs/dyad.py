@@ -494,7 +494,7 @@ class Dyad:
             query,
             **kwargs)
 
-    def plot_coherence_connectogram(self, query:str|None=None, **kwargs):
+    def plot_coherence_connectogram(self, query:str|None=None, title:str|None=None, **kwargs):
         df = self.df.copy()
         selector = df['is_intra']==False
         df_filtered = df[selector]
@@ -503,13 +503,16 @@ class Dyad:
             df_filtered = df_filtered.query(query)
 
         # rename to have them separated in the plot
-        df_filtered['roi1'] = 's1_' + df_filtered['roi1'].astype(str)
-        df_filtered['roi2'] = 's2_' + df_filtered['roi2'].astype(str)
+        df_filtered.loc[:, 'roi1'] = 's1_' + df_filtered['roi1'].astype(str)
+        df_filtered.loc[:, 'roi2'] = 's2_' + df_filtered['roi2'].astype(str)
 
         pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
 
+        if title is None:
+            title=f'{self.s1.label} / {self.s2.label}'
+
         return plot_coherence_connectogram_split(
             pivot,
-            title=f'{self.s1.label} / {self.s2.label}',
+            title=title,
             **kwargs)
 
