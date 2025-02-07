@@ -26,7 +26,7 @@ class SyntheticSignal:
         self.sampling_rate = n_points / duration
         self.period = 1.0 / self.sampling_rate
         self.y = np.zeros_like(self.x)
-    
+
     def add_chirp(self, f0:float, f1:float):
         """
         Add a chirp signal from frequencies f0 to f1

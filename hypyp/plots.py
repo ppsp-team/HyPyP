@@ -15,7 +15,7 @@ def custom_locator_periods(ymin, ymax):
     ticks.extend(range(25, int(ymax) + 1, 5))
     return ticks
     
-def plot_cwt(W, times, periods, coi, ax=None, show_colorbar=True, show_coi=True):
+def plot_cwt(W, times, periods, coi, ax=None, title=None, show_colorbar=True, show_coi=True):
     if ax is None:
         fig, ax = plt.subplots()
     else:
@@ -27,7 +27,12 @@ def plot_cwt(W, times, periods, coi, ax=None, show_colorbar=True, show_coi=True)
     ax.set_yscale('log')
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Period (seconds)')
-    ax.set_title('CWT Weights')
+
+    if title is not None:
+        ax.set_title(title)
+    else:
+        ax.set_title('CWT Weights')
+
     if show_colorbar:
         fig.colorbar(im, ax=ax)
 
@@ -172,7 +177,7 @@ def plot_coherence_matrix(
     return fig
     
 
-def plot_coherence_connectogram(df, title='', ax=None):
+def plot_coherence_connectogram(df_pivot, title='', ax=None):
     if ax is None:
         fig, ax = plt.subplots(1, 1, subplot_kw={'projection': 'polar'})
     else:
@@ -181,10 +186,62 @@ def plot_coherence_connectogram(df, title='', ax=None):
     #node_angles = circular_layout(
     #    df.columns, list(df.columns), start_pos=90, group_boundaries=[0, len(df.columns) // 2]
     #)
-    plot_connectivity_circle(df.values,
-        df.columns,
+    plot_connectivity_circle(df_pivot.values,
+        df_pivot.columns,
         #node_angles=node_angles,
         title=title,
+        vmin=0,
+        vmax=1,
+        colormap='Greys',
+        ax=ax,
+        facecolor='white',
+        textcolor='black',
+        node_edgecolor='black',
+    )
+    return fig
+    
+def plot_coherence_connectogram_split(df_pivot, title='', ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, subplot_kw={'projection': 'polar'})
+    else:
+        fig = ax.get_figure()
+    
+    values = df_pivot.values.flatten()
+    s1_roi_list = df_pivot.index.to_list()
+    s2_roi_list = df_pivot.columns.to_list()
+    node_names = s1_roi_list + s2_roi_list
+
+    s1_roi_idx = []
+    s2_roi_idx = []
+
+    for i in range(len(s1_roi_list)):
+        for j in range(len(s2_roi_list)):
+            s1_roi_idx.append(i)
+            s2_roi_idx.append(j+len(s1_roi_list))
+
+    indices = (
+        np.array(s1_roi_idx),
+        np.array(s2_roi_idx),
+    )
+
+    node_names_ordered = []
+    for i in range(len(s1_roi_list)):
+        node_names_ordered.append(s1_roi_list[i])
+    for i in range(len(s2_roi_list)):
+        node_names_ordered.append(s2_roi_list[len(s2_roi_list)-i-1])
+
+    node_angles = circular_layout(
+        node_names, node_names_ordered, start_pos=90, group_boundaries=[0, len(s1_roi_list)]
+    )
+
+    plot_connectivity_circle(
+        values,
+        node_names,
+        indices = indices,
+        node_angles=node_angles,
+        title=title,
+        vmin=0,
+        vmax=1,
         colormap='Greys',
         ax=ax,
         facecolor='white',

@@ -1,13 +1,14 @@
 from typing import List, Tuple
 import pickle
 
-from hypyp.wavelet.base_wavelet import BaseWavelet
-
+from ..wavelet.base_wavelet import BaseWavelet
 from .preprocessor.base_preprocessor import BasePreprocessor
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from ..profiling import TimeTracker
-
 from .dyad import Dyad, PairChannelMatchType
+from ..plots import (
+    plot_coherence_connectogram_split,
+)
 
 class Cohort():
     dyads: List[Dyad]
@@ -207,6 +208,28 @@ class Cohort():
 
         return CoherenceDataFrame.concat(dfs)
     
+    #
+    # Plots
+    #
+    def plot_coherence_connectogram(self, query:str|None=None, **kwargs):
+        df = self.df.copy()
+        selector = df['is_intra']==False
+        df_filtered = df[selector]
+
+        if query is not None:
+            df_filtered = df_filtered.query(query)
+
+        # rename to have them separated in the plot
+        df_filtered['roi1'] = 's1_' + df_filtered['roi1'].astype(str)
+        df_filtered['roi2'] = 's2_' + df_filtered['roi2'].astype(str)
+
+        pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
+
+        return plot_coherence_connectogram_split(
+            pivot,
+            title='Subject1 / Subject2',
+            **kwargs)
+
     #
     # Disk serialisation
     #

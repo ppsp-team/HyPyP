@@ -17,7 +17,8 @@ from ..plots import (
     plot_wtc,
     plot_coherence_matrix,
     plot_coherence_bars_per_task,
-    plot_coherence_connectogram
+    plot_coherence_connectogram,
+    plot_coherence_connectogram_split,
 )
 
 PairChannelMatchSingleType = str | List[str] | re.Pattern
@@ -492,3 +493,23 @@ class Dyad:
             self.s2,
             query,
             **kwargs)
+
+    def plot_coherence_connectogram(self, query:str|None=None, **kwargs):
+        df = self.df.copy()
+        selector = df['is_intra']==False
+        df_filtered = df[selector]
+
+        if query is not None:
+            df_filtered = df_filtered.query(query)
+
+        # rename to have them separated in the plot
+        df_filtered['roi1'] = 's1_' + df_filtered['roi1'].astype(str)
+        df_filtered['roi2'] = 's2_' + df_filtered['roi2'].astype(str)
+
+        pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
+
+        return plot_coherence_connectogram_split(
+            pivot,
+            title=f'{self.s1.label} / {self.s2.label}',
+            **kwargs)
+

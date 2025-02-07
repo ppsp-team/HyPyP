@@ -1,3 +1,5 @@
+# This file is kept as reference for future work but is not part of the fNIRS implementation
+
 import numpy as np
 import mne
 import os
@@ -69,8 +71,17 @@ def load_fnirs(path1: str, path2: str, attr: dict = None, preload: bool = False,
 
 #Building the montage
 
-def make_fnirs_montage(source_labels:list, detector_labels:list, prob_directory: str, Nz:list, RPA:list, 
-                        LPA:list, head_size:float, create_montage:bool = True, mne_standard:str = None) -> mne.channels.DigMontage:
+def make_fnirs_montage(
+          source_labels:list,
+          detector_labels:list,
+          prob_directory: str,
+          Nz:list,
+          RPA:list,
+          
+          LPA:list,
+          head_size:float,
+          create_montage:bool = True,
+          mne_standard:str = None) -> mne.channels.DigMontage:
     """
     Builds a compatible montage with MNE functions
 
@@ -132,7 +143,7 @@ def make_fnirs_montage(source_labels:list, detector_labels:list, prob_directory:
         detector_coord = prob_mat['probeInfo']['probes'].item()['coords_d3'].item()
         for j in range(len(sensor_coord)):
             f.write(str(sensor_coord[j][0]) + ' ' + str(sensor_coord[j][1]) + ' ' +str(sensor_coord[j][2])+ '\n')
-        for i in range(len(sensor_coord)):
+        for i in range(len(detector_coord)):
             f.write(str(detector_coord [i][0]) + ' ' + str(detector_coord [i][1]) + ' ' +str(detector_coord [i][2])+ '\n')
         f.write('Labels\n' + 'Nz\n' + 'RPA\n' + 'LPA\n')
         for k in range(len(detector_labels)):
