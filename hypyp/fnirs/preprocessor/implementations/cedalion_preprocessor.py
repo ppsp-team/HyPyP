@@ -1,5 +1,16 @@
 # This Cedalion Preprocessor is a sandbox and is provided as inspiration only for further development
 # See https://openfnirs.org/training/cedalion/ for more info about the Cedalion project
+#
+# Here is how to have cedalion available as a python package for this project
+#   poetry shell
+#   pip install pint-xarray trimesh vtk pyvista strenum nibabel click trame
+#   mkdir /path/where/you/want/to/install
+#   cd /path/where/you/want/install
+#   git clone https://github.com/ibs-lab/cedalion
+#   cd cedalion
+#   pip install -e .
+#
+
 try:
     import xarray as xr
     import cedalion

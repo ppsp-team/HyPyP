@@ -1,11 +1,9 @@
-
 import numpy as np
 
 from ..base_wavelet import BaseWavelet
 from ..cwt import CWT
 import pywt
 
-# TODO: give reference to the equations
 # See pywt/pywt/_extensions/c/cwt.template.c, search for "_cmor". The bandwidth ("FB") correspond to the /2 in psi equation
 DEFAULT_MORLET_BANDWIDTH_FREQUENCY = 2
 DEFAULT_MORLET_CENTER_FREQUENCY = 1
@@ -68,7 +66,6 @@ class PywaveletsWavelet(BaseWavelet):
         wavelet.upper_bound = self.upper_bound
         self._wavelet = wavelet
 
-        # TODO unhardcode value here
         self._psi, self._psi_x = wavelet.wavefun(10)
         return self._psi, self._psi_x
 
@@ -117,10 +114,9 @@ class ComplexMorletWavelet(PywaveletsWavelet):
     @property
     def flambda(self):
         # Equations come from "A Practical Guide to Wavelet Analysis" from Torrence and Compo (1998), Table 1
-        # TODO check this computation. Seems wrong
         f0 = 2 * np.pi * self.center_frequency
-        #flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
         flambda = 2 * np.pi / f0
+        #flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
         return flambda
         
 

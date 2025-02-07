@@ -36,11 +36,10 @@ def get_test_subject():
     tasks = [Task('task1', onset_time=0, duration=20)]
     return Subject(tasks=tasks).load_file(snirf_file1)
 
-def get_test_subjects():
+def get_test_subjects(count:int=2):
     tasks = [Task('task1', onset_time=0, duration=20)]
-    subject1 = Subject(tasks=tasks).load_file(snirf_file1)
-    subject2 = Subject(tasks=tasks).load_file(snirf_file2)
-    return subject1, subject2
+    subjects = [Subject(tasks=tasks, label=f's{i+1}').load_file(snirf_file1) for i in range(count)]
+    return subjects
 
 def get_test_ch_match_one():
     return 'S1_D1 760'
@@ -470,7 +469,6 @@ def test_cohort_wtc():
     assert cohort.is_wtc_computed == False
 
     wtcs_kwargs = dict(ch_match=get_test_ch_match_one())
-
     cohort.compute_wtcs(**wtcs_kwargs, show_time_estimation=False)
     df = cohort.df
     assert cohort.is_wtc_computed == True
@@ -488,6 +486,27 @@ def test_cohort_wtc():
     assert cohort.is_wtc_shuffle_computed == True
     assert len(cohort.dyads_shuffle[0].wtcs) == 1
     assert len(df_with_shuffle['is_shuffle'].unique()) == 2
+
+def test_cohort_is_shuffle_no_duplicate():
+    subjects = get_test_subjects(4)
+
+    cohort = Cohort([Dyad(subjects[0], subjects[1]), Dyad(subjects[2], subjects[3])])
+    wtcs_kwargs = dict(ch_match=get_test_ch_match_one())
+    cohort.compute_wtcs(**wtcs_kwargs, show_time_estimation=False, with_intra=False)
+    assert len(cohort.df) == 2
+    cohort.compute_wtcs_shuffle(**wtcs_kwargs)
+    assert len(cohort.df) == 4
+
+    cohort.reset()
+
+    cohort.compute_wtcs(**wtcs_kwargs, show_time_estimation=False, with_intra=True)
+    assert len(cohort.df) == 6
+    assert len(cohort.df[cohort.df['is_intra']==True]) == 4
+    cohort.compute_wtcs_shuffle(**wtcs_kwargs)
+    # should not have more "is_intra"
+    assert len(cohort.df) == 8
+    assert len(cohort.df[cohort.df['is_intra']==True]) == 4
+
 
 def test_dyad_computes_whole_record_by_default():
     subject = get_test_subject()

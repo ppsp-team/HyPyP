@@ -348,7 +348,13 @@ class Dyad:
 
         return CoherenceDataFrame.from_wtc_frame_rows(frame_rows)
 
-    
+    def reset(self):
+        self.s1.intra_wtcs = None
+        self.s2.intra_wtcs = None
+        self.wtcs = None
+        self.df = None
+        return self
+
     #
     # Plots
     # 

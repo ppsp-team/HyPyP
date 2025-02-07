@@ -1,3 +1,7 @@
+# This class is provided as an example for library comparison and exploration. It is not meant to be use in production code
+#
+# poetry run pip install pycwt
+
 from typing import List
 import numpy as np
 

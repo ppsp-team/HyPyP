@@ -138,7 +138,13 @@ class Cohort():
 
         return self
     
-    def clear_dyads_shuffle(self):
+    def reset(self):
+        self._clear_dyads_shuffle()
+        for dyad in self.dyads:
+            dyad.reset()
+        return self
+    
+    def _clear_dyads_shuffle(self):
         """
         Delete all the shuffle dyads that have been created
 
@@ -173,7 +179,7 @@ class Cohort():
         """
         self.dyads_shuffle = self.get_dyads_shuffle()
         for dyad_shuffle in self.dyads_shuffle:
-            dyad_shuffle.compute_wtcs(*args, **kwargs)
+            dyad_shuffle.compute_wtcs(*args, **kwargs, with_intra=False)
         return self
     
     def get_coherence_df(self) -> CoherenceDataFrame:

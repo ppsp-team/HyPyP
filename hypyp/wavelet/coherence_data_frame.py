@@ -32,12 +32,12 @@ class CoherenceDataFrame(TypedDict, total=False):
     is_intra: bool
     is_shuffle: bool
 
-    subject1: pd.Categorical
-    subject2: pd.Categorical
-    roi1: pd.Categorical
-    roi2: pd.Categorical
-    channel1: pd.Categorical
-    channel2: pd.Categorical
+    subject1: str
+    subject2: str
+    roi1: str
+    roi2: str
+    channel1: str
+    channel2: str
 
     task: pd.Categorical
     epoch: int
@@ -71,20 +71,14 @@ class CoherenceDataFrame(TypedDict, total=False):
 
         return cast(CoherenceDataFrame, df)
     
-    #@staticmethod
-    #def _set_dtype_categories(df):
-    #    df['dyad'] = df['dyad'].astype('category')
-    #    df['subject1'] = df['subject1'].astype('category')
-    #    df['subject2'] = df['subject2'].astype('category')
-    #    df['roi1'] = df['roi1'].astype('category')
-    #    df['roi2'] = df['roi2'].astype('category')
-    #    df['channel1'] = df['channel1'].astype('category')
-    #    df['channel2'] = df['channel2'].astype('category')
-    #    df['task'] = df['task'].astype('category')
-    #    df['bin_time_range'] = df['bin_time_range'].astype('category')
-    #    df['bin_period_range'] = df['bin_period_range'].astype('category')
-    #    df['wavelet_library'] = df['wavelet_library'].astype('category')
-    #    df['wavelet_name'] = df['wavelet_name'].astype('category')
+    @staticmethod
+    def _set_dtype_categories(df):
+        df['dyad'] = df['dyad'].astype('category')
+        df['task'] = df['task'].astype('category')
+        df['bin_time_range'] = df['bin_time_range'].astype('category')
+        df['bin_period_range'] = df['bin_period_range'].astype('category')
+        df['wavelet_library'] = df['wavelet_library'].astype('category')
+        df['wavelet_name'] = df['wavelet_name'].astype('category')
         
     
     @staticmethod

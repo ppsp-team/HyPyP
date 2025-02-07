@@ -1,3 +1,5 @@
+# This class is provided as an example for library comparison and exploration. It is not meant to be use in production code
+
 from math import ceil, floor
 import numpy as np
 

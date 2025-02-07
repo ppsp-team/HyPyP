@@ -1,3 +1,8 @@
+# This class is provided as an example for library comparison and exploration. It is not meant to be use in production code
+#
+# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/matlab/R2023b/bin/glnxa64
+# poetry run pip install matlabengine==23.2.3
+
 import os
 from typing import List
 import numpy as np
