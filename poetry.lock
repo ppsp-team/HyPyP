@@ -226,29 +226,28 @@ tests-mypy = ["mypy (>=1.11.1)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "autoreject"
-version = "0.3.1"
+version = "0.4.3"
 description = "Automated rejection and repair of epochs in M/EEG."
 optional = false
-python-versions = "~=3.7"
+python-versions = "~=3.8"
 groups = ["main"]
 markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
 files = [
-    {file = "autoreject-0.3.1-py3-none-any.whl", hash = "sha256:c074cabb92cb64c3b0ae0e5c6c1528d96f8d5cc8a2ae2c7e9866fadd169f1a9d"},
-    {file = "autoreject-0.3.1.tar.gz", hash = "sha256:7235d94230ec3fa3832511f0550d755a3e39b1fae3e744775034ca6d3c700eac"},
+    {file = "autoreject-0.4.3-py3-none-any.whl", hash = "sha256:a094bebeaea40572f479b2b489c14c54a0be4d57ae7f51ea269c754d2433f9c1"},
+    {file = "autoreject-0.4.3.tar.gz", hash = "sha256:bd977ea3c88dc68550fbd5dbb98515b3b811907ba78afe8e412632edde6c8fc5"},
 ]
 
 [package.dependencies]
 joblib = "*"
-matplotlib = ">=1.3"
-mne = ">=0.24.1"
-numpy = ">=1.8"
-scikit-learn = ">=0.18"
-scipy = ">=0.16"
+matplotlib = ">=3.4.0"
+mne = {version = ">=1.0", extras = ["hdf5"]}
+numpy = ">=1.20.2"
+scikit-learn = ">=0.24.2"
+scipy = ">=1.6.3"
 
 [package.extras]
-doc = ["cython", "numpydoc", "openneuro-py (>=2021.10.1)", "pillow", "pooch", "sphinx", "sphinx-bootstrap-theme", "sphinx-copybutton", "sphinx-gallery", "sphinx-github-role"]
-full = ["h5io", "tqdm"]
-test = ["check-manifest", "flake8", "pooch", "pytest", "pytest-cov", "pytest-sugar"]
+doc = ["cython", "numpydoc", "openneuro-py (>=2021.10.1)", "pillow", "pydata-sphinx-theme", "sphinx", "sphinx-copybutton", "sphinx-gallery", "sphinx-github-role"]
+test = ["PyQt6", "check-manifest", "flake8", "importlib-resources", "mne-qt-browser", "pytest", "pytest-cov", "pytest-sugar"]
 
 [[package]]
 name = "babel"
@@ -2194,38 +2193,37 @@ pytkdocs = ">=0.14"
 
 [[package]]
 name = "mne"
-version = "1.9.0"
+version = "1.7.1"
 description = "MNE-Python project for MEG and EEG data analysis."
 optional = false
-python-versions = ">=3.10"
+python-versions = ">=3.9"
 groups = ["main"]
 markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
 files = [
-    {file = "mne-1.9.0-py3-none-any.whl", hash = "sha256:c26da9ac59bce963c5b25a3be9f5f61dd128f980cdc178a6fceef27743734306"},
-    {file = "mne-1.9.0.tar.gz", hash = "sha256:101967698b005a7f9071586e0469aebc83fe06f48717a95f3382a6f99c591162"},
+    {file = "mne-1.7.1-py3-none-any.whl", hash = "sha256:90f18eb8000f33701ebdc64766a70c644be2745be76ae6b66d7d14dd44fe83f3"},
+    {file = "mne-1.7.1.tar.gz", hash = "sha256:a87bbc998b792532d2c87add8b0f7bbf28a4d8cf5db1bdfb6d6e260791754498"},
 ]
 
 [package.dependencies]
 decorator = "*"
+h5io = {version = "*", optional = true, markers = "extra == \"hdf5\""}
 jinja2 = "*"
 lazy-loader = ">=0.3"
-matplotlib = ">=3.6"
-numpy = ">=1.23,<3"
+matplotlib = ">=3.5.0"
+numpy = ">=1.21.2"
 packaging = "*"
 pooch = ">=1.5"
-scipy = ">=1.9"
+pymatreader = {version = "*", optional = true, markers = "extra == \"hdf5\""}
+scipy = ">=1.7.1"
 tqdm = "*"
 
 [package.extras]
-dev = ["codespell", "graphviz", "intersphinx-registry (>=0.2405.27)", "ipython (!=8.7.0)", "memory-profiler", "mne-bids", "mne-connectivity", "mne-gui-addons", "mypy", "neo", "numpydoc", "pre-commit", "psutil", "pydata-sphinx-theme (>=0.15.2)", "pygments (>=2.13)", "pytest", "pytest (>=8.0)", "pytest-cov", "pytest-qt", "pytest-timeout", "pyxdf", "pyzmq (!=24.0.0)", "rcssmin", "ruff", "seaborn (!=0.11.2)", "selenium (>=4.27.1)", "sphinx (>=6)", "sphinx-copybutton", "sphinx-design", "sphinx-gallery (>=0.16)", "sphinxcontrib-bibtex (>=2.5)", "sphinxcontrib-towncrier", "sphinxcontrib-youtube", "toml-sort", "tomli", "towncrier (<24.7)", "twine", "vulture", "wheel"]
-doc = ["graphviz", "intersphinx-registry (>=0.2405.27)", "ipython (!=8.7.0)", "memory-profiler", "mne-bids", "mne-connectivity", "mne-gui-addons", "neo", "numpydoc", "psutil", "pydata-sphinx-theme (>=0.15.2)", "pygments (>=2.13)", "pytest", "pyxdf", "pyzmq (!=24.0.0)", "seaborn (!=0.11.2)", "selenium (>=4.27.1)", "sphinx (>=6)", "sphinx-copybutton", "sphinx-design", "sphinx-gallery (>=0.16)", "sphinxcontrib-bibtex (>=2.5)", "sphinxcontrib-towncrier", "sphinxcontrib-youtube", "towncrier (<24.7)"]
-full = ["antio (>=0.5.0)", "darkdetect", "defusedxml", "dipy", "edfio (>=0.2.1)", "eeglabio", "h5io (>=0.2.4)", "h5py", "imageio (>=2.6.1)", "imageio-ffmpeg (>=0.4.1)", "ipyevents", "ipympl", "ipython (!=8.7.0)", "ipywidgets", "joblib", "jupyter", "mffpy (>=0.5.7)", "mne-qt-browser", "neo", "nibabel", "nilearn", "numba", "openmeeg (>=2.5.5)", "pandas", "pillow", "pyarrow", "pybv", "pymatreader", "pyobjc-framework-cocoa (>=5.2.0)", "pyqt6 (!=6.6.0)", "pyqt6-qt6 (!=6.6.0,!=6.7.0)", "python-picard", "pyvista (>=0.32,!=0.35.2,!=0.38.0,!=0.38.1,!=0.38.2,!=0.38.3,!=0.38.4,!=0.38.5,!=0.38.6,!=0.42.0)", "pyvistaqt (>=0.4)", "qdarkstyle (!=3.2.2)", "qtpy", "scikit-learn", "sip", "snirf", "statsmodels", "threadpoolctl", "traitlets", "trame", "trame-vtk", "trame-vuetify", "vtk (>=9.2)", "xlrd"]
-full-no-qt = ["antio (>=0.5.0)", "darkdetect", "defusedxml", "dipy", "edfio (>=0.2.1)", "eeglabio", "h5io (>=0.2.4)", "h5py", "imageio (>=2.6.1)", "imageio-ffmpeg (>=0.4.1)", "ipyevents", "ipympl", "ipython (!=8.7.0)", "ipywidgets", "joblib", "jupyter", "mffpy (>=0.5.7)", "mne-qt-browser", "neo", "nibabel", "nilearn", "numba", "openmeeg (>=2.5.5)", "pandas", "pillow", "pyarrow", "pybv", "pymatreader", "pyobjc-framework-cocoa (>=5.2.0)", "python-picard", "pyvista (>=0.32,!=0.35.2,!=0.38.0,!=0.38.1,!=0.38.2,!=0.38.3,!=0.38.4,!=0.38.5,!=0.38.6,!=0.42.0)", "pyvistaqt (>=0.4)", "qdarkstyle (!=3.2.2)", "qtpy", "scikit-learn", "sip", "snirf", "statsmodels", "threadpoolctl", "traitlets", "trame", "trame-vtk", "trame-vuetify", "vtk (>=9.2)", "xlrd"]
-full-pyqt6 = ["antio (>=0.5.0)", "darkdetect", "defusedxml", "dipy", "edfio (>=0.2.1)", "eeglabio", "h5io (>=0.2.4)", "h5py", "imageio (>=2.6.1)", "imageio-ffmpeg (>=0.4.1)", "ipyevents", "ipympl", "ipython (!=8.7.0)", "ipywidgets", "joblib", "jupyter", "mffpy (>=0.5.7)", "mne-qt-browser", "neo", "nibabel", "nilearn", "numba", "openmeeg (>=2.5.5)", "pandas", "pillow", "pyarrow", "pybv", "pymatreader", "pyobjc-framework-cocoa (>=5.2.0)", "pyqt6 (!=6.6.0)", "pyqt6-qt6 (!=6.6.0,!=6.7.0)", "python-picard", "pyvista (>=0.32,!=0.35.2,!=0.38.0,!=0.38.1,!=0.38.2,!=0.38.3,!=0.38.4,!=0.38.5,!=0.38.6,!=0.42.0)", "pyvistaqt (>=0.4)", "qdarkstyle (!=3.2.2)", "qtpy", "scikit-learn", "sip", "snirf", "statsmodels", "threadpoolctl", "traitlets", "trame", "trame-vtk", "trame-vuetify", "vtk (>=9.2)", "xlrd"]
-full-pyside6 = ["antio (>=0.5.0)", "darkdetect", "defusedxml", "dipy", "edfio (>=0.2.1)", "eeglabio", "h5io (>=0.2.4)", "h5py", "imageio (>=2.6.1)", "imageio-ffmpeg (>=0.4.1)", "ipyevents", "ipympl", "ipython (!=8.7.0)", "ipywidgets", "joblib", "jupyter", "mffpy (>=0.5.7)", "mne-qt-browser", "neo", "nibabel", "nilearn", "numba", "openmeeg (>=2.5.5)", "pandas", "pillow", "pyarrow", "pybv", "pymatreader", "pyobjc-framework-cocoa (>=5.2.0)", "pyside6 (!=6.7.0,!=6.8.0,!=6.8.0.1)", "python-picard", "pyvista (>=0.32,!=0.35.2,!=0.38.0,!=0.38.1,!=0.38.2,!=0.38.3,!=0.38.4,!=0.38.5,!=0.38.6,!=0.42.0)", "pyvistaqt (>=0.4)", "qdarkstyle (!=3.2.2)", "qtpy", "scikit-learn", "sip", "snirf", "statsmodels", "threadpoolctl", "traitlets", "trame", "trame-vtk", "trame-vuetify", "vtk (>=9.2)", "xlrd"]
-hdf5 = ["h5io (>=0.2.4)", "pymatreader"]
-test = ["codespell", "ipython (!=8.7.0)", "mypy", "numpydoc", "pre-commit", "pytest (>=8.0)", "pytest-cov", "pytest-qt", "pytest-timeout", "ruff", "toml-sort", "tomli", "twine", "vulture", "wheel"]
-test-extra = ["codespell", "edfio (>=0.2.1)", "eeglabio", "imageio (>=2.6.1)", "imageio-ffmpeg (>=0.4.1)", "ipython (!=8.7.0)", "jupyter-client", "mne-bids", "mypy", "nbclient", "nbformat", "neo", "nitime", "numpydoc", "pre-commit", "pybv", "pytest (>=8.0)", "pytest-cov", "pytest-qt", "pytest-timeout", "ruff", "snirf", "sphinx-gallery", "statsmodels", "toml-sort", "tomli", "twine", "vulture", "wheel"]
+dev = ["codespell", "graphviz", "ipython (!=8.7.0)", "memory-profiler", "mne-bids", "mne-connectivity", "mne-gui-addons", "mypy", "neo", "numpydoc", "pre-commit", "pydata-sphinx-theme (==0.15.2)", "pygments (>=2.13)", "pytest", "pytest (>=8.0.0rc2)", "pytest-cov", "pytest-qt", "pytest-timeout", "pyxdf", "pyzmq (!=24.0.0)", "rcssmin", "ruff", "seaborn (!=0.11.2)", "selenium", "sphinx (>=6,<7.3)", "sphinx-copybutton", "sphinx-design", "sphinx-gallery", "sphinxcontrib-bibtex (>=2.5)", "sphinxcontrib-towncrier", "sphinxcontrib-youtube", "tomli", "twine", "wheel"]
+doc = ["graphviz", "ipython (!=8.7.0)", "memory-profiler", "mne-bids", "mne-connectivity", "mne-gui-addons", "neo", "numpydoc", "pydata-sphinx-theme (==0.15.2)", "pygments (>=2.13)", "pytest", "pyxdf", "pyzmq (!=24.0.0)", "seaborn (!=0.11.2)", "selenium", "sphinx (>=6,<7.3)", "sphinx-copybutton", "sphinx-design", "sphinx-gallery", "sphinxcontrib-bibtex (>=2.5)", "sphinxcontrib-towncrier", "sphinxcontrib-youtube"]
+full = ["darkdetect", "defusedxml", "dipy", "edfio (>=0.2.1)", "eeglabio", "h5io", "h5py", "imageio (>=2.6.1)", "imageio-ffmpeg (>=0.4.1)", "ipyevents", "ipympl", "ipywidgets", "joblib", "jupyter", "mffpy (>=0.5.7)", "mne-qt-browser", "neo", "nibabel", "nilearn", "numba", "openmeeg (>=2.5.5)", "pandas", "psutil", "pyarrow", "pybv", "pymatreader", "pyobjc-framework-cocoa (>=5.2.0)", "pyqt6 (!=6.6.1)", "pyqt6-qt6 (!=6.6.1,!=6.6.2,!=6.6.3)", "python-picard", "pyvista (>=0.32,!=0.35.2,!=0.38.0,!=0.38.1,!=0.38.2,!=0.38.3,!=0.38.4,!=0.38.5,!=0.38.6,!=0.42.0)", "pyvistaqt (>=0.4)", "qdarkstyle (!=3.2.2)", "qtpy", "scikit-learn", "sip", "snirf", "statsmodels", "threadpoolctl", "traitlets", "trame", "trame-vtk", "trame-vuetify", "vtk", "xlrd"]
+hdf5 = ["h5io", "pymatreader"]
+test = ["codespell", "mypy", "numpydoc", "pre-commit", "pytest (>=8.0.0rc2)", "pytest-cov", "pytest-qt", "pytest-timeout", "ruff", "tomli", "twine", "wheel"]
+test-extra = ["codespell", "edfio (>=0.2.1)", "eeglabio", "imageio (>=2.6.1)", "imageio-ffmpeg (>=0.4.1)", "mne-bids", "mypy", "nbclient", "neo", "nitime", "numpydoc", "pre-commit", "pybv", "pytest (>=8.0.0rc2)", "pytest-cov", "pytest-qt", "pytest-timeout", "ruff", "snirf", "sphinx-gallery", "statsmodels", "tomli", "twine", "wheel"]
 
 [[package]]
 name = "nbclassic"
@@ -2971,6 +2969,25 @@ tomlkit = ">=0.10.1"
 [package.extras]
 spelling = ["pyenchant (>=3.2,<4.0)"]
 testutils = ["gitpython (>3)"]
+
+[[package]]
+name = "pymatreader"
+version = "1.0.0"
+description = "Convenient reader for Matlab mat files"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
+files = [
+    {file = "pymatreader-1.0.0-py3-none-any.whl", hash = "sha256:32de9a3b25a8eee9eed5aeef2d2f8321f0a6d952620679415aeea8b0b53e0c5c"},
+    {file = "pymatreader-1.0.0.tar.gz", hash = "sha256:1bcf0dee93c567701351d83e46b91bf17ea175ac44f3f435fb08e2cfdfbd8534"},
+]
+
+[package.dependencies]
+h5py = "*"
+numpy = "*"
+scipy = ">=1.7.1"
+xmltodict = "*"
 
 [[package]]
 name = "pymdown-extensions"
@@ -4423,6 +4440,19 @@ files = [
     {file = "wrapt-1.17.2-cp39-cp39-win_amd64.whl", hash = "sha256:36ccae62f64235cf8ddb682073a60519426fdd4725524ae38874adf72b5f2aeb"},
     {file = "wrapt-1.17.2-py3-none-any.whl", hash = "sha256:b18f2d1533a71f069c7f82d524a52599053d4c7166e9dd374ae2136b7f40f7c8"},
     {file = "wrapt-1.17.2.tar.gz", hash = "sha256:41388e9d4d1522446fe79d3213196bd9e3b301a336965b9e27ca2788ebd122f3"},
+]
+
+[[package]]
+name = "xmltodict"
+version = "0.14.2"
+description = "Makes working with XML feel like you are working with JSON"
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
+files = [
+    {file = "xmltodict-0.14.2-py2.py3-none-any.whl", hash = "sha256:20cc7d723ed729276e808f26fb6b3599f786cbc37e06c65e192ba77c40f20aac"},
+    {file = "xmltodict-0.14.2.tar.gz", hash = "sha256:201e7c28bb210e374999d1dde6382923ab0ed1a8a5faeece48ab525b7810a553"},
 ]
 
 [[package]]
