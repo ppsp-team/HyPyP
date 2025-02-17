@@ -15,11 +15,11 @@ import numpy as np
 import scipy
 import scipy.signal as signal
 import scipy.stats
+from scipy.stats import circmean
 import statsmodels.stats.multitest
 import copy
 from collections import namedtuple
 from typing import Union, List, Tuple
-from astropy.stats import circmean
 import matplotlib.pyplot as plt
 
 plt.ion()
@@ -487,7 +487,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
 
     elif mode.lower() == 'ccorr':
         angle = np.angle(complex_signal)
-        mu_angle = circmean(angle, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
+        mu_angle = circmean(angle, high=np.pi, low=-np.pi, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
         angle = np.sin(angle - mu_angle)
 
         formula = 'nilm,nimk->nilk'
