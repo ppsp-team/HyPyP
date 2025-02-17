@@ -95,10 +95,13 @@ def test_behav_corr(epochs):
     step = len(data)
     behav = np.arange(0, step)
     assert len(data) == len(behav)
+
+    p_thresh = 0.05
+
     corr_tuple = analyses.behav_corr(data, behav,
                                      data_name='epochs',
                                      behav_name='time',
-                                     p_thresh=0.05,
+                                     p_thresh=p_thresh,
                                      multiple_corr=False,
                                      verbose=False)
     assert pytest.approx(corr_tuple.r) in [-1, 1]
@@ -128,14 +131,14 @@ def test_behav_corr(epochs):
     corr_tuple = analyses.behav_corr(data, behav,
                                      data_name='ccorr',
                                      behav_name='imitation score',
-                                     p_thresh=0.05,
+                                     p_thresh=p_thresh,
                                      multiple_corr=False,
                                      verbose=True)
     # test that there is a correlation (repeated measures)
     significant_r = []
     for i in range(0, corr_tuple.r.shape[0]):
         for j in range(0, corr_tuple.r.shape[1]):
-            if corr_tuple.r[i, j] != 0:
+            if corr_tuple.pvalue[i, j] <= p_thresh:
                 significant_r.append(corr_tuple.r[i, j])
     assert len(significant_r) != 0
 
@@ -143,14 +146,14 @@ def test_behav_corr(epochs):
     corr_tuple = analyses.behav_corr(data, behav,
                                      data_name='ccorr',
                                      behav_name='imitation score',
-                                     p_thresh=0.05,
+                                     p_thresh=p_thresh,
                                      multiple_corr=True,
                                      verbose=True)
     # test that there is a correlation (repeated measures)
     significant_r = []
     for i in range(0, corr_tuple.r.shape[0]):
         for j in range(0, corr_tuple.r.shape[1]):
-            if corr_tuple.r[i, j] != 0:
+            if corr_tuple.pvalue[i, j] <= p_thresh:
                 significant_r.append(corr_tuple.r[i, j])
     assert len(significant_r) == 0
 
@@ -172,7 +175,7 @@ def test_behav_corr(epochs):
     corr_tuple = analyses.behav_corr(data, behav,
                                      data_name='ccorr',
                                      behav_name='imitation score',
-                                     p_thresh=0.05,
+                                     p_thresh=p_thresh,
                                      multiple_corr=True,
                                      verbose=False)
     # test that there is no correlation (random measures)
