@@ -16,6 +16,7 @@ from collections import namedtuple
 from typing import List, Tuple
 import numpy as np
 import scipy
+from scipy.stats import f as f_dist
 import matplotlib.pylab as plt
 import mne
 from mne.channels import find_ch_adjacency
@@ -334,12 +335,21 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
             array of shape (n_tests,).
     """
 
+    # Compute F-threshold for two-tailed test if needed
+    dfn = len(data) - 1  # Numerator degrees of freedom
+    dfd = np.sum([len(d) for d in data]) - len(data)  # Denominator degrees of freedom
+
+    if tail == 0:
+        threshold = f_dist.ppf(1 - alpha / 2, dfn, dfd)  # 2-tailed F-test
+    else:
+        threshold = None  # One-tailed test uses MNE's default
+    
     # computing the cluster permutation t test
     F_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(data,
-                                                                     threshold=None,
+                                                                     threshold=threshold,
                                                                      n_permutations=n_permutations,
                                                                      tail=tail, adjacency=ch_con_freq,
-                                                                     t_power=1, out_type='mask')
+                                                                     t_power=1, out_type='mask')    
     # t_power = 1 weighs each location by its statistical score,
     # when set to 0 it gives a count of locations in each cluster
 

@@ -593,7 +593,7 @@ def compute_conn_mvar(complex_signal: np.ndarray, mvar_params: dict, ica_params:
                             d_type = conn_freq_epoch.dtype
                             aux_3[e, f, :, :, :] = conn_freq_epoch
 
-                    return np.asarray(aux_3, dtype=d_type)
+                    return np.asarray(np.real(aux_3), dtype=d_type)
 
                 else:
 
