@@ -7,6 +7,8 @@ from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from ..profiling import TimeTracker
 from .dyad import Dyad, PairChannelMatchType
 from ..plots import (
+    plot_coherence_matrix,
+    plot_coherence_bars_per_task,
     plot_coherence_connectogram_split,
 )
 
@@ -211,6 +213,114 @@ class Cohort():
     #
     # Plots
     #
+    def plot_coherence_matrix(
+            self,
+            field1:str='channel1',
+            field2:str='channel2',
+            query:str | None=None,
+            s1_label:str='Subject1',
+            s2_label:str='Subject2',
+            **kwargs):
+        """
+        Plot the computed coherence metric for pair of fields (channel or roi) in a matrix format
+
+        Args:
+            field1 (str): name of the field in dataframe for x axis. Defaults to 'channel1'.
+            field2 (str): name of the field in dataframe for y axis. Defaults to 'channel2'.
+            query (str | None, optional): pandas query to filter the dataframe. Defaults to None.
+        """
+        df = self.df
+        if query is not None:
+            df = df.query(query)
+            
+        ch_names1 = []
+        ch_names2 = []
+
+        for dyad in self.dyads:
+            for ch_name in dyad.s1.ordered_ch_names:
+                if ch_name not in ch_names1:
+                    ch_names1.append(ch_name)
+
+            for ch_name in dyad.s2.ordered_ch_names:
+                if ch_name not in ch_names2:
+                    ch_names2.append(ch_name)
+
+        ordered_names = ch_names1 + [name for name in ch_names2 if name not in ch_names1] 
+        # TODO: missing ordered roi
+
+        return plot_coherence_matrix(
+            df,
+            s1_label,
+            s2_label,
+            field1,
+            field2,
+            ordered_names,
+            **kwargs)
+        
+    def plot_coherence_matrix_per_channel(self, query:str|None=None, **kwargs):
+        """
+        Wraps plot_coherence_matrix to plot per channel
+
+        Args:
+            query (str | None, optional): pandas query to filter the dataframe. Defaults to None.
+        """
+        return self.plot_coherence_matrix(
+            'channel1',
+            'channel2',
+            query,
+            **kwargs)
+        
+    def plot_coherence_matrix_per_roi(self, query:str|None=None, **kwargs):
+        """
+        Wraps plot_coherence_matrix to plot per region of interest
+
+        Args:
+            query (str | None, optional): pandas query to filter the dataframe. Defaults to None.
+        """
+        return self.plot_coherence_matrix(
+            'roi1',
+            'roi2',
+            query,
+            **kwargs)
+    
+    def plot_coherence_matrix_per_channel_for_task(self, task:str, **kwargs):
+        """
+        Wraps plot_coherence_matrix_per_channel to plot for a specific task
+
+        Args:
+            task (str): task name
+        """
+        return self.plot_coherence_matrix(
+            'channel1',
+            'channel2',
+            query=f'task=="{task}"',
+            **kwargs)
+        
+    def plot_coherence_matrix_per_roi_for_task(self, task:str, **kwargs):
+        """
+        Wraps plot_coherence_matrix_per_roi to plot for a specific task
+
+        Args:
+            task (str): task name
+        """
+        return self.plot_coherence_matrix(
+            'roi1',
+            'roi2',
+            query=f'task=="{task}"',
+            **kwargs)
+    
+    def plot_coherence_bars_per_task(self, is_intra:bool=False, **kwargs):
+        """
+        Plot coherence metric per task for comparison
+
+        Args:
+            is_intra (bool, optional): if we should plot the intra-subject data or inter-subject data. Defaults to False.
+        """
+        return plot_coherence_bars_per_task(
+            self.df,
+            is_intra=is_intra,
+            **kwargs)
+        
     def plot_coherence_connectogram(self, query:str|None=None, title:str|None=None, **kwargs):
         df = self.df.copy()
         selector = df['is_intra']==False

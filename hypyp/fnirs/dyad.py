@@ -112,6 +112,7 @@ class Dyad:
                       s2:Subject,
                       task_name:str,
                       epoch_id:int,
+                      is_intra_of:int|None,
                       is_shuffle:bool,
                       pairs:List[PairSignals]):
         n = s1_task_data.shape[1]
@@ -163,12 +164,13 @@ class Dyad:
                         label_task=task_name,
                         epoch_id=epoch_id,
                         section_id=section_id,
-                        is_intra=(s1==s2),
+                        is_intra=(is_intra_of is not None),
+                        is_intra_of=is_intra_of,
                         is_shuffle=is_shuffle,
                     ))
             
     
-    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str|None=None, ch_match:PairChannelMatchType|None=None, is_shuffle:bool=False) -> List[PairSignals]:
+    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str|None=None, ch_match:PairChannelMatchType|None=None, is_intra_of:int|None=None, is_shuffle:bool=False) -> List[PairSignals]:
         """
         Generate all the signal pairs between the 2 subjects and returns them in a format suitable for signal processing
 
@@ -228,6 +230,7 @@ class Dyad:
                     s2,
                     task.name,
                     epoch_id,
+                    is_intra_of,
                     is_shuffle,
                     pairs,
                 )
@@ -252,6 +255,7 @@ class Dyad:
                         s2,
                         task.name,
                         epoch_id,
+                        is_intra_of,
                         is_shuffle,
                         pairs,
                     )
@@ -316,7 +320,9 @@ class Dyad:
                 else:
                     ch_match_intra = ch_match
                     
-                for pair in self.get_pairs(subject, subject, f'{subject.label}(intra)', ch_match=ch_match_intra):
+                # We have to keep track of the subject identifier when we are intra, since they would be displayed differently (parent VS child for example)
+                is_intra_of = i+1
+                for pair in self.get_pairs(subject, subject, f'{subject.label}(intra)', ch_match=ch_match_intra, is_intra_of=is_intra_of):
                     if verbose:
                         print(f'Running Wavelet Coherence intra-subject "{subject.label}" on pair "{pair.label}"')
                     if only_time_range is not None:

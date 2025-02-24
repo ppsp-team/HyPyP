@@ -11,6 +11,7 @@ class PairSignals:
     sfreq: float
 
     is_intra: bool
+    is_intra_of: int
     is_shuffle: bool
 
     label_ch1: str
@@ -41,6 +42,7 @@ class PairSignals:
                  epoch_id=0,
                  section_id=0,
                  is_intra:bool=False,
+                 is_intra_of:int=0,
                  is_shuffle:bool=False,
         ):
         """
@@ -61,6 +63,7 @@ class PairSignals:
             epoch_id (int, optional): identifier of the epoch of this signal pair. Defaults to 0.
             section_id (int, optional): identifier of the section of this signal pair, when an epoch had to be splitted in smaller sections. Defaults to 0.
             is_intra (bool, optional): if the pair is from an intra-subject. Defaults to False.
+            is_intra_of (int, optional): if the pair is from an intra-subject, which subject is this. Defaults to 0 when not intra-subject.
             is_shuffle (bool, optional): if the pair is from a shuffled dyad. Defaults to False.
         """
         self.x = x
@@ -72,6 +75,7 @@ class PairSignals:
         self.y2 = y2
 
         self.is_intra = is_intra
+        self.is_intra_of = is_intra_of
         self.is_shuffle = is_shuffle
 
         self.label_ch1 = label_ch1
@@ -128,6 +132,7 @@ class PairSignals:
             self.y1[signal_from:signal_to],
             self.y2[signal_from:signal_to],
             is_intra=self.is_intra,
+            is_intra_of=self.is_intra_of,
             is_shuffle=self.is_shuffle,
             label_dyad=self.label_dyad,
             label_s1=self.label_s1,

@@ -6,6 +6,7 @@ import pyarrow.feather as feather
 COHERENCE_FRAME_COLUMNS = [
     'dyad',
     'is_intra',
+    'is_intra_of',
     'is_shuffle',
     'subject1',
     'subject2',
@@ -30,6 +31,7 @@ class CoherenceDataFrame(TypedDict, total=False):
     dyad: pd.Categorical
 
     is_intra: bool
+    is_intra_of: int
     is_shuffle: bool
 
     subject1: str

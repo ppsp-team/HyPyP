@@ -282,7 +282,7 @@ def test_dyad_cwt_cache_during_wtc():
         assert spy_method.call_count == 2
         assert np.all(wtc_no_cache.W == wtc_with_cache.W)
         # make sure we can clear the cache
-        wavelet._clear_cache()
+        wavelet.clear_cache()
         wavelet.wtc(pair)
         assert spy_method.call_count == 4
 
@@ -299,7 +299,7 @@ def test_dyad_coi_cache_during_wtc():
         assert np.all(wtc_no_cache.coi == wtc_with_cache.coi)
         assert np.all(wtc_no_cache.coif == wtc_with_cache.coif)
         # make sure we can clear the cache
-        wavelet._clear_cache()
+        wavelet.clear_cache()
         _ = wavelet.wtc(pair)
         assert spy_method.call_count == 2
 
@@ -349,6 +349,9 @@ def test_dyad_computes_intra_subject_channel_match():
     assert len(df_intra) > 0
     assert np.all(df_intra['channel1'] == df_intra['channel2'])
     assert np.all(df_inter['channel1'] != df_inter['channel2'])
+    # we keep track of the subject id for intra-subject coherence
+    assert np.sum(df_intra['is_intra_of'] == 1) == 1
+    assert np.sum(df_intra['is_intra_of'] == 2) == 1
 
 def test_dyad_compute_str_match_wtc():
     subject = Subject().load_file(snirf_file1)

@@ -414,7 +414,7 @@ class BaseWavelet(ABC):
         if self.use_caching:
             self.cache[key] = value
 
-    def _clear_cache(self):
+    def clear_cache(self):
         self.cache = dict()
 
     def _get_cache_key_pair(self, pair: PairSignals, subject_id: int, obj_id: str, cache_suffix: str = ''):

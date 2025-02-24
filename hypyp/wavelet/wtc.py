@@ -23,6 +23,7 @@ class WTC:
     coif: np.ndarray
 
     is_intra: bool
+    is_intra_of: int
     is_shuffle: bool
 
     task: str
@@ -92,6 +93,7 @@ class WTC:
         self.coif = 1 / coi
 
         self.is_intra = pair.is_intra
+        self.is_intra_of = pair.is_intra_of
         self.is_shuffle = pair.is_shuffle
 
         self.task = pair.label_task
@@ -216,6 +218,7 @@ class WTC:
             frames.append([
                 self.label_dyad,
                 self.is_intra,
+                self.is_intra_of,
                 self.is_shuffle,
                 self.label_s1,
                 self.label_s2,

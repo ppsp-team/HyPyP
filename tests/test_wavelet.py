@@ -116,7 +116,7 @@ def test_cache():
     wavelet._add_cache_item('foo', 'bar')
     assert len(list(wavelet.cache.keys())) == 1
     assert wavelet._get_cache_item('foo') == 'bar'
-    wavelet._clear_cache()
+    wavelet.clear_cache()
     assert len(list(wavelet.cache.keys())) == 0
     assert wavelet._get_cache_item('foo') == None
 
