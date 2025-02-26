@@ -10,17 +10,16 @@ The **Hy**perscanning **Py**thon **P**ipeline
 
 🤝 If you want to help you can submit bugs and suggestions of enhancements in our Github [Issues section](https://github.com/ppsp-team/HyPyP/issues).
 
-🤓 For the motivated contributors, you can even help directly in the developpment of HyPyP. You will need to install [Poetry](https://python-poetry.org/) (see section below).
+🤓 For the motivated contributors, you can even help directly in the development of HyPyP. You will need to install [Poetry](https://python-poetry.org/) (see section below).
 
 ## Contributors
-Original authors: Florence BRUN, Anaël AYROLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS
+Original authors: Florence BRUN, Anaël AYROLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS  
 New contributors: Ghazaleh RANJBARAN, Quentin MOREAU, Caitriona DOUGLAS, Franck PORTEOUS, Jonas MAGO, Juan C. AVENDANO, Julie BONNAIRE
 
 ## Installation
 
-```
-pip install HyPyP
-```
+`pip install HyPyP`
+
 
 ## Documentation
 
@@ -32,7 +31,7 @@ For getting started with HyPyP, we have designed a little walkthrough: [getting_
 
 🛠 [io.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/io.py) — Loaders (Florence, Anaël, Ghazaleh, Franck, Jonas, Guillaume)
 
-🧰 [utils.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/utils.py) — Basic tools (Amir, Florence, Guilaume)
+🧰 [utils.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/utils.py) — Basic tools (Amir, Florence, Guillaume)
 
 ⚙️ [prep.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/prep.py) — Preprocessing (ICA & AutoReject) (Anaël, Florence, Guillaume)
 
@@ -44,18 +43,66 @@ For getting started with HyPyP, we have designed a little walkthrough: [getting_
 
 🎓 [Tutorials](https://github.com/ppsp-team/HyPyP/tree/master/tutorial) - Examples & documentation (Anaël, Florence, Yann, Ghazaleh, Caitriona, Guillaume)
 
-## Poetry installation (only for developpers and adventurous users)
+## Poetry Installation (Only for Developers and Adventurous Users)
 
-Step 1: ```pip install poetry```
+To develop HyPyP, we recommend using [Poetry 2.x](https://python-poetry.org/). Follow these steps:
 
-Step 2: ```git clone git@github.com:ppsp-team/HyPyP.git```
+### 1. Install Poetry:
+```bash
+   pip install poetry
+```
 
-Step 3: ```cd HyPyP```
+### 2. Clone the Repository:
 
-Step 4: ```poetry install```
+```bash
+git clone git@github.com:ppsp-team/HyPyP.git
+cd HyPyP
+```
 
-Step 5: ```poetry shell```
+### 3. Install Dependencies:
 
-You can now use ```jupyter notebook``` or ```ipython```!
+```bash
+poetry install
+```
 
-⚠️ If you need to install a new dependency (not recommended), you have to use `poetry add THE_NAME_OF_THE_LIBRARY` instead of your usual package manager.
+Note: By default, dev dependencies (including JupyterLab) are not included in the main dependencies.
+To install development dependencies, you can run:
+
+```bash
+poetry install --with dev
+```
+
+### 4. Launch Jupyter Lab to Run Notebooks:
+Instead of entering a shell, launch Jupyter Lab directly within the Poetry environment:
+
+```bash
+poetry run jupyter lab
+```
+
+## Additional Setup for Poetry
+
+- **Install Poetry Plugins:**
+
+To have full functionality with Poetry, add the following plugins:
+
+```bash
+poetry self add poetry-plugin-shell
+poetry self add poetry-plugin-export
+```
+
+- **VS Code Integration:**
+
+To make the Poetry virtual environment available in VS Code, you might need to set Poetry to create in-project virtual environments. You can do this either by running:
+
+```bash
+poetry config virtualenvs.in-project true
+```
+
+or by adding the following line to your .bashrc or .zshrc:
+
+```bash
+poetry config virtualenvs.in-project true
+```
+
+# License
+This project is licensed under the BSD 3-Clause License. See the license for details.
