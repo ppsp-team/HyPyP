@@ -57,7 +57,6 @@ To develop HyPyP, we recommend using [Poetry 2.x](https://python-poetry.org/). F
 ```bash
 git clone git@github.com:ppsp-team/HyPyP.git
 cd HyPyP
-cd HyPyP
 ```
 
 ### 3. Install Dependencies:
@@ -66,7 +65,15 @@ cd HyPyP
 poetry install
 ```
 
-### 4. Enter the Poetry Shell:
+Note: By default, dev dependencies (including JupyterLab) are not included in the main dependencies.
+To install development dependencies, you can run:
+
+```bash
+poetry install --with dev
+```
+
+### 4. Launch Jupyter Lab to Run Notebooks:
+Instead of entering a shell, launch Jupyter Lab directly within the Poetry environment:
 
 ```bash
 poetry run jupyter lab
