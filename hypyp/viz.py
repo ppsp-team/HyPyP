@@ -478,7 +478,7 @@ def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarr
                                  '-', color=color_n, linewidth=weight)
 
 
-def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
+def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs, significant: np.ndarray = None):
     """
     Plots the significant sensors from a statistical test (simple t test or
     clusters corrected t test), computed between groups or conditions on power
@@ -508,7 +508,19 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs):
     else:
         vmax = None
         vmin = None
-        mne.viz.plot_topomap(T_obs_plot, pos, vlim=(vmin, vmax), sensors=True)
+    
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    if significant is not None:
+        mne.viz.plot_topomap(T_obs_plot, pos, vlim=(vmin, vmax), sensors=False, axes=ax, show=False)
+        loc1 = copy(np.array([ch['loc'][:3] for ch in epochs.info['chs']]))
+        for ich, ch in enumerate(epochs.ch_names):
+            index_ch = epochs.ch_names.index(ch)
+            x1, y1, z1 = loc1[index_ch, :]
+            if significant[ich] != 0:
+                ax.plot(x1, y1, marker='o', color='white')
+    else:        
+        mne.viz.plot_topomap(T_obs_plot, pos, vlim=(vmin, vmax), sensors=True, axes=ax, show=True)
 
     return None
 
