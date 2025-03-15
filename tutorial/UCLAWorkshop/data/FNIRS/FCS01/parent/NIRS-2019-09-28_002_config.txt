@@ -1,0 +1,11 @@
+raw_data_name='NIRS-2019-09-28_002';
+Subject=1
+SamplingRate=7.81250; 
+waveLength_N=2; 
+Wavelengths=[760	850]; 
+source_N=8;
+detector_N=8;
+time_point_N=3084;
+source_detector_key=[1 2 3 4 5 6 7 8 0 0 0 0 0 0 0 0;...
+                     0 0 0 0 0 0 0 0 1 2 3 4 5 6 7 8];
+probeInfo_file='C:\NIRx\Montages\Prefrontal_8x8\Standard_probeInfo.mat';
