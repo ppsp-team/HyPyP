@@ -117,6 +117,9 @@ def transform_2d_intra(locs: np.ndarray, traX: float=0.15, traY: float=0, traZ: 
     else:
         scale = 1.0
 
+     # Apply scaling to all coordinates
+    locs = locs * scale
+    
     # translation
     locs[:, 0] = locs[:, 0] + traX
     locs[:, 1] = locs[:, 1] + traY
@@ -124,10 +127,9 @@ def transform_2d_intra(locs: np.ndarray, traX: float=0.15, traY: float=0, traZ: 
 
     # Reduce the size of the eeg headsets
     newZ = locs[:, 0] * np.cos(rotZ) + locs[:, 1] * np.cos(rotZ) + locs[:, 2] * np.cos(rotZ/2)
-    locs[:, 2] = newZ * scale
+    locs[:, 2] = newZ
 
     return locs
-
 
 def bezier_interpolation(t, p0, p1, c0, c1=None):
     """
@@ -520,7 +522,7 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: 
     # extract sensor infos and transform loc to fit with headmodel
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
-    
+
     if children: 
         loc1 = transform_2d_intra(loc1, traX=-0.178, traY=0.012, traZ=0, rotZ=(-np.pi/2), children=children, child_head=not child_head)
         loc2 = transform_2d_intra(loc2, traX=0.178, traY=0.012, traZ=0, rotZ=(-np.pi/2), children=children, child_head=child_head)
