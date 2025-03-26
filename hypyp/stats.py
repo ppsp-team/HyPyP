@@ -23,50 +23,83 @@ from mne.channels import find_ch_adjacency
 from mne.stats import permutation_cluster_test
 
 
-def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: float) -> tuple:
+def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: float) -> namedtuple:
     """
-    Computes statistical t test on participant measure (e.g. PSD) for a condition.
-
-    Arguments:
-        data: array of participants measure (e.g. PSD) for
-            a condition (n_samples, n_tests, nfreq: n_tests the channels).
-            Values will be averaged on nfreq for statistics.
-        epochs: Epochs object for a condition from a random participant, only
-            used to get parameters from the info (sampling frequencies for example).
-        n_permutations: the number of permutations, int. Should be at least 2*n
-            sample, can be set to 50000 for example.
-        alpha: the threshold for ttest, float, can be set to 0.05.
-
-    Note:
-        This ttest calculates if the observed mean significantly deviates
-        from 0; it does not compare two periods, but one period with the null
-        hypothesis. Randomized data are generated with random sign flips.
-        The tail is set to 0 by default (= the alternative hypothesis is that
-        the data mean is different from 0).
-        To reduce false positive due to multiple comparisons, False Discovery Rate
-        (FDR) correction is applied to the p values.
-        Note that the frequency dimension is reduced to one for the test
-        (average in the frequency band-of-interest).
-        To take frequencies into account, use cluster statistics
-        (see statscondCluster function in the toolbox).
-        For visualization, use plot_significant_sensors function in the toolbox.
-
-    Returns:
-        T_obs, p_values, H0, adj_p, T_obs_plot:
-        - T_obs: T-statistic observed for all variables, array of shape (n_tests).
-
-        - p_values: p-values for all the tests, array of shape (n_tests).
-
-        - H0: T-statistic obtained by permutations and t-max trick for multiple
-            comparisons, array of shape (n_permutations).
-
-        - adj_p: adjusted p values from FDR correction, array of shape
-            (n_tests, n_tests), with boolean assessment for p values
-            and p values corrected.
-
-        - T_obs_plot: statistical values to plot, from sensors above alpha threshold,
-            array of shape (n_tests,).
+    Perform statistical t-test on participant measures (e.g., PSD) for a condition.
+    
+    This function tests whether the observed mean significantly deviates from 0
+    using a permutation-based t-test with False Discovery Rate (FDR) correction
+    for multiple comparisons.
+    
+    Parameters
+    ----------
+    data : np.ndarray
+        Array of participant measures with shape (n_samples, n_tests, n_freq)
+        where n_tests typically represents channels and n_freq the frequencies.
+        Values will be averaged across frequencies for statistics.
+        
+    epochs : mne.Epochs
+        Epochs object for a condition from a random participant, used only
+        to access information like channel positions.
+        
+    n_permutations : int
+        Number of permutations for the statistical test
+        Should be at least 2*n_samples, e.g., 50000
+        
+    alpha : float
+        Significance threshold for the test, e.g., 0.05
+    
+    Returns
+    -------
+    statsCondTuple : namedtuple
+        A named tuple containing:
+        - T_obs: T-statistic observed for all variables, array of shape (n_tests)
+        - p_values: p-values for all tests, array of shape (n_tests)
+        - H0: T-statistics obtained by permutations, array of shape (n_permutations)
+        - adj_p: tuple with boolean assessment of significance and FDR-corrected p-values
+        - T_obs_plot: statistical values for significant sensors, array of shape (n_tests)
+    
+    Notes
+    -----
+    This test calculates if the observed mean significantly deviates from 0;
+    it doesn't compare two periods, but tests one period against the null hypothesis.
+    
+    Randomized data are generated with random sign flips, and the test is two-tailed
+    by default (the alternative hypothesis is that the data mean is different from 0).
+    
+    To reduce false positives due to multiple comparisons, False Discovery Rate (FDR)
+    correction is applied to the p-values.
+    
+    The frequency dimension is reduced to one for the test (average in the frequency
+    band-of-interest). To take frequencies into account, use cluster statistics
+    (see statscondCluster function).
+    
+    Examples
+    --------
+    >>> # Independent t-test between two groups
+    >>> ind_ttest_results = statscluster(
+    ...     [group1_data, group2_data],
+    ...     test='ind ttest',
+    ...     factor_levels=None,
+    ...     ch_con_freq=connectivity.ch_con_freq,
+    ...     tail=0,  # two-tailed test
+    ...     n_permutations=10000,
+    ...     alpha=0.05
+    ... )
+    >>> 
+    >>> # 2×2 repeated measures ANOVA (within-subjects design)
+    >>> # Factor 1: Condition (2 levels), Factor 2: Time (2 levels)
+    >>> anova_results = statscluster(
+    ...     data_array_2x2,  # Shape: (4, n_subjects, n_features)
+    ...     test='f multipleway',
+    ...     factor_levels=[2, 2],
+    ...     ch_con_freq=connectivity.ch_con_freq,
+    ...     tail=1,  # F-tests are one-tailed
+    ...     n_permutations=10000,
+    ...     alpha=0.05
+    ... )
     """
+
     # checking whether data have the same size
     assert(len(data.shape) == 3), "PSD does not have the appropriate shape!"
 
@@ -101,26 +134,55 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: 
         T_obs_plot=T_obs_plot)
 
 
-def con_matrix(epochs: mne.Epochs, freqs_mean: List[float], draw: bool = False) -> tuple:
+def con_matrix(epochs: mne.Epochs, freqs_mean: List[float], draw: bool = False) -> namedtuple:
     """
-    Computes a priori channel connectivity across space and frequencies.
-
-    Arguments:
-        epochs: one participant Epochs object; contains channel information.
-        freqs_mean: list of frequencies in frequency-band-of-interest used
-            by MNE for power or coherence spectral density calculation.
-        draw: option to plot the connectivity matrices, boolean.
-
-    Returns:
-        ch_con, ch_con_freq:
-
-        - ch_con: connectivity matrix between channels along space based on
-            their position, scipy.sparse.csr_matrix of shape
-            (n_channels, n_channels).
-
-        - ch_con_freq: connectivity matrix between channels along space and
-            frequencies, scipy.sparse.csr_matrix of shape
-            (n_channels*len(freqs_mean), n_channels*len(freqs_mean)).
+    Compute a priori channel connectivity across space and frequencies.
+    
+    This function creates connectivity matrices that define which channels and
+    frequencies should be considered neighbors for cluster-based statistics.
+    
+    Parameters
+    ----------
+    epochs : mne.Epochs
+        Epochs object containing channel information
+        
+    freqs_mean : List[float]
+        List of frequencies in the frequency-band-of-interest used for
+        power or coherence spectral density calculation
+        
+    draw : bool, optional
+        Whether to plot the connectivity matrices (default=False)
+    
+    Returns
+    -------
+    con_matrixTuple : namedtuple
+        A named tuple containing:
+        - ch_con: Connectivity matrix between channels in space,
+          scipy.sparse.csr_matrix of shape (n_channels, n_channels)
+        - ch_con_freq: Connectivity matrix between channels across space and
+          frequencies, scipy.sparse.csr_matrix of shape
+          (n_channels*len(freqs_mean), n_channels*len(freqs_mean))
+    
+    Notes
+    -----
+    The channel connectivity matrix (ch_con) is based on the spatial adjacency
+    of EEG electrodes - channels that are physically adjacent are considered
+    connected.
+    
+    The frequency-space connectivity matrix (ch_con_freq) extends this spatial
+    adjacency to include frequency adjacency - neighboring frequencies for the
+    same channel are also considered connected.
+    
+    These connectivity matrices are used as inputs to cluster-based statistical
+    functions to define the neighborhood structure for clustering.
+    
+    Examples
+    --------
+    >>> # Create connectivity matrices for alpha band frequencies
+    >>> alpha_freqs = np.arange(8, 13)
+    >>> conn = con_matrix(epochs, alpha_freqs, draw=True)
+    >>> ch_con = conn.ch_con  # Channel spatial connectivity
+    >>> ch_con_freq = conn.ch_con_freq  # Channel-frequency connectivity
     """
 
     # creating channel-to-channel connectivity matrix in space
@@ -160,37 +222,57 @@ def con_matrix(epochs: mne.Epochs, freqs_mean: List[float], draw: bool = False) 
         ch_con_freq=ch_con_freq)
 
 
-def metaconn_matrix_2brains(electrodes: List[Tuple[int, int]], ch_con: scipy.sparse.csr_matrix, freqs_mean: List[float], plot: bool = False) -> tuple:
+def metaconn_matrix_2brains(electrodes: List[Tuple[int, int]], ch_con: scipy.sparse.csr_matrix, 
+                           freqs_mean: List[float], plot: bool = False) -> namedtuple:
     """
-    Computes a priori connectivity across space and frequencies
-    between pairs of channels for which connectivity indices have
-    been calculated, to merge data (2 brains).
-
-    Arguments:
-        electrodes: electrode pairs for which connectivity indices have
-            been computed, list of tuples with channels indexes, see
-            indices_connectivity_interbrain function in toolbox (analyses).
-        ch_con: connectivity matrix between channels along space based on their
-            position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
-        freqs_mean: list of frequencies in the frequency-band-of-interest used
-            by MNE for coherence spectral density calculation (connectivity indices).
-        plot: option to plot the connectivity matrices, boolean.
-
-    Note:
-        It is assumed that there was no a priori connectivity
-        between channels from the two participants.
-
-    Returns:
-        metaconn, metaconn_freq:
-
-        - metaconn: a priori connectivity based on channel location, between
-            pairs of channels for which connectivity indices have been calculated,
-            to merge data, matrix of shape (len(electrodes), len(electrodes)).
-
-        - metaconn_freq: a priori connectivity between pairs of channels for which
-            connectivity indices have been calculated, across space and
-            frequencies, to merge data, matrix of shape
-            (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean)).
+    Compute a priori connectivity matrices for hyperscanning analyses.
+    
+    This function creates connectivity matrices for pairs of channels across
+    two brains (participants), taking into account spatial adjacency within
+    each brain but assuming no direct connectivity between brains.
+    
+    Parameters
+    ----------
+    electrodes : List[Tuple[int, int]]
+        List of electrode pairs for which connectivity indices have been computed.
+        Each tuple contains the indices of channels from participant 1 and participant 2.
+        
+    ch_con : scipy.sparse.csr_matrix
+        Connectivity matrix between channels in space, typically from con_matrix()
+        
+    freqs_mean : List[float]
+        List of frequencies in the frequency-band-of-interest
+        
+    plot : bool, optional
+        Whether to plot the connectivity matrices (default=False)
+    
+    Returns
+    -------
+    metaconn_matrix_2brainsTuple : namedtuple
+        A named tuple containing:
+        - metaconn: Connectivity matrix between channel pairs,
+          array of shape (len(electrodes), len(electrodes))
+        - metaconn_freq: Connectivity matrix between channel pairs across
+          space and frequencies, array of shape
+          (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean))
+    
+    Notes
+    -----
+    This function assumes there is no a priori connectivity between channels
+    from different participants. It considers two channel pairs connected if:
+    1. The respective channels within each participant are connected, or
+    2. Some channels are identical across the pairs
+    
+    The resulting connectivity matrices define the neighborhood structure for
+    cluster-based statistics on hyperscanning data.
+    
+    Examples
+    --------
+    >>> # Create metaconnectivity matrices for interbrain connectivity
+    >>> electrode_pairs = indices_connectivity_interbrain(epochs_hyper)
+    >>> metaconn = metaconn_matrix_2brains(
+    ...     electrode_pairs, ch_con.ch_con, freqs_mean=[10], plot=True
+    ... )
     """
 
     n = np.max(electrodes, axis=0)[0]+1
@@ -233,32 +315,52 @@ def metaconn_matrix_2brains(electrodes: List[Tuple[int, int]], ch_con: scipy.spa
         metaconn_freq=metaconn_freq)
 
 
-def metaconn_matrix(electrodes: List[Tuple[int, int]], ch_con: scipy.sparse.csr_matrix, freqs_mean: List[float]) -> tuple:
+def metaconn_matrix(electrodes: List[Tuple[int, int]], ch_con: scipy.sparse.csr_matrix, 
+                   freqs_mean: List[float]) -> namedtuple:
     """
-    Computes a priori connectivity between pairs of sensors for which
-    connectivity indices have been calculated, across space and frequencies
-    (based on channel location).
-
-    Arguments:
-        electrodes: electrode pairs for which connectivity has been computed,
-            list of tuples with channel indices, see indices_connectivity
-            intrabrain function in toolbox (analyses).
-        ch_con: connectivity matrix between sensors along space based on their
-            position, scipy.sparse.csr_matrix of shape (n_channels, n_channels).
-        freqs_mean: list of frequencies in the frequency-band-of-interest used
-            by MNE for coherence spectral density calculation (connectivity indices).
-
-    Returns:
-        metaconn, metaconn_freq:
-
-        - metaconn: a priori connectivity based on channel location, between
-            pairs of channels for which connectivity indices have been calculated,
-            matrix of shape (len(electrodes), len(electrodes)).
-
-        - metaconn_freq: a priori connectivity between pairs of channels for which
-            connectivity indices have been calculated, across space and
-            frequencies, for merge data, matrix of shape
-            (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean)).
+    Compute a priori connectivity between pairs of sensors within one brain.
+    
+    This function creates connectivity matrices for pairs of channels within
+    a single brain, taking into account spatial adjacency for cluster-based statistics.
+    
+    Parameters
+    ----------
+    electrodes : List[Tuple[int, int]]
+        List of electrode pairs for which connectivity indices have been computed.
+        Each tuple contains the indices of two channels from the same participant.
+        
+    ch_con : scipy.sparse.csr_matrix
+        Connectivity matrix between channels in space, typically from con_matrix()
+        
+    freqs_mean : List[float]
+        List of frequencies in the frequency-band-of-interest
+    
+    Returns
+    -------
+    metaconn_matrixTuple : namedtuple
+        A named tuple containing:
+        - metaconn: Connectivity matrix between channel pairs,
+          array of shape (len(electrodes), len(electrodes))
+        - metaconn_freq: Connectivity matrix between channel pairs across
+          space and frequencies, array of shape
+          (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean))
+    
+    Notes
+    -----
+    This function determines whether two channel pairs are connected based on
+    the spatial adjacency of their constituent channels. It considers various 
+    combinations of adjacency between the channels.
+    
+    The resulting connectivity matrices define the neighborhood structure for
+    cluster-based statistics on connectivity data within a single brain.
+    
+    Examples
+    --------
+    >>> # Create metaconnectivity matrices for intrabrain connectivity
+    >>> electrode_pairs = indices_connectivity_intrabrain(epochs)
+    >>> metaconn = metaconn_matrix(
+    ...     electrode_pairs, ch_con.ch_con, freqs_mean=[10]
+    ... )
     """
 
     metaconn = np.zeros((len(electrodes), len(electrodes)))
@@ -298,41 +400,74 @@ def metaconn_matrix(electrodes: List[Tuple[int, int]], ch_con: scipy.sparse.csr_
         metaconn_freq=metaconn_freq)
 
 
-def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float = 0.05) -> tuple:
+def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr_matrix, 
+                    tail: int, n_permutations: int, alpha: float = 0.05) -> namedtuple:
     """
-    Computes cluster-level statistical permutation test, corrected with
-    channel connectivity across space and frequencies.
-
-    Arguments:
-        data: values from different conditions or different groups to compare,
-            list of arrays (3d for time-frequency power or connectivity values).
-        freqs_mean: frequencies in frequency-band-of-interest used by MNE
-            for PSD or CSD calculation, list.
-        ch_con_freq: connectivity or metaconnectivity matrix for PSD or CSD
-            values to assess a priori connectivity between channels across
-            space and frequencies based on their position, bsr_matrix.
-        tail: direction of the ttest, can be set to 1, 0 or -1.
-        n_permutations: number of permutations computed, can be set to 50000.
-        alpha: threshold to consider clusters significant, can be set to 0.05
-            or less.
-
-    Returns:
-        F_obs, clusters, cluster_pv, H0, F_obs_plot:
-
-        - F_obs: statistic (F by default) observed for all variables,
-            array of shape (n_tests,).
-
-        - clusters: boolean array with same shape as the input data, 
-            True values indicating locations that are part of a cluster, array.
-
-        - cluster_p_values: p-value for each cluster, array.
-
-        - H0: max cluster level stats observed under permutation, array of
-            shape (n_permutations,).
-
-        - F_obs_plot: statistical values above alpha threshold, to plot
-            significant sensors (see plot_significant_sensors function in the toolbox)
-            array of shape (n_tests,).
+    Perform cluster-level statistical permutation test on neurophysiological data.
+    
+    This function applies a cluster-based permutation test to identify significant
+    differences between conditions, correcting for multiple comparisons by taking
+    into account connectivity across space and frequencies.
+    
+    Parameters
+    ----------
+    data : list
+        List of arrays containing values from different conditions or groups
+        to compare. Each array has shape (n_observations, n_features)
+        
+    freqs_mean : list
+        Frequencies in the frequency-band-of-interest
+        
+    ch_con_freq : scipy.sparse.csr_matrix
+        Connectivity or metaconnectivity matrix defining adjacency across
+        space and frequencies, typically from con_matrix() or metaconn_matrix()
+        
+    tail : int
+        Direction of the test:
+        - 0: two-tailed test
+        - 1: one-tailed test (greater)
+        - -1: one-tailed test (less)
+        
+    n_permutations : int
+        Number of permutations for the statistical test, e.g., 50000
+        
+    alpha : float, optional
+        Significance threshold for clusters (default=0.05)
+    
+    Returns
+    -------
+    statscondClusterTuple : namedtuple
+        A named tuple containing:
+        - F_obs: Observed F-statistic for all variables, array of shape (n_features)
+        - clusters: Boolean array indicating locations in significant clusters
+        - cluster_p_values: p-value for each identified cluster
+        - H0: Max cluster-level statistics under permutation, array of shape (n_permutations)
+        - F_obs_plot: F-values for significant sensors, array of shape (n_features)
+    
+    Notes
+    -----
+    This function uses MNE's permutation_cluster_test to perform the analysis.
+    
+    With t_power=1 (default), each location is weighted by its statistical score
+    within a cluster, which gives more weight to stronger effects.
+    
+    The function automatically calculates appropriate thresholds for cluster
+    formation based on the F-distribution for two-tailed tests.
+    
+    Examples
+    --------
+    >>> # Compare alpha power between two conditions
+    >>> cluster_stats = statscondCluster(
+    ...     [condition1_data, condition2_data],
+    ...     freqs_mean=np.arange(8, 13),
+    ...     ch_con_freq=connectivity.ch_con_freq,
+    ...     tail=0,  # two-tailed test
+    ...     n_permutations=10000,
+    ...     alpha=0.05
+    ... )
+    >>> # Get significant clusters
+    >>> significant_clusters = [i for i, p in enumerate(cluster_stats.cluster_p_values) if p <= 0.05]
+    >>> print(f"Found {len(significant_clusters)} significant clusters")
     """
 
     # Compute F-threshold for two-tailed test if needed
@@ -374,63 +509,96 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
         F_obs_plot=F_obs_plot)
 
 
-def statscluster(data: list, test: str, factor_levels: List[int], ch_con_freq: scipy.sparse.csr_matrix, tail: int, n_permutations: int, alpha: float = 0.05) -> tuple:
+def statscluster(data: list, test: str, factor_levels: List[int], ch_con_freq: scipy.sparse.csr_matrix, 
+                tail: int, n_permutations: int, alpha: float = 0.05) -> namedtuple:
     """
-    Computes cluster-level statistical permutation test, corrected with
-    channel connectivity across space and frequencies to compare groups
-    or conditions for simple or multiple comparisons.
-
-    Arguments:
-        data: values from different groups or conditions to compare,
-            list of arrays (3d for time-frequency power or connectivity values),
-            or np.array for f multiple-way ANOVA test. For this test and the 
-            paired ttest, samples must have the same dimension.
-        test: nature of the test used to compare groups or conditions.
-            Can be a t test for independant or paired samples
-            ('ind ttest' or 'rel ttest'), a one-way ANOVA test
-            ('f oneway'), or a multiple-way ANOVA test ('f multipleway), str.
-        factor_levels: for multiple-way ANOVA test, describe the number of level
-            for each factor, list (if compare 2 groups and 2 conditions,
-            factor_levels = [2, 2] and data should be an np.array with
-            group1-condition1, group1-condition2, group2-condition1,
-            group2-condition2).
-            Set to None otherwise.
-        ch_con_freq: connectivity or metaconnectivity matrix for PSD or CSD
-            values to assess a priori connectivity between channels across
-            space and frequencies based on their position, bsr_matrix.
-        tail: direction of the ttest, can be set to 1, 0 or -1. The tail must
-            be set to 0 for a one-way ANOVA test and to 1 for a mutiple-way
-            ANOVA test.
-        n_permutations: number of permutations computed, can be set to 50000.
-        alpha: threshold to consider clusters significant, can be set to 0.05
-            that is the default value. An adjustment is done for a f one-way and
-            multiple-way tests to adapt 0.05 to the number of observations.
-
-    Notes:
-        With t_power set to 1, each location is weighted by its statistical
-        score in a cluster.
-        For a f multipleway ANOVA test with connectivity values, the last
-        dimensions have to be flattened in a vector, instead of the shape
-        (n_sensors, n_sensors), you can use np.reshape.
-
-    Returns:
-        Stat_obs, clusters, cluster_pv, H0, Stat_obs_plot:
-
-        - Stat_obs: statistic (T or F values according to the assignement
-            of 'test') observed for all variables,
-            array of shape (n_tests,).
-
-        - clusters: boolean array with same shape as the input data,
-            True values indicating locations that are part of a cluster, array.
-
-        - cluster_p_values: p-value for each cluster, array.
-
-        - H0: max cluster level stats observed under permutation, array of
-            shape (n_permutations,).
-
-        - Stat_obs_plot: statistical values above alpha threshold,
-            to plot significant sensors (see plot_significant_sensors
-            function in the toolbox) array of shape (n_tests,).
+    Perform cluster-based statistical tests with various test statistics.
+    
+    This function provides a flexible interface to cluster-based permutation
+    tests, supporting different statistical tests including t-tests, one-way ANOVA,
+    and multiple-way ANOVA for complex experimental designs.
+    
+    Parameters
+    ----------
+    data : list or np.ndarray
+        For t-tests and one-way ANOVA: list of arrays containing values from
+        different groups or conditions to compare
+        For multiple-way ANOVA: numpy array organized by factors
+        
+    test : str
+        Type of statistical test to use:
+        - 'ind ttest': Independent samples t-test
+        - 'rel ttest': Related (paired) samples t-test
+        - 'f oneway': One-way ANOVA
+        - 'f multipleway': Multiple-way ANOVA
+        
+    factor_levels : List[int] or None
+        For multiple-way ANOVA, list specifying the number of levels for each factor
+        (e.g., [2, 3] for a 2×3 design with 2 levels of factor 1 and 3 levels of factor 2)
+        Set to None for other tests
+        
+    ch_con_freq : scipy.sparse.csr_matrix
+        Connectivity or metaconnectivity matrix defining adjacency across
+        space and frequencies
+        
+    tail : int
+        Direction of the test:
+        - 0: two-tailed test (must be used for f oneway)
+        - 1: one-tailed test (greater) (must be used for f multipleway)
+        - -1: one-tailed test (less)
+        
+    n_permutations : int
+        Number of permutations for the statistical test, e.g., 50000
+        
+    alpha : float, optional
+        Significance threshold for clusters (default=0.05)
+    
+    Returns
+    -------
+    statscondClusterTuple : namedtuple
+        A named tuple containing:
+        - Stat_obs: Observed statistic (T or F) for all variables
+        - clusters: Boolean array indicating locations in significant clusters
+        - cluster_p_values: p-value for each identified cluster
+        - H0: Max cluster-level statistics under permutation
+        - Stat_obs_plot: Statistical values for significant sensors
+    
+    Notes
+    -----
+    For multiple-way ANOVA with connectivity values, the last dimensions may
+    need to be flattened from shape (n_sensors, n_sensors) to a vector using np.reshape.
+    
+    The function applies different thresholding approaches based on the test type:
+    - For t-tests: Uses the alpha value directly
+    - For one-way ANOVA: Uses the alpha value directly
+    - For multiple-way ANOVA: Calculates appropriate F-thresholds based on factor levels
+    
+    With t_power=1, each location is weighted by its statistical score within a cluster.
+    
+    Examples
+    --------
+    >>> # Independent t-test between two groups
+    >>> ind_ttest_results = statscluster(
+    ...     [group1_data, group2_data],
+    ...     test='ind ttest',
+    ...     factor_levels=None,
+    ...     ch_con_freq=connectivity.ch_con_freq,
+    ...     tail=0,  # two-tailed test
+    ...     n_permutations=10000,
+    ...     alpha=0.05
+    ... )
+    >>> 
+    >>> # 2×2 repeated measures ANOVA (within-subjects design)
+    >>> # Factor 1: Condition (2 levels), Factor 2: Time (2 levels)
+    >>> anova_results = statscluster(
+    ...     data_array_2x2,  # Shape: (4, n_subjects, n_features)
+    ...     test='f multipleway',
+    ...     factor_levels=[2, 2],
+    ...     ch_con_freq=connectivity.ch_con_freq,
+    ...     tail=1,  # F-tests are one-tailed
+    ...     n_permutations=10000,
+    ...     alpha=0.05
+    ... )
     """
 
     # type of test
