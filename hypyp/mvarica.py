@@ -9,33 +9,94 @@ from scipy.fftpack import fft
 
 class MVAR:
     """
-    Implementing a multivariate vector autoregressive model.
-
-    Arguments:
-        model_order: Int, defines order of MVAR model.
-
-        fitting_method: String, the method that is used for fitting the data to MVAR model. Options in note.
-
-        delta: Float, ridge penalty parameter.
-
-    Returns:
-        class: MVAR
-        An instance of MVAR with predefined arguments.
-
-    Note:
-        *** fitting method options ***
-        - 'default':
-        If delta = 0 or None, least square method is used.
-        If delta !=0, regularized least square is used.
-
-        - fitting object:
-        User can implement his/her own fitting method as an python class with the following requirements:
-        a fit(x,y) method: fits the linear model with desired algorithm.
-        a coef attribute for saving the estimated coefficients for the problem.
-
+    Multivariate Vector Autoregressive Model implementation.
+    
+    This class implements methods for fitting, predicting with, and checking stability of
+    MVAR models. MVAR models are useful for analyzing directed interactions between multiple
+    time series by modeling how past values of all series affect current values of each series.
+    
+    Parameters
+    ----------
+    model_order : int
+        Order of the MVAR model, indicating how many past time points influence the current value.
+        Higher orders can capture more complex temporal dependencies but require more data to fit.
+        
+    fitting_method : str or object, optional
+        Method used for fitting the MVAR model (default='default'). Options:
+        - 'default': Uses least squares method if delta=0, or regularized least squares if delta≠0
+        - custom object: Must implement a fit(x, y) method and a coef attribute
+        
+    delta : float, optional
+        Ridge penalty parameter for regularization (default=0):
+        - 0: No regularization (standard least squares)
+        - >0: Adds L2 regularization to stabilize parameter estimation
+    
+    Attributes
+    ----------
+    order : int
+        The order of the MVAR model
+        
+    coeff : ndarray
+        The estimated MVAR coefficients with shape (n_channels, n_channels * model_order)
+        
+    residuals : ndarray
+        The residuals after fitting the model, with same shape as input signal
+        
+    Methods
+    -------
+    fit(signal)
+        Fits the MVAR model to the input signal
+        
+    predict(signal)
+        Predicts values using the fitted MVAR model
+        
+    stability()
+        Checks whether the MVAR model is stable
+        
+    copy()
+        Creates a copy of the MVAR model instance
+    
+    Notes
+    -----
+    Stability of an MVAR model is crucial for interpretability. An unstable model
+    implies that the system would diverge over time, which is typically not
+    physiologically plausible for brain activity.
+    
+    The fitting process constructs a system of equations based on the input signal
+    and the specified model order, then solves for the coefficients.
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> # Create simulated data: 3 channels, 2 epochs, 1000 time points each
+    >>> data = np.random.randn(2, 3, 1000)
+    >>> # Initialize MVAR model with order 5
+    >>> model = MVAR(model_order=5, delta=0.1)
+    >>> # Fit the model
+    >>> model.fit(data)
+    >>> # Check stability
+    >>> is_stable = model.stability()
+    >>> print(f"Model is stable: {is_stable}")
+    >>> # Generate predictions
+    >>> predicted = model.predict(data)
     """
 
     def __init__(self, model_order, fitting_method='default', delta=0):
+        """
+        Initialize an MVAR model with specified parameters.
+        
+        Parameters
+        ----------
+        model_order : int
+            Order of the MVAR model
+            
+        fitting_method : str or object, optional
+            Method for fitting the MVAR model (default='default')
+            
+        delta : float, optional
+            Ridge penalty parameter (default=0)
+        """
+
         self.order = model_order
         self.fit_method = fitting_method
         self.fitting = None
@@ -44,23 +105,41 @@ class MVAR:
         self.delta = delta
 
     def copy(self):
-        """"
-        creates a copy of model.
         """
+        Create a deep copy of the current MVAR model.
+        
+        Returns
+        -------
+        mvar_copy : MVAR
+            A new MVAR instance with the same parameters and coefficients
+        """
+
         mvar_copy = self.__class__(self.order)
         mvar_copy.coeff = self.coeff.copy()
         mvar_copy.residuals = self.residuals.copy()
         return mvar_copy
 
     def predict(self, signal):
-        """"
-        Predicts data by MVAR model on input signal.
-
-        Arguments:
-            signal: ndarray with shape of (epochs, channels, samples).
-
-        Returns:
-            predicted: ndarray with the shape same as signal.
+        """
+        Predict time series data using the fitted MVAR model.
+        
+        This method applies the fitted MVAR coefficients to predict values
+        based on previous time points in the signal.
+        
+        Parameters
+        ----------
+        signal : ndarray
+            Input signal with shape (n_epochs, n_channels, n_samples)
+            
+        Returns
+        -------
+        predicted : ndarray
+            Predicted signal with the same shape as input
+            
+        Notes
+        -----
+        Predictions start from the (model_order)th time point, as earlier
+        points don't have sufficient history for prediction.
         """
 
         epoch, channel, sample = signal.shape
@@ -81,13 +160,23 @@ class MVAR:
 
     def stability(self):
         """
-        Checks whether the MVAR model is stable or not.
-        This function basically checks if all eigenvalue of coef. matrix have modulus less than one.
-
-        Returns:
-            bool.
-            True/False
+        Check the stability of the fitted MVAR model.
+        
+        An MVAR model is stable if all eigenvalues of the coefficient matrix
+        have modulus less than 1. Stability ensures that the model represents
+        a stationary process.
+        
+        Returns
+        -------
+        is_stable : bool
+            True if the model is stable, False otherwise
+            
+        Notes
+        -----
+        Stability is a necessary condition for valid connectivity analysis.
+        Unstable models can produce misleading connectivity estimates.
         """
+
         co_0, co_1 = self.coeff.shape
         p = co_1 // co_0
         assert (co_1 == co_0 * p)
@@ -105,13 +194,34 @@ class MVAR:
         return check_stability
 
     def construct_equation(self, signal, delta_1=None):
-        """"
-        Builds the MVAR equation system.
-
-        Arguments:
-            signal: ndarray with shape of (epochs, channels, samples).
-            delta_1: Float, ridge penalty parameter.
         """
+        Construct the system of equations for MVAR model fitting.
+        
+        This method reorganizes the input signal into a form suitable for
+        least squares estimation of MVAR coefficients.
+        
+        Parameters
+        ----------
+        signal : ndarray
+            Input signal with shape (n_epochs, n_channels, n_samples)
+            
+        delta_1 : float or None, optional
+            Ridge penalty parameter for regularization
+            
+        Returns
+        -------
+        x : ndarray
+            Design matrix containing lagged versions of the signal
+            
+        y : ndarray
+            Target matrix containing the values to be predicted
+            
+        Notes
+        -----
+        If delta_1 is provided, regularization terms are added to the design matrix
+        and target matrix to implement ridge regression.
+        """
+
         mvar_order = self.order
         epoch, channel, sample = signal.shape
         n = (sample - mvar_order) * epoch
@@ -128,15 +238,32 @@ class MVAR:
         return x, y
 
     def fit(self, signal):
-        """"
-        Fit MVAR model to input signal.
-
-        Arguments:
-            signal: ndarray with shape of (epochs, channels, samples).
-
-        Returns:
-            self: class:MVAR
         """
+        Fit the MVAR model to input signal data.
+        
+        This method estimates the MVAR coefficients that best predict the
+        signal values based on their past values.
+        
+        Parameters
+        ----------
+        signal : ndarray
+            Input signal with shape (n_epochs, n_channels, n_samples)
+            
+        Returns
+        -------
+        self : MVAR
+            The fitted MVAR model instance
+            
+        Notes
+        -----
+        The fitting method depends on the 'fitting_method' parameter:
+        - If 'default' and delta=0: Standard least squares
+        - If 'default' and delta≠0: Regularized least squares
+        - If custom object: Uses the object's fit method
+        
+        After fitting, the model coefficients and residuals are stored as attributes.
+        """
+
         if self.fit_method.lower() == 'default':
             if self.delta == 0 or self.delta is None:
                 x, y = self.construct_equation(signal)
@@ -159,18 +286,55 @@ class MVAR:
 
 
 def ica_wrapper(ica_input, ica_method='infomax_extended', random_state=None):
-    """"
-    Performs ICA on the input.
-    Arguments:
-        ica_input: ndarray, shape(samples, features)
-
-        ica_method: String, the method by which the ICA is performed on the input.
-
-        random_state: int/None, this  parameter is used as the seed in numpy.random.RandomState(seed). Default: None.
-
-    Returns:
-        result: unmixing_matrix, ndarray, shape (features, features)
     """
+    Performs Independent Component Analysis (ICA) on input data.
+    
+    This function serves as a unified interface to different ICA algorithms
+    implemented in external packages like MNE and scikit-learn.
+    
+    Parameters
+    ----------
+    ica_input : ndarray
+        Input data matrix with shape (n_samples, n_features)
+        
+    ica_method : str, optional
+        ICA algorithm to use (default='infomax_extended'). Options:
+        - 'infomax_extended': Extended Infomax algorithm from MNE
+        - 'infomax': Standard Infomax algorithm from MNE
+        - 'fastica': FastICA algorithm from scikit-learn
+        
+    random_state : int or None, optional
+        Seed for random number generator (default=None):
+        - None: Use default random state
+        - int: Set specific random seed for reproducibility
+    
+    Returns
+    -------
+    unmixing_matrix : ndarray
+        Unmixing matrix with shape (n_features, n_features) that transforms
+        the input data into independent components
+    
+    Notes
+    -----
+    The different ICA methods have varying properties:
+    - Extended Infomax can separate both super- and sub-Gaussian sources
+    - Standard Infomax works best for super-Gaussian sources
+    - FastICA is generally faster but may be less stable for certain data types
+    
+    Raises
+    ------
+    ValueError
+        If an unsupported ICA method is specified
+    
+    Examples
+    --------
+    >>> # Apply Extended Infomax ICA to random data
+    >>> data = np.random.randn(1000, 10)  # 1000 samples, 10 features
+    >>> unmixing = ica_wrapper(data, ica_method='infomax_extended', random_state=42)
+    >>> # Transform data to independent components
+    >>> components = data @ unmixing.T
+    """
+
     if ica_method.lower() == 'infomax_extended':
         from mne.preprocessing.infomax_ import infomax
         return infomax(ica_input, extended=True, random_state=random_state)
@@ -189,31 +353,75 @@ def ica_wrapper(ica_input, ica_method='infomax_extended', random_state=None):
 
 def connectivity_mvarica(real_signal, ica_params, measure_name, n_fft=512, var_model=MVAR):
     """
-    Applies MVARICA approach that uses MVAR models and ICA to jointly estimate sources and connectivity measures.
-
-    Arguments:
-        - real_signal: real-value ndarray with the shape of (epochs or trials, frequency, channels, time samples)
-
-        - ica_params: a python dictionary consisting name of desired ica method and value of random_state parameter.
-
-        - measure_name: name of desired connectivity measure. Supported connectivity measures are mentioned in Note.
-
-        - var_model: an instance of predefined VAR/MVAR model.
-
-        - n_fft: number of frequency bins for computing connectivity measures (for fft). default: 512
-
-    Returns:
-        result: assigned measure matrix,
-        ndarray with the shape of (epochs or trials, frequency, channels, channels, n_fft)
-
-    Note:
-        ***available measures***
-
-        'mvar_spectral' : Spectral representation of the VAR coefficients
-        'mvar_tf': Transfer function
-        'pdc' : Partial directed coherence
-        'dtf' : Directed transfer function
+    Applies MVARICA approach to estimate connectivity between brain sources.
+    
+    MVARICA (Multivariate Autoregressive Independent Component Analysis) combines
+    MVAR modeling with ICA to jointly estimate source activities and their causal
+    interactions. This function implements the full pipeline from signal to
+    connectivity measures.
+    
+    Parameters
+    ----------
+    real_signal : ndarray
+        Input signal with shape (n_epochs, n_channels, n_samples)
+        
+    ica_params : dict
+        Dictionary of ICA parameters with keys:
+        - 'method': str, ICA algorithm to use (see ica_wrapper for options)
+        - 'random_state': int or None, random seed for reproducibility
+        
+    measure_name : str
+        Connectivity measure to compute. Options:
+        - 'mvar_spectral': Spectral representation of VAR coefficients
+        - 'mvar_tf': Transfer function
+        - 'pdc': Partial directed coherence
+        - 'dtf': Directed transfer function
+        
+    n_fft : int, optional
+        Number of frequency bins for connectivity computation (default=512)
+        
+    var_model : MVAR, optional
+        Pre-initialized MVAR model instance (default=MVAR)
+    
+    Returns
+    -------
+    result : ndarray
+        Connectivity measure matrix with shape dependent on the measure:
+        - For all measures: (n_channels, n_channels, n_fft)
+        Where each [i, j] entry represents connectivity from channel j to channel i
+    
+    Notes
+    -----
+    Process steps:
+    1. Fit an MVAR model to the input signals
+    2. Extract residuals (innovations) from the fitted model
+    3. Apply ICA to the residuals to estimate the mixing matrix
+    4. Transform the MVAR coefficients to the source space
+    5. Compute the specified connectivity measure in the frequency domain
+    
+    The different connectivity measures have different interpretations:
+    - PDC (Partial Directed Coherence): Measures direct influence from j to i
+      normalized by the total outflow from j
+    - DTF (Directed Transfer Function): Measures total influence from j to i
+      normalized by the total inflow to i
+    
+    References
+    ----------
+    Baccalá, L. A., & Sameshima, K. (2001). Partial directed coherence: a new
+    concept in neural structure determination. Biological cybernetics, 84(6), 463-474.
+    
+    Kaminski, M., & Blinowska, K. J. (1991). A new method of the description of
+    the information flow in the brain structures. Biological cybernetics, 65(3), 203-210.
+    
+    Examples
+    --------
+    >>> # Estimate PDC connectivity from simulated data
+    >>> data = np.random.randn(2, 5, 1000)  # 2 epochs, 5 channels, 1000 samples
+    >>> mvar_model = MVAR(model_order=5, delta=0.1)
+    >>> ica_params = {'method': 'infomax_extended', 'random_state': 42}
+    >>> pdc = connectivity_mvarica(data, ica_params, 'pdc', n_fft=128, var_model=mvar_model)
     """
+    
     fit_var = var_model.fit(real_signal)
     res = real_signal - var_model.predict(real_signal)
 
