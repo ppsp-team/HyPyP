@@ -14,7 +14,7 @@ The **Hy**perscanning **Py**thon **P**ipeline
 
 ## Contributors
 Original authors: Florence BRUN, Anaël AYROLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS  
-New contributors: Rémy RAMADOUR, Patrice FORTIN, Ghazaleh RANJBARAN, Quentin MOREAU, Caitriona DOUGLAS, Franck PORTEOUS, Jonas MAGO, Juan C. AVENDANO, Julie BONNAIRE
+New contributors: Marine Gautier MARTINS, Rémy RAMADOUR, Patrice FORTIN, Ghazaleh RANJBARAN, Quentin MOREAU, Caitriona DOUGLAS, Franck PORTEOUS, Jonas MAGO, Juan C. AVENDANO, Julie BONNAIRE
 
 ## Installation
 
@@ -102,6 +102,18 @@ or by adding the following line to your .bashrc or .zshrc:
 
 ```bash
 poetry config virtualenvs.in-project true
+```
+
+## Child Head Visualization
+
+As of version 0.5.0b5, hypyp now supports visualization of parent-child or adult-child hyperscanning data. This allows for properly scaled and positioned head models when analyzing data from participants of different ages.
+
+To use this functionality, simply set the `children=True` parameter in visualization functions and specify which participant is the child using the `child_head` parameter.
+
+Example:
+```python
+# Visualize parent-child data (epo1 = parent, epo2 = child)
+viz_3D_inter(epo1, epo2, C, threshold=0.95, steps=10, children=True, child_head=True)
 ```
 
 # License
