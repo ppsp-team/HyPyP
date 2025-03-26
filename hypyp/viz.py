@@ -30,23 +30,76 @@ from hypyp.ext.mpl3d.camera import Camera
 from hypyp.analyses import xwt
 
 
-def transform(locs: np.ndarray, traX: float=0.15, traY: float=0, traZ: float=0.5, rotY: float=(np.pi)/2, rotZ: float=(np.pi)/2, children: bool=False, child_head: bool=False) -> np.ndarray:
+def transform(locs: np.ndarray, traX: float=0.15, traY: float=0, traZ: float=0.5, 
+             rotY: float=(np.pi)/2, rotZ: float=(np.pi)/2, children: bool=False, 
+             child_head: bool=False) -> np.ndarray:
     """
-    Apply a series of transformations to a set of 3D coordinates.
+    Apply a series of transformations to 3D coordinates for visualization.
     
-    Parameters:
-        locs (np.ndarray): A numpy array of shape (n, 3) representing the 3D coordinates to be transformed.
-        traX (float, optional): Translation along the X-axis. Default is 0.15.
-        traY (float, optional): Translation along the Y-axis. Default is 0.
-        traZ (float, optional): Translation along the Z-axis. Default is 0.5.
-        rotY (float, optional): Rotation around the Y-axis in radians. Default is π/2.
-        rotZ (float, optional): Rotation around the Z-axis in radians. Default is π/2.
-        children (bool, optional): If True, apply transformations specific to children's models. Default is False.
-        child_head (bool, optional): If True, apply transformations specific to a child's head model. 
-                                    Only relevant if `children` is True. Default is False.
-    Returns:
-        np.ndarray: The transformed 3D coordinates.
+    This function transforms electrode coordinates to fit properly into the head 
+    models for hyperscanning visualizations. It can adjust for adult or child head 
+    sizes and positions.
+    
+    Parameters
+    ----------
+    locs : np.ndarray
+        Array of shape (n_sensors, 3) containing the 3D coordinates to transform
+        
+    traX : float, optional
+        Translation along X-axis in meters (default=0.15)
+        
+    traY : float, optional
+        Translation along Y-axis in meters (default=0)
+        
+    traZ : float, optional
+        Translation along Z-axis in meters (default=0.5)
+        
+    rotY : float, optional
+        Rotation around Y-axis in radians (default=π/2)
+        
+    rotZ : float, optional
+        Rotation around Z-axis in radians (default=π/2)
+        
+    children : bool, optional
+        Whether to apply transformations specific to children's head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, apply transformations for a child's head model
+        If False and children=True, apply transformations for an adult's head model
+        with a child (default=False)
+    
+    Returns
+    -------
+    np.ndarray
+        The transformed 3D coordinates with the same shape as input
+    
+    Notes
+    -----
+    The transformation sequence is:
+    1. Z-axis rotation
+    2. Scaling (with different factors for children)
+    3. X/Y/Z translations
+    4. Y-axis rotation
+    
+    When using with hyperscanning visualization functions, this transformation
+    is typically applied with different parameters to position each participant's 
+    sensors appropriately in the visualization.
+    
+    Examples
+    --------
+    >>> # Transform adult electrode positions
+    >>> transformed_locs = transform(electrode_positions, traX=-0.17, rotZ=-np.pi/2)
+    >>> 
+    >>> # Transform child electrode positions
+    >>> child_locs = transform(
+    ...     electrode_positions, 
+    ...     traX=0.17, 
+    ...     rotZ=np.pi/2, 
+    ...     children=True, 
+    ...     child_head=True
+    ... )
     """
+
     if children:
         if child_head:
             scale = 0.68
@@ -83,30 +136,74 @@ def transform(locs: np.ndarray, traX: float=0.15, traY: float=0, traZ: float=0.5
     return locs
 
 
-def transform_2d_intra(locs: np.ndarray, traX: float=0.15, traY: float=0, traZ: float=0, rotZ: float=(np.pi)/2, children: bool=False, child_head: bool=False) -> np.ndarray:
+def transform_2d_intra(locs: np.ndarray, traX: float=0.15, traY: float=0, traZ: float=0, 
+                       rotZ: float=(np.pi)/2, children: bool=False, 
+                       child_head: bool=False) -> np.ndarray:
     """
-    Calculates new locations for the EEG locations.
-
-    Arguments:
-        locs: array of shape (n_sensors, 3)
-            3d coordinates of the sensors
-        traX: float
-            X translation to apply to the sensors
-        traY: float
-            Y translation to apply to the sensors
-        traZ: float
-            Z translation to apply to the sensors
-        rotZ: float
-            Z rotation to apply to the sensors
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        result: array (n_sensors, 3)
-            new coordinates of the sensors
+    Transform electrode coordinates for 2D intra-brain visualizations.
+    
+    This function applies transformations to electrode coordinates for
+    2D visualizations of intra-brain connectivity. It's a simplified version
+    of the transform() function with fewer rotations.
+    
+    Parameters
+    ----------
+    locs : np.ndarray
+        Array of shape (n_sensors, 3) containing the 3D coordinates to transform
+        
+    traX : float, optional
+        Translation along X-axis in meters (default=0.15)
+        
+    traY : float, optional
+        Translation along Y-axis in meters (default=0)
+        
+    traZ : float, optional
+        Translation along Z-axis in meters (default=0)
+        
+    rotZ : float, optional
+        Rotation around Z-axis in radians (default=π/2)
+        
+    children : bool, optional
+        Whether to apply transformations specific to children's head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, apply transformations for a child's head model
+        If False and children=True, apply transformations for an adult's head model
+        with a child (default=False)
+    
+    Returns
+    -------
+    np.ndarray
+        The transformed 3D coordinates with the same shape as input
+    
+    Notes
+    -----
+    This function is primarily used for 2D intra-brain connectivity visualizations
+    where the full 3D rotation from transform() is not needed.
+    
+    The main differences from transform() are:
+    1. No Y-axis rotation
+    2. Simpler scaling for the Z dimension
+    
+    Examples
+    --------
+    >>> # Transform adult electrode positions for 2D intra-brain visualization
+    >>> transformed_locs = transform_2d_intra(
+    ...     electrode_positions, 
+    ...     traX=-0.178, 
+    ...     traY=0.012
+    ... )
+    >>> 
+    >>> # Transform child electrode positions
+    >>> child_locs = transform_2d_intra(
+    ...     electrode_positions, 
+    ...     traX=0.178, 
+    ...     traY=0.012, 
+    ...     children=True, 
+    ...     child_head=True
+    ... )
     """
+
     if children:
         if child_head:
             # Transformations for a child's head model
@@ -131,18 +228,64 @@ def transform_2d_intra(locs: np.ndarray, traX: float=0.15, traY: float=0, traZ: 
 
 def bezier_interpolation(t, p0, p1, c0, c1=None):
     """
-    Calculate points on a Bezier curve.
+    Calculate points on a cubic Bezier curve for smooth connection visualization.
     
-    Parameters:
-        t: Interpolation parameter (0 to 1)
-        p0: Starting point
-        p1: Ending point
-        c0: Control point for p0
-        c1: Control point for p1. If None, uses c0 for both (for intra-brain curves)
+    This function implements cubic Bezier curve interpolation to create smooth
+    curves for visualizing connectivity between electrodes. It's especially
+    useful for creating aesthetically pleasing inter-brain connectivity
+    visualizations.
     
-    Returns:
-        Point on the Bezier curve
+    Parameters
+    ----------
+    t : float
+        Interpolation parameter between 0 and 1
+        0 represents the start point, 1 represents the end point
+        
+    p0 : array-like
+        Starting point coordinates
+        
+    p1 : array-like
+        Ending point coordinates
+        
+    c0 : array-like
+        Control point for the starting point
+        
+    c1 : array-like, optional
+        Control point for the ending point
+        If None, c0 is used for both control points (for intra-brain curves)
+        (default=None)
+    
+    Returns
+    -------
+    array-like
+        Point coordinates on the Bezier curve at parameter t
+    
+    Notes
+    -----
+    The function implements the cubic Bezier formula:
+    B(t) = (1-t)³P₀ + 3(1-t)²t(2P₀-C₀) + 3(1-t)t²(2P₁-C₁) + t³P₁
+    
+    When visualizing intra-brain connectivity (within one brain), typically
+    c1 is set to None, which makes the curve symmetric.
+    
+    For inter-brain connectivity, different control points are used to create
+    a curve that properly arcs between the two head models.
+    
+    Examples
+    --------
+    >>> # Calculate 10 points along a Bezier curve for smooth connection
+    >>> points = []
+    >>> for i in range(10):
+    ...     t = i / 9  # 0 to 1
+    ...     point = bezier_interpolation(
+    ...         t, 
+    ...         [0, 0, 0],      # start point
+    ...         [1, 1, 0],      # end point
+    ...         [0.5, 0, 0]     # control point
+    ...     )
+    ...     points.append(point)
     """
+
     if c1 is None:
         c1 = c0
         
@@ -152,24 +295,62 @@ def bezier_interpolation(t, p0, p1, c0, c1=None):
             t ** 3 * p1)
 
 
-def plot_sensors_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = True, children: bool=False, child_head: bool=False):
+def plot_sensors_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = True, 
+                          children: bool=False, child_head: bool=False):
     """
-    Plots sensors in 2D with x representation for bad sensors.
+    Plot sensors from two participants in 2D for inter-brain visualizations.
+    
+    This function plots the sensor positions from two participants in a 2D view,
+    with special markers for bad channels. It's typically used as part of
+    inter-brain connectivity visualizations.
+    
+    Parameters
+    ----------
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    lab : bool, optional
+        Whether to plot channel labels (default=True)
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    None
+        Plots the sensors in the current matplotlib Axes
+    
+    Notes
+    -----
+    The function:
+    1. Extracts electrode coordinates from the Epochs objects
+    2. Transforms them for proper visualization using transform()
+    3. Plots each sensor with:
+       - Circle markers for good channels
+       - X markers for bad channels (those in info['bads'])
+    4. Optionally adds channel labels
+    
+    This function is typically used as part of a larger visualization
+    function like viz_2D_topomap_inter() rather than called directly.
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> # Create a figure
+    >>> fig, ax = plt.subplots()
+    >>> # Plot sensors
+    >>> plot_sensors_2d_inter(epochs_subj1, epochs_subj2, lab=True)
+    >>> plt.show()
+    """
 
-    Arguments:
-        epo1: mne.Epochs
-            Epochs object to get channels information
-        epo2: mne.Epochs
-            Epochs object to get channels information
-        lab: option to plot channel names
-            True by default.
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-    Returns:
-        None: plot the sensors in 2D within the current axis.
-    """
     # extract sensor info and transform loc to fit with headmodel
     loc1 = copy(np.array([ch['loc'][:3] for ch in epo1.info['chs']]))
     loc2 = copy(np.array([ch['loc'][:3] for ch in epo2.info['chs']]))
@@ -209,23 +390,61 @@ def plot_sensors_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = True, 
             plt.text(x2+0.012, y2+0.012, lab2[index_ch], horizontalalignment='center', verticalalignment='center')
 
 
-def plot_sensors_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False, children: bool=False, child_head: bool=False):
+def plot_sensors_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False, 
+                         children: bool=False, child_head: bool=False):
     """
-    Plots sensors in 2D with x representation for bad sensors.
-
-    Arguments:
-        epo1: mne.Epochs
-            Epochs object to get channels information
-        epo2: mne.Epochs
-            Epochs object to get channels information
-        lab: option to plot channel names
-            True by default.
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-    Returns:
-        None: plot the sensors in 2D within the current axis.
+    Plot sensors from two participants in 2D for intra-brain visualizations.
+    
+    This function plots the sensor positions from two participants for visualizing
+    intra-brain connectivity (connectivity within each brain separately). The sensors 
+    are positioned side by side rather than facing each other as in inter-brain plots.
+    
+    Parameters
+    ----------
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    lab : bool, optional
+        Whether to plot channel labels (default=False)
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    None
+        Plots the sensors in the current matplotlib Axes
+    
+    Notes
+    -----
+    The function:
+    1. Extracts electrode coordinates from the Epochs objects
+    2. Transforms them for side-by-side visualization using transform_2d_intra()
+    3. Plots each sensor with:
+       - Circle markers for good channels
+       - X markers for bad channels (those in info['bads'])
+    4. Optionally adds channel labels
+    
+    Unlike plot_sensors_2d_inter(), this function positions the heads side by side
+    rather than facing each other, which is appropriate for visualizing intra-brain
+    connectivity where comparisons are made between participants.
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> # Create a figure
+    >>> fig, ax = plt.subplots()
+    >>> # Plot sensors for intra-brain visualization
+    >>> plot_sensors_2d_intra(epochs_subj1, epochs_subj2, lab=True)
+    >>> plt.show()
     """
 
     # extract sensor info and transform loc to fit with headmodel
@@ -267,25 +486,68 @@ def plot_sensors_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False,
             plt.text(x2+0.012, y2+0.012, lab2[index_ch], horizontalalignment='center', verticalalignment='center')
 
 
-def plot_sensors_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False, children: bool=False, child_head: bool=False):
+def plot_sensors_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False, 
+                         children: bool=False, child_head: bool=False):
     """
-    Plots sensors in 3D with x representation for bad sensors.
-
-    Arguments:
-        ax: Matplotlib axis created with projection='3d'
-        epo1: mne.Epochs
-            Epochs object to get channel information
-        epo2: mne.Epochs
-            Epochs object to get channel information
-        lab: option to plot channel names
-            False by default.
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        None: plot the sensors in 3D within the current axis.
+    Plot sensors from two participants in 3D for inter-brain visualizations.
+    
+    This function plots the sensor positions from two participants in a 3D view,
+    with special markers for bad channels. It's typically used as part of
+    inter-brain connectivity 3D visualizations.
+    
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib 3D axis (created with projection='3d')
+        
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    lab : bool, optional
+        Whether to plot channel labels (default=False)
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    None
+        Plots the sensors in the provided matplotlib 3D Axes
+    
+    Notes
+    -----
+    The function:
+    1. Extracts electrode coordinates from the Epochs objects
+    2. Transforms them for proper 3D visualization using transform()
+    3. Plots each sensor in 3D space with:
+       - Sphere markers for good channels
+       - X markers for bad channels (those in info['bads'])
+    4. Optionally adds channel labels in 3D space
+    
+    This function is typically used as part of a larger visualization
+    function like viz_3D_inter() rather than called directly.
+    
+    The main difference from the 2D equivalent is that this function requires
+    a 3D axis and uses 3D scatter plots instead of 2D plots.
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> from mpl_toolkits.mplot3d import Axes3D
+    >>> # Create a 3D figure
+    >>> fig = plt.figure()
+    >>> ax = fig.add_subplot(111, projection='3d')
+    >>> # Plot sensors in 3D
+    >>> plot_sensors_3d_inter(ax, epochs_subj1, epochs_subj2, lab=True)
+    >>> plt.show()
     """
 
     # extract sensor infos and transform loc to fit with headmodel 
@@ -327,25 +589,66 @@ def plot_sensors_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool
 
 
 
-def plot_sensors_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False, children: bool = False, child_head: bool = False):
+def plot_sensors_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool = False, 
+                         children: bool = False, child_head: bool = False):
     """
-    Plots sensors in 3D with x representation for bad sensors.
-
-    Arguments:
-        ax: Matplotlib axis created with projection='3d'
-        epo1: mne.Epochs
-            Epochs object to get channel information
-        epo2: mne.Epochs
-            Epochs object to get channel information
-        lab: option to plot channel names
-            False by default.
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        None: plot the sensors in 3D within the current axis.
+    Plot sensors from two participants in 3D for intra-brain visualizations.
+    
+    This function plots the sensor positions from two participants in a 3D view
+    for visualizing intra-brain connectivity. The sensors are positioned side by side 
+    rather than facing each other as in inter-brain plots.
+    
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib 3D axis (created with projection='3d')
+        
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    lab : bool, optional
+        Whether to plot channel labels (default=False)
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    None
+        Plots the sensors in the provided matplotlib 3D Axes
+    
+    Notes
+    -----
+    The function:
+    1. Extracts electrode coordinates from the Epochs objects
+    2. Transforms them for side-by-side 3D visualization using transform()
+    3. Plots each sensor in 3D space with:
+       - Sphere markers for good channels
+       - X markers for bad channels (those in info['bads'])
+    4. Optionally adds channel labels in 3D space
+    
+    Unlike plot_sensors_3d_inter(), this function positions the heads side by side
+    rather than facing each other, which is appropriate for visualizing intra-brain
+    connectivity where comparisons are made between participants.
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> from mpl_toolkits.mplot3d import Axes3D
+    >>> # Create a 3D figure
+    >>> fig = plt.figure()
+    >>> ax = fig.add_subplot(111, projection='3d')
+    >>> # Plot sensors in 3D for intra-brain visualization
+    >>> plot_sensors_3d_intra(ax, epochs_subj1, epochs_subj2, lab=True)
+    >>> plt.show()
     """
 
     # extract sensor infos and transform loc to fit with headmodel 
@@ -387,35 +690,83 @@ def plot_sensors_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, lab: bool
             ax.text(x2+0.012, y2+0.012, z2, lab2[index_ch], horizontalalignment='center', verticalalignment='center')
 
 
-def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: str='auto', steps: int=10, children: bool=False, child_head: bool=False):
+def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, 
+                       threshold: str='auto', steps: int=10, children: bool=False, 
+                       child_head: bool=False):
     """
-    Plots hyper-connectivity in 2D.
-
-    Arguments:
-        epo1: mne.Epochs
-            Epochs object to get channels information
-        epo2: mne.Epochs
-            Epochs object to get channels information
-        C: array, (len(loc1), len(loc2))
-            matrix with the values of hyper-connectivity
-        threshold: float | str
-            threshold for the inter-brain links;
-            only those above the set value will be plotted
-            Can also be "auto" to use a threshold automatically
-            calculated from your matrix as the maximum median 
-            by column + the maximum standard error by column.
-            Note that the automatic threshold is specific to a 
-            dyad and does not allow to compare different dyads.
-        steps: int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        None: plot the links in 2D within the current axis.
+    Plot inter-brain connectivity links between two participants in 2D.
+    
+    This function visualizes the connectivity between electrodes of two participants
+    using bezier curves. Only connections above a specified threshold are displayed,
+    with line color and thickness indicating the strength and sign of the connection.
+    
+    Parameters
+    ----------
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    C : np.ndarray
+        Connectivity matrix with shape (n_channels_1, n_channels_2) containing
+        connectivity values between all pairs of electrodes across participants
+        
+    threshold : float or str, optional
+        Threshold for displaying connections (default='auto')
+        - If float: Only connections with absolute value above this threshold are displayed
+        - If 'auto': Threshold is set to the maximum median by column plus
+          the maximum standard error by column
+        
+    steps : int, optional
+        Number of steps for bezier curve interpolation (default=10)
+        - If steps < 3: Straight lines are drawn instead of curves
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    None
+        Plots the connectivity links in the current matplotlib Axes
+    
+    Notes
+    -----
+    The function:
+    1. Transforms electrode coordinates for proper visualization
+    2. Calculates control points for bezier curves based on head centers
+    3. Determines connectivity threshold (automatically or from parameter)
+    4. Plots connections with:
+       - Red color scale for positive connectivity values
+       - Blue color scale for negative connectivity values
+       - Line thickness proportional to connection strength
+    
+    This function is typically used as part of a larger visualization
+    function like viz_2D_topomap_inter() rather than called directly.
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> import numpy as np
+    >>> # Create random connectivity matrix
+    >>> n_channels = len(epochs_subj1.ch_names)
+    >>> connectivity = np.random.rand(n_channels, n_channels) * 2 - 1  # Values between -1 and 1
+    >>> # Create a figure
+    >>> fig, ax = plt.subplots(figsize=(10, 8))
+    >>> # Plot 2D connectivity links
+    >>> plot_links_2d_inter(
+    ...     epochs_subj1, 
+    ...     epochs_subj2, 
+    ...     connectivity, 
+    ...     threshold=0.5, 
+    ...     steps=15
+    ... )
+    >>> plt.show()
     """
     
     def plot_bezier_curve(x1, y1, x2, y2, ctr1, ctr2, color, weight, steps):
@@ -472,38 +823,98 @@ def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thres
                 plot_bezier_curve(x1, y1, x2, y2, ctr1, ctr2, color_n, weight, steps)
 
 
-def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: np.ndarray, threshold: str='auto', steps: int=10, children: bool=False, child_head: bool=False):
+def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: np.ndarray, 
+                       threshold: str='auto', steps: int=10, children: bool=False, 
+                       child_head: bool=False):
     """
-    Plots hyper-connectivity in 2D.
-
-    Arguments:
-        epo1: mne.Epochs
-            Epochs object to get channels information
-        epo2: mne.Epochs
-            Epochs object to get channels information
-        C1: array, (len(loc1), len(loc1))
-            matrix with the values of intra-brain connectivity
-        C2: array, (len(loc2), len(loc2))
-            matrix with the values of intra-brain connectivity
-        threshold: float | str
-            threshold for the inter-brain links;
-            only those above the set value will be plotted
-            Can also be "auto" to use a threshold automatically
-            calculated from your matrix as the maximum median 
-            by column + the maximum standard error by column.
-            Note that the automatic threshold is specific to a 
-            dyad and does not allow to compare different dyads.
-        steps: int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        None: plot the links in 2D within the current axis.
+    Plot intra-brain connectivity links for two participants in 2D.
+    
+    This function visualizes the connectivity within each participant's brain
+    separately using bezier curves. Only connections above a specified threshold 
+    are displayed, with line color and thickness indicating the strength and sign 
+    of the connection.
+    
+    Parameters
+    ----------
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    C1 : np.ndarray
+        Connectivity matrix with shape (n_channels_1, n_channels_1) containing
+        connectivity values between all pairs of electrodes for participant 1
+        
+    C2 : np.ndarray
+        Connectivity matrix with shape (n_channels_2, n_channels_2) containing
+        connectivity values between all pairs of electrodes for participant 2
+        
+    threshold : float or str, optional
+        Threshold for displaying connections (default='auto')
+        - If float: Only connections with absolute value above this threshold are displayed
+        - If 'auto': Threshold is set to the maximum of the median values plus
+          the maximum of standard errors across both participants
+        
+    steps : int, optional
+        Number of steps for bezier curve interpolation (default=10)
+        - If steps < 3: Straight lines are drawn instead of curves
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    None
+        Plots the connectivity links in the current matplotlib Axes
+    
+    Notes
+    -----
+    The function:
+    1. Transforms electrode coordinates for side-by-side visualization
+    2. Calculates control points for bezier curves based on each head's center
+    3. Determines connectivity threshold (automatically or from parameter)
+    4. Plots connections with:
+       - Red color scale for positive connectivity values
+       - Blue color scale for negative connectivity values
+       - Line thickness proportional to connection strength
+    
+    Unlike plot_links_2d_inter(), this function:
+    - Handles two separate connectivity matrices (one per participant)
+    - Uses the same color scale for both participants for consistent visualization
+    - Uses separate control points for each participant's connectivity curves
+    
+    This function is typically used as part of a larger visualization
+    function like viz_2D_topomap_intra() rather than called directly.
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> import numpy as np
+    >>> # Create random connectivity matrices
+    >>> n_channels_1 = len(epochs_subj1.ch_names)
+    >>> n_channels_2 = len(epochs_subj2.ch_names)
+    >>> connectivity_1 = np.random.rand(n_channels_1, n_channels_1) * 2 - 1  # Values between -1 and 1
+    >>> connectivity_2 = np.random.rand(n_channels_2, n_channels_2) * 2 - 1  # Values between -1 and 1
+    >>> # Create a figure
+    >>> fig, ax = plt.subplots(figsize=(10, 8))
+    >>> # Plot 2D intra-brain connectivity links
+    >>> plot_links_2d_intra(
+    ...     epochs_subj1, 
+    ...     epochs_subj2, 
+    ...     connectivity_1,
+    ...     connectivity_2,
+    ...     threshold=0.5, 
+    ...     steps=15
+    ... )
+    >>> plt.show()
     """
+
     def plot_bezier_curve(x1, y1, x2, y2, ctr, color, weight, steps):
         if steps <= 2:
             plt.plot([x1, x2], [y1, y2], '-', color=color, linewidth=weight)
@@ -576,36 +987,90 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: 
                 plot_bezier_curve(x1, y1, x2, y2, ctr2, color_n, weight, steps)
 
 
-def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: str='auto', steps: int=10, children: bool=False, child_head: bool=False):
+def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, 
+                       threshold: str='auto', steps: int=10, children: bool=False, 
+                       child_head: bool=False):
     """
-    Plots hyper-connectivity in 3D.
-
-    Arguments:
-        ax: Matplotlib axis created with projection='3d'
-        epo1: mne.Epochs
-            Epochs object to get channel information
-        epo2: mne.Epochs
-            Epochs object to get channel information
-        C: array, (len(loc1), len(loc2))
-            matrix with the values of hyper-connectivity
-        threshold: float | str
-            threshold for the inter-brain links;
-            only those above the set value will be plotted
-            Can also be "auto" to use a threshold automatically
-            calculated from your matrix as the maximum median 
-            by column + the maximum standard error by column.
-            Note that the automatic threshold is specific to a 
-            dyad and does not allow to compare different dyads.
-        steps: int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        None: plot the links in 3D within the current axis.
+    Plot inter-brain connectivity links between two participants in 3D.
+    
+    This function visualizes the connectivity between electrodes of two participants
+    using 3D bezier curves. Only connections above a specified threshold are displayed,
+    with line color and thickness indicating the strength and sign of the connection.
+    
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib 3D axis (created with projection='3d')
+        
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    C : np.ndarray
+        Connectivity matrix with shape (n_channels_1, n_channels_2) containing
+        connectivity values between all pairs of electrodes across participants
+        
+    threshold : float or str, optional
+        Threshold for displaying connections (default='auto')
+        - If float: Only connections with absolute value above this threshold are displayed
+        - If 'auto': Threshold is set to the maximum median by column plus
+          the maximum standard error by column
+        
+    steps : int, optional
+        Number of steps for bezier curve interpolation (default=10)
+        - If steps < 3: Straight lines are drawn instead of curves
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    None
+        Plots the connectivity links in the provided matplotlib 3D Axes
+    
+    Notes
+    -----
+    The function:
+    1. Transforms electrode coordinates for proper 3D visualization
+    2. Calculates 3D control points for bezier curves (offset from head centers)
+    3. Determines connectivity threshold (automatically or from parameter)
+    4. Plots 3D connections with:
+       - Red color scale for positive connectivity values
+       - Blue color scale for negative connectivity values
+       - Line thickness proportional to connection strength
+    
+    This function is similar to plot_links_2d_inter() but works in 3D space.
+    It is typically used as part of a larger visualization function like
+    viz_3D_inter() rather than called directly.
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> from mpl_toolkits.mplot3d import Axes3D
+    >>> import numpy as np
+    >>> # Create random connectivity matrix
+    >>> n_channels = len(epochs_subj1.ch_names)
+    >>> connectivity = np.random.rand(n_channels, n_channels) * 2 - 1  # Values between -1 and 1
+    >>> # Create a 3D figure
+    >>> fig = plt.figure(figsize=(10, 8))
+    >>> ax = fig.add_subplot(111, projection='3d')
+    >>> # Plot 3D connectivity links
+    >>> plot_links_3d_inter(
+    ...     ax,
+    ...     epochs_subj1, 
+    ...     epochs_subj2, 
+    ...     connectivity, 
+    ...     threshold=0.5, 
+    ...     steps=15
+    ... )
+    >>> plt.show()
     """
     
     def plot_bezier_curve_3d(x1, y1, z1, x2, y2, z2, ctr1, ctr2, color, weight, steps):
@@ -666,39 +1131,102 @@ def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarr
                 plot_bezier_curve_3d(x1, y1, z1, x2, y2, z2, ctr1, ctr2, color_n, weight, steps)
 
 
-def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: np.ndarray, threshold: str='auto', steps: int=10, children: bool=False, child_head: bool=False):
+def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: np.ndarray, 
+                       threshold: str='auto', steps: int=10, children: bool=False, 
+                       child_head: bool=False):
     """
-    Plots hyper-connectivity in 3D.
-
-    Arguments:
-        ax: Matplotlib axis created with projection='3d'
-        epo1: arrays of shape (n_sensors, 3)
-            Epochs object to get channel information
-        epo2: arrays of shape (n_sensors, 3)
-            Epochs object to get channel information
-        C1: array, (len(loc1), len(loc1))
-            matrix with the values of intra-brain connectivity
-        C2: array, (len(loc1), len(loc2))
-            matrix with the values of intra-brain connectivity
-        threshold: float | str
-            threshold for the inter-brain links;
-            only those above the set value will be plotted
-            Can also be "auto" to use a threshold automatically
-            calculated from your matrix as the maximum median 
-            by column + the maximum standard error by column.
-            Note that the automatic threshold is specific to a 
-            dyad and does not allow to compare different dyads.
-        steps: int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        None: plot the links in 3D within the current axis.
-          Plot hyper-connectivity in 3D.
+    Plot intra-brain connectivity links for two participants in 3D.
+    
+    This function visualizes the connectivity within each participant's brain
+    separately using 3D bezier curves. Only connections above a specified threshold 
+    are displayed, with line color and thickness indicating the strength and sign 
+    of the connection.
+    
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib 3D axis (created with projection='3d')
+        
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    C1 : np.ndarray
+        Connectivity matrix with shape (n_channels_1, n_channels_1) containing
+        connectivity values between all pairs of electrodes for participant 1
+        
+    C2 : np.ndarray
+        Connectivity matrix with shape (n_channels_2, n_channels_2) containing
+        connectivity values between all pairs of electrodes for participant 2
+        
+    threshold : float or str, optional
+        Threshold for displaying connections (default='auto')
+        - If float: Only connections with absolute value above this threshold are displayed
+        - If 'auto': Threshold is set to the maximum of the median values plus
+          the maximum of standard errors across both participants
+        
+    steps : int, optional
+        Number of steps for bezier curve interpolation (default=10)
+        - If steps < 3: Straight lines are drawn instead of curves
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    None
+        Plots the connectivity links in the provided matplotlib 3D Axes
+    
+    Notes
+    -----
+    The function:
+    1. Transforms electrode coordinates for side-by-side 3D visualization
+    2. Calculates 3D control points for bezier curves (offset vertically from head centers)
+    3. Determines connectivity threshold (automatically or from parameter)
+    4. Plots 3D connections with:
+       - Red color scale for positive connectivity values
+       - Blue color scale for negative connectivity values
+       - Line thickness proportional to connection strength
+    
+    Unlike plot_links_3d_inter(), this function:
+    - Handles two separate connectivity matrices (one per participant)
+    - Uses the same color scale for both participants for consistent visualization
+    - Uses separate control points for each participant's connectivity curves
+    
+    This function is typically used as part of a larger visualization
+    function like viz_3D_intra() rather than called directly.
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> from mpl_toolkits.mplot3d import Axes3D
+    >>> import numpy as np
+    >>> # Create random connectivity matrices
+    >>> n_channels_1 = len(epochs_subj1.ch_names)
+    >>> n_channels_2 = len(epochs_subj2.ch_names)
+    >>> connectivity_1 = np.random.rand(n_channels_1, n_channels_1) * 2 - 1  # Values between -1 and 1
+    >>> connectivity_2 = np.random.rand(n_channels_2, n_channels_2) * 2 - 1  # Values between -1 and 1
+    >>> # Create a 3D figure
+    >>> fig = plt.figure(figsize=(10, 8))
+    >>> ax = fig.add_subplot(111, projection='3d')
+    >>> # Plot 3D intra-brain connectivity links
+    >>> plot_links_3d_intra(
+    ...     ax,
+    ...     epochs_subj1, 
+    ...     epochs_subj2, 
+    ...     connectivity_1,
+    ...     connectivity_2,
+    ...     threshold=0.5, 
+    ...     steps=15
+    ... )
+    >>> plt.show()
     """
     
     def plot_bezier_curve_3d(x1, y1, z1, x2, y2, z2, ctr1, ctr2, color, weight, steps):
@@ -778,16 +1306,58 @@ def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndar
 
 def plot_2d_topomap_inter(ax, children: bool=False):
     """
-    Plot 2D head topomap for hyper-connectivity
-
-    Arguments:
-        ax : Matplotlib axis
-        children : bool
-            If True, apply transformations for child head model.
-
-    Returns:
-        None : plot the 2D topomap within the current axis.
+    Plot 2D head topomap outlines for inter-brain visualizations.
+    
+    This function draws the head outlines for two participants facing each other
+    in a 2D representation. It creates the basic head shapes including circles 
+    for the heads, ellipses for the ears, and polygons for the noses.
+    
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib axis where the topomap will be plotted
+        
+    children : bool, optional
+        Whether to use child head model proportions (default=False)
+        If True, one head will be scaled to child size
+    
+    Returns
+    -------
+    None
+        Plots the head outlines in the provided matplotlib Axes
+    
+    Notes
+    -----
+    The function:
+    1. Creates head outlines for two facing participants
+    2. Adds ears and nose features to each head
+    3. If children=True, scales one head (right side) to child proportions
+    4. Removes axis ticks and spines for cleaner visualization
+    
+    This function handles only the head outlines - it does not plot sensors
+    or connectivity. It is typically used as part of a larger visualization
+    function like viz_2D_topomap_inter() which then adds sensors and links.
+    
+    Key coordinates:
+    - Head centers: [-0.178, 0] and [0.178, 0]
+    - Adult head radius: 0.1
+    - Child head radius (when children=True): 0.065
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> # Create a figure
+    >>> fig, ax = plt.subplots(figsize=(8, 6))
+    >>> # Plot head outlines
+    >>> plot_2d_topomap_inter(ax, children=False)
+    >>> plt.show()
+    >>> 
+    >>> # Plot adult-child head outlines
+    >>> fig, ax = plt.subplots(figsize=(8, 6))
+    >>> plot_2d_topomap_inter(ax, children=True)
+    >>> plt.show()
     """
+
     def add_head(ax, center, radius, ear_width, ear_height, nose_coords, ear_offset, zorder=0):
         circle = matplotlib.patches.Circle(xy=center, radius=radius, edgecolor="k", facecolor="w")
         ax.add_patch(circle)
@@ -811,16 +1381,59 @@ def plot_2d_topomap_inter(ax, children: bool=False):
 
 def plot_2d_topomap_intra(ax, children: bool=False):
     """
-    Plot 2D head topomap for intra-brain visualisation
+    Plot 2D head topomap outlines for intra-brain visualizations.
     
-    Arguments:
-        ax : Matplotlib axis
-        children : bool
-            If True, apply transformations for child head model.
-
-    Returns:
-        None : plot the 2D topomap within the current axis.
+    This function draws the head outlines for two participants positioned side by side
+    in a 2D representation. It creates the basic head shapes including circles 
+    for the heads, ellipses for the ears, and polygons for the noses.
+    
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib axis where the topomap will be plotted
+        
+    children : bool, optional
+        Whether to use child head model proportions (default=False)
+        If True, one head will be scaled to child size
+    
+    Returns
+    -------
+    None
+        Plots the head outlines in the provided matplotlib Axes
+    
+    Notes
+    -----
+    The function:
+    1. Creates head outlines for two participants positioned side by side
+    2. Adds ears and nose features to each head
+    3. If children=True, scales one head (right side) to child proportions
+    4. Removes axis ticks and spines for cleaner visualization
+    
+    Unlike plot_2d_topomap_inter() which positions heads facing each other,
+    this function positions heads side by side with noses pointing upward.
+    This orientation is appropriate for intra-brain connectivity visualization
+    where each participant's brain connectivity is analyzed separately.
+    
+    Key coordinates:
+    - Head centers: [-0.178, 0] and [0.178, 0]
+    - Adult head radius: 0.1
+    - Child head radius (when children=True): 0.065
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> # Create a figure
+    >>> fig, ax = plt.subplots(figsize=(8, 6))
+    >>> # Plot head outlines for intra-brain visualization
+    >>> plot_2d_topomap_intra(ax, children=False)
+    >>> plt.show()
+    >>> 
+    >>> # Plot adult-child head outlines
+    >>> fig, ax = plt.subplots(figsize=(8, 6))
+    >>> plot_2d_topomap_intra(ax, children=True)
+    >>> plt.show()
     """
+
     def add_head(ax, center, radius, ear_width, ear_height, nose_coords, ear_offset, zorder=0):
         circle = matplotlib.patches.Circle(xy=center, radius=radius, edgecolor="k", facecolor="w")
         ax.add_patch(circle)
@@ -844,18 +1457,57 @@ def plot_2d_topomap_intra(ax, children: bool=False):
 
 def plot_3d_heads(ax, vertices, faces):
     """
-    Plot heads models in 3D.
-
-    Arguments:
-        ax : Matplotlib axis created with projection='3d'
-        vertices : arrays of shape (V, 3)
-            3d coordinates of the vertices
-        faces : arrays of shape (F, 4)
-            vertices number of face
-
-    Returns:
-        None : plot the head faces in 3D within the current axis.
+    Plot 3D head models using vertices and faces.
+    
+    This function draws 3D head models defined by vertices and faces in a 
+    wireframe representation. It plots the edges between vertices that define
+    the faces of the 3D model.
+    
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Matplotlib 3D axis (created with projection='3d')
+        
+    vertices : np.ndarray
+        Array of shape (n_vertices, 3) containing the 3D coordinates of vertices
+        
+    faces : np.ndarray
+        Array of shape (n_faces, 4) containing the vertex indices for each face
+        Each face is defined by 4 vertex indices
+    
+    Returns
+    -------
+    None
+        Plots the 3D head model wireframe in the provided matplotlib 3D Axes
+    
+    Notes
+    -----
+    The function:
+    1. Extracts vertex coordinates (with some reordering of x, y, z for correct orientation)
+    2. For each face, plots lines connecting its vertices
+    3. Uses a thin gray line style for the wireframe
+    
+    This function creates a lightweight wireframe representation rather than
+    a fully shaded 3D model, which is sufficient for visualization purposes
+    while maintaining good performance.
+    
+    The wireframe approach allows electrode and connectivity visualization to be
+    clearly visible in front of or behind the head model.
+    
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> from mpl_toolkits.mplot3d import Axes3D
+    >>> # Create a 3D figure
+    >>> fig = plt.figure(figsize=(10, 8))
+    >>> ax = fig.add_subplot(111, projection='3d')
+    >>> # Get vertices and faces for head models
+    >>> vertices, faces = get_3d_heads_inter()
+    >>> # Plot 3D heads
+    >>> plot_3d_heads(ax, vertices, faces)
+    >>> plt.show()
     """
+
     # extract vertices coordinates
     x_V = vertices[:, 2]
     y_V = vertices[:, 0]
@@ -887,8 +1539,56 @@ def plot_3d_heads(ax, vertices, faces):
 
 def get_3d_heads_inter(children: bool=False, child_head: bool=False):
     """
-    Returns Vertices and Faces of a 3D OBJ representing two facing heads.
-    If children and child_head are True, one head will be smaller.
+    Get vertices and faces for 3D head models in inter-brain configuration.
+    
+    This function returns the vertices and faces defining two 3D head models
+    positioned facing each other, as needed for inter-brain connectivity visualization.
+    
+    Parameters
+    ----------
+    children : bool, optional
+        Whether to use child head model scaling (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, scales the second head to child size
+        If False and children=True, scales the first head to child size
+        (default=False)
+    
+    Returns
+    -------
+    vertices : np.ndarray
+        Array of shape (n_vertices, 3) containing the 3D coordinates of all vertices
+        from both head models
+        
+    faces : np.ndarray
+        Array of shape (n_faces, 4) containing the vertex indices for each face
+        from both head models
+    
+    Notes
+    -----
+    The function:
+    1. Loads a base head model from an OBJ file included in the package
+    2. Creates two copies of the model with appropriate scaling
+    3. Rotates and translates the models to position them facing each other
+    4. If children=True and child_head=True, applies scaling to make the second head smaller
+    5. Combines vertices and faces into unified arrays
+    
+    For the faces array in the second head, vertex indices are offset by
+    the number of vertices in the first head to maintain correct indexing
+    in the combined array.
+    
+    This function is typically used to provide head models for the 
+    viz_3D_inter() visualization function.
+    
+    Examples
+    --------
+    >>> # Get vertices and faces for two adult heads
+    >>> vertices, faces = get_3d_heads_inter()
+    >>> print(f"Number of vertices: {len(vertices)}")
+    >>> print(f"Number of faces: {len(faces)}")
+    >>> 
+    >>> # Get vertices and faces for adult and child heads
+    >>> vertices, faces = get_3d_heads_inter(children=True, child_head=True)
     """
    
     # Extract vertices and faces for the first head
@@ -935,8 +1635,60 @@ def get_3d_heads_inter(children: bool=False, child_head: bool=False):
 
 def get_3d_heads_intra(children: bool=False, child_head: bool=False):
     """
-    Returns Vertices and Faces of a 3D OBJ representing two facing heads.
-    If children and child_head are True, one head will be smaller.
+    Get vertices and faces for 3D head models in intra-brain configuration.
+    
+    This function returns the vertices and faces defining two 3D head models
+    positioned side by side, as needed for intra-brain connectivity visualization.
+    
+    Parameters
+    ----------
+    children : bool, optional
+        Whether to use child head model scaling (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, scales the second head to child size
+        If False and children=True, scales the first head to child size
+        (default=False)
+    
+    Returns
+    -------
+    vertices : np.ndarray
+        Array of shape (n_vertices, 3) containing the 3D coordinates of all vertices
+        from both head models
+        
+    faces : np.ndarray
+        Array of shape (n_faces, 4) containing the vertex indices for each face
+        from both head models
+    
+    Notes
+    -----
+    The function:
+    1. Loads a base head model from an OBJ file included in the package
+    2. Creates two copies of the model with appropriate scaling
+    3. Translates the models to position them side by side along the X-axis
+    4. If children=True and child_head=True, applies scaling to make the second head smaller
+    5. Combines vertices and faces into unified arrays
+    
+    Unlike get_3d_heads_inter() which rotates one head to face the other, this function
+    simply positions the heads side by side without rotation. This configuration is
+    appropriate for comparing intra-brain connectivity between participants.
+    
+    For the faces array in the second head, vertex indices are offset by
+    the number of vertices in the first head to maintain correct indexing
+    in the combined array.
+    
+    This function is typically used to provide head models for the 
+    viz_3D_intra() visualization function.
+    
+    Examples
+    --------
+    >>> # Get vertices and faces for two adult heads side by side
+    >>> vertices, faces = get_3d_heads_intra()
+    >>> print(f"Number of vertices: {len(vertices)}")
+    >>> print(f"Number of faces: {len(faces)}")
+    >>> 
+    >>> # Get vertices and faces for adult and child heads side by side
+    >>> vertices, faces = get_3d_heads_intra(children=True, child_head=True)
     """
    
     # Extract vertices and faces for the first head
@@ -975,19 +1727,60 @@ def get_3d_heads_intra(children: bool=False, child_head: bool=False):
 
 def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs, significant: np.ndarray = None):
     """
-    Plots the significant sensors from a statistical test (simple t test or
-    clusters corrected t test), computed between groups or conditions on power
-    or connectivity values, across simple participants. For statistics with
-    inter-brain connectivity values on participant pairs (merge data), use the
-    plot_links_3d function.
-
-    Arguments:
-        T_obs_plot: statistical values to plot, from sensors above alpha threshold,
-            array of shape (n_tests,).
-        epochs: one participant Epochs object to sample channel information in info.
-
-    Returns:
-        None: plot topomap with the T or F statistics for significant sensors.
+    Plot statistical values on a topographic map for significant sensors.
+    
+    This function visualizes the results of statistical tests (such as t-tests or 
+    cluster-corrected t-tests) performed on sensor data across participants or conditions.
+    It creates a topographic plot with statistical values displayed for significant sensors.
+    
+    Parameters
+    ----------
+    T_obs_plot : np.ndarray
+        Array of shape (n_sensors,) containing the statistical values (T or F statistics)
+        to plot for significant sensors. Typically, this array has zeros for non-significant
+        sensors and the actual statistical values for significant ones.
+        
+    epochs : mne.Epochs
+        Epochs object to get channel positions from
+        
+    significant : np.ndarray, optional
+        Optional mask array of shape (n_sensors,) where non-zero values indicate
+        significant sensors to highlight (default=None)
+    
+    Returns
+    -------
+    None
+        Creates a topographic plot of the statistical values
+    
+    Notes
+    -----
+    The function:
+    1. Extracts sensor positions from the epochs object
+    2. Determines appropriate color scale limits (symmetric around zero)
+    3. Creates a topographic plot using MNE's plot_topomap function
+    4. If significant mask is provided, adds white circles around the significant sensors
+    
+    This function is designed for single-participant statistical visualization.
+    For inter-brain connectivity statistics, use the plot_links_* functions instead.
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import mne
+    >>> # Create array with statistical values (zeros for non-significant sensors)
+    >>> n_channels = len(epochs.ch_names)
+    >>> # Example: t-values for a statistical test, with zeros for non-significant channels
+    >>> t_values = np.zeros(n_channels)
+    >>> # Set some random significant values
+    >>> significant_indices = [3, 7, 12, 20, 25]
+    >>> t_values[significant_indices] = np.random.randn(len(significant_indices)) * 3
+    >>> # Plot the significant sensors
+    >>> plot_significant_sensors(t_values, epochs)
+    >>> 
+    >>> # Alternatively, use a significance mask
+    >>> significance_mask = np.zeros(n_channels)
+    >>> significance_mask[significant_indices] = 1
+    >>> plot_significant_sensors(t_values, epochs, significant=significance_mask)
     """
 
     # getting sensors position
@@ -1020,35 +1813,84 @@ def plot_significant_sensors(T_obs_plot: np.ndarray, epochs: mne.Epochs, signifi
     return None
 
 
-def viz_2D_headmodel_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = True, children: bool=False, child_head: bool=False):
+def viz_2D_headmodel_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, 
+                         threshold: float=0.95, steps: int=10, lab: bool = True, 
+                         children: bool=False, child_head: bool=False):
     """
-    Visualization of inter-brain connectivity in 2D.
-
-    Arguments:
-        epo1: mne.Epochs
-            Epochs object to get channel information
-        epo2: mne.Epochs
-            Epochs object to get channel information
-        C: array, (len(loc1), len(loc2))
-            matrix with the values of hyper-connectivity
-        threshold: float
-            threshold for the inter-brain links;
-            only those above the set value will be plotted
-        steps: int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-        lab: option to plot channel names
-            True by default.
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        Plot headmodel with sensors and 
-            connectivity links in 2D.
-        ax: The new Axes object.
+    Create a complete 2D head model visualization with inter-brain connectivity.
+    
+    This function provides a high-level interface for creating a 2D visualization
+    of two head models with sensors and inter-brain connectivity links.
+    
+    Parameters
+    ----------
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    C : np.ndarray
+        Connectivity matrix with shape (n_channels_1, n_channels_2) containing
+        connectivity values between all pairs of electrodes across participants
+        
+    threshold : float, optional
+        Threshold for displaying connections (default=0.95)
+        Only connections with absolute value above this threshold are displayed
+        
+    steps : int, optional
+        Number of steps for bezier curve interpolation (default=10)
+        If steps < 3, straight lines are drawn instead of curves
+        
+    lab : bool, optional
+        Whether to plot channel labels (default=True)
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    ax : matplotlib.axes.Axes
+        The matplotlib Axes object containing the visualization
+    
+    Notes
+    -----
+    This function combines several lower-level visualization functions:
+    1. Creates a figure and axis with appropriate settings
+    2. Generates 3D head models and applies a camera transformation for 2D view
+    3. Plots sensors using plot_sensors_2d_inter()
+    4. Plots connectivity links using plot_links_2d_inter()
+    
+    Unlike viz_2D_topomap_inter() which uses simpler 2D head outlines,
+    this function uses a 3D head model rendered in a 2D view, which
+    can provide a more realistic representation.
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> # Create random connectivity matrix
+    >>> n_channels_1 = len(epochs_subj1.ch_names)
+    >>> n_channels_2 = len(epochs_subj2.ch_names)
+    >>> connectivity = np.random.rand(n_channels_1, n_channels_2) * 2 - 1  # Values between -1 and 1
+    >>> # Create visualization
+    >>> ax = viz_2D_headmodel_inter(
+    ...     epochs_subj1,
+    ...     epochs_subj2,
+    ...     connectivity,
+    ...     threshold=0.7,
+    ...     steps=15,
+    ...     lab=True
+    ... )
+    >>> # Add a title
+    >>> ax.set_title('Inter-brain connectivity')
+    >>> plt.show()
     """
+
     fig, ax = plt.subplots(1, 1)
     ax.axis("off")  
 
@@ -1077,22 +1919,82 @@ def viz_2D_headmodel_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, th
     return ax
 
 
-def viz_2D_topomap_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False, children: bool=False, child_head: bool=False):
+def viz_2D_topomap_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, 
+                       threshold: float=0.95, steps: int=10, lab: bool = False, 
+                       children: bool=False, child_head: bool=False):
     """
-    Visualize 2D topographic map interaction between two sets of epochs.
+    Create a 2D topographic map visualization with inter-brain connectivity.
     
-    Parameters:
-        epo1 (mne.Epochs): The first set of epochs.
-        epo2 (mne.Epochs): The second set of epochs.
-        C (np.ndarray): Connectivity matrix.
-        threshold (float, optional): Threshold for connectivity visualization. Default is 0.95.
-        steps (int, optional): Number of steps for interpolation. Default is 10.
-        lab (bool, optional): Whether to label the sensors. Default is False.
-        children (bool, optional): Whether the data is from children. Default is False.
-        child_head (bool, optional): Whether the child is the second participant. Default is False.
+    This function provides a high-level interface for creating a 2D topographic
+    visualization of two head outlines with sensors and inter-brain connectivity links.
+    
+    Parameters
+    ----------
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
         
-    Returns:
-        matplotlib.axes._subplots.AxesSubplot: The axes object with the plot.
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    C : np.ndarray
+        Connectivity matrix with shape (n_channels_1, n_channels_2) containing
+        connectivity values between all pairs of electrodes across participants
+        
+    threshold : float, optional
+        Threshold for displaying connections (default=0.95)
+        Only connections with absolute value above this threshold are displayed
+        
+    steps : int, optional
+        Number of steps for bezier curve interpolation (default=10)
+        If steps < 3, straight lines are drawn instead of curves
+        
+    lab : bool, optional
+        Whether to plot channel labels (default=False)
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    ax : matplotlib.axes.Axes
+        The matplotlib Axes object containing the visualization
+    
+    Notes
+    -----
+    This function combines several lower-level visualization functions:
+    1. Creates a figure and axis with appropriate settings
+    2. Draws 2D head outlines using plot_2d_topomap_inter()
+    3. Plots sensors using plot_sensors_2d_inter()
+    4. Plots connectivity links using plot_links_2d_inter()
+    
+    This function uses simpler 2D head outlines compared to viz_2D_headmodel_inter()
+    which uses a projected 3D model. The 2D outlines are computationally lighter
+    and may be preferred for quick visualizations or publications.
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> # Create random connectivity matrix
+    >>> n_channels_1 = len(epochs_subj1.ch_names)
+    >>> n_channels_2 = len(epochs_subj2.ch_names)
+    >>> connectivity = np.random.rand(n_channels_1, n_channels_2) * 2 - 1  # Values between -1 and 1
+    >>> # Create visualization
+    >>> ax = viz_2D_topomap_inter(
+    ...     epochs_subj1,
+    ...     epochs_subj2,
+    ...     connectivity,
+    ...     threshold=0.7,
+    ...     steps=15,
+    ...     lab=True
+    ... )
+    >>> # Add a title
+    >>> ax.set_title('Inter-brain connectivity')
+    >>> plt.show()
     """
 
     fig = plt.figure()
@@ -1113,37 +2015,91 @@ def viz_2D_topomap_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, thre
     return ax
 
 
-def viz_2D_topomap_intra(epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: np.ndarray, threshold: float=0.95, steps: int=2, lab: bool = False, children: bool=False, child_head: bool=False):
+def viz_2D_topomap_intra(epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: np.ndarray, 
+                       threshold: float=0.95, steps: int=2, lab: bool = False, 
+                       children: bool=False, child_head: bool=False):
     """
-    Visualization of intra-brain connectivity in 2D.
-
-    Arguments:
-        epo1: mne.Epochs
-            Epochs object to get channel information
-        epo2: mne.Epochs
-            Epochs object to get channel information
-        C1: array, (len(loc1), len(loc1))
-            matrix with the values of intra-brain connectivity
-        C2: array, (len(loc2), len(loc2))
-            matrix with the values of intra-brain connectivity
-        threshold: float
-            threshold for the inter-brain links;
-            only those above the set value will be plotted
-        steps: int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-        lab: option to plot channel names
-            False by default.
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        Plot head topomap with sensors and 
-            intra-brain connectivity links in 2D.
-        ax: The new Axes object.
+    Create a 2D topographic map visualization with intra-brain connectivity.
+    
+    This function provides a high-level interface for creating a 2D topographic
+    visualization of two head outlines side by side, displaying intra-brain
+    connectivity within each participant separately.
+    
+    Parameters
+    ----------
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    C1 : np.ndarray
+        Connectivity matrix with shape (n_channels_1, n_channels_1) containing
+        connectivity values between pairs of electrodes for participant 1
+        
+    C2 : np.ndarray
+        Connectivity matrix with shape (n_channels_2, n_channels_2) containing
+        connectivity values between pairs of electrodes for participant 2
+        
+    threshold : float, optional
+        Threshold for displaying connections (default=0.95)
+        Only connections with absolute value above this threshold are displayed
+        
+    steps : int, optional
+        Number of steps for bezier curve interpolation (default=2)
+        If steps < 3, straight lines are drawn instead of curves
+        
+    lab : bool, optional
+        Whether to plot channel labels (default=False)
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    ax : matplotlib.axes.Axes
+        The matplotlib Axes object containing the visualization
+    
+    Notes
+    -----
+    This function combines several lower-level visualization functions:
+    1. Creates a figure and axis with appropriate settings
+    2. Draws 2D head outlines using plot_2d_topomap_intra()
+    3. Plots sensors using plot_sensors_2d_intra()
+    4. Plots connectivity links using plot_links_2d_intra()
+    
+    Unlike viz_2D_topomap_inter() which visualizes connections between
+    participants, this function displays connections within each participant's
+    brain separately, allowing for comparison of intra-brain connectivity patterns.
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> # Create random connectivity matrices
+    >>> n_channels_1 = len(epochs_subj1.ch_names)
+    >>> n_channels_2 = len(epochs_subj2.ch_names)
+    >>> connectivity_1 = np.random.rand(n_channels_1, n_channels_1) * 2 - 1  # Values between -1 and 1
+    >>> connectivity_2 = np.random.rand(n_channels_2, n_channels_2) * 2 - 1  # Values between -1 and 1
+    >>> # Create visualization
+    >>> ax = viz_2D_topomap_intra(
+    ...     epochs_subj1,
+    ...     epochs_subj2,
+    ...     connectivity_1,
+    ...     connectivity_2,
+    ...     threshold=0.7,
+    ...     steps=10,
+    ...     lab=True
+    ... )
+    >>> # Add a title
+    >>> ax.set_title('Intra-brain connectivity comparison')
+    >>> plt.show()
     """
+
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect=1)
     ax.axis("off")
@@ -1167,34 +2123,81 @@ def viz_2D_topomap_intra(epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2:
     return ax
 
 
-def viz_3D_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False, children: bool=False, child_head: bool=False):
+def viz_3D_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, 
+                threshold: float=0.95, steps: int=10, lab: bool = False, 
+                children: bool=False, child_head: bool=False):
     """
-    Visualization of inter-brain connectivity in 3D.
-
-    Arguments:
-        epo1: mne.Epochs
-            Epochs object to get channel information
-        epo2: mne.Epochs
-            Epochs object to get channel information
-        C: array, (len(loc1), len(loc2))
-            matrix with the values of hyper-connectivity
-        threshold: float
-            threshold for the inter-brain links;
-            only those above the set value will be plotted
-        steps: int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-        lab: option to plot channel names
-            False by default.
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        Plot headmodel with sensors and 
-            connectivity links in 3D.
-        ax: The new Axes object.
+    Create a complete 3D visualization with inter-brain connectivity.
+    
+    This function provides a high-level interface for creating a 3D visualization
+    of two head models with sensors and inter-brain connectivity links.
+    
+    Parameters
+    ----------
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    C : np.ndarray
+        Connectivity matrix with shape (n_channels_1, n_channels_2) containing
+        connectivity values between all pairs of electrodes across participants
+        
+    threshold : float, optional
+        Threshold for displaying connections (default=0.95)
+        Only connections with absolute value above this threshold are displayed
+        
+    steps : int, optional
+        Number of steps for bezier curve interpolation (default=10)
+        If steps < 3, straight lines are drawn instead of curves
+        
+    lab : bool, optional
+        Whether to plot channel labels (default=False)
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    ax : matplotlib.axes.Axes
+        The matplotlib 3D Axes object containing the visualization
+    
+    Notes
+    -----
+    This function combines several lower-level visualization functions:
+    1. Creates a 3D figure and axis with appropriate settings
+    2. Gets 3D head model vertices and faces using get_3d_heads_inter()
+    3. Plots 3D head models using plot_3d_heads()
+    4. Plots sensors using plot_sensors_3d_inter()
+    5. Plots connectivity links using plot_links_3d_inter()
+    
+    The 3D visualization allows for interactive rotation and zoom, providing
+    a more comprehensive view of the connectivity patterns compared to
+    2D visualizations.
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> # Create random connectivity matrix
+    >>> n_channels_1 = len(epochs_subj1.ch_names)
+    >>> n_channels_2 = len(epochs_subj2.ch_names)
+    >>> connectivity = np.random.rand(n_channels_1, n_channels_2) * 2 - 1  # Values between -1 and 1
+    >>> # Create 3D visualization
+    >>> ax = viz_3D_inter(
+    ...     epochs_subj1,
+    ...     epochs_subj2,
+    ...     connectivity,
+    ...     threshold=0.7,
+    ...     steps=15,
+    ...     lab=False
+    ... )
+    >>> plt.show()
     """
 
     # defining head model and adding sensors
@@ -1221,35 +2224,88 @@ def viz_3D_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray, threshold: f
     return ax
 
 
-def viz_3D_intra(epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: np.ndarray, threshold: float=0.95, steps: int=10, lab: bool = False, children: bool=False, child_head: bool=False):
+def viz_3D_intra(epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: np.ndarray, 
+                threshold: float=0.95, steps: int=10, lab: bool = False, 
+                children: bool=False, child_head: bool=False):
     """
-    Visualization of intra-brain connectivity in 3D.
-
-    Arguments:
-        epo1: mne.Epochs
-            Epochs object to get channel information
-        epo2: mne.Epochs
-            Epochs object to get channel information
-        C1: array, (len(loc1), len(loc1))
-            matrix with the values of intra-brain connectivity
-        C2: array, (len(loc2), len(loc2))
-        threshold: float
-            threshold for the inter-brain links;
-            only those above the set value will be plotted
-        steps: int
-            number of steps for the Bezier curves
-            if <3 equivalent to ploting straight lines
-        lab: option to plot channel names
-            False by default.
-        children: bool
-            If True, apply transformations for child head model.
-        child_head: bool
-            If True, apply transformations for child's head model.
-
-    Returns:
-        Plot headmodel with sensors and 
-            connectivity links in 3D.
-        ax: The new Axes object.
+    Create a complete 3D visualization with intra-brain connectivity.
+    
+    This function provides a high-level interface for creating a 3D visualization
+    of two head models side by side, displaying intra-brain connectivity
+    within each participant separately.
+    
+    Parameters
+    ----------
+    epo1 : mne.Epochs
+        Epochs object for participant 1, containing channel information
+        
+    epo2 : mne.Epochs
+        Epochs object for participant 2, containing channel information
+        
+    C1 : np.ndarray
+        Connectivity matrix with shape (n_channels_1, n_channels_1) containing
+        connectivity values between pairs of electrodes for participant 1
+        
+    C2 : np.ndarray
+        Connectivity matrix with shape (n_channels_2, n_channels_2) containing
+        connectivity values between pairs of electrodes for participant 2
+        
+    threshold : float, optional
+        Threshold for displaying connections (default=0.95)
+        Only connections with absolute value above this threshold are displayed
+        
+    steps : int, optional
+        Number of steps for bezier curve interpolation (default=10)
+        If steps < 3, straight lines are drawn instead of curves
+        
+    lab : bool, optional
+        Whether to plot channel labels (default=False)
+        
+    children : bool, optional
+        Whether to apply transformations for child head models (default=False)
+        
+    child_head : bool, optional
+        If True and children=True, treats participant 2 as a child
+        If False and children=True, treats participant 1 as a child
+        (default=False)
+    
+    Returns
+    -------
+    ax : matplotlib.axes.Axes
+        The matplotlib 3D Axes object containing the visualization
+    
+    Notes
+    -----
+    This function combines several lower-level visualization functions:
+    1. Creates a 3D figure and axis with appropriate settings
+    2. Gets 3D head model vertices and faces using get_3d_heads_intra()
+    3. Plots 3D head models using plot_3d_heads()
+    4. Plots sensors using plot_sensors_3d_intra()
+    5. Plots connectivity links using plot_links_3d_intra()
+    
+    Unlike viz_3D_inter() which visualizes connections between participants,
+    this function displays connections within each participant's brain separately,
+    allowing for comparison of intra-brain connectivity patterns in 3D.
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> # Create random connectivity matrices
+    >>> n_channels_1 = len(epochs_subj1.ch_names)
+    >>> n_channels_2 = len(epochs_subj2.ch_names)
+    >>> connectivity_1 = np.random.rand(n_channels_1, n_channels_1) * 2 - 1  # Values between -1 and 1
+    >>> connectivity_2 = np.random.rand(n_channels_2, n_channels_2) * 2 - 1  # Values between -1 and 1
+    >>> # Create 3D visualization
+    >>> ax = viz_3D_intra(
+    ...     epochs_subj1,
+    ...     epochs_subj2,
+    ...     connectivity_1,
+    ...     connectivity_2,
+    ...     threshold=0.7,
+    ...     steps=15,
+    ...     lab=False
+    ... )
+    >>> plt.show()
     """
 
     # defining head model and adding sensors
@@ -1287,37 +2343,90 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
              figsize: tuple = (30, 8), tmin: int = 0,
              x_units: Union[int, float] = 100):
     """
-    Plots the results of the Cross wavelet analysis.
-
-    Arguments:
-        sig1 : mne.Epochs
-            Signal (eg. EEG data) of first participant.
-
-        sig2 : mne.Epochs
-            Signal (eg. EEG data) of second participant.
-
-        freqs: int | float | np.ndarray
-            Frequency range of interest in Hz.
-
-        time: int
-            Time of sample duration in seconds.
-
-        analysis: str
-            Sets type of analysis.
-
-        figsize: tuple
-            Figure size (default is (30, 8)).
-
-        x_units: int | float
-            distance between xticks on x-axis (time) (default is 100)
-
-    Note:
-        This function is not meant to be called indepedently,
-        but is meant to be called when using plot_xwt_crosspower
-        or plot_xwt_phase_angle.
-
-    Returns:
-        Figure: The figure with the xwt results.
+    Plot the results of Cross-Wavelet Transform (XWT) analysis.
+    
+    This function visualizes time-frequency representations of cross-wavelet
+    transform results between two participants' EEG signals. It can display
+    phase angles, power, or wavelet coherence.
+    
+    Parameters
+    ----------
+    sig1 : mne.Epochs
+        EEG data for the first participant
+        
+    sig2 : mne.Epochs
+        EEG data for the second participant
+        
+    sfreq : int or float
+        Sampling frequency of the EEG data in Hz
+        
+    freqs : int, float, or np.ndarray
+        Frequencies of interest in Hz
+        
+    time : int
+        Time duration of the sample in seconds
+        
+    analysis : str
+        Type of analysis to visualize, options:
+        - 'phase': Phase angle differences
+        - 'power': Cross-wavelet power
+        - 'wtc': Wavelet coherence
+        
+    figsize : tuple, optional
+        Figure size in inches (default=(30, 8))
+        
+    tmin : int, optional
+        Start time for the plot in seconds (default=0)
+        
+    x_units : int or float, optional
+        Distance between x-axis ticks in data points (default=100)
+    
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The matplotlib Figure object containing the visualization
+    
+    Notes
+    -----
+    The function:
+    1. Calculates the appropriate time and frequency axes for plotting
+    2. Computes the cone of influence (COI) to indicate regions with edge effects
+    3. Creates a colormap-based visualization of the XWT results
+    4. Masks regions outside the COI with hatching to indicate less reliable values
+    
+    Different colormaps are used based on the analysis type:
+    - 'phase': 'hsv' colormap for phase angles
+    - 'power': 'viridis' colormap for power values
+    - 'wtc': 'plasma' colormap for coherence values
+    
+    This function is not meant to be called independently but is usually called 
+    from higher-level functions like plot_xwt_crosspower or plot_xwt_phase_angle.
+    
+    Examples
+    --------
+    >>> # Plot cross-wavelet power
+    >>> fig = plot_xwt(
+    ...     epochs_subj1,
+    ...     epochs_subj2,
+    ...     sfreq=256,
+    ...     freqs=np.arange(4, 40, 1),  # 4-40 Hz
+    ...     time=10,  # 10 seconds
+    ...     analysis='power',
+    ...     figsize=(12, 8)
+    ... )
+    >>> plt.show()
+    >>> 
+    >>> # Plot wavelet coherence
+    >>> fig = plot_xwt(
+    ...     epochs_subj1,
+    ...     epochs_subj2,
+    ...     sfreq=256,
+    ...     freqs=np.arange(4, 40, 1),
+    ...     time=10,
+    ...     analysis='wtc',
+    ...     figsize=(12, 8)
+    ... )
+    >>> plt.show()
     """
 
     dt = 1/sfreq
