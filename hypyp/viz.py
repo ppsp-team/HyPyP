@@ -117,8 +117,6 @@ def transform_2d_intra(locs: np.ndarray, traX: float=0.15, traY: float=0, traZ: 
     else:
         scale = 1.0
 
-    locs = locs * scale
-
     # translation
     locs[:, 0] = locs[:, 0] + traX
     locs[:, 1] = locs[:, 1] + traY
@@ -126,7 +124,7 @@ def transform_2d_intra(locs: np.ndarray, traX: float=0.15, traY: float=0, traZ: 
 
     # Reduce the size of the eeg headsets
     newZ = locs[:, 0] * np.cos(rotZ) + locs[:, 1] * np.cos(rotZ) + locs[:, 2] * np.cos(rotZ/2)
-    locs[:, 2] = newZ
+    locs[:, 2] = newZ * scale
 
     return locs
 
