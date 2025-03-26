@@ -22,8 +22,30 @@ from typing import List, Tuple, TypedDict, Union
 
 class DicAR(TypedDict):
     """
-    Epoch rejection info
+    Dictionary type for storing epoch rejection information.
+    
+    This type provides structured information about the rejection process,
+    including the rejection strategy, threshold, and percentage of epochs
+    rejected for each participant and the dyad.
+    
+    Attributes
+    ----------
+    strategy : str
+        The strategy used for epoch rejection ('union' or 'intersection')
+        
+    threshold : float
+        The maximum allowed percentage of epochs to be rejected
+        
+    S1 : float
+        Percentage of epochs rejected for participant 1
+        
+    S2 : float
+        Percentage of epochs rejected for participant 2
+        
+    dyad : float
+        Overall percentage of epochs rejected across both participants
     """
+
     strategy: str
     threshold: float
     S1: float
@@ -31,19 +53,44 @@ class DicAR(TypedDict):
     dyad: float
 
 
-def filt(
-    raw_S: List[mne.io.Raw],
-    freqs: Tuple[Union[float, None], Union[float, None]] = (2., None)
-) -> List[mne.io.Raw]:
+def filt(raw_S: List[mne.io.Raw], 
+        freqs: Tuple[Union[float, None], Union[float, None]] = (2., None)) -> List[mne.io.Raw]:
     """
-    Filters list of raw data to remove slow drifts.
-
-    Arguments:
-        raw_S: list of Raw data (as an example: different occurences of
-            a condition for a participant). Raws are MNE objects.
-
-    Returns:
-        raws: list of high-pass filtered raws.
+    Filter a list of raw EEG data to remove slow drifts or other unwanted frequency components.
+    
+    This function applies a high-pass or band-pass filter to each Raw object in the input list.
+    Filtering helps to remove low-frequency drifts, power line noise, or other frequency-specific
+    artifacts from the EEG data.
+    
+    Parameters
+    ----------
+    raw_S : List[mne.io.Raw]
+        List of Raw objects containing continuous EEG data
+        
+    freqs : Tuple[Union[float, None], Union[float, None]], optional
+        Frequency range for filtering (default=(2., None)):
+        - First element: Lower frequency bound (high-pass filter cutoff)
+        - Second element: Upper frequency bound (low-pass filter cutoff)
+        - None for either bound means no filtering in that direction
+    
+    Returns
+    -------
+    raws : List[mne.io.Raw]
+        List of filtered Raw objects with the same structure as the input
+    
+    Notes
+    -----
+    By default, a 2 Hz high-pass filter is applied, which effectively removes slow
+    drifts while preserving most of the EEG signal content. This is appropriate
+    for most EEG analyses but may need adjustment for specific paradigms.
+    
+    Examples
+    --------
+    >>> # Filter data with a high-pass at 1 Hz
+    >>> filtered_raws = filt(raw_list, freqs=(1., None))
+    
+    >>> # Apply a band-pass filter between 1 and 40 Hz
+    >>> filtered_raws = filt(raw_list, freqs=(1., 40.))
     """
   
     raws = [mne.io.Raw.filter(raw, l_freq=freqs[0], h_freq=freqs[1]) for raw in raw_S]
@@ -52,25 +99,42 @@ def filt(
 
 def ICA_choice_comp(icas: List[ICA], epochs: List[mne.Epochs]) -> List[mne.Epochs]:
     """
-    Plots Independent Components for each participant (calculated from Epochs),
-    let the user choose the relevant components for artifact rejection
-    and apply ICA on Epochs.
-
-    Arguments:
-        icas: list of Independent Components for each participant (IC are MNE
-            objects).
-        epochs: list of 2 Epochs objects (for each participant). Epochs_S1
-            and Epochs_S2 correspond to a condition and can result from the
-            concatenation of Epochs from different experimental realisations
-            of the condition.
-            Epochs are MNE objects: data are stored in an array of shape
-            (n_epochs, n_channels, n_times) and parameters information is
-            stored in a disctionnary.
-
-    Returns:
-        cleaned_epochs_ICA: list of 2 cleaned Epochs for each participant
-          (the chosen IC have been removed from the signal).
+    Select ICA components for artifact rejection and apply ICA cleaning to epochs.
+    
+    This interactive function plots the Independent Components for each participant,
+    lets the user choose relevant components for artifact rejection, and applies
+    the cleaning to the epochs data.
+    
+    Parameters
+    ----------
+    icas : List[ICA]
+        List of fitted ICA objects (one for each participant)
+        
+    epochs : List[mne.Epochs]
+        List of Epochs objects to clean (one for each participant)
+    
+    Returns
+    -------
+    cleaned_epochs_ICA : List[mne.Epochs]
+        List of ICA-cleaned Epochs objects (one for each participant)
+    
+    Notes
+    -----
+    The function uses an interactive approach:
+    1. It plots the ICA components for each participant
+    2. It prompts the user to select a participant and component to use as a template
+    3. It uses corrmap to find similar components across participants
+    4. It removes the identified components from all participants' data
+    
+    If you don't want to apply ICA cleaning, simply press Enter without typing
+    anything when prompted for participant and component selection.
+    
+    Examples
+    --------
+    >>> # This function is interactive and prompts the user for input
+    >>> cleaned_epochs = ICA_choice_comp(icas, epochs)
     """
+
     # plotting Independant Components for each participant
     for ica in icas:
         ica.plot_components()
@@ -94,10 +158,49 @@ def ICA_choice_comp(icas: List[ICA], epochs: List[mne.Epochs]) -> List[mne.Epoch
     return ICA_apply(icas, int(subject_id), int(component_id), epochs)
 
 
-def ICA_apply(icas: List[ICA], subject_id: int, component_id: int, epochs: List[mne.Epochs], plot: bool = True) -> List[mne.Epochs]:
+def ICA_apply(icas: List[ICA], subject_id: int, component_id: int, 
+             epochs: List[mne.Epochs], plot: bool = True) -> List[mne.Epochs]:
     """
-    Applies ICA with template model from 1 participant in the dyad.
-    See ICA_choice_comp for a detailed description of the parameters and output.
+    Apply ICA artifact rejection using a template component.
+    
+    This function uses a component from one participant as a template to identify
+    similar artifact components in all participants, then removes these components
+    from the data.
+    
+    Parameters
+    ----------
+    icas : List[ICA]
+        List of fitted ICA objects (one for each participant)
+        
+    subject_id : int
+        Index of the participant whose component will serve as the template
+        
+    component_id : int
+        Index of the component to use as the template
+        
+    epochs : List[mne.Epochs]
+        List of Epochs objects to clean (one for each participant)
+        
+    plot : bool, optional
+        Whether to plot the identified components (default=True)
+    
+    Returns
+    -------
+    cleaned_epochs_ICA : List[mne.Epochs]
+        List of ICA-cleaned Epochs objects (one for each participant)
+    
+    Notes
+    -----
+    This function uses MNE's corrmap function to identify components similar to
+    the template component. It then labels these components as 'blink' artifacts
+    and removes them from the data.
+    
+    The threshold for component similarity is set to 0.9 by default.
+    
+    Examples
+    --------
+    >>> # Use the first component of the first participant as template
+    >>> cleaned_epochs = ICA_apply(icas, subject_id=0, component_id=0, epochs=epochs)
     """
 
     cleaned_epochs_ICA: List[ICA] = []
@@ -135,51 +238,64 @@ def ICA_apply(icas: List[ICA], subject_id: int, component_id: int, epochs: List[
     return cleaned_epochs_ICA
 
 
-def ICA_fit(
-    epochs: List[mne.Epochs],
-    n_components: int,
-    method: str,
-    fit_params: dict,
-    random_state: int
-) -> List[ICA]:
+def ICA_fit(epochs: List[mne.Epochs], n_components: int, method: str, 
+           fit_params: dict, random_state: int) -> List[ICA]:
     """
-    Computes global Autorejection to fit Independent Components Analysis
-    on Epochs, for each participant.
-
-    Pre requisite : install autoreject
-    https://api.github.com/repos/autoreject/autoreject/zipball/master
-
-    Arguments:
-        epochs: list of 2 Epochs objects (for each participant).
-            Epochs_S1 and Epochs_S2 correspond to a condition and can result
-            from the concatenation of Epochs from different experimental
-            realisations of the condition (Epochs are MNE objects).
-        n_components: the number of principal components that are passed to the
-            ICA algorithm during fitting, int. For a first estimation,
-            n_components can be set to 15.
-        method: the ICA method used, str 'fastica', 'infomax' or 'picard'.
-            'Fastica' is the most frequently used. Use the fit_params argument to set
-            additional parameters. Specifically, if you want Extended Infomax, set
-            method=’infomax’ and fit_params=dict(extended=True) (this also works
-            for method=’picard’). 
-        fit_params: Additional parameters passed to the ICA estimator
-            as specified by method. None by default.
-        random_state: the parameter used to compute random distributions
-            for ICA calulation, int or None. It can be useful to fix
-            random_state value to have reproducible results. For 15
-            components, random_state can be set to 97, for 20 components to 0
-            for example.
-
-    Note:
-        If Autoreject and ICA take too much time, change the decim value
-        (see MNE documentation).
-        Please filter the Epochs between 2 and 30 Hz before ICA fit
-        (mne.Epochs.filter(epoch, 2, 30, method='fir')).
-
-    Returns:
-        icas: list of Independant Components for each participant (IC are MNE
-            objects, see MNE documentation for more details).
+    Compute Independent Component Analysis (ICA) on epochs for artifact rejection.
+    
+    This function applies global Autoreject to establish rejection thresholds,
+    then fits ICA on the cleaned data. ICA is a commonly used technique to identify
+    and remove artifacts such as eye blinks, muscle activity, and cardiac artifacts.
+    
+    Parameters
+    ----------
+    epochs : List[mne.Epochs]
+        List of Epochs objects (one for each participant)
+        
+    n_components : int
+        Number of principal components to pass to the ICA algorithm
+        For a first estimation, a value around 15 is often appropriate
+        
+    method : str
+        ICA method to use. Options:
+        - 'fastica': FastICA algorithm (most commonly used)
+        - 'infomax': Infomax algorithm
+        - 'picard': Picard algorithm
+        
+    fit_params : dict
+        Additional parameters passed to the ICA estimator
+        For Extended Infomax, use method='infomax' and fit_params=dict(extended=True)
+        
+    random_state : int
+        Random seed for reproducible results
+        For 15 components, random_state=97 works well
+        For 20 components, random_state=0 works well
+    
+    Returns
+    -------
+    icas : List[ICA]
+        List of fitted ICA objects (one for each participant)
+    
+    Notes
+    -----
+    Pre-requisites:
+    - Install autoreject: https://api.github.com/repos/autoreject/autoreject/zipball/master
+    - Filter the Epochs between 2 and 30 Hz before ICA fitting
+    
+    If Autoreject and ICA take too much time, try changing the 'decim' value
+    in the ICA initialization to downsample the data during fitting.
+    
+    Examples
+    --------
+    >>> # Fit ICA with 15 components using FastICA
+    >>> icas = ICA_fit(epochs_list, n_components=15, method='fastica', 
+    ...               fit_params=None, random_state=97)
+    
+    >>> # Fit ICA with Extended Infomax
+    >>> icas = ICA_fit(epochs_list, n_components=15, method='infomax', 
+    ...               fit_params=dict(extended=True), random_state=97)
     """
+
     icas: List[ICA] = []
     for epochs_subj in epochs:
         # per subj
@@ -203,32 +319,70 @@ def ICA_fit(
     return icas
 
 
-def AR_local(cleaned_epochs_ICA: List[mne.Epochs], strategy: str = 'union', threshold: float = 50.0, verbose: bool = False) -> Tuple[mne.Epochs, DicAR]:
+def AR_local(cleaned_epochs_ICA: List[mne.Epochs], strategy: str = 'union', 
+            threshold: float = 50.0, verbose: bool = False) -> Tuple[mne.Epochs, DicAR]:
     """
-    Applies local Autoreject to repair or reject bad epochs.
-
-    Arguments:
-        cleaned_epochs_ICA: list of Epochs after global Autoreject and ICA.
-        strategy: more or less generous strategy to reject bad epochs: 'union'
-            or 'intersection'. 'union' rejects bad epochs from subject 1 and
-            subject 2 immediatly, whereas 'intersection' rejects shared bad epochs
-            between subjects, tries to repare remaining bad epochs per subject,
-            reject the non-reparable per subject and finally equalize epochs number
-            between subjects. Set to 'union' by default.
-        threshold: percentage of epochs removed that is accepted. Above
-            this threshold, data are considered as a too shortened sample
-            for further analyses. Set to 50.0 by default.
-        verbose: option to plot data before and after AR, boolean, set to
-            False by default. # use verbose = false until next Autoreject update
-
-    Note:
-        To reject or repair epochs, parameters are more or less conservative,
-        see http://autoreject.github.io/generated/autoreject.AutoReject.
-
-    Returns:
-        cleaned_epochs_AR: list of Epochs after local Autoreject.
-        dic_AR: dictionnary with the percentage of epochs rejection
-            for each subject and for the intersection of the them.
+    Apply local Autoreject to repair or reject bad epochs.
+    
+    After ICA cleaning, this function identifies remaining problematic epochs and
+    either repairs them (by interpolating bad channels) or rejects them entirely.
+    It can use different strategies to handle epochs that are bad in only one participant.
+    
+    Parameters
+    ----------
+    cleaned_epochs_ICA : List[mne.Epochs]
+        List of Epochs objects after ICA cleaning (one for each participant)
+        
+    strategy : str, optional
+        Strategy for handling bad epochs (default='union'):
+        - 'union': Reject epochs that are bad in either participant
+        - 'intersection': Reject only epochs that are bad in both participants,
+          attempt to repair other bad epochs individually
+        
+    threshold : float, optional
+        Maximum acceptable percentage of rejected epochs (default=50.0)
+        If more epochs would be rejected, raises an error
+        
+    verbose : bool, optional
+        Whether to plot before/after comparisons (default=False)
+    
+    Returns
+    -------
+    cleaned_epochs_AR : List[mne.Epochs]
+        List of Epochs objects after Autoreject cleaning
+        
+    dic_AR : DicAR
+        Dictionary with information about the rejection process:
+        - 'strategy': Strategy used ('union' or 'intersection')
+        - 'threshold': Maximum acceptable percentage of rejected epochs
+        - 'S1': Percentage of epochs rejected for participant 1
+        - 'S2': Percentage of epochs rejected for participant 2
+        - 'dyad': Overall percentage of epochs rejected
+    
+    Notes
+    -----
+    This function uses the autoreject package to automatically identify and handle
+    problematic epochs. The identification is based on statistical properties of the
+    data and is more objective than manual rejection.
+    
+    With the 'intersection' strategy, the function also equalizes the number of
+    epochs between participants after cleaning.
+    
+    Raises
+    ------
+    RuntimeError
+        If the percentage of rejected epochs exceeds the specified threshold
+        
+    Examples
+    --------
+    >>> # Apply Autoreject with default settings
+    >>> cleaned_epochs, rejection_info = AR_local(ica_cleaned_epochs)
+    
+    >>> # Use 'intersection' strategy with lower threshold
+    >>> cleaned_epochs, rejection_info = AR_local(
+    ...     ica_cleaned_epochs, strategy='intersection', threshold=30.0, verbose=True
+    ... )
+    >>> print(f"Rejected {rejection_info['dyad']}% of epochs")
     """
 
     reject_logs: List[RejectLog] = []
