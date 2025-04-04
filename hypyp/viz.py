@@ -805,9 +805,11 @@ def plot_links_2d_inter(epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarray,
         threshold = threshold
 
     # define colormap
-    cmap_p = matplotlib.cm.get_cmap('Reds')
+    cmap_p = matplotlib.colormaps['Reds']
+
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.nanmax(C[:]))
-    cmap_n = matplotlib.cm.get_cmap('Blues_r')
+    cmap_n = matplotlib.colormaps['Blues_r']
+
     norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
 
     # plot links
@@ -955,9 +957,10 @@ def plot_links_2d_intra(epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndarray, C2: 
         threshold = threshold
 
     # Define colormap for both participants
-    cmap_p = matplotlib.cm.get_cmap('Reds')
+    cmap_p = matplotlib.colormaps['Reds']
+
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=vmax)
-    cmap_n = matplotlib.cm.get_cmap('Blues_r')
+    cmap_n = matplotlib.colormaps['Blues_r']
     norm_n = matplotlib.colors.Normalize(vmin=vmin, vmax=-threshold)
 
     # plot links for participant 1
@@ -1113,9 +1116,10 @@ def plot_links_3d_inter(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C: np.ndarr
         threshold = threshold
 
     # define colormap
-    cmap_p = matplotlib.cm.get_cmap('Reds')
+    cmap_p = matplotlib.colormaps['Reds']
+
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=np.nanmax(C[:]))
-    cmap_n = matplotlib.cm.get_cmap('Blues_r')
+    cmap_n = matplotlib.colormaps['Blues_r']
     norm_n = matplotlib.colors.Normalize(vmin=np.min(C[:]), vmax=-threshold)
 
     # plot links
@@ -1274,9 +1278,10 @@ def plot_links_3d_intra(ax: str, epo1: mne.Epochs, epo2: mne.Epochs, C1: np.ndar
         threshold = threshold
 
     # Define colormap for both participant
-    cmap_p = matplotlib.cm.get_cmap('Reds')
+    cmap_p = matplotlib.colormaps['Reds']
+
     norm_p = matplotlib.colors.Normalize(vmin=threshold, vmax=vmax)
-    cmap_n = matplotlib.cm.get_cmap('Blues_r')
+    cmap_n = matplotlib.colormaps['Blues_r']
     norm_n = matplotlib.colors.Normalize(vmin=vmin, vmax=-threshold)
 
     for e1 in range(len(loc1)):
@@ -2481,7 +2486,8 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
         data = xwt(sig1, sig2, sfreq, freqs, analysis='phase')
         analysis_title = 'Cross Wavelet Transform (Phase Angle)'
         cbar_title = 'Phase Difference'
-        my_cm = matplotlib.cm.get_cmap('hsv')
+        my_cm = matplotlib.colormaps['hsv']
+
         plt.imshow(data, aspect='auto', cmap=my_cm, interpolation='nearest')
 
     elif analysis == 'power':
@@ -2489,7 +2495,8 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
         normed_data = (data - np.min(data)) / (np.max(data) - np.min(data))
         analysis_title = 'Cross Wavelet Transform (Power)'
         cbar_title = 'Cross Power'
-        my_cm = matplotlib.cm.get_cmap('viridis')
+        my_cm = matplotlib.colormaps['viridis']
+
         plt.imshow(normed_data, aspect='auto', cmap=my_cm,
                    interpolation='lanczos')
 
@@ -2497,7 +2504,8 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
         data = xwt(sig1, sig2, sfreq, freqs, analysis='wtc')
         analysis_title = 'Wavelet Coherence'
         cbar_title = 'Coherence'
-        my_cm = matplotlib.cm.get_cmap('plasma')
+        my_cm = matplotlib.colormaps['plasma']
+
         plt.imshow(data, aspect='auto', cmap=my_cm, interpolation='lanczos')
 
     else:
