@@ -459,16 +459,12 @@ class Dyad:
             query=f'task=="{task}"',
             **kwargs)
     
-    def plot_coherence_bars_per_task(self, is_intra:bool=False, **kwargs):
+    def plot_coherence_bars_per_task(self, **kwargs):
         """
         Plot coherence metric per task for comparison
-
-        Args:
-            is_intra (bool, optional): if we should plot the intra-subject data or inter-subject data. Defaults to False.
         """
         return plot_coherence_bars_per_task(
             self.df,
-            is_intra=is_intra,
             **kwargs)
         
     #
@@ -476,16 +472,18 @@ class Dyad:
     # 
     def plot_coherence_connectogram_intra(self, subject:Subject, query:str|None=None, **kwargs):
         df = self.df
-        selector = (df['subject1']==subject.label) & (df['subject2']==subject.label)
+        selector = df['is_intra']==True
         df_filtered = df[selector]
 
         if query is not None:
             df_filtered = df_filtered.query(query)
 
         pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
+        if 'title' not in kwargs:
+            kwargs['title'] = subject.label
+
         return plot_coherence_connectogram(
             pivot,
-            title=subject.label,
             **kwargs)
 
     def plot_coherence_connectogram_s1(self, query:str|None=None, **kwargs):

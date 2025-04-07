@@ -9,6 +9,7 @@ from .dyad import Dyad, PairChannelMatchType
 from ..plots import (
     plot_coherence_matrix,
     plot_coherence_bars_per_task,
+    plot_coherence_connectogram,
     plot_coherence_connectogram_split,
 )
 
@@ -309,19 +310,21 @@ class Cohort():
             query=f'task=="{task}"',
             **kwargs)
     
-    def plot_coherence_bars_per_task(self, is_intra:bool=False, **kwargs):
+    def plot_coherence_bars_per_task(self, **kwargs):
         """
         Plot coherence metric per task for comparison
-
-        Args:
-            is_intra (bool, optional): if we should plot the intra-subject data or inter-subject data. Defaults to False.
         """
         return plot_coherence_bars_per_task(
             self.df,
-            is_intra=is_intra,
             **kwargs)
         
-    def plot_coherence_connectogram(self, query:str|None=None, title:str|None=None, **kwargs):
+    def plot_coherence_connectogram(
+            self,
+            query:str|None=None,
+            title:str|None=None,
+            s1_label:str='Subject1',
+            s2_label:str='Subject2',
+            **kwargs):
         df = self.df.copy()
         selector = df['is_intra']==False
         df_filtered = df[selector]
@@ -330,18 +333,35 @@ class Cohort():
             df_filtered = df_filtered.query(query)
 
         # rename to have them separated in the plot
-        df_filtered.loc[:, 'roi1'] = 's1_' + df_filtered['roi1'].astype(str)
-        df_filtered.loc[:, 'roi2'] = 's2_' + df_filtered['roi2'].astype(str)
+        df_filtered.loc[:, 'roi1'] = s1_label + '_' + df_filtered['roi1'].astype(str)
+        df_filtered.loc[:, 'roi2'] = s2_label + '_' + df_filtered['roi2'].astype(str)
 
         pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
 
         if title is None:
-            title='Subject1 / Subject2'
+            title = f'{s1_label} / {s2_label}'
 
         return plot_coherence_connectogram_split(
             pivot,
             title=title,
             **kwargs)
+
+    def plot_coherence_connectogram_intra(self, is_intra_of:int, query:str|None=None, **kwargs):
+        df = self.df
+        selector = (df['is_intra']==True) & (df['is_intra_of']==is_intra_of)
+        df_filtered = df[selector]
+
+        if query is not None:
+            df_filtered = df_filtered.query(query)
+
+        pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
+        return plot_coherence_connectogram(pivot, **kwargs)
+
+    def plot_coherence_connectogram_s1(self, query:str|None=None, **kwargs):
+        return self.plot_coherence_connectogram_intra(1, query, **kwargs)
+
+    def plot_coherence_connectogram_s2(self, query:str|None=None, **kwargs):
+        return self.plot_coherence_connectogram_intra(2, query, **kwargs)
 
     #
     # Disk serialisation

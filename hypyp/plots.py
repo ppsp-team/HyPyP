@@ -253,17 +253,19 @@ def plot_coherence_connectogram_split(df_pivot, title='', ax=None):
     return fig
     
 
-def plot_coherence_bars_per_task(df, is_intra=False):
-    selector = (df['roi1'] == df['roi2']) & (df['is_intra'] == is_intra)
-    if is_intra:
-        # exclude same channel, since they always have a coherence of 1
-        selector = selector & (df['channel1']!=df['channel2'])
+def plot_coherence_bars_per_task(df):
+    selector = (df['roi1'] == df['roi2'])
 
     filtered_df = df[selector]
+
+    # remove intra-subject "same channel" coherence to avoid counting them in means
+    intra_same_ch_selector = (filtered_df['is_intra']==True) & (filtered_df['channel1']==filtered_df['channel2'])
+    filtered_df[intra_same_ch_selector] = np.nan
 
     p = sns.catplot(
         data=filtered_df, kind="bar",
         x="roi1", y="coherence", hue="task",
+        col="is_intra",
         #palette="dark", alpha=.6, height=6
     )
     p.despine(left=True)
@@ -272,6 +274,9 @@ def plot_coherence_bars_per_task(df, is_intra=False):
     p.set(ylim=(0, 1))
 
     p.legend.set_title("Task")
+
+    p.set_titles('Is intra: {col_name}')
+
     plt.subplots_adjust(bottom=0.5)
     return p
 

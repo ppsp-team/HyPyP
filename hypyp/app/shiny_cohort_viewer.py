@@ -24,7 +24,8 @@ DEFAULT_PLOT_COHERENCE_PER_TASK_HEIGHT = 600
 DEFAULT_PLOT_WTC_HEIGHT = 600
 DEFAULT_PLOT_CONNECTOGRAM_HEIGHT = 1000
 
-STR_TASK_ALL = 'all'
+STR_ALL_DYADS = 'All dyads'
+STR_ALL_TASKS = 'All tasks'
 
 # This is to avoid having external windows launched
 matplotlib.use('Agg')
@@ -81,12 +82,16 @@ app_ui = ui.page_fluid(
             "Connectograms",
             ui.row(
                 ui.column(
-                    6,
+                    4,
                     ui.output_plot('plot_connectogram_s1', height=DEFAULT_PLOT_CONNECTOGRAM_HEIGHT)
                 ),
                 ui.column(
-                    6,
+                    4,
                     ui.output_plot('plot_connectogram_s2', height=DEFAULT_PLOT_CONNECTOGRAM_HEIGHT)
+                ),
+                ui.column(
+                    4,
+                    ui.output_plot('plot_connectogram', height=DEFAULT_PLOT_CONNECTOGRAM_HEIGHT)
                 ),
             ),
         ),
@@ -94,18 +99,17 @@ app_ui = ui.page_fluid(
             "Coherence Per Task",
             ui.row(
                 ui.column(
-                    10,
+                    12,
                     ui.output_plot('plot_coherence_per_task', height=DEFAULT_PLOT_COHERENCE_PER_TASK_HEIGHT)
                 ),
+            ),
+        ),
+        ui.nav_panel(
+            "Data Frame",
+            ui.row(
                 ui.column(
-                    2,
-                    ui.input_select(
-                        'coherence_per_task_select_is_intra',
-                        'View intra/inter subject',
-                        choices={
-                            'is_intra': 'Intra subject',
-                            'is_not_intra': 'Inter subject (IBS)',
-                        }),
+                    12,
+                    ui.output_data_frame('data_frame')
                 ),
             ),
         ),
@@ -123,9 +127,9 @@ app_ui = ui.page_fluid(
             ),
         ),
         ui.nav_spacer(),
-        #selected='Cohort Info',
+        selected='Cohort Info',
         #selected='Coherence Matrix',
-        selected='Connectograms',
+        #selected='Connectograms',
         #selected='Coherence Per Task',
         #selected='Wavelet Transform Coherence',
         id='main_nav',
@@ -155,6 +159,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         cohort = get_cohort()
         if cohort is None:
             return None
+
+        if input.select_dyad() is None or input.select_dyad() == STR_ALL_DYADS:
+            return None
+            
         dyads = [dyad for dyad in cohort.dyads if dyad.label == input.select_dyad()]
         if len(dyads) == 0:
             return None
@@ -191,18 +199,24 @@ def server(input: Inputs, output: Outputs, session: Session):
         return ui.input_select(
             "select_dyad",
             f"Select Dyad",
-            choices=[dyad.label for dyad in cohort.dyads],
+            choices=[STR_ALL_DYADS] + [dyad.label for dyad in cohort.dyads],
         )
     
     @render.ui
     def ui_input_select_task():
+        cohort = get_cohort()
         dyad = get_dyad()
-        if dyad is None:
+        if dyad is not None:
+            tasks = dyad.tasks
+        elif cohort is not None:
+            tasks = cohort.dyads[0].tasks
+        else:
             return None
+
         return ui.input_select(
             "select_task",
             f"Select Task",
-            choices=[STR_TASK_ALL] + [task.name for task in dyad.tasks],
+            choices=[STR_ALL_TASKS] + [task.name for task in tasks],
         )
     
     @render.ui
@@ -231,47 +245,74 @@ def server(input: Inputs, output: Outputs, session: Session):
     
     def get_query():
         task = input.select_task() 
-        q = f'task == "{task}"' if task != STR_TASK_ALL else None
+        q = f'task == "{task}"' if task != STR_ALL_TASKS else None
         return q
 
     @render.plot
     def plot_coherence_matrix():
-        dyad = get_dyad()
-        if dyad is None:
+        obj = get_dyad()
+        if obj is None:
+            obj = get_cohort()
+        if obj is None:
             return None
+
         grouping = input.coherence_select_grouping()
         if grouping == 'roi':
-            return dyad.plot_coherence_matrix_per_roi(query=get_query())
+            return obj.plot_coherence_matrix_per_roi(query=get_query())
         elif grouping == 'channel':
-            return dyad.plot_coherence_matrix_per_channel(query=get_query())
+            return obj.plot_coherence_matrix_per_channel(query=get_query())
         elif grouping == 'roi_channel':
-            return dyad.plot_coherence_matrix('roi1', 'channel2', query=get_query())
+            return obj.plot_coherence_matrix('roi1', 'channel2', query=get_query())
         elif grouping == 'channel_roi':
-            return dyad.plot_coherence_matrix('channel1', 'roi2', query=get_query())
+            return obj.plot_coherence_matrix('channel1', 'roi2', query=get_query())
         else:
             raise RuntimeError(f'Unknown grouping {grouping}')
 
     @render.plot
     def plot_connectogram_s1():
-        dyad = get_dyad()
-        if dyad is None:
+        obj = get_dyad()
+        if obj is None:
+            obj = get_cohort()
+        if obj is None:
             return None
-        return dyad.plot_coherence_connectogram_s1(query=get_query())
+        return obj.plot_coherence_connectogram_s1(query=get_query(), title='Subject1')
         
     @render.plot
     def plot_connectogram_s2():
-        dyad = get_dyad()
-        if dyad is None:
+        obj = get_dyad()
+        if obj is None:
+            obj = get_cohort()
+        if obj is None:
             return None
-        return dyad.plot_coherence_connectogram_s2(query=get_query())
+        return obj.plot_coherence_connectogram_s2(query=get_query(), title='Subject2')
+        
+    @render.plot
+    def plot_connectogram():
+        obj = get_dyad()
+        if obj is None:
+            obj = get_cohort()
+        if obj is None:
+            return None
+        return obj.plot_coherence_connectogram(query=get_query())
+        
+    @render.data_frame
+    def data_frame():
+        obj = get_dyad()
+        if obj is None:
+            obj = get_cohort()
+        if obj is None:
+            return None
+        # have a maximum so that it loads
+        return render.DataGrid(obj.df[:1000], selection_mode="rows")
         
     @render.plot
     def plot_coherence_per_task():
-        dyad = get_dyad()
-        if dyad is None:
+        obj = get_dyad()
+        if obj is None:
+            obj = get_cohort()
+        if obj is None:
             return None
-        is_intra = input.coherence_per_task_select_is_intra() == 'is_intra'
-        return dyad.plot_coherence_bars_per_task(is_intra=is_intra)
+        return obj.plot_coherence_bars_per_task()
         
     @render.plot
     def plot_wtc():
