@@ -74,3 +74,5 @@ to = {format = "setuppy", path = "setup.py"}
 requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+include = ["hypyp"]
