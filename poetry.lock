@@ -348,6 +348,19 @@ webencodings = "*"
 css = ["tinycss2 (>=1.1.0,<1.5)"]
 
 [[package]]
+name = "bracex"
+version = "2.5.post1"
+description = "Bash style brace expander."
+optional = false
+python-versions = ">=3.8"
+groups = ["dev"]
+markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
+files = [
+    {file = "bracex-2.5.post1-py3-none-any.whl", hash = "sha256:13e5732fec27828d6af308628285ad358047cec36801598368cb28bc631dbaf6"},
+    {file = "bracex-2.5.post1.tar.gz", hash = "sha256:12c50952415bfa773d2d9ccb8e79651b8cdb1f31a42f6091b804f6ba2b4a66b6"},
+]
+
+[[package]]
 name = "certifi"
 version = "2025.1.31"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -1806,21 +1819,6 @@ docs = ["mdx-gh-links (>=0.2)", "mkdocs (>=1.5)", "mkdocs-gen-files", "mkdocs-li
 testing = ["coverage", "pyyaml"]
 
 [[package]]
-name = "markdown-include"
-version = "0.5.1"
-description = "This is an extension to Python-Markdown which provides an \"include\" function, similar to that found in LaTeX (and also the C pre-processor and Fortran). I originally wrote it for my FORD Fortran auto-documentation generator."
-optional = false
-python-versions = "*"
-groups = ["dev"]
-markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
-files = [
-    {file = "markdown-include-0.5.1.tar.gz", hash = "sha256:72a45461b589489a088753893bc95c5fa5909936186485f4ed55caa57d10250f"},
-]
-
-[package.dependencies]
-markdown = "*"
-
-[[package]]
 name = "markdown-it-py"
 version = "3.0.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
@@ -2135,6 +2133,26 @@ files = [
 mergedeep = ">=1.3.4"
 platformdirs = ">=2.2.0"
 pyyaml = ">=5.1"
+
+[[package]]
+name = "mkdocs-include-markdown-plugin"
+version = "7.1.5"
+description = "Mkdocs Markdown includer plugin."
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
+files = [
+    {file = "mkdocs_include_markdown_plugin-7.1.5-py3-none-any.whl", hash = "sha256:d0b96edee45e7fda5eb189e63331cfaf1bf1fbdbebbd08371f1daa77045d3ae9"},
+    {file = "mkdocs_include_markdown_plugin-7.1.5.tar.gz", hash = "sha256:a986967594da6789226798e3c41c70bc17130fadb92b4313f42bd3defdac0adc"},
+]
+
+[package.dependencies]
+mkdocs = ">=1.4"
+wcmatch = "*"
+
+[package.extras]
+cache = ["platformdirs"]
 
 [[package]]
 name = "mkdocs-material"
@@ -4144,6 +4162,22 @@ files = [
 watchmedo = ["PyYAML (>=3.10)"]
 
 [[package]]
+name = "wcmatch"
+version = "10.0"
+description = "Wildcard/glob file name matcher."
+optional = false
+python-versions = ">=3.8"
+groups = ["dev"]
+markers = "python_version <= \"3.11\" or python_version >= \"3.12\""
+files = [
+    {file = "wcmatch-10.0-py3-none-any.whl", hash = "sha256:0dd927072d03c0a6527a20d2e6ad5ba8d0380e60870c383bc533b71744df7b7a"},
+    {file = "wcmatch-10.0.tar.gz", hash = "sha256:e72f0de09bba6a04e0de70937b0cf06e55f36f37b3deb422dfaf854b867b840a"},
+]
+
+[package.dependencies]
+bracex = ">=2.1.1"
+
+[[package]]
 name = "wcwidth"
 version = "0.2.13"
 description = "Measures the displayed width of unicode strings in a terminal"
@@ -4322,4 +4356,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "1bdc8afb1939b2fc81cf4f3bcad52587d5e73c06e658600f890e5face2e4c5d5"
+content-hash = "d3b871a31897c8c558947ab8961d7d9591def2f3193f79e3c7ac99240a17c36e"

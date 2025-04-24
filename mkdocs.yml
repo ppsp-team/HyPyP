@@ -5,7 +5,6 @@ repo_url: https://github.com/ppsp-team/HyPyP/
 markdown_extensions:
   - admonition
   - codehilite
-  - markdown_include.include
 
 theme:
   name: "material"
@@ -15,6 +14,7 @@ extra_css:
 
 plugins:
   - search
+  - include-markdown
   - mkdocstrings:
       default_handler: python
       handlers:
