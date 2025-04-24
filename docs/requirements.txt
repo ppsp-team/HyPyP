@@ -34,7 +34,7 @@ fqdn==1.5.1 ; python_version >= "3.10" and python_version <= "3.11" or python_ve
 future==1.0.0 ; python_version >= "3.10" and python_version <= "3.11" or python_version >= "3.12" and python_version < "3.13"
 ghp-import==2.1.0 ; python_version >= "3.10" and python_version <= "3.11" or python_version >= "3.12" and python_version < "3.13"
 griffe==1.7.3 ; python_version >= "3.10" and python_version <= "3.11" or python_version >= "3.12" and python_version < "3.13"
-h11==0.14.0 ; python_version >= "3.10" and python_version <= "3.11" or python_version >= "3.12" and python_version < "3.13"
+h11==0.16.0 ; python_version >= "3.10" and python_version <= "3.11" or python_version >= "3.12" and python_version < "3.13"
 h5io==0.1.10 ; python_version >= "3.10" and python_version <= "3.11" or python_version >= "3.12" and python_version < "3.13"
 h5py==3.13.0 ; python_version >= "3.10" and python_version <= "3.11" or python_version >= "3.12" and python_version < "3.13"
 httpcore==1.0.7 ; python_version >= "3.10" and python_version <= "3.11" or python_version >= "3.12" and python_version < "3.13"
