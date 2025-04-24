@@ -55,6 +55,7 @@ mkdocstrings = ">=0.20.0"
 mkdocstrings-python-legacy = "^0.2.3"
 jupyterlab = "^4.3.5"
 mkdocs-include-markdown-plugin = "^7.1.5"
+mkdocstrings-python = ">=1.1.0"
 
 [tool.dephell.main]
 from = {format = "poetry", path = "pyproject.toml"}

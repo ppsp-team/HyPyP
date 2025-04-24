@@ -16,7 +16,6 @@ plugins:
   - search
   - include-markdown
   - mkdocstrings:
-      default_handler: python
       handlers:
         python:
           options:
