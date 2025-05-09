@@ -1,5 +1,5 @@
 import pytest
-from hypyp.xdf import XDFImport
+from hypyp.xdf import XDFImport, XDFStream
 
 #file_path = 'data/dyad-example.xdf'
 #file_path = 'data/dyad-example-synthetic.xdf'
@@ -11,18 +11,18 @@ def test_instanciate():
 
     #print(xdf.available_stream_names)
     # 1 keyboard events and 2 eeg
-    assert len(xdf.available_stream_names) == 3
-    assert xdf.available_stream_names[0] == 'Keyboard Events'
-    assert xdf.available_stream_names[1] == 'EEG_subject_1'
-    assert xdf.available_stream_names[2] == 'EEG_subject_2'
+    assert len(xdf.available_streams) == 3
+    assert xdf.available_streams[0].name == 'Keyboard Events'
+    assert xdf.available_streams[1].name == 'EEG_subject_1'
+    assert xdf.available_streams[2].name == 'EEG_subject_2'
 
-    assert xdf.available_stream_types[0] == 'Markers'
-    assert xdf.available_stream_types[1] == 'EEG'
-    assert xdf.available_stream_types[2] == 'EEG'
+    assert xdf.available_streams[0].type == 'Markers'
+    assert xdf.available_streams[1].type == 'EEG'
+    assert xdf.available_streams[2].type == 'EEG'
 
-    assert xdf.map_idx_to_id[0] == 1
-    assert xdf.map_idx_to_id[1] == 2
-    assert xdf.map_idx_to_id[2] == 3
+    assert xdf.available_streams[0].id == 1
+    assert xdf.available_streams[1].id == 2
+    assert xdf.available_streams[2].id == 3
 
     assert xdf.map_id_to_idx[1] == 0
     assert xdf.map_id_to_idx[2] == 1
@@ -38,14 +38,14 @@ def test_instanciate_no_matching_stream():
 def test_xdf_stream_indices_per_type():
     # should not be able to create mne object when using stream of type Markers
     xdf = XDFImport(file_path, stream_matches=[1], convert_to_mne=False)
-    assert 1 in xdf.get_stream_ids_by_type('Markers')
-    assert 2 in xdf.get_stream_ids_by_type('EEG')
-    assert 3 in xdf.get_stream_ids_by_type('EEG')
+    assert 1 in xdf.get_stream_ids_for_type('Markers')
+    assert 2 in xdf.get_stream_ids_for_type('EEG')
+    assert 3 in xdf.get_stream_ids_for_type('EEG')
 
 def test_instanciate_marker_stream():
     # should not be able to create mne object when using stream of type Markers
     xdf = XDFImport(file_path, stream_matches=[1], convert_to_mne=False)
-    xdf_stream_ids = xdf.get_stream_ids_by_type('Markers')
+    xdf_stream_ids = xdf.get_stream_ids_for_type('Markers')
     assert len(xdf_stream_ids) == 1
     with pytest.raises(Exception):
         xdf = XDFImport(file_path, stream_matches=xdf_stream_ids)
@@ -90,28 +90,28 @@ def test_stream_type_to_mne_type():
     # 'fnirs_cw_amplitude', 'fnirs_fd_ac_amplitude', 'fnirs_fd_phase', 'fnirs_od', 'hbo', 'hbr',
     # 'csd', 'temperature', 'gsr', 'eyegaze', 'pupil' ]
 
-    assert XDFImport.stream_type_to_mne_type('EEG') == 'eeg'
-    assert XDFImport.stream_type_to_mne_type('fNIRS') == 'fnirs_cw_amplitude'
-    assert XDFImport.stream_type_to_mne_type('markers') == 'stim'
-    assert XDFImport.stream_type_to_mne_type('stim') == 'stim'
+    assert XDFStream.stream_type_to_mne_type('EEG') == 'eeg'
+    assert XDFStream.stream_type_to_mne_type('fNIRS') == 'fnirs_cw_amplitude'
+    assert XDFStream.stream_type_to_mne_type('markers') == 'stim'
+    assert XDFStream.stream_type_to_mne_type('stim') == 'stim'
 
 def test_stream_type_map_explicit():
     mne_force_type = 'misc'
     my_map = {'EEG': mne_force_type}
-    assert XDFImport.stream_type_to_mne_type('EEG', my_map) == mne_force_type
+    assert XDFStream.stream_type_to_mne_type('EEG', my_map) == mne_force_type
 
     xdf = XDFImport(file_path, mne_type_map=my_map)
-    assert xdf.available_stream_types[1] == 'EEG'
+    assert xdf.available_streams[1].type == 'EEG'
     _, raw = list(xdf.raw_all.items())[0]
     assert raw.get_channel_types()[0] == 'misc'
 
 def test_channel_names():
     xdf = XDFImport(file_path, convert_to_mne=False)
-    ch_names = xdf.get_ch_names_for_stream(1)
+    ch_names = xdf.available_streams[1].ch_names
     assert ch_names[0] == 'Fp1'
 
 def test_ch_names_to_ch_types():
-    ch_types = XDFImport.get_mne_ch_types('EEG', ['Fp1', 'Fp2', 'AccX', 'GyroX', 'QuatX'])
+    ch_types = XDFStream.get_mne_ch_types('EEG', ['Fp1', 'Fp2', 'AccX', 'GyroX', 'QuatX'])
     assert ch_types == ['eeg', 'eeg', 'misc', 'misc', 'misc']
 
 def test_ch_names():
