@@ -6,6 +6,8 @@ from pyxdf.pyxdf import StreamData
 
 class XDFStream():
     stream: StreamData
+    metadata: dict
+    metadata_desc: dict
     raw: mne.io.RawArray
 
     @staticmethod
@@ -40,6 +42,10 @@ class XDFStream():
         base_type = XDFStream.stream_type_to_mne_type(stream_type, type_map=type_map)
         for ch_name in ch_names:
             ch_type = base_type
+            if stream_type.startswith('Acc'):
+                ch_type = 'misc'
+            if ch_name.startswith('Marker'):
+                ch_type = 'stim'
             if ch_name.startswith('Acc'):
                 ch_type = 'misc'
             if ch_name.startswith('Gyro'):
@@ -54,6 +60,9 @@ class XDFStream():
     def __init__(self, stream, mne_type_map: dict = None):
         self.stream = stream
         self.mne_type_map = mne_type_map
+        self.metadata_desc = {}
+        if self.stream["info"]["desc"] and self.stream["info"]["desc"][0]:
+            self.metadata_desc = self.stream["info"]["desc"][0]
 
     @property
     def name(self):
@@ -83,9 +92,23 @@ class XDFStream():
 
     @property
     def ch_names(self):
-        desc_info = self.stream["info"]["desc"]
-        if desc_info and desc_info[0] and "channels" in desc_info[0]:
-            return [channel["label"][0] for channel in self.stream["info"]["desc"][0]["channels"][0]["channel"]]
+
+        # The specification for metadata is to have xml nodes as desc->channels->channel->label...
+        # Some manufacturers have desc->channel->name...
+        # See https://github.com/sccn/xdf/wiki/EEG-Meta-Data 
+        # Let's handle both
+
+        lookup_fields = ["label", "name"]
+        channels_children = None
+        if "channels" in self.metadata_desc:
+            channels_children = self.metadata_desc["channels"][0]["channel"]
+        elif "channel" in self.metadata_desc:
+            channels_children = self.metadata_desc["channel"]
+        
+        if channels_children is not None:
+            for field in lookup_fields:
+                if field in channels_children[0]:
+                    return [channel[field][0] for channel in channels_children]
         
         # fallback to generic naming
         n_channels = int(self.stream['info']['channel_count'][0])
@@ -98,7 +121,7 @@ class XDFStream():
     def convert_to_mne(self, scale: float | str | None, append_stream_id: bool = False, verbose: bool = False):
         mne_info = self.create_mne_info(append_stream_id=append_stream_id, verbose=verbose)
         self.raw = self.create_mne_raw(mne_info, scale, verbose=verbose)
-        self.unique_stream_name = mne_info['subject_info']['id']
+        self.unique_stream_name = mne_info['subject_info']['his_id']
         
     def create_mne_info(self, append_stream_id: bool = False, verbose: bool = False):
         """
@@ -122,8 +145,8 @@ class XDFStream():
         
         mne_info["subject_info"] = {
             "id": unique_stream_name,
-            "stream_name": self.name,
-            "stream_id": self.id,
+            "id": self.id, # integer identifier of the subject
+            "his_id": self.name, # string identifier of the subject
         }
 
         return mne_info
@@ -189,10 +212,20 @@ class XDFStream():
     def set_montage(self, montage):
         self.raw.set_montage(montage)
     
+    def rename_channels(self, new_names):
+        mapping = dict()
+        old_names = self.ch_names
+        assert len(old_names) == len(new_names)
+
+        for i, new_name in enumerate(new_names):
+            mapping[old_names[i]] = new_name
+        
+        self.raw.rename_channels(mapping)
+    
     def save_fif_file(self, dir_path: str):
         os.makedirs(dir_path, exist_ok=True)
-        save_file_path = os.path.join([dir_path, f"{self.unique_stream_name}.fif"])
+        save_file_path = os.path.join(dir_path, f"{self.unique_stream_name}_raw.fif")
         self.raw.save(save_file_path, overwrite=True)
-        print(f'Saved {self.name} at {save_file_path}')
         return save_file_path
+    
     

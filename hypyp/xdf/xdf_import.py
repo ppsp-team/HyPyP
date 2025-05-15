@@ -13,7 +13,6 @@ class XDFImport():
       file_path: Path to LSL data (i.e., XDF file). Can be absolute or relative.
       stream_type: Define which type of stream the user is looking to convert.
       stream_matches: List of the stream index(es) in the XDF the user wishes to convert (can be `str` which the class will try to match to the name of an existing stream or an `int` which will be interpreted as such). Do not set to convert all of the request type
-      montage: A path to a local Dig montage or a mne standard montage.
       scale: Scaling factor or 'auto' for automatic scaling, None for no scaling.
       save_FIF_path: Boolean indicating whether to save the converted data to FIF format.
     """
@@ -29,7 +28,6 @@ class XDFImport():
         stream_type: str = 'EEG',
         stream_matches: list = None,
         mne_type_map: dict = None,
-        montage: str = None,
         scale: float | str = None,
         save_FIF_path: bool = None,
         verbose: bool = False,
@@ -39,7 +37,6 @@ class XDFImport():
         self.file_path = file_path 
         self.scale = scale
         self.save_FIF_path = save_FIF_path
-        self.montage = montage
 
         self.selected_stream_indices = []
         self.map_id_to_idx = {}
@@ -51,14 +48,11 @@ class XDFImport():
 
         self.available_streams = [XDFStream(stream, mne_type_map=mne_type_map) for stream in streams]
 
-        # create mapping between stream indentifiers and indices in our available_streams list
-        # id is the stream identifier
-        # idx is the index of the stream in our list "available_streams"
-        for idx, stream in enumerate(self.available_streams):
-            self.map_id_to_idx[stream.id] = idx
 
         if verbose: 
             self.print_available_streams()
+
+        self.map_streams()
 
         # Prepare the "selected_streams" list
         if stream_matches is None:
@@ -75,6 +69,10 @@ class XDFImport():
         return [self.available_streams[idx] for idx in self.selected_stream_indices]
     
     @property
+    def selected_stream_names(self):
+        return [stream.name for stream in self.selected_streams]
+    
+    @property
     def raw_all(self):
         ret = dict()
         for stream in self.selected_streams:
@@ -85,12 +83,25 @@ class XDFImport():
         print(f"List of available streams in XDF file {self.file_path}:")
         for stream in self.available_streams:
             print(f"  Stream id {stream.id} of type '{stream.type}' with name '{stream.name}'")
+            print(f"    Channel names: {','.join(stream.ch_names)}")
+            print(f"    Channel types: {','.join(stream.ch_types)}")
 
+    def get_streams_for_type(self, stream_type: str):
+        return [stream for stream in self.available_streams if stream.type == stream_type]
+        
     def get_stream_indices_for_type(self, stream_type: str):
         return [idx for idx, stream in enumerate(self.available_streams) if stream.type == stream_type]
         
     def get_stream_ids_for_type(self, stream_type: str):
         return [stream.id for stream in self.available_streams if stream.type == stream_type]
+        
+    def map_streams(self):
+        # create mapping between stream indentifiers and indices in our available_streams list
+        # id is the stream identifier
+        # idx is the index of the stream in our list "available_streams"
+        for idx, stream in enumerate(self.available_streams):
+            self.map_id_to_idx[stream.id] = idx
+
         
     def select_streams_by_type(self, stream_type: str) -> list:
         """
@@ -161,30 +172,30 @@ class XDFImport():
             if self.save_FIF_path is not None: 
                 stream.save_fif_file(self.save_FIF_path)
 
-        self.setup_montage()       # Set the given montage (local path or mne default montage)
-
         if self.verbose:
             print("Convertion done.")
         
+    def save_fif_files(self, dir_path):
+        return [stream.save_fif_file(dir_path) for stream in self.selected_streams]
     
-    def setup_montage(self):
+    def rename_channels(self, new_names):
+        return [stream.rename_channels(new_names) for stream in self.selected_streams]
+    
+    def set_montage(self, montage):
         """
         Set the montage of the raw(s) using a custom mne montage label, or the path to a dig.montage file.
 
         Arguments:
             self: The instance of the class.
+            montage: A path to a local Dig montage or a mne standard montage.
         """
-        if self.montage is None:
-            if self.verbose:
-                print("- No channels information was found. The montage can be set manually/individually by using the MNE function set_montage on the mne.Raw objects.")
-            return
+        if self.verbose or True:
+            print(f"Setting '{montage}' as the montage for streams: {','.join(self.selected_stream_names)}")
 
-        if self.verbose:
-            print(f"Setting '{self.montage}' as the montage for all EEG/sEEG/ECoG/DBS/fNIRS stream(s).")
 
         for stream in self.selected_streams:
             try: 
-                stream.set_montage(self.montage)
+                stream.set_montage(montage)
             except ValueError as e:
-                warnings.warn(f"Invalid montage given to mne.set_montage(): {self.montage}")
+                warnings.warn(f"Invalid montage given to mne.set_montage(): {montage}")
                 raise e
