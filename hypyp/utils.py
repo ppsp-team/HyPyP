@@ -184,6 +184,12 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
 
     merges = []
 
+    # Verify both epochs have same filter settings
+    if (epoch_S1.info['highpass'] != epoch_S2.info['highpass'] or 
+        epoch_S1.info['lowpass'] != epoch_S2.info['lowpass']):
+        import warnings
+        warnings.warn("Filter settings differ between participants. Using S1 settings.")
+    
     # checking wether data have the same size
     assert(len(epoch_S1) == len(epoch_S2)
            ), "Epochs from S1 and S2 should have the same size!"
@@ -210,10 +216,23 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
 
     merged = np.array(merges)
     ch_names_merged = ch_names1+ch_names2
-    info = mne.create_info(ch_names_merged, sfreq, ch_types='eeg',
-                           verbose=None)
+
+    # Create info object with filter information preserved
+    info = mne.create_info(ch_names_merged, sfreq, ch_types='eeg', verbose=None)
+
+    # Also preserve other relevant metadata
+    if 'description' in epoch_S1.info:
+        info['description'] = epoch_S1.info['description']
+    elif 'description' in epoch_S2.info:
+        info['description'] = epoch_S2.info['description']
+
     ep_hyper = mne.EpochsArray(merged, info)
 
+    # Preserve filter information from source epochs
+    with ep_hyper.info._unlock():
+        ep_hyper.info['highpass'] = epoch_S1.info['highpass']
+        ep_hyper.info['lowpass'] = epoch_S1.info['lowpass']
+    
     # setting channels type
     EOG_ch = []
     for ch in epoch_S1.info['chs']:
@@ -222,13 +241,9 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
 
     for ch in ep_hyper.info['chs']:
         if ch['ch_name'].split('_')[0] in EOG_ch:
-            # print('emg')
             ch['kind'] = FIFF.FIFFV_EOG_CH
         else:
             ch['kind'] = FIFF.FIFFV_EEG_CH
-
-    # info about task
-    ep_hyper.info['description'] = epoch_S1[0].info['description']
 
     return ep_hyper
 
