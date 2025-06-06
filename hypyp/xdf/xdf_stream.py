@@ -14,7 +14,7 @@ class Markers():
 
     Parameters:
         timestamps (1D np.array): The time of markers
-        descriptions (List[str]): The string valu for every marker. Must have the same length as timestamps
+        descriptions (List[str]): The string value for every marker. Must have the same length as timestamps
     """
     timestamps: np.array
     descriptions: List[str]

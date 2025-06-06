@@ -4,29 +4,26 @@ import pytest
 from hypyp.xdf import XDFImport, XDFStream
 import mne
 
-#file_path = 'data/dyad-example.xdf'
-#file_path = 'data/ExampleWorkshopData/FingerTappingExample4.xdf'
-
 file_path = 'data/XDF/dyad-example-noise.xdf'
 file_path_with_markers = 'data/XDF/dyad-example-with-markers.xdf'
 
-# These have been extracted with print(xdf)
-#Stream id 3 of type 'Markers' with name 'LSLOutletHS1-Markers'
-#Stream id 1 of type 'Accelerometer' with name 'LSLOutletHS1-Accelerometer'
-#Stream id 8 of type 'Quality' with name 'LSLOutletHS1-Quality'
-#Stream id 2 of type 'EEG' with name 'LSLOutletHS1-EEG'
-#Stream id 4 of type 'Markers' with name 'LSLOutletHS2-Markers'
-#Stream id 6 of type 'Accelerometer' with name 'LSLOutletHS2-Accelerometer'
-#Stream id 5 of type 'Quality' with name 'LSLOutletHS2-Quality'
-#Stream id 7 of type 'EEG' with name 'LSLOutletHS2-EEG'
-STREAM_ID_MARKERS_1 = 3
+## These have been extracted with print(xdf), and are used for testing select_match by stream id and mapping
+#   Stream id 1 of type 'Accelerometer' with name 'LSLOutletHS1-Accelerometer'
+#   Stream id 2 of type 'EEG' with name 'LSLOutletHS1-EEG'
+#   Stream id 3 of type 'Markers' with name 'LSLOutletHS1-Markers'
+#   Stream id 4 of type 'Markers' with name 'LSLOutletHS2-Markers'
+#   Stream id 5 of type 'Quality' with name 'LSLOutletHS2-Quality'
+#   Stream id 6 of type 'Accelerometer' with name 'LSLOutletHS2-Accelerometer'
+#   Stream id 7 of type 'EEG' with name 'LSLOutletHS2-EEG'
+#   Stream id 8 of type 'Quality' with name 'LSLOutletHS1-Quality'
 STREAM_ID_ACC_1 = 1
-STREAM_ID_QUALITY_1 = 8
 STREAM_ID_EEG_1 = 2
+STREAM_ID_MARKERS_1 = 3
 STREAM_ID_MARKERS_2 = 4
-STREAM_ID_ACC_2 = 6
 STREAM_ID_QUALITY_2 = 5
+STREAM_ID_ACC_2 = 6
 STREAM_ID_EEG_2 = 7
+STREAM_ID_QUALITY_1 = 8
 
 def test_instanciate():
     xdf = XDFImport(file_path)
@@ -41,7 +38,6 @@ def test_instanciate():
     assert xdf.available_streams[5].name == 'LSLOutletHS2-Accelerometer'
     assert xdf.available_streams[6].name == 'LSLOutletHS2-Quality'
     assert xdf.available_streams[7].name == 'LSLOutletHS2-EEG'
-
 
     assert xdf.available_streams[0].type == 'Markers'
     assert xdf.available_streams[1].type == 'Accelerometer'
@@ -185,7 +181,6 @@ def test_subject_unique_name():
     xdf = XDFImport(file_path, select_matches=[1], convert_to_mne=False)
     assert xdf.selected_streams[0].get_unique_name() == 'LSLOutletHS1-Accelerometer'
     assert xdf.selected_streams[0].get_unique_name(append_stream_id=True) == 'LSLOutletHS1-Accelerometer-1'
-    
     
 def test_markers():
     xdf = XDFImport(file_path_with_markers)
