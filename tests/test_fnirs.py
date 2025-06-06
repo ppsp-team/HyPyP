@@ -626,7 +626,7 @@ def test_cohort_run_estimation(capsys):
     assert 'time' in str(out)
 
 def test_lionirs_channel_grouping():
-    roi_file_path = 'data/lionirs/channel_grouping_7ROI.mat'
+    roi_file_path = 'data/NIRS/lionirs/channel_grouping_7ROI.mat'
     croi = ChannelROI.from_lionirs_file(roi_file_path)
     assert len(croi.rois.keys()) == 14
 
@@ -655,7 +655,7 @@ def test_lionirs_channel_grouping():
     assert croi.get_roi_from_channel(ordered_names[0]) == 'PreFr_L'
 
 def test_ordered_subject_ch_names():
-    roi_file_path = 'data/lionirs/channel_grouping_7ROI.mat'
+    roi_file_path = 'data/NIRS/lionirs/channel_grouping_7ROI.mat'
     croi = ChannelROI.from_lionirs_file(roi_file_path)
     subject = Subject(channel_roi=croi).load_file(snirf_file1)
     ch_names = subject.ordered_ch_names

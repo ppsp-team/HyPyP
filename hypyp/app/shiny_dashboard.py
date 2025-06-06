@@ -1,14 +1,9 @@
-import os
-from pathlib import Path
-import sys
 import tempfile
 
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
-import scipy.io
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-import pandas as pd
 from scipy import fft
 import mne
 
@@ -23,8 +18,6 @@ from hypyp.wavelet.base_wavelet import BaseWavelet
 from hypyp.wavelet.implementations.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexGaussianWavelet, ComplexMorletWavelet
 from hypyp.wavelet.implementations.pycwt_wavelet import PycwtWavelet
-from hypyp.wavelet.implementations.scipy_wavelet import ScipyWavelet, DEFAULT_SCIPY_CENTER_FREQUENCY
-import hypyp.plots
 
 
 DEFAULT_PLOT_SIGNAL_HEIGHT = 150 # px
@@ -107,7 +100,6 @@ app_ui = ui.page_fluid(
                 "",
                 choices={
                     'pywavelets': 'Use pywavelets',
-                    'scipy': 'Use scipy.signal (deprecated)',
                     'pycwt': 'Use pycwt (based on matlab code)',
                     'matlab': 'Use Matlab engine',
                 },
@@ -241,11 +233,6 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         if input.wavelet_library() == 'pycwt':
             return PycwtWavelet()
-
-        if input.wavelet_library() == 'scipy':
-            return ScipyWavelet(
-                center_frequency=input.wavelet_scipy_center_frequency(),
-            )
 
         if input.wavelet_library() == 'matlab':
             return MatlabWavelet()
@@ -583,9 +570,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                         selected=ComplexGaussianWavelet.default_degree,
                     ))))
 
-        if input.wavelet_library() == 'scipy':
-            options.append(ui_option_row("Center frequency", ui.input_numeric("wavelet_scipy_center_frequency", "", value=DEFAULT_SCIPY_CENTER_FREQUENCY)))
-
         options.append(ui_option_row("Period range", ui.row(
             ui.column(6, ui.input_numeric("wavelet_period_range_low", "", value=BaseWavelet.default_period_range[0])),
             ui.column(6, ui.input_numeric("wavelet_period_range_high", "", value=BaseWavelet.default_period_range[1])),
@@ -596,8 +580,6 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def ui_input_coherence_options():
         options = []
-        if input.wavelet_library() in ['pywavelets','scipy']:
-            options.append(ui_option_row("Boxcar size", ui.input_numeric("smoothing_win_size", "", value=BaseWavelet.default_smooth_win_size)))
         if input.wavelet_library() in ['pycwt']:
             pass
         return options

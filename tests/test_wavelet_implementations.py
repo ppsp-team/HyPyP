@@ -4,7 +4,6 @@ import warnings
 from hypyp.signal import SyntheticSignal
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
-from hypyp.wavelet.implementations.scipy_wavelet import ScipyWavelet
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 from hypyp.wavelet.implementations.pycwt_wavelet import PycwtWavelet
@@ -22,18 +21,6 @@ def test_pywavelets():
     signal1 = SyntheticSignal().add_noise()
     signal2 = SyntheticSignal().add_noise()
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
-
-def test_scipy():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    wavelet = ScipyWavelet(disable_caching=True)
-    psi, x = wavelet.evaluate_psi()
-    assert psi.dtype.kind == 'c'
-    # TODO test something
-
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
-    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
-
 
 def test_pycwt():
     if PycwtWavelet is None:
