@@ -4,7 +4,7 @@ The **Hy**perscanning **Py**thon **P**ipeline
 
 [![PyPI version shields.io](https://img.shields.io/pypi/v/hypyp.svg)](https://pypi.org/project/HyPyP/) [![CI](https://github.com/ppsp-team/HyPyP/actions/workflows/Build.yml/badge.svg)](https://github.com/ppsp-team/HyPyP/actions/workflows/Build.yml) <a href="https://hypyp.readthedocs.io"><img src="https://readthedocs.org/projects/hypyp/badge/?version=latest"></a> [![license](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![Mattermost](https://img.shields.io/discord/1065810348944408616?color=blue)](https://discord.gg/zYzjeGj7D6)
 
-⚠️ This software is in beta and thus should be considered with caution. While we have done our best to test all the functionalities, there is no guarantee that the pipeline is entirely bug-free. 
+⚠️ This software is in beta and thus should be considered with caution. While we have done our best to test all the functionalities, there is no guarantee that the pipeline is entirely bug-free.
 
 📖 See our [paper](https://academic.oup.com/scan/advance-article/doi/10.1093/scan/nsaa141/5919711) for more explanation and our plan for upcoming functionalities (aka Roadmap).
 
@@ -13,13 +13,13 @@ The **Hy**perscanning **Py**thon **P**ipeline
 🤓 For the motivated contributors, you can even help directly in the development of HyPyP. You will need to install [Poetry](https://python-poetry.org/) (see section below).
 
 ## Contributors
+
 Original authors: Florence BRUN, Anaël AYROLLES, Phoebe CHEN, Amir DJALOVSKI, Yann BEAUXIS, Suzanne DIKKER, Guillaume DUMAS  
 New contributors: Marine Gautier MARTINS, Rémy RAMADOUR, Patrice FORTIN, Ghazaleh RANJBARAN, Quentin MOREAU, Caitriona DOUGLAS, Franck PORTEOUS, Jonas MAGO, Juan C. AVENDANO, Julie BONNAIRE
 
 ## Installation
 
 `pip install HyPyP`
-
 
 ## Documentation
 
@@ -43,11 +43,20 @@ For getting started with HyPyP, we have designed a little walkthrough: [getting_
 
 🎓 [Tutorials](https://github.com/ppsp-team/HyPyP/tree/master/tutorial) - Examples & documentation (Anaël, Florence, Yann, Ghazaleh, Caitriona, Guillaume)
 
+## fNIRS hyperscanning
+
+🔦 [fnirs/\*.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/fnirs) — Functional Near Infrared Spectroscopy hyperscanning features (Patrice)
+
+🌊 [wavelet/\*.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/wavelet) — Continuous Wavelet Transform and Wavelet Transform Coherence (Patrice)
+
+📊 [app/\*.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/app) — Shiny dashboards, install using `poetry install --extras dashboard` (Patrice)
+
 ## Poetry Installation (Only for Developers and Adventurous Users)
 
 To develop HyPyP, we recommend using [Poetry 2.x](https://python-poetry.org/). Follow these steps:
 
 ### 1. Install Poetry:
+
 ```bash
    pip install poetry
 ```
@@ -73,6 +82,7 @@ poetry install --with dev
 ```
 
 ### 4. Launch Jupyter Lab to Run Notebooks:
+
 Instead of entering a shell, launch Jupyter Lab directly within the Poetry environment:
 
 ```bash
@@ -111,10 +121,12 @@ As of version 0.5.0b5, hypyp now supports visualization of parent-child or adult
 To use this functionality, simply set the `children=True` parameter in visualization functions and specify which participant is the child using the `child_head` parameter.
 
 Example:
+
 ```python
 # Visualize parent-child data (epo1 = parent, epo2 = child)
 viz_3D_inter(epo1, epo2, C, threshold=0.95, steps=10, children=True, child_head=True)
 ```
 
 # License
+
 This project is licensed under the BSD 3-Clause License. See the license for details.
