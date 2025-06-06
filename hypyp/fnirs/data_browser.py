@@ -9,8 +9,7 @@ import scipy.io
 
 from ..wavelet.pair_signals import PairSignals
 
-DOWNLOADS_RELATIVE_PATH = os.path.join('data', 'fNIRS', 'downloads')
-
+DOWNLOADS_RELATIVE_PATH = os.path.join('data', 'NIRS', 'downloads')
 
 class DataBrowser:
     absolute_root_path: str

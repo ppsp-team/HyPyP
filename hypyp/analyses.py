@@ -15,11 +15,11 @@ import numpy as np
 import scipy
 import scipy.signal as signal
 import scipy.stats
+from scipy.stats import circmean
 import statsmodels.stats.multitest
 import copy
 from collections import namedtuple
 from typing import Union, List, Tuple
-from astropy.stats import circmean
 import matplotlib.pyplot as plt
 
 plt.ion()
@@ -31,55 +31,59 @@ from mne.time_frequency import EpochsSpectrum
 from .mvarica import MVAR, connectivity_mvarica
 
 
-def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int, epochs_average: bool) -> tuple:
+def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int, epochs_average: bool) -> namedtuple:
     """
-    Computes the Power Spectral Density (PSD) on Epochs.
-
-    Arguments:
-
-        epochs : mne.Epochs
-            A participant's Epochs object, for a condition (can result from the
-            concatenation of Epochs from different files with the same condition).
-            Epochs are MNE objects: data are stored in arrays of shape
-            (n_epochs, n_channels, n_times) and parameter information is stored
-            in a dictionary.
-
-        fmin : float
-            Minimum frequency in Hz of interest for PSD calculation.
-
-        fmax : float
-            Maximum frequency in Hz of interest for PSD calculation.
-
-        n_fft: The length of FFT used, must be ``>= n_per_seg`` (default: 256).
-            The segments will be zero-padded if ``n_fft > n_per_seg``.
-            If n_per_seg is None, n_fft must be <= number of time points
-            in the data.
-
-        n_per_seg : int | None
-            Length of each Welch segment (windowed with a Hamming window). Defaults
-            to None, which sets n_per_seg equal to n_fft.
-
-        epochs_average : bool
-            Option to collapse the time course or not, boolean.
-            If False, PSD won't be averaged over epochs (the time
-            course is maintained).
-            If True, PSD values are averaged over epochs.
-
-    Note:
-        The function can be iterated on the group and/or on conditions
-        (for epochs in epochs['epochs_%s_%s_%s' % (subj, group, cond_name)]).
-        The PSD distribution on the group can be visualized to check normality
-        for statistics.
-
-    Returns:
-        freq_list, psd:
-
-      - freq_list: list of frequencies in the actual frequency band of interest
-        (frequency bin) used for PSD calculation.
-      - psd: PSD value for each epoch, each channel, and each frequency,
-        ndarray (n_epochs, n_channels, n_frequencies).
-        Note that if time_resolved == True, PSD values are averaged
-        across epochs.
+    Computes the Power Spectral Density (PSD) on Epochs using Welch's method.
+    
+    This function calculates the power spectrum for each channel across the specified 
+    frequency range. EOG channels are automatically dropped before computation.
+    
+    Parameters
+    ----------
+    epochs : mne.Epochs
+        A participant's Epochs object containing EEG data of shape (n_epochs, n_channels, n_times).
+        
+    fmin : float
+        Minimum frequency in Hz to include in PSD calculation.
+        
+    fmax : float
+        Maximum frequency in Hz to include in PSD calculation.
+        
+    n_fft : int
+        Length of FFT used. Must be >= n_per_seg. If larger, the segments will be 
+        zero-padded. If n_per_seg is None, n_fft must be <= number of time points.
+        
+    n_per_seg : int or None
+        Length of each Welch segment (windowed with a Hamming window).
+        If None, n_per_seg is set equal to n_fft.
+        
+    epochs_average : bool
+        If True, PSD values are averaged over epochs.
+        If False, PSD won't be averaged (the time course is maintained).
+    
+    Returns
+    -------
+    psd_tuple : namedtuple
+        A named tuple containing:
+        - freq_list: ndarray of frequencies (frequency bins) in Hz
+        - psd: ndarray of PSD values with shape:
+          - If epochs_average=True: (n_channels, n_frequencies)
+          - If epochs_average=False: (n_epochs, n_channels, n_frequencies)
+          
+    Notes
+    -----
+    This function can be iterated on groups and/or conditions:
+    (for epochs in epochs['epochs_%s_%s_%s' % (subj, group, cond_name)]).
+    
+    The PSD values are computed using Welch's method with Hamming windows and 
+    expressed in µV²/Hz.
+    
+    Examples
+    --------
+    >>> from mne import Epochs
+    >>> result = pow(epochs, fmin=1, fmax=40, n_fft=512, n_per_seg=256, epochs_average=True)
+    >>> frequencies = result.freq_list
+    >>> power_values = result.psd
     """
 
     # dropping EOG channels (incompatible with connectivity map model in stats)
@@ -108,48 +112,62 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
                      psd=psd)
 
 
-def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: str, p_thresh: float,
-               multiple_corr: bool = True, verbose: bool = False) -> tuple:
+def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: str, 
+               p_thresh: float, multiple_corr: bool = True, verbose: bool = False) -> namedtuple:
     """
-    Correlates data with a discontinuous behavioral parameter,
-    uses different linear correlations after checking for
-    normality of the data.
-
-    Arguments:
-        data: data to correlate with behavior. For now, inputs can be raw data
-            or psd vectors for example (from n_dyads length), or con values
-            without frequency dimension, numpy array of shape
-            (n_dyads, n_channels, n_channels).
-        behav: behavioral values for a parameter (ex: timing to control
-            for learning), one dimensional array from same shape as data.
-        data_name: nature of the data (used for the legend of the figure,
-            if verbose=True), str.
-        behav_name: nature of the behavior values (used for the legend
-            of the figure, if verbose=True), str.
-        p_thresh: threshold to consider p values as significant for correlation
-            tests, can be set to 0.05 with multiple_corr to True or lower when
-            multiple_corr set to False, float.
-        multiple_corr: for connectivity correlation tests for example,
-            a correction for multiple comparison can be applied
-            (multiple_corr set to True by default), bool.
-            The method used is fdr_bh.
-        verbose: option to plot the correlation, boolean.
-            Set to False by default.
-
-    Returns:
-        r, pvalue, strat:
-          - r: pearson’s correlation coefficient, float if data is a vector,
-            array of floats if data is an array of connectivity values. In this
-            last case, the array can be used as input in viz.plot_links_2d.
-          - pvalue: two-tailed p-value (probability of an uncorrelated
-            system producing datasets that have a Pearson correlation
-            at least as extreme as the one computed from the dataset tested),
-            float if data is a vector, array of floats if data is an array
-            of connectivity values. If multiple_corr is set to True, return
-            corrected pvalue.
-          - strat: normality of the datasets, 'non-normal' or 'normal' if data
-            is a vector, corection set for multiple comparisons or not if data
-            is an array of connectivity values, str.
+    Correlates neural data with behavioral parameters using appropriate linear correlation methods.
+    
+    This function first checks for data normality, then applies either Pearson's or 
+    Spearman's correlation. For connectivity data, it can apply multiple comparison correction.
+    
+    Parameters
+    ----------
+    data : np.ndarray
+        Data to correlate with behavior. Can be either:
+        - 1D array of values (same shape as behav)
+        - 3D array of connectivity values with shape (n_dyads, n_channels, n_channels)
+        
+    behav : np.ndarray
+        1D array of behavioral values (e.g., timing, performance scores)
+        
+    data_name : str
+        Description of the data (used for plot labeling if verbose=True)
+        
+    behav_name : str
+        Description of the behavioral parameter (used for plot labeling if verbose=True)
+        
+    p_thresh : float
+        Significance threshold for correlation tests (typically 0.05)
+        
+    multiple_corr : bool, optional
+        Whether to apply multiple comparison correction (default=True).
+        Uses the FDR-BH method when True.
+        
+    verbose : bool, optional
+        Whether to generate visualization of the correlation (default=False)
+    
+    Returns
+    -------
+    corr_tuple : namedtuple
+        A named tuple containing:
+        - r: correlation coefficient(s)
+          - For 1D data: a single float
+          - For connectivity data: array of shape (n_channels, n_channels)
+        - pvalue: p-value(s) (original or corrected if multiple_corr=True)
+        - strat: string indicating which strategy was used ('normal', 'non_normal',
+          or information about multiple comparison correction)
+    
+    Notes
+    -----
+    When correlating connectivity matrices with behavioral data, only the significant 
+    correlations are returned in the r matrix, with non-significant values set to zero.
+    
+    Examples
+    --------
+    >>> # Correlating average alpha power with reaction times
+    >>> result = behav_corr(alpha_power, reaction_times, 'Alpha Power', 'RT (ms)', 0.05)
+    >>> r_value = result.r
+    >>> p_value = result.pvalue
     """
 
     # storage for results
@@ -220,19 +238,34 @@ def behav_corr(data: np.ndarray, behav: np.ndarray, data_name: str, behav_name: 
 
 def indices_connectivity_intrabrain(epochs: mne.Epochs) -> List[Tuple[int, int]]:
     """
-    Computes indices for connectivity analysis between all EEG
-    channels for one participant. Can be used instead of
-    (n_channels, n_channels) that takes into account intrabrain channel
-    connectivity.
-
-    Arguments:
-        epochs: one participant's Epochs object, to retrieve channel information.
-            (Epochs are MNE objects).
-
-    Returns:
-        channels: channel pairs for which connectivity indices will be
-            computed, a list of tuples with channels indices.
+    Computes indices for intrabrain connectivity analysis between all EEG channels.
+    
+    This function generates all possible pairs of EEG channel indices for a single
+    participant, excluding EOG channels.
+    
+    Parameters
+    ----------
+    epochs : mne.Epochs
+        A participant's Epochs object containing channel information
+        
+    Returns
+    -------
+    channels : List[Tuple[int, int]]
+        List of tuples, each containing a pair of channel indices (i, j) where i < j.
+        These indices correspond to all possible pairs of EEG channels for the participant.
+    
+    Notes
+    -----
+    This function automatically removes EOG channels before generating the pairs.
+    The resulting indices can be used as input for connectivity analyses within
+    a single brain.
+    
+    Examples
+    --------
+    >>> channel_pairs = indices_connectivity_intrabrain(participant_epochs)
+    >>> print(f"Number of channel pairs: {len(channel_pairs)}")
     """
+
     names = copy.deepcopy(epochs.info['ch_names'])
     for ch in epochs.info['chs']:
         if ch['kind'] == FIFF.FIFFV_EOG_CH:
@@ -254,17 +287,38 @@ def indices_connectivity_intrabrain(epochs: mne.Epochs) -> List[Tuple[int, int]]
 
 def indices_connectivity_interbrain(epoch_hyper: mne.Epochs) -> List[Tuple[int, int]]:
     """
-    Computes indices for interbrain connectivity analyses between all EEG
-    sensors for 2 participants (merge data).
-
-    Arguments:
-        epoch_hyper: a pair's Epochs object; contains channel information (Epochs
-            are MNE objects).
-
-    Returns:
-        channels: channel pairs for which connectivity indices will be
-            computed, a list of tuples with channels indices.
+    Computes indices for interbrain connectivity analysis between EEG channels of two participants.
+    
+    This function generates all possible pairs of channel indices where the first channel
+    belongs to participant 1 and the second to participant 2, based on a merged epochs object.
+    
+    Parameters
+    ----------
+    epoch_hyper : mne.Epochs
+        A merged Epochs object containing data from both participants, with channels
+        ordered such that the first half belongs to participant 1 and the second half
+        to participant 2.
+        
+    Returns
+    -------
+    channels : List[Tuple[int, int]]
+        List of tuples, each containing a pair of channel indices (i, j) where:
+        - i is an index of a channel from participant 1 (in range 0 to n_channels/2 - 1)
+        - j is an index of a channel from participant 2 (in range n_channels/2 to n_channels - 1)
+    
+    Notes
+    -----
+    This function assumes that the channels in epoch_hyper are organized as:
+    [participant1_ch1, ..., participant1_chN, participant2_ch1, ..., participant2_chN]
+    
+    EOG channels are automatically excluded before generating the pairs.
+    
+    Examples
+    --------
+    >>> interbrain_pairs = indices_connectivity_interbrain(merged_epochs)
+    >>> print(f"Number of interbrain channel pairs: {len(interbrain_pairs)}")
     """
+
     channels = []
     names = copy.deepcopy(epoch_hyper.info['ch_names'])
     for ch in epoch_hyper.info['chs']:
@@ -284,57 +338,81 @@ def indices_connectivity_interbrain(epoch_hyper: mne.Epochs) -> List[Tuple[int, 
     return channels
 
 
-def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int, frequencies: Union[dict, list], mode: str,
-                      epochs_average: bool = True) -> np.ndarray:
+def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int, 
+                     frequencies: Union[dict, list], mode: str,
+                     epochs_average: bool = True) -> np.ndarray:
     """
-    Computes frequency- or time-frequency-domain connectivity measures from preprocessed EEG data.
-    This function aggregates compute_single_freq/compute_freq_bands and compute_sync.
-
-    Arguments:
-
-        data:
-            shape = (2, n_epochs, n_channels, n_times). data input for computing connectivity between two participants
-        sampling_rate:
-            sampling rate.
-        frequencies :
-            frequencies of interest for which connectivity will be computed.
-            If a dictionary, different frequency bands are used.
-            - e.g. {'alpha':[8,12],'beta':[12,20]}
-            If a list, every integer frequency within the range is used.
-            - e.g. [5,30] dictates that connectivity will be computed over every integer in the frequency bin between 5 Hz and 30 Hz.
-
-        mode:
-            connectivity measure. Options are in the notes.
-
-        epochs_average:
-            option to either return the average connectivity across epochs (collapse across time) or preserve epoch-by-epoch connectivity, boolean.
-            If False, PSD won't be averaged over epochs (the time
-            course is maintained).
-            If True, PSD values are averaged over epochs.
-
-
-    Returns:
-        result:
-            Connectivity matrix. The shape is either
-            (n_freq, n_epochs, 2*n_channels, 2*n_channels) if time_resolved is False,
-            or (n_freq, 2*n_channels, 2*n_channels) if time_resolved is True.
-
-            To extract inter-brain connectivity values, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
-
-
-    Note:
-        Connectivity is computed for all possible electrode pairs between
-        the dyad, including inter- and intra-brain connectivities.
-
-      **supported connectivity measures**
-          - 'envelope_corr': envelope correlation
-          - 'pow_corr': power correlation
-          - 'plv': phase locking value
-          - 'ccorr': circular correlation coefficient
-          - 'coh': coherence
-          - 'imaginary_coh': imaginary coherence
-          - 'pli': phase lag index
-          - 'wpli': weighted phase lag index
+    Computes frequency-domain connectivity measures between two participants.
+    
+    This function is a high-level interface that processes EEG data, computes analytic 
+    signals, and calculates connectivity metrics between all possible channel pairs.
+    
+    Parameters
+    ----------
+    data : Union[list, np.ndarray]
+        EEG data from two participants with shape (2, n_epochs, n_channels, n_times)
+        
+    sampling_rate : int
+        Sampling rate of the EEG data in Hz
+        
+    frequencies : Union[dict, list]
+        Specification of frequency bands of interest:
+        - If dict: {'band_name': [fmin, fmax], ...} defining frequency bands
+          e.g., {'alpha': [8, 12], 'beta': [12, 20]}
+        - If list: [fmin, fmax] for each integer frequency in the range
+          e.g., [5, 30] for all integer frequencies from 5 to 30 Hz
+          
+    mode : str
+        Connectivity measure to compute. Options:
+        - 'envelope_corr': envelope correlation
+        - 'pow_corr': power correlation
+        - 'plv': phase locking value
+        - 'ccorr': circular correlation coefficient
+        - 'coh': coherence
+        - 'imaginary_coh': imaginary coherence
+        - 'pli': phase lag index
+        - 'wpli': weighted phase lag index
+        
+    epochs_average : bool, optional
+        If True, connectivity values are averaged across epochs (default)
+        If False, epoch-by-epoch connectivity is preserved
+    
+    Returns
+    -------
+    result : np.ndarray
+        Connectivity matrix with shape:
+        - If epochs_average=True: (n_freq, 2*n_channels, 2*n_channels)
+        - If epochs_average=False: (n_freq, n_epochs, 2*n_channels, 2*n_channels)
+        
+        The channels are ordered as:
+        [participant1_ch1, ..., participant1_chN, participant2_ch1, ..., participant2_chN]
+        
+        To extract only interbrain connectivity values, slice the last two dimensions:
+        result[:, :, 0:n_channels, n_channels:2*n_channels]
+    
+    Notes
+    -----
+    This function handles the complete process from raw EEG data to connectivity metrics:
+    1. Computes analytic signals for the specified frequencies
+    2. Applies the selected connectivity measure
+    
+    Each connectivity metric has different mathematical properties and interpretations:
+    - PLV measures consistency in phase differences regardless of amplitude
+    - Coherence measures linear relationship between signals in frequency domain
+    - Imaginary coherence is less susceptible to volume conduction
+    - PLI and wPLI are robust against common sources and amplitude effects
+    
+    Time complexity scales with O(n_channels^2 × n_epochs × n_frequencies × n_times)
+    
+    Examples
+    --------
+    >>> # Computing alpha band PLV
+    >>> alpha_plv = pair_connectivity(
+    ...     [subj1_data, subj2_data], 
+    ...     sampling_rate=256, 
+    ...     frequencies={'alpha': [8, 12]}, 
+    ...     mode='plv'
+    ... )
     """
 
     # Data consists of two lists of np.array (n_epochs, n_channels, epoch_size)
@@ -355,91 +433,66 @@ def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int, frequen
     return result
 
 
-# helper function
-def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
-    """
-    Helper function to compute the product of a complex array and its conjugate.
-    It is designed specifically to collapse the last dimension of a four-dimensional array.
-
-    Arguments:
-        real: the real part of the array.
-        imag: the imaginary part of the array.
-        transpose_axes: axes to transpose for matrix multiplication.
-
-    Returns:
-        product: the product of the array and its complex conjugate.
-    """
-    formula = 'jilm,jimk->jilk'
-    product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
-              np.einsum(formula, imag, imag.transpose(transpose_axes)) - 1j * \
-              (np.einsum(formula, real, imag.transpose(transpose_axes)) - \
-               np.einsum(formula, imag, real.transpose(transpose_axes)))
-
-    return product
-
-
-# helper function
-def _multiply_conjugate_time(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
-    """
-    Helper function to compute the product of a complex array and its conjugate.
-    Unlike _multiply_conjugate, this doenst collapse the last dimension of a 
-    four-dimensional array. Useful when computing some connectivity metrics 
-    (e.g., wpli), since it preserves the product values across e.g., time.
-    
-    Arguments:
-        real: the real part of the array.
-        imag: the imaginary part of the array.
-        transpose_axes: axes to transpose for matrix multiplication.
-    Returns:
-        product: the product of the array and its complex conjugate.
-    """
-    formula = 'jilm,jimk->jilkm'
-    product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
-              np.einsum(formula, imag, imag.transpose(transpose_axes)) - 1j * \
-              (np.einsum(formula, real, imag.transpose(transpose_axes)) - \
-               np.einsum(formula, imag, real.transpose(transpose_axes)))
-    
-    return product
-
-
 def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = True) -> np.ndarray:
     """
-    Computes frequency- or time-frequency-domain connectivity measures from analytic signals.
-
-    Arguments:
-
-        complex_signal:
-            shape = (2, n_epochs, n_channels, n_freq_bins, n_times).
-            Analytic signals for computing connectivity between two participants.
-
-        mode:
-            Connectivity measure. Options in the notes.
-
-        epochs_average:
-            option to either return the average connectivity across epochs (collapse across time) or preserve epoch-by-epoch connectivity, boolean.
-            If False, PSD won't be averaged over epochs (the time course is maintained).
-            If True, PSD values are averaged over epochs.
-
-
-    Returns:
-        con:
-            Connectivity matrix. The shape is either
-            (n_freq, n_epochs, 2*n_channels, 2*n_channels) if time_resolved is False,
-            or (n_freq, 2*n_channels, 2*n_channels) if time_resolved is True.
-
-            To extract inter-brain connectivity values, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
-
-    Note:
-        **supported connectivity measures**
-          - 'envelope_corr': envelope correlation
-          - 'pow_corr': power correlation
-          - 'plv': phase locking value
-          - 'ccorr': circular correlation coefficient
-          - 'coh': coherence
-          - 'imaginary_coh': imaginary coherence
-          - 'pli': phase lag index
-          - 'wpli': weighted phase lag index
-
+    Computes frequency-domain connectivity measures from analytic signals.
+    
+    This function calculates various connectivity metrics between all possible
+    channel pairs based on the input complex-valued signals.
+    
+    Parameters
+    ----------
+    complex_signal : np.ndarray
+        Complex analytic signals with shape (2, n_epochs, n_channels, n_freq_bins, n_times)
+        
+    mode : str
+        Connectivity measure to compute. Options:
+        - 'envelope_corr': envelope correlation - correlation between signal envelopes
+        - 'pow_corr': power correlation - correlation between signal power
+        - 'plv': phase locking value - consistency of phase differences
+        - 'ccorr': circular correlation coefficient - circular statistic for phase coupling
+        - 'coh': coherence - normalized cross-spectrum
+        - 'imaginary_coh': imaginary coherence - imaginary part of coherence (volume conduction resistant)
+        - 'pli': phase lag index - asymmetry of phase difference distribution
+        - 'wpli': weighted phase lag index - weighted version of PLI with improved properties
+        
+    epochs_average : bool, optional
+        If True, connectivity values are averaged across epochs (default)
+        If False, epoch-by-epoch connectivity is preserved
+    
+    Returns
+    -------
+    con : np.ndarray
+        Connectivity matrix with shape:
+        - If epochs_average=True: (n_freq, 2*n_channels, 2*n_channels)
+        - If epochs_average=False: (n_freq, n_epochs, 2*n_channels, 2*n_channels)
+    
+    Notes
+    -----
+    Mathematical formulations for each connectivity measure:
+    
+    - PLV: |⟨e^(i(φₓ-φᵧ))⟩|
+      Measures consistency of phase differences across time
+      
+    - Envelope correlation: corr(env(x), env(y))
+      Pearson correlation between signal envelopes
+      
+    - Coherence: |⟨XY*⟩|²/(⟨|X|²⟩⟨|Y|²⟩)
+      Normalized cross-spectrum
+      
+    - Imaginary coherence: |Im(⟨XY*⟩)|/√(⟨|X|²⟩⟨|Y|²⟩)
+      Takes only imaginary part which is less affected by volume conduction
+      
+    - PLI: |⟨sign(Im(XY*))⟩|
+      Quantifies asymmetry in phase difference distribution
+      
+    - wPLI: |⟨|Im(XY*)|sign(Im(XY*))⟩|/⟨|Im(XY*)|⟩
+      Weighted version that downweights phase differences near 0 or π
+    
+    Raises
+    ------
+    ValueError
+        If an unsupported connectivity metric is specified
     """
 
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
@@ -487,7 +540,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
 
     elif mode.lower() == 'ccorr':
         angle = np.angle(complex_signal)
-        mu_angle = circmean(angle, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
+        mu_angle = circmean(angle, high=np.pi, low=-np.pi, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
         angle = np.sin(angle - mu_angle)
 
         formula = 'nilm,nimk->nilk'
@@ -520,47 +573,84 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
     return con
 
 
-def compute_conn_mvar(complex_signal: np.ndarray, mvar_params: dict, ica_params: dict, measure_params: dict, check_stability: bool = True) -> np.ndarray:
+def compute_conn_mvar(complex_signal: np.ndarray, mvar_params: dict, 
+                     ica_params: dict, measure_params: dict, 
+                     check_stability: bool = True) -> np.ndarray:
     """
-    Computes connectivity measures based on MVAR coefficients.
-
-    Arguments:
-      complex_signal:
-        shape = (2, n_epochs, n_channels, n_freq_bins, n_times).
-        Analytic signals for computing connectivity between two participants.
-
-      mvar_params:
-        python dictionary for defining the MVAR model parameters.
-        it should contain three variables:
-        { "mvar_order": ,
-        "fitting_method: ,
-        "delta: ,
-        }
-
-      ica_params:
-        python dictionary for choosing the ica method.
-        it should contain two variables:
-        { "method": ,
-        "random_state":
-        }
-
-        measure_params:
-          python dictionary for defining connectivity measure attributes.
-          it should contain two variables:
-          { "name": ,
-          "n_fft":
-          }
-
-        check_stability:
-          bool, whether to check stability of mvar model or not.
-          note that mvar models need adequate sample number to be stable.
-          (default: True)
-
-    Returns:
-      connectivity measure matrix.
-      ndarray with shape = (epochs, frequency, channels, channels, n_fft)
-                          or (1, frequency,channels, channels, n_fft) if epochs are merged
+    Computes connectivity measures based on multivariate autoregressive (MVAR) modeling.
+    
+    This function fits MVAR models to the data and computes directed connectivity 
+    measures based on those models, with optional ICA for source separation.
+    
+    Parameters
+    ----------
+    complex_signal : np.ndarray
+        Complex analytic signals with shape (2, n_epochs, n_channels, n_freq_bins, n_times)
+        
+    mvar_params : dict
+        Dictionary of MVAR model parameters with keys:
+        - 'mvar_order': int, order of the MVAR model
+        - 'fitting_method': str, method for fitting the MVAR model
+        - 'delta': float, regularization parameter
+        
+    ica_params : dict
+        Dictionary of ICA parameters with keys:
+        - 'method': str, ICA algorithm to use
+        - 'random_state': int, random seed for reproducibility
+        
+    measure_params : dict
+        Dictionary defining the connectivity measure to compute with keys:
+        - 'name': str, name of the connectivity measure (e.g., 'PDC', 'DTF')
+        - 'n_fft': int, number of FFT points
+        
+    check_stability : bool, optional
+        Whether to verify the stability of the MVAR model (default=True)
+        If True, the function will check if the model is stable and prompt for 
+        continuation or epoch merging if necessary.
+    
+    Returns
+    -------
+    connectivity : np.ndarray
+        Connectivity measure matrix with shape:
+        (n_epochs, n_freq, n_channels, n_channels, n_fft)
+        or (1, n_freq, n_channels, n_channels, n_fft) if epochs are merged
+    
+    Notes
+    -----
+    MVAR-based connectivity measures provide information about directed (causal) 
+    relationships between signals, unlike most of the other connectivity metrics 
+    implemented in this module.
+    
+    The function relies on the MVARICA approach:
+    1. Apply ICA to separate independent sources
+    2. Fit an MVAR model to the sources
+    3. Compute connectivity measures in the source space
+    4. Back-project to the original signal space
+    
+    For stability, the number of time samples should be substantially larger than:
+    mvar_order × n_channels^2
+    
+    Warnings
+    --------
+    This function is computationally intensive, especially for high model orders
+    and large numbers of channels.
+    
+    If the MVAR model is unstable, the function will offer to merge epochs to 
+    increase the sample size for more stable estimation.
+    
+    References
+    ----------
+    Baccalá, L. A., & Sameshima, K. (2001). Partial directed coherence: a new 
+    concept in neural structure determination. Biological cybernetics, 84(6), 463-474.
+    
+    Examples
+    --------
+    >>> mvar_params = {'mvar_order': 5, 'fitting_method': 'least_squares', 'delta': 0.0}
+    >>> ica_params = {'method': 'extended-infomax', 'random_state': 42}
+    >>> measure_params = {'name': 'PDC', 'n_fft': 512}
+    >>> conn = compute_conn_mvar(complex_signal, mvar_params, ica_params, measure_params)
     """
+
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
                                     complex_signal.shape[3], complex_signal.shape[4]
 
@@ -593,7 +683,7 @@ def compute_conn_mvar(complex_signal: np.ndarray, mvar_params: dict, ica_params:
                             d_type = conn_freq_epoch.dtype
                             aux_3[e, f, :, :, :] = conn_freq_epoch
 
-                    return np.asarray(aux_3, dtype=d_type)
+                    return np.asarray(np.real(aux_3), dtype=d_type)
 
                 else:
 
@@ -644,20 +734,40 @@ def compute_conn_mvar(complex_signal: np.ndarray, mvar_params: dict, ica_params:
 
 def compute_single_freq(data: np.ndarray, sampling_rate: int, freq_range: List[float]) -> np.ndarray:
     """
-    Computes analytic signal per frequency bin using the multitaper method.
-
-    Arguments:
-        data:
-            shape is (2, n_epochs, n_channels, n_times)
-            real-valued data used to compute analytic signal.
-        sampling_rate:
-            sampling rate.
-        freq_range:
-            a list of two specifying the frequency range.
-            e.g. [5,30] refers to every integer in the frequency bin from 5 Hz to 30 Hz.
-    Returns:
-        complex_signal:
-          shape is (2, n_epochs, n_channels, n_tapers, n_frequencies, n_times)
+    Computes analytic signals for each frequency in the specified range using multitaper method.
+    
+    This function calculates complex-valued time-frequency representations for each 
+    integer frequency in the given range.
+    
+    Parameters
+    ----------
+    data : np.ndarray
+        EEG data from two participants with shape (2, n_epochs, n_channels, n_times)
+        
+    sampling_rate : int
+        Sampling rate of the EEG data in Hz
+        
+    freq_range : List[float]
+        A list [fmin, fmax] specifying the frequency range to analyze.
+        Every integer frequency from fmin to fmax will be included.
+    
+    Returns
+    -------
+    complex_signal : np.ndarray
+        Complex-valued analytic signals with shape:
+        (2, n_epochs, n_channels, n_tapers, n_frequencies, n_times)
+    
+    Notes
+    -----
+    This function uses MNE's implementation of the multitaper method with 4 cycles
+    per frequency, which provides a good balance between time and frequency resolution.
+    
+    Time-frequency decomposition is calculated for each participant separately.
+    
+    Examples
+    --------
+    >>> complex_tf = compute_single_freq(data, sampling_rate=256, freq_range=[8, 30])
+    >>> print(f"Shape: {complex_tf.shape}")  # (2, n_epochs, n_channels, n_tapers, 23, n_times)
     """
 
     complex_signal = np.array([mne.time_frequency.tfr_array_multitaper(data[participant], sfreq=sampling_rate,
@@ -671,29 +781,62 @@ def compute_single_freq(data: np.ndarray, sampling_rate: int, freq_range: List[f
     return complex_signal
 
 
-def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict, filter_signal: bool = True , **filter_options) -> np.ndarray:
+def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict, 
+                      filter_signal: bool = True, **filter_options) -> np.ndarray:
     """
-    Computes analytic signal per frequency band using FIR filtering
-    and Hilbert transform.
+    Computes analytic signals for specified frequency bands using FIR filtering and Hilbert transform.
+    
+    This function performs bandpass filtering for each defined frequency band, then
+    applies the Hilbert transform to obtain complex-valued analytic signals.
+    
+    Parameters
+    ----------
+    data : np.ndarray
+        EEG data from two participants with shape (2, n_epochs, n_channels, n_times)
+        
+    sampling_rate : int
+        Sampling rate of the EEG data in Hz
+        
+    freq_bands : dict
+        Dictionary defining frequency bands: {'band_name': [fmin, fmax], ...}
+        e.g., {'alpha': [8, 12], 'beta': [12, 20]}
+        
+    filter_signal : bool, optional
+        Whether to apply bandpass filtering (default=True)
+        If False, the Hilbert transform is applied directly to the input signals
+        
+    **filter_options
+        Additional arguments for mne.filter.filter_data, such as:
+        - filter_length: Length of the FIR filter in samples or 's' for seconds
+        - l_trans_bandwidth: Width of the transition band at the low cut-off frequency
+        - h_trans_bandwidth: Width of the transition band at the high cut-off frequency
+    
+    Returns
+    -------
+    complex_signal : np.ndarray
+        Complex-valued analytic signals with shape:
+        (2, n_epochs, n_channels, n_freq_bands, n_times)
+        where n_freq_bands corresponds to the number of frequency bands in freq_bands
+    
+    Notes
+    -----
+    Unlike compute_single_freq which uses the multitaper method, this function:
+    1. Applies a bandpass filter to isolate the specified frequency band
+    2. Uses the Hilbert transform to compute the analytic signal
+    
+    This approach may be computationally more efficient when analyzing broader 
+    frequency bands rather than individual frequencies.
+    
+    The order of frequency bands in the output corresponds to their order in the 
+    freq_bands dictionary.
+    
+    Examples
+    --------
+    >>> bands = {'theta': [4, 8], 'alpha': [8, 13], 'beta': [13, 30]}
+    >>> complex_signals = compute_freq_bands(data, 256, bands, 
+    ...                                     filter_length='auto', l_trans_bandwidth=1)
+    """
 
-    Arguments:
-        data:
-            shape is (2, n_epochs, n_channels, n_times)
-            real-valued data to compute analytic signal from.
-        sampling_rate:
-            sampling rate.
-        filter_signal:
-            bool: whether to apply a filter on the signal,
-            default, true
-        freq_bands:
-            a dictionary specifying frequency band labels and corresponding frequency ranges
-            e.g. {'alpha':[8,12], 'beta':[12,20]} indicates that computations are performed over two frequency bands: 8-12 Hz for the alpha band and 12-20 Hz for the beta band.
-        **filter_options:
-            additional arguments for mne.filter.filter_data, such as filter_length, l_trans_bandwidth, h_trans_bandwidth
-    Returns:
-        complex_signal: array, shape is
-            (2, n_epochs, n_channels, n_freq_bands, n_times)
-    """
     assert data[0].shape[0] == data[1].shape[0], "Two data streams should have the same number of trials."
     data = np.array(data)
 
@@ -718,30 +861,65 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict, f
     return complex_signal
 
 
-def compute_nmPLV(data: np.ndarray, sampling_rate: int, freq_range1: List[float], freq_range2: List[float], **filter_options) -> np.ndarray:
+def compute_nmPLV(data: np.ndarray, sampling_rate: int, 
+                 freq_range1: List[float], freq_range2: List[float], 
+                 **filter_options) -> np.ndarray:
     """
-    Computes the n:m PLV for a dyad with two different frequency ranges.
-
-    Arguments:
-        data : np.ndarray
-            shape is (2, n_epochs, n_channels, n_times)
-            real-valued data to compute analytic signal from.
-        sampling_rate: int
-            sampling rate.
-        freq_range1 : list
-            a list of two specifying the frequency range for participant 1
-            e.g. [5,30] refers to every integer in the frequency bin from 5 Hz to 30 Hz.
-        freq_range2 : list
-            a list of two specifying the frequency range for participant 1
-            e.g. [5,30] refers to every integer in the frequency bin from 5 Hz to 30 Hz.
-        **filter_options:
-            additional arguments for mne.filter.filter_data, such as filter_length, l_trans_bandwidth, h_trans_bandwidth
-    Returns:
-        con:
-            Connectivity matrix. The shape is either (n_freq, 2*n_channels, 2*n_channels)
-
-            To extract inter-brain connectivity values, slice the last two dimensions of con with [0:n_channels, n_channels: 2*n_channels].
+    Computes n:m Phase-Locking Value for cross-frequency coupling between participants.
+    
+    This function calculates the phase synchronization between two participants
+    when their brain oscillations operate at different frequency ranges with
+    an integer ratio relationship (n:m).
+    
+    Parameters
+    ----------
+    data : np.ndarray
+        EEG data from two participants with shape (2, n_epochs, n_channels, n_times)
+        
+    sampling_rate : int
+        Sampling rate of the EEG data in Hz
+        
+    freq_range1 : List[float]
+        Frequency range [fmin, fmax] for participant 1
+        
+    freq_range2 : List[float]
+        Frequency range [fmin, fmax] for participant 2
+        
+    **filter_options
+        Additional arguments for the underlying filtering functions
+    
+    Returns
+    -------
+    con : np.ndarray
+        n:m PLV connectivity matrix with shape (n_freq, 2*n_channels, 2*n_channels)
+    
+    Notes
+    -----
+    n:m Phase Locking Value measures synchronization between oscillations at 
+    different frequencies when there exists an n:m ratio between them. For example, 
+    if participant 1 shows activity at 10 Hz and participant 2 at 20 Hz, this would
+    be a 1:2 relationship.
+    
+    The function:
+    1. Computes the ratio between the mean frequencies of the two ranges
+    2. Applies appropriate phase multiplication to account for the frequency ratio
+    3. Calculates the phase locking value between the adjusted phases
+    
+    This measure is useful for studying cross-frequency coupling between brains,
+    where different participants might exhibit coordination at different frequency bands.
+    
+    References
+    ----------
+    Palva, J. M., Palva, S., & Kaila, K. (2005). Phase synchrony among neuronal
+    oscillations in the human cortex. Journal of Neuroscience, 25(15), 3962-3972.
+    
+    Examples
+    --------
+    >>> # Computing 1:2 PLV between alpha (participant 1) and beta (participant 2)
+    >>> nm_plv = compute_nmPLV(data, sampling_rate=256, 
+    ...                        freq_range1=[8, 12], freq_range2=[16, 24])
     """
+
     r = np.mean(freq_range2)/np.mean(freq_range1)
     freq_range = [np.min(freq_range1), np.max(freq_range2)]
     complex_signal = np.mean(compute_single_freq(data, sampling_rate, freq_range, **filter_options),3).squeeze()
@@ -770,33 +948,72 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int, freq_range1: List[float]
     return con
 
 
-def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
-        freqs: Union[int, np.ndarray], n_cycles=5.0, mode: str = "xwt") -> np.ndarray:
+def xwt(sig1: mne.Epochs, sig2: mne.Epochs, freqs: Union[int, np.ndarray], 
+       n_cycles=5.0, mode: str = "xwt") -> np.ndarray:
     """
-    Performs a cross wavelet transform on two signals.
-
-    Arguments:
-
-        sig1 : mne.Epochs
-            Signal (eg. EEG data) of first participant.
-
-        sig2 : mne.Epochs
-            Signal (eg. EEG data) of second participant.
-
-        freqs: int | float
-            Range of frequencies of interest in Hz.
-
-        mode: str
-            Sets the type of analyses.
-
-    Note:
-        This function relies on MNE's mne.time_frequency.morlet
-        and mne.time_frequency.tfr.cwt functions.
+    Performs cross-wavelet transform or wavelet coherence analysis between two signals.
     
-    Returns:
-        data:
-            Wavelet results. The shape is (n_chans1, n_chans2, n_epochs, n_freqs, n_samples).
-            Wavelet transform coherence calculated according to Maraun & Kurths (2004)
+    This function computes time-frequency representations of two signals and their
+    cross-spectrum using continuous wavelet transform.
+    
+    Parameters
+    ----------
+    sig1 : mne.Epochs
+        EEG data of first participant
+        
+    sig2 : mne.Epochs
+        EEG data of second participant
+        
+    freqs : Union[int, np.ndarray]
+        Frequencies of interest in Hz
+        
+    n_cycles : float, optional
+        Number of cycles in the Morlet wavelet (default=5.0)
+        Controls the time-frequency resolution trade-off
+        
+    mode : str, optional
+        Type of analysis to perform (default="xwt"). Options:
+        - 'power': absolute value of cross-wavelet transform
+        - 'phase': phase angles of cross-wavelet transform
+        - 'xwt': raw cross-wavelet transform (complex-valued)
+        - 'wtc': wavelet coherence
+    
+    Returns
+    -------
+    data : np.ndarray
+        Result of the wavelet analysis with shape:
+        (n_chans1, n_chans2, n_epochs, n_freqs, n_samples)
+    
+    Notes
+    -----
+    This function provides different types of wavelet-based analyses:
+    
+    - Cross-wavelet transform (XWT): Reveals common power and relative phase between
+      two time series in time-frequency space
+      
+    - Wavelet coherence (WTC): Measures the correlation between two signals in the
+      time-frequency domain normalized between 0 and 1
+    
+    Unlike Fourier-based methods, wavelet analysis maintains time resolution,
+    allowing for the study of non-stationary signals and transient relationships.
+    
+    The function automatically checks that both signals have the same sampling rate,
+    number of epochs, channels, and samples.
+    
+    References
+    ----------
+    Grinsted, A., Moore, J. C., & Jevrejeva, S. (2004). Application of the cross 
+    wavelet transform and wavelet coherence to geophysical time series. 
+    Nonlinear processes in geophysics, 11(5/6), 561-566.
+    
+    Maraun, D., & Kurths, J. (2004). Cross wavelet analysis: significance testing 
+    and pitfalls. Nonlinear Processes in Geophysics, 11(4), 505-514.
+    
+    Examples
+    --------
+    >>> # Computing wavelet coherence between two EEG signals
+    >>> coherence = xwt(subj1_epochs, subj2_epochs, freqs=np.arange(4, 40, 1), 
+    ...                 n_cycles=7, mode='wtc')
     """
     
     # Set parameters for the output
@@ -851,3 +1068,86 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs,
         data = 'Please specify a valid mode: power, phase, xwt, or wtc.'
         print(data)
     return data
+
+
+# helper function
+def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
+    """
+    Computes the product of a complex array and its conjugate efficiently.
+    
+    This helper function performs matrix multiplication between complex arrays
+    represented by their real and imaginary parts, collapsing the last dimension.
+    
+    Parameters
+    ----------
+    real : np.ndarray
+        Real part of the complex array
+        
+    imag : np.ndarray
+        Imaginary part of the complex array
+        
+    transpose_axes : tuple
+        Axes to transpose for matrix multiplication
+    
+    Returns
+    -------
+    product : np.ndarray
+        Product of the array and its complex conjugate
+    
+    Notes
+    -----
+    This function implements the formula:
+    product = (real × real.T + imag × imag.T) - i(real × imag.T - imag × real.T)
+    
+    Using einsum for efficient computation without explicitly creating complex arrays.
+    """
+
+    formula = 'jilm,jimk->jilk'
+    product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
+              np.einsum(formula, imag, imag.transpose(transpose_axes)) - 1j * \
+              (np.einsum(formula, real, imag.transpose(transpose_axes)) - \
+               np.einsum(formula, imag, real.transpose(transpose_axes)))
+
+    return product
+
+
+# helper function
+def _multiply_conjugate_time(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
+    """
+    Computes the product of a complex array and its conjugate without collapsing time dimension.
+    
+    Similar to _multiply_conjugate, but preserves the time dimension, which is
+    needed for certain connectivity metrics like wPLI.
+    
+    Parameters
+    ----------
+    real : np.ndarray
+        Real part of the complex array
+        
+    imag : np.ndarray
+        Imaginary part of the complex array
+        
+    transpose_axes : tuple
+        Axes to transpose for matrix multiplication
+    
+    Returns
+    -------
+    product : np.ndarray
+        Product of the array and its complex conjugate with time dimension preserved
+    
+    Notes
+    -----
+    This function uses a different einsum formula than _multiply_conjugate:
+    'jilm,jimk->jilkm' instead of 'jilm,jimk->jilk'
+    
+    This preserves the time dimension (m) in the output, which is necessary for 
+    computing metrics that require individual time point values rather than 
+    time-averaged products.
+    """
+    formula = 'jilm,jimk->jilkm'
+    product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
+              np.einsum(formula, imag, imag.transpose(transpose_axes)) - 1j * \
+              (np.einsum(formula, real, imag.transpose(transpose_axes)) - \
+               np.einsum(formula, imag, real.transpose(transpose_axes)))
+    
+    return product

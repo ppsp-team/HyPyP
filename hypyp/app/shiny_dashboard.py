@@ -395,7 +395,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 "",
                 choices=browser.list_all_files(),
                 # for comparison with jupyter notebook
-                #selected="/home/patrice/work/ppsp/HyPyP-synchro/data/fNIRS/downloads/fathers/FCS28/parent/NIRS-2019-11-10_003.hdr",
+                #selected="/home/patrice/work/ppsp/HyPyP-synchro/data/NIRS/downloads/fathers/FCS28/parent/NIRS-2019-11-10_003.hdr",
             )))
             choices.append(ui_option_row("Subject 2 file", ui.input_select(
                 "signal_data_files_s2_path",

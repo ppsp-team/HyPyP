@@ -24,8 +24,8 @@ from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_as_is import MneP
 from hypyp.utils import TASK_NEXT_EVENT, Task
 
 fif_file = './data/sub-110_session-1_pre.fif'
-snirf_file1 = './data/fNIRS/DCARE_02_sub1.snirf'
-snirf_file2 = './data/fNIRS/DCARE_02_sub2.snirf'
+snirf_file1 = './data/NIRS/DCARE_02_sub1.snirf'
+snirf_file2 = './data/NIRS/DCARE_02_sub2.snirf'
 fnirs_files = [fif_file, snirf_file1, snirf_file2]
 
 # avoid all the output from mne
