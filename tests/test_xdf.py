@@ -148,9 +148,9 @@ def test_channel_names_standard_metadata():
     # let's try with another xdf file which follows the spec
     xdf = XDFImport(file_path_with_markers, convert_to_mne=False)
     ch_names = xdf.selected_signal_streams[0].ch_names
-    assert ch_names[0] == 'foo'
-    assert ch_names[1] == 'bar'
-    assert ch_names[2] == 'baz'
+    assert ch_names[0] == 'Ch1'
+    assert ch_names[1] == 'Ch2'
+    assert ch_names[2] == 'Ch3'
 
 def test_ch_names_to_ch_types():
     # look at automatic detection of mne types
