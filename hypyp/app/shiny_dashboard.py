@@ -1,3 +1,4 @@
+import os
 import tempfile
 
 from shiny import App, Inputs, Outputs, Session, reactive, render, ui
@@ -24,7 +25,9 @@ DEFAULT_PLOT_SIGNAL_HEIGHT = 150 # px
 DEFAULT_PLOT_MNE_HEIGHT = 1200 # px
 DEFAULT_SIGNAL_DURATION_SELECTION = 60 # seconds
 
-HARDCODED_PRELOADED_EXTERNAL_PATH = "/media/patrice/My Passport/"
+# Use this environment variable to add a lookup path for NIRS data
+HYPYP_NIRS_DATA_PATH = os.getenv("HYPYP_NIRS_DATA_PATH", "")
+
 STR_SAME_AS_SUBJECT_1 = 'Same as Subject 1'
 
 # This is to avoid having external windows launched
@@ -218,7 +221,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                     bandwidth_frequency=input.wavelet_bandwidth(),
                     center_frequency=input.wavelet_center_frequency(),
                     period_range=(input.wavelet_period_range_low(), input.wavelet_period_range_high()),
-                    wtc_smoothing_win_size=input.smoothing_win_size(),
                     disable_caching=True,
                 )
             elif wavelet_name == 'cgau':
@@ -275,7 +277,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         return f"File: {get_signal_data_files_s2_path()}"
 
     def get_data_browser():
-        return DataBrowser().add_source(HARDCODED_PRELOADED_EXTERNAL_PATH)
+        data_browser = DataBrowser()
+        if HYPYP_NIRS_DATA_PATH != "":
+            data_browser.add_source(HYPYP_NIRS_DATA_PATH)
+        return data_browser
 
     def get_preprocessor():
         value = input.subject_preprocessor()
