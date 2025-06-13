@@ -13,9 +13,11 @@ Useful tools
 
 
 from typing import Tuple, List
+import math
 import numpy as np
 import pandas as pd
 from scipy.integrate import solve_ivp
+from skimage.measure import block_reduce
 import mne
 from mne.io.constants import FIFF
 from mne import create_info, EpochsArray
@@ -591,3 +593,26 @@ def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: flo
     simulation._data = np.transpose(np.reshape(eeg.T, [n_chan, n_epo, n_samp]), (1, 0, 2))
     
     return simulation
+
+def downsample_in_time(times, *args, bins=500):
+    ret = []
+    # We assume time is always the last column
+    factor = math.ceil(times.shape[0] / bins)
+
+    if factor == 1:
+        return [times, *args, 1]
+    
+    # First deal with times. Need to pad (cval) with max value, we don't want to "go back in time" for the last values
+    ret.append(block_reduce(times, block_size=factor, func=np.min, cval=np.max(times)))
+    
+    for item in args:
+        if len(item.shape) == 1:
+            ret.append(block_reduce(item, block_size=factor, func=np.mean, cval=np.mean(item)))
+        elif len(item.shape) == 2:
+            ret.append(block_reduce(item, block_size=(1,factor), func=np.mean, cval=np.mean(item)))
+        else:
+            raise RuntimeError(f'Unsupported number of column for downsampling: {len(item)}')
+    
+    ret.append(factor)
+
+    return ret
