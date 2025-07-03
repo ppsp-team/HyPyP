@@ -285,7 +285,7 @@ def test_wtc_time_series():
     wavelet = ComplexMorletWavelet(disable_caching=True)
     period_cuts = [3, 5, 10]
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), period_cuts=period_cuts)
-    time_series = res.as_time_series
+    time_series = res.get_as_time_series()
     assert time_series.shape[0] == 4
     assert time_series.shape[1] == len(signal1.x)
     
