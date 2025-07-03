@@ -49,7 +49,7 @@ For getting started with HyPyP, we have designed a little walkthrough: [getting_
 
 🌊 [wavelet/\*.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/wavelet) — Continuous Wavelet Transform and Wavelet Transform Coherence (Patrice)
 
-📊 [app/\*.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/app) — Shiny dashboards, install using `poetry install --extras shiny` (Patrice)
+📊 [shiny/\*.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/app) — Shiny dashboards, install using `poetry install --extras shiny` (Patrice)
 
 ## Poetry Installation (Only for Developers and Adventurous Users)
 
