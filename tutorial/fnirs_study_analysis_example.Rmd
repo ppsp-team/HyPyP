@@ -19,7 +19,7 @@ Here is the list of fields imported from the CSV:
 | - | ---- |
 | **dyad**             | Label of the dyad |
 | **is_intra**         | If this is an intra-subject coherence |
-| **is_shuffle**       | If this dyad is a permutation for statistical analysis or a real dyad |
+| **is_pseudo**        | If this dyad is a permutation for statistical analysis or a real dyad |
 | **subject1**         | Label of the subject 1 |
 | **subject2**         | Label of the subject 2 |
 | **roi1**             | Label of the Region of Interest of subject 1 channel |
@@ -68,7 +68,7 @@ data <- within(data, {
   wavelet_name <- as.factor(wavelet_name)
 
   is_intra <- tolower(is_intra) == "true"
-  is_shuffle <- tolower(is_shuffle) == "true"
+  is_pseudo <- tolower(is_pseudo) == "true"
 })
 ```
 
@@ -94,7 +94,7 @@ Remove any intra-subject and shuffled dyad from our data set to be analysed, to 
 
 ```{r}
 sel_not_intra <- data$is_intra == FALSE
-sel_not_shuffle <- data$is_shuffle == FALSE
+sel_not_shuffle <- data$is_pseudo == FALSE
 sel_not_na <- sapply(data$coherence, is.na) == FALSE
 data_inter <- subset(data, sel_not_intra & sel_not_shuffle & sel_not_na)
 ```

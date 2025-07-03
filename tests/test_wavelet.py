@@ -84,14 +84,14 @@ def test_pair_signals():
     assert sub.x[0] == 0
     assert sub.x[-1] < 1.1
     assert sub.x[-1] > 0.9
-    assert sub.section_id == pair.section_id
+    assert sub.section_idx == pair.section_idx
     
 def test_pair_signals_epoch():
     signal1 = SyntheticSignal().add_noise()
     signal2 = SyntheticSignal().add_noise()
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
-    sub = pair.sub((0, 1), section_id=pair.section_id+1)
-    assert sub.section_id == pair.section_id+1
+    sub = pair.sub((0, 1), section_idx=pair.section_idx+1)
+    assert sub.section_idx == pair.section_idx+1
     
 
 @pytest.mark.parametrize("wavelet_class", [

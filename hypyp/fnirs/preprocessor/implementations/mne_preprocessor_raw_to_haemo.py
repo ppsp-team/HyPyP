@@ -18,7 +18,7 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
     4. Convert optical density to haemoglobin concentration.
     5. Filters the haemoglobin concentration based on standard high pass and low pass filters
 
-    The steps can then be inspected on a subject, for validation.
+    The steps can then be inspected on a recording, for validation.
 
     Use this preprocessor to explore raw data.
 
@@ -35,13 +35,6 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
 
         steps = []
         steps.append(MneStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))
-
-        # TODO: should remove short channels
-        ## TODO: it seems that .snirf files have a different measurement unit
-        #if not self.ignore_distances:
-        #    picks = mne.pick_types(raw.info, meg=False, fnirs=True)
-        #    dists = mne.preprocessing.nirs.source_detector_distances(self.raw.info, picks=picks)
-        #    self.raw.pick(picks[dists > 0.01])
 
         haemo_picks = mne.pick_types(raw.info, fnirs=['hbo', 'hbr'])
 
@@ -69,14 +62,9 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
 
         # TODO: should set Partial Pathlength Factor (PPF) depending on age.
         # See https://doi.org/10.1117/1.JBO.18.10.105004, Table 1
-        raw_haemo = mne.preprocessing.nirs.beer_lambert_law(raw_od_clean)
+        raw_haemo: mne.io.Raw = mne.preprocessing.nirs.beer_lambert_law(raw_od_clean)
         steps.append(MneStep(raw_haemo, PREPROCESS_STEP_HAEMO_KEY, PREPROCESS_STEP_HAEMO_DESC))
-        raw_haemo_filtered = raw_haemo.copy().filter(
-                                                0.05,
-                                                0.7,
-                                                h_trans_bandwidth=0.2,
-                                                l_trans_bandwidth=0.02,
-                                                verbose=verbose)
+        raw_haemo_filtered = raw_haemo.copy().filter(0.02, 0.7, verbose=verbose)
 
         steps.append(MneStep(raw_haemo_filtered, PREPROCESS_STEP_HAEMO_FILTERED_KEY, PREPROCESS_STEP_HAEMO_FILTERED_DESC))
 

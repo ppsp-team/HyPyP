@@ -239,8 +239,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         return pd.DataFrame({
             'Dyad Label': [dyad.label for dyad in study.dyads],
             'Tasks': [', '.join([task.name for task in dyad.tasks]) for dyad in study.dyads],
-            'Subject 1': [dyad.s1.label for dyad in study.dyads],
-            'Subject 2': [dyad.s2.label for dyad in study.dyads],
+            'Subject 1': [dyad.s1.subject_label for dyad in study.dyads],
+            'Subject 2': [dyad.s2.subject_label for dyad in study.dyads],
         })
     
     def get_query():
@@ -324,7 +324,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         wtc.plot(
             ax=ax,
             show_colorbar=True,
-            show_coi=True,
+            show_cone_of_influence=True,
             show_nyquist=True,
         )
         return fig

@@ -52,7 +52,7 @@ class Study():
 
     def preprocess(self, preprocessor: BasePreprocessor):
         """
-        Run the preprocess steps on every subject in the study
+        Run the preprocess steps on every recordings in the study
 
         Args:
             preprocessor (BasePreprocessor): Which preprocessor to use. If no preprocessing is necessary, use MnePreprocessorUpstream()
@@ -160,7 +160,7 @@ class Study():
     
     def get_dyads_shuffle(self) -> List[Dyad]:
         """
-        Get a list of permutated subject pairs, useful for statistical analysis.
+        Get a list of permutated recording pairs, useful for statistical analysis.
 
         Returns:
             List[Dyad]: permulated pairs
@@ -170,7 +170,7 @@ class Study():
             for j, dyad2 in enumerate(self.dyads):
                 if i == j:
                     continue
-                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}', is_shuffle=True))
+                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}', is_pseudo=True))
         return dyads_shuffle
 
     # TODO add as argument the number of shuffle dyads

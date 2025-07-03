@@ -11,7 +11,7 @@ from ..wavelet.wtc import WTC
 from ..wavelet.pair_signals import PairSignals
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from ..utils import TaskList, TASK_NAME_WHOLE_RECORD
-from .subject import Subject
+from .recording import Recording
 from .preprocessor.base_preprocessor import BasePreprocessor
 from ..plots import (
     plot_wavelet_transform_weights,
@@ -28,33 +28,33 @@ MIN_SECTION_LENGTH = 10
 
 class Dyad:
     """
-    The Dyad object is a pair of subjects of an hyperscanning recording.
+    The Dyad object is a pair of recordings (per subject) of an hyperscanning recording.
     Their recorded channels should be time aligned.
 
     Args:
-        s1 (Subject): subject 1 of the dyad
-        s2 (Subject): subject 2 of the dyad
+        s1 (Recording): recording of subject 1 of the dyad
+        s2 (Recording): recording of subject 2 of the dyad
         label (str, optional): Custom label for the dyad. Defaults to `s1.label`-`s2.label`.
-        is_shuffle (bool, optional): If the dyad is a permutated pair created for comparison. Used to track dyad "type" in results. Defaults to False.
+        is_pseudo (bool, optional): If the dyad is a permutated pair created for comparison. Used to track dyad "type" in results. Defaults to False.
     """
-    s1: Subject
-    s2: Subject
+    s1: Recording
+    s2: Recording
     label: str
-    is_shuffle: bool
+    is_pseudo: bool
     tasks: TaskList # intersection of tasks of subject 1 and subject 2
     wtcs: List[WTC] | None # the computed Wavelet Transform Coherence for each channel pairs in the dyad
     df: CoherenceDataFrame | None # pandas dataframe from computed coherence
 
-    def __init__(self, s1:Subject, s2:Subject, label:str='', is_shuffle:bool=False):
+    def __init__(self, s1:Recording, s2:Recording, label:str='', is_pseudo:bool=False):
         self.s1 = s1
         self.s2 = s2
         self.wtcs = None
         self.df = None
-        self.is_shuffle = is_shuffle
+        self.is_pseudo = is_pseudo
 
         self.label = label
         if self.label == '':
-            self.label = Dyad._get_label_from_subjects(s1, s2)
+            self.label = Dyad._get_label_from_recordings(s1, s2)
 
         # Intersect the tasks
         self.tasks = []
@@ -70,13 +70,13 @@ class Dyad:
                 found_tasks_names.append(task_name)
     
     @property 
-    def subjects(self) -> Tuple[Subject, Subject]:
+    def recordings(self) -> Tuple[Recording, Recording]:
         return (self.s1, self.s2)
     
     @property
     def is_preprocessed(self) -> bool:
-        for subject in self.subjects:
-            if not subject.is_preprocessed:
+        for recording in self.recordings:
+            if not recording.is_preprocessed:
                 return False
         return True
     
@@ -85,12 +85,12 @@ class Dyad:
         return self.wtcs is not None
 
     @staticmethod
-    def _get_label_from_subjects(s1:Subject, s2:Subject) -> str:
-        return f'{s1.label}-{s2.label}'
+    def _get_label_from_recordings(s1:Recording, s2:Recording) -> str:
+        return f'{s1.subject_label}-{s2.subject_label}'
 
     def preprocess(self, preprocessor: BasePreprocessor):
         """
-        Run the preprocess pipeline on every subject in the dyad
+        Run the preprocess pipeline on every subject recordings in the dyad
 
         Args:
             preprocessor (BasePreprocessor): Which preprocessor class to use. If no preprocessing is necessary, use MnePreprocessorUpstream()
@@ -98,8 +98,8 @@ class Dyad:
         Returns:
             self: the Dyad object itself. Useful for chaining operations
         """
-        for subject in self.subjects:
-            subject.preprocess(preprocessor)
+        for recording in self.recordings:
+            recording.preprocess(preprocessor)
         return self
 
     def _append_pairs(self,
@@ -108,12 +108,12 @@ class Dyad:
                       s2_ch_names:List[str],
                       s1_task_data:np.ndarray,
                       s2_task_data:np.ndarray,
-                      s1:Subject,
-                      s2:Subject,
+                      s1:Recording,
+                      s2:Recording,
                       task_name:str,
                       epoch_id:int,
                       is_intra_of:int|None,
-                      is_shuffle:bool,
+                      is_pseudo:bool,
                       pairs:List[PairSignals]):
         n = s1_task_data.shape[1]
         x = np.linspace(0, n/s1.preprocessed.info['sfreq'], n)
@@ -156,35 +156,35 @@ class Dyad:
                         y2_sections[section_id],
                         label_ch1=s1_ch_name,
                         label_ch2=s2_ch_name,
-                        label_s1=s1.label,
-                        label_s2=s2.label,
                         label_roi1=s1.get_roi_from_channel(s1_ch_name),
                         label_roi2=s2.get_roi_from_channel(s2_ch_name),
+                        label_s1=s1.subject_label,
+                        label_s2=s2.subject_label,
                         label_dyad=label_dyad,
                         label_task=task_name,
-                        epoch_id=epoch_id,
-                        section_id=section_id,
+                        epoch_idx=epoch_id,
+                        section_idx=section_id,
                         is_intra=(is_intra_of is not None),
                         is_intra_of=is_intra_of,
-                        is_shuffle=is_shuffle,
+                        is_pseudo=is_pseudo,
                     ))
             
     
-    def get_pairs(self, s1:Subject, s2:Subject, label_dyad:str|None=None, ch_match:PairChannelMatchType|None=None, is_intra_of:int|None=None, is_shuffle:bool=False) -> List[PairSignals]:
+    def get_pairs(self, s1:Recording, s2:Recording, label_dyad:str|None=None, ch_match:PairChannelMatchType|None=None, is_intra_of:int|None=None, is_pseudo:bool=False) -> List[PairSignals]:
         """
         Generate all the signal pairs between the 2 subjects and returns them in a format suitable for signal processing
 
         Args:
-            s1 (Subject): subject 1 of the dyad
-            s2 (Subject): subject 2 of the dyad
+            s1 (Recording): recording of subject 1 of the dyad
+            s2 (Recording): recording of subject 2 of the dyad
             label_dyad (str | None, optional): custom label for the dyad. Defaults to self.label.
             ch_match (PairMatchType, optional): string, list or regex to match channel name.
                                                 Can be a tuple of 2 items if subject1 and subject2 have different matches.
                                                 Defaults to None, which means all channels.
-            is_shuffle (bool, optional): True if the pair is a permutated pair. Defaults to False.
+            is_pseudo (bool, optional): True if the pair is a permutated pair. Defaults to False.
 
         Returns:
-            List[PairSignals]: a list of all the possible pairs of subject1 channels with subject2 channels
+            List[PairSignals]: a list of all the possible pairs of s1 channels with s2 channels
         """
         if label_dyad is None:
             label_dyad = self.label
@@ -192,7 +192,7 @@ class Dyad:
         pairs: List[PairSignals] = []
 
         if s1.preprocessed.info['sfreq'] != s2.preprocessed.info['sfreq']:
-            raise RuntimeError('Subjects must have the same sampling frequency')
+            raise RuntimeError('Recordings must have the same sampling frequency')
 
         # Force match in tuple for leaner code below
         if not isinstance(ch_match, tuple):
@@ -231,14 +231,14 @@ class Dyad:
                     task.name,
                     epoch_id,
                     is_intra_of,
-                    is_shuffle,
+                    is_pseudo,
                     pairs,
                 )
             else:
                 epochs1 = s1.get_epochs_for_task(task.name).copy().pick(s1_ch_names)
                 epochs2 = s2.get_epochs_for_task(task.name).copy().pick(s2_ch_names)
                 if len(epochs1) != len(epochs2):
-                    warnings.warn("The 2 subjects do not have the same epochs count. Some epochs will be skipped in pairs.")
+                    warnings.warn("The 2 recordings do not have the same epochs count. Some epochs will be skipped in pairs.")
                 
                 # add one pair for each epoch
                 for i in range(min(len(epochs1), len(epochs2))):
@@ -256,7 +256,7 @@ class Dyad:
                         task.name,
                         epoch_id,
                         is_intra_of,
-                        is_shuffle,
+                        is_pseudo,
                         pairs,
                     )
 
@@ -298,7 +298,7 @@ class Dyad:
 
         self.wtcs = []
 
-        pairs = self.get_pairs(self.s1, self.s2, ch_match=ch_match, is_shuffle=self.is_shuffle)
+        pairs = self.get_pairs(self.s1, self.s2, ch_match=ch_match, is_pseudo=self.is_pseudo)
 
         for pair in pairs:
             if verbose:
@@ -312,9 +312,9 @@ class Dyad:
             self.wtcs.append(wtc)
 
         if with_intra:
-            for i, subject in enumerate([self.s1, self.s2]):
-                subject.intra_wtcs = []
-                # if we have different channels for each subject, the intra wtc should use only the ones for this subject
+            for i, recording in enumerate([self.s1, self.s2]):
+                recording.intra_wtcs = []
+                # if we have different channels for each recording, the intra wtc should use only the ones for this subject
                 if isinstance(ch_match, tuple):
                     ch_match_intra = ch_match[i]
                 else:
@@ -322,15 +322,15 @@ class Dyad:
                     
                 # We have to keep track of the subject identifier when we are intra, since they would be displayed differently (parent VS child for example)
                 is_intra_of = i+1
-                for pair in self.get_pairs(subject, subject, f'{subject.label}(intra)', ch_match=ch_match_intra, is_intra_of=is_intra_of):
+                for pair in self.get_pairs(recording, recording, f'{recording.subject_label}(intra)', ch_match=ch_match_intra, is_intra_of=is_intra_of):
                     if verbose:
-                        print(f'Running Wavelet Coherence intra-subject "{subject.label}" on pair "{pair.label}"')
+                        print(f'Running Wavelet Coherence intra-subject "{recording.subject_label}" on pair "{pair.label}"')
                     if only_time_range is not None:
                         pair = pair.sub(only_time_range)
                     wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts)
                     if downsample is not None:
                         wtc.downsample_in_time(downsample)
-                    subject.intra_wtcs.append(wtc)
+                    recording.intra_wtcs.append(wtc)
 
         self.df = self._get_coherence_df(with_intra=with_intra)
 
@@ -400,8 +400,8 @@ class Dyad:
 
         return plot_coherence_matrix(
             df,
-            self.s1.label,
-            self.s2.label,
+            self.s1.subject_label,
+            self.s2.subject_label,
             field1,
             field2,
             ordered_names,
@@ -470,7 +470,7 @@ class Dyad:
     #
     # Plot connectogram (Proof of Concept)
     # 
-    def plot_coherence_connectogram_intra(self, subject:Subject, query:str|None=None, **kwargs):
+    def plot_coherence_connectogram_intra(self, recording:Recording, query:str|None=None, **kwargs):
         df = self.df
         selector = df['is_intra']==True
         df_filtered = df[selector]
@@ -480,7 +480,7 @@ class Dyad:
 
         pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
         if 'title' not in kwargs:
-            kwargs['title'] = subject.label
+            kwargs['title'] = recording.subject_label
 
         return plot_coherence_connectogram(
             pivot,
@@ -513,7 +513,7 @@ class Dyad:
         pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
 
         if title is None:
-            title=f'{self.s1.label} / {self.s2.label}'
+            title=f'{self.s1.subject_label} / {self.s2.subject_label}'
 
         return plot_coherence_connectogram_split(
             pivot,

@@ -10,7 +10,7 @@ import mne
 
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.fnirs.data_browser import DataBrowser
-from hypyp.fnirs.subject import Subject
+from hypyp.fnirs.recording import Recording
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from hypyp.fnirs.preprocessor.implementations.cedalion_preprocessor import CedalionPreprocessor
@@ -166,8 +166,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
         elif input.signal_type() == 'data_files':
             # TODO this only works with MNE
-            s1_raw = get_subject1_step().obj.copy()
-            s2_raw = get_subject2_step().obj.copy()
+            s1_raw = get_recording_s1_step().obj.copy()
+            s2_raw = get_recording_s2_step().obj.copy()
 
             s1_selected_ch = s1_raw.pick(mne.pick_channels(s1_raw.ch_names, include = [input.signal_data_files_s1_channel()]))
             s2_selected_ch = s2_raw.pick(mne.pick_channels(s2_raw.ch_names, include = [input.signal_data_files_s2_channel()]))
@@ -209,7 +209,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             N = input.signal_n()
             return N/fs
         if input.signal_type() == 'data_files':
-            return min([get_subject1_step().duration, get_subject2_step().duration])
+            return min([get_recording_s1_step().duration, get_recording_s2_step().duration])
             
 
     @reactive.calc()
@@ -283,7 +283,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         return data_browser
 
     def get_preprocessor():
-        value = input.subject_preprocessor()
+        value = input.recording_preprocessor()
         if value == 'upstream':
             return MnePreprocessorAsIs()
         if value == 'mne':
@@ -294,20 +294,20 @@ def server(input: Inputs, output: Outputs, session: Session):
         
 
     @reactive.calc()
-    def get_subject1():
-        return Subject().load_file(get_signal_data_files_s1_path(), get_preprocessor())
+    def get_recording_s1():
+        return Recording().load_file(get_signal_data_files_s1_path(), get_preprocessor())
 
     @reactive.calc()
-    def get_subject2():
-        return Subject().load_file(get_signal_data_files_s2_path(), get_preprocessor())
+    def get_recording_s2():
+        return Recording().load_file(get_signal_data_files_s2_path(), get_preprocessor())
 
     @reactive.calc()
-    def get_subject1_step():
-        return get_subject1().get_preprocess_step(input.signal_data_files_analysis_property())
+    def get_recording_s1_step():
+        return get_recording_s1().get_preprocess_step(input.signal_data_files_analysis_property())
 
     @reactive.calc()
-    def get_subject2_step():
-        return get_subject2().get_preprocess_step(input.signal_data_files_analysis_property())
+    def get_recording_s2_step():
+        return get_recording_s2().get_preprocess_step(input.signal_data_files_analysis_property())
 
     def get_mne_raw_plot_kwargs(step, duration_range):
         try:
@@ -347,17 +347,17 @@ def server(input: Inputs, output: Outputs, session: Session):
             return renderer
 
         nav_panels = []
-        subject = get_subject1()
-        for step in subject.preprocess_steps:
+        recording = get_recording_s1()
+        for step in recording.preprocess_steps:
             nav_panels.append(ui.nav_panel(step.desc, bind_plot_mne_figure(step)))
 
-        return ui.navset_card_tab(*nav_panels, selected=subject.preprocess_steps[-1].desc)
+        return ui.navset_card_tab(*nav_panels, selected=recording.preprocess_steps[-1].desc)
 
     @render.plot
     def plot_s1_mne_sci():
-        subject = get_subject1()
+        recording = get_recording_s1()
         fig, ax = plt.subplots()
-        ax.hist(subject.quality_sci)
+        ax.hist(recording.quality_sci)
         ax.set(xlabel='Scalp Coupling Index', ylabel='Count', xlim=[0, 1])
         ax.title.set_text('Scalp Coupling Index')
         return fig
@@ -395,7 +395,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 choices=[STR_SAME_AS_SUBJECT_1] + browser.list_all_files(),
             )))
             choices.append(ui_option_row("Preprocessor Class", ui.input_select(
-                "subject_preprocessor",
+                "recording_preprocessor",
                 "",
                 choices={
                     'upstream': 'MNE (no preprocessing, load as-is)',
@@ -415,7 +415,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 ui.input_select(
                     "signal_data_files_analysis_property",
                     "",
-                    choices=get_subject1().preprocess_step_choices,
+                    choices=get_recording_s1().preprocess_step_choices,
                 )
             ))
         return options
@@ -446,8 +446,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         if input.signal_type() == 'data_files':
             # TODO this try-except is here to have a PoC of Cedalion integration
             try:
-                ch_names1 = get_subject1().preprocessed.ch_names
-                ch_names2 = get_subject2().preprocessed.ch_names
+                ch_names1 = get_recording_s1().preprocessed.ch_names
+                ch_names2 = get_recording_s2().preprocessed.ch_names
             except:
                 ch_names1 = []
                 ch_names2 = []
@@ -531,16 +531,10 @@ def server(input: Inputs, output: Outputs, session: Session):
         compute_coherence().plot(
             ax=ax,
             show_colorbar=False,
-            show_coi=input.display_show_coi(),
+            show_cone_of_influence=input.display_show_coi(),
             show_nyquist=input.display_show_nyquist(),
         )
         return fig
-
-    def downsample_mat_for_plot(times, frequencies, ZZ):
-        if not input.display_downsample():
-            return (times, frequencies, ZZ, 1)
-        times, ZZ, factor = hypyp.utils.downsample_in_time(times, ZZ, t=500)
-        return times, frequencies, ZZ, factor
 
     @render.ui
     def ui_input_wavelet_type():

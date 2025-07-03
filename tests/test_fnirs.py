@@ -13,7 +13,7 @@ from hypyp.fnirs.study import Study
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
-from hypyp.fnirs.subject import Subject
+from hypyp.fnirs.recording import Recording
 from hypyp.fnirs.channel_roi import ChannelROI
 from hypyp.fnirs.dyad import Dyad
 from hypyp.fnirs.data_browser import DataBrowser
@@ -32,14 +32,14 @@ fnirs_files = [fif_file, snirf_file1, snirf_file2]
 logging.disable()
 
 # Test helpers
-def get_test_subject():
+def get_test_recording():
     tasks = [Task('task1', onset_time=0, duration=20)]
-    return Subject(tasks=tasks).load_file(snirf_file1)
+    return Recording(tasks=tasks).load_file(snirf_file1)
 
-def get_test_subjects(count:int=2):
+def get_test_recordings(count:int=2):
     tasks = [Task('task1', onset_time=0, duration=20)]
-    subjects = [Subject(tasks=tasks, label=f's{i+1}').load_file(snirf_file1) for i in range(count)]
-    return subjects
+    recordings = [Recording(tasks=tasks, subject_label=f's{i+1}').load_file(snirf_file1) for i in range(count)]
+    return recordings
 
 def get_test_ch_match_one():
     return 'S1_D1 760'
@@ -94,97 +94,97 @@ def test_preprocess_step():
     assert step.duration == 2
 
 #
-# Subject
+# Subject Recordings
 #
 
-def test_subject():
+def test_recording():
     filepath = snirf_file1
-    subject = Subject(label='my_subject')
-    subject.load_file(filepath, MnePreprocessorRawToHaemo(), preprocess=False)
-    assert subject.label == 'my_subject'
-    assert subject.filepath == filepath
-    assert subject.raw is not None
-    assert len(subject.tasks) == 1 # default task, which is the complete record
-    assert subject.preprocess_steps is None
-    assert subject.is_preprocessed == False
-    assert subject.epochs_per_task is None # need preprocessing to extract epochs
+    recording = Recording(subject_label='my_subject')
+    recording.load_file(filepath, MnePreprocessorRawToHaemo(), preprocess=False)
+    assert recording.subject_label == 'my_subject'
+    assert recording.filepath == filepath
+    assert recording.mne_raw is not None
+    assert len(recording.tasks) == 1 # default task, which is the complete record
+    assert recording.preprocess_steps is None
+    assert recording.is_preprocessed == False
+    assert recording.epochs_per_task is None # need preprocessing to extract epochs
 
-def test_subject_tasks():
-    subject = Subject(tasks=[Task('my_task_in_time', onset_time=1, duration=2)])
-    assert len(subject.tasks) == 1
-    assert subject.task_keys[0] == 'my_task_in_time'
+def test_recording_tasks():
+    recording = Recording(tasks=[Task('my_task_in_time', onset_time=1, duration=2)])
+    assert len(recording.tasks) == 1
+    assert recording.task_keys[0] == 'my_task_in_time'
 
-def test_subject_epochs():
+def test_recording_epochs():
     tasks = [
         Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT),
         Task('task2', onset_event_id=3, offset_event_id=TASK_NEXT_EVENT),
     ]
-    subject = Subject(tasks=tasks)
-    subject.load_file(snirf_file1, MnePreprocessorRawToHaemo())
-    assert len(subject.get_epochs_for_task('task1')) == 2
-    n_events = subject.get_epochs_for_task('task1').events.shape[0]
+    recording = Recording(tasks=tasks)
+    recording.load_file(snirf_file1, MnePreprocessorRawToHaemo())
+    assert len(recording.get_epochs_for_task('task1')) == 2
+    n_events = recording.get_epochs_for_task('task1').events.shape[0]
     assert n_events == 2
-    assert len(subject.get_epochs_for_task('task2')) == 3
+    assert len(recording.get_epochs_for_task('task2')) == 3
 
-def test_subject_time_range_task():
+def test_recording_time_range_task():
     tasks = [
         Task('task1', onset_time=1, duration=1),
         Task('task2', onset_time=4, duration=1),
     ]
-    subject = Subject(tasks=tasks)
-    subject.load_file(snirf_file1, MnePreprocessorRawToHaemo())
-    epochs_task1 = subject.get_epochs_for_task('task1')
-    epochs_task2 = subject.get_epochs_for_task('task2')
+    recording = Recording(tasks=tasks)
+    recording.load_file(snirf_file1, MnePreprocessorRawToHaemo())
+    epochs_task1 = recording.get_epochs_for_task('task1')
+    epochs_task2 = recording.get_epochs_for_task('task2')
     assert len(epochs_task1) == 1
     n_events = epochs_task1.events.shape[0]
     assert n_events == 1
     assert len(epochs_task2) == 1
     
-def test_subject_time_range_task_recurring_event():
+def test_recording_time_range_task_recurring_event():
     tasks = [
         Task('task1', onset_time=1, duration=1),
         Task('task1', onset_time=4, duration=1),
         Task('task1', onset_time=8, duration=1),
     ]
-    subject = Subject(tasks=tasks)
-    subject.load_file(snirf_file1, MnePreprocessorRawToHaemo())
-    epochs = subject.get_epochs_for_task('task1')
+    recording = Recording(tasks=tasks)
+    recording.load_file(snirf_file1, MnePreprocessorRawToHaemo())
+    epochs = recording.get_epochs_for_task('task1')
     assert len(epochs) == 3
     n_events = epochs.events.shape[0]
     assert n_events == 3
     
 
 def test_upstream_preprocessor():
-    subject = Subject(tasks=[Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT)]).load_file(snirf_file1, MnePreprocessorAsIs())
-    assert len(subject.preprocess_steps) == 1
-    assert subject.is_preprocessed == True
-    assert subject.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
-    assert subject.epochs_per_task is not None
-    assert len(subject.epochs_per_task) > 0
+    recording = Recording(tasks=[Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT)]).load_file(snirf_file1, MnePreprocessorAsIs())
+    assert len(recording.preprocess_steps) == 1
+    assert recording.is_preprocessed == True
+    assert recording.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
+    assert recording.epochs_per_task is not None
+    assert len(recording.epochs_per_task) > 0
 
 def test_mne_preprocessor():
     preprocessor = MnePreprocessorRawToHaemo()
-    subject = Subject().load_file(snirf_file1, preprocessor, preprocess=False)
-    subject.preprocess(preprocessor)
-    assert len(subject.preprocess_steps) > 1
-    assert subject.is_preprocessed == True
-    assert subject.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
-    assert subject.preprocess_steps[-1].key == PREPROCESS_STEP_HAEMO_FILTERED_KEY
-    assert subject.preprocessed is not None
-    assert subject.preprocess_step_keys[0] == subject.preprocess_steps[-1].key
+    recording = Recording().load_file(snirf_file1, preprocessor, preprocess=False)
+    recording.preprocess(preprocessor)
+    assert len(recording.preprocess_steps) > 1
+    assert recording.is_preprocessed == True
+    assert recording.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
+    assert recording.preprocess_steps[-1].key == PREPROCESS_STEP_HAEMO_FILTERED_KEY
+    assert recording.preprocessed is not None
+    assert recording.preprocess_step_keys[0] == recording.preprocess_steps[-1].key
 
     # can get step by key
-    assert subject.get_preprocess_step(PREPROCESS_STEP_BASE_KEY).key == PREPROCESS_STEP_BASE_KEY
-    assert subject.get_preprocess_step(PREPROCESS_STEP_HAEMO_FILTERED_KEY).key == PREPROCESS_STEP_HAEMO_FILTERED_KEY
+    assert recording.get_preprocess_step(PREPROCESS_STEP_BASE_KEY).key == PREPROCESS_STEP_BASE_KEY
+    assert recording.get_preprocess_step(PREPROCESS_STEP_HAEMO_FILTERED_KEY).key == PREPROCESS_STEP_HAEMO_FILTERED_KEY
 
 #
 # Dyad
 #
 
-def test_subject_dyad():
-    subject1 = Subject().load_file(snirf_file1, preprocess=False)
-    subject2 = Subject().load_file(snirf_file2, preprocess=False)
-    dyad = Dyad(subject1, subject2)
+def test_recording_dyad():
+    s1 = Recording().load_file(snirf_file1, preprocess=False)
+    s2 = Recording().load_file(snirf_file2, preprocess=False)
+    dyad = Dyad(s1, s2)
     assert dyad.is_preprocessed == False
 
     dyad.preprocess(MnePreprocessorRawToHaemo())
@@ -192,11 +192,11 @@ def test_subject_dyad():
 
     pairs = dyad.get_pairs(dyad.s1, dyad.s2)
     #assert len(pairs) == n_channels * n_channels * n_epochs # TODO this is the test we with, with epochs
-    assert len(pairs) == len(subject1.preprocessed.ch_names) * len(subject2.preprocessed.ch_names)
+    assert len(pairs) == len(s1.preprocessed.ch_names) * len(s2.preprocessed.ch_names)
     assert pairs[0].label is not None
-    assert pairs[0].label_ch1 == subject1.preprocessed.ch_names[0]
-    assert pairs[0].label_ch2 == subject2.preprocessed.ch_names[0]
-    assert subject1.label in dyad.label
+    assert pairs[0].label_ch1 == s1.preprocessed.ch_names[0]
+    assert pairs[0].label_ch2 == s2.preprocessed.ch_names[0]
+    assert s1.subject_label in dyad.label
 
 def test_dyad_pairs_recurring_event():
     tasks = [
@@ -205,17 +205,17 @@ def test_dyad_pairs_recurring_event():
         Task('task1', onset_time=5, duration=1),
     ]
     # Use the same file for the 2 subjects
-    subject1 = Subject(tasks=tasks).load_file(snirf_file1)
-    subject2 = Subject(tasks=tasks).load_file(snirf_file2)
-    dyad = Dyad(subject1, subject2)
+    s1 = Recording(tasks=tasks).load_file(snirf_file1)
+    s2 = Recording(tasks=tasks).load_file(snirf_file2)
+    dyad = Dyad(s1, s2)
 
     pairs = dyad.get_pairs(dyad.s1, dyad.s2, ch_match=get_test_ch_match_one())
     assert len(pairs) == 3
     # make sure we don't have the same signal
     assert np.sum(pairs[0].y1 - pairs[1].y1) != 0
-    assert pairs[0].epoch_id == 0
-    assert pairs[1].epoch_id == 1
-    assert pairs[2].epoch_id == 2
+    assert pairs[0].epoch_idx == 0
+    assert pairs[1].epoch_idx == 1
+    assert pairs[2].epoch_idx == 2
     
 def test_dyad_tasks_intersection():
     tasks = [
@@ -223,8 +223,8 @@ def test_dyad_tasks_intersection():
         Task('my_task2', onset_time=3, duration=1),
         Task('my_task3', onset_time=5, duration=1),
     ]
-    s1 = Subject(tasks=[tasks[0], tasks[1]])
-    s2 = Subject(tasks=[tasks[1], tasks[2]])
+    s1 = Recording(tasks=[tasks[0], tasks[1]])
+    s2 = Recording(tasks=[tasks[1], tasks[2]])
     assert len(Dyad(s1, s1).tasks) == 2
     assert len(Dyad(s2, s2).tasks) == 2
     assert len(Dyad(s1, s2).tasks) == 1
@@ -243,8 +243,8 @@ def test_dyad_tasks_with_same_name_different_definition():
         Task('my_task3', onset_event_id=15, duration=1),
         Task('unknown_task', onset_event_id=99, duration=1),
     ]
-    s1 = Subject(tasks=tasks1)
-    s2 = Subject(tasks=tasks2)
+    s1 = Recording(tasks=tasks1)
+    s2 = Recording(tasks=tasks2)
     merged_task_names = [task.name for task in Dyad(s1, s2).tasks]
     assert 'my_task1' in merged_task_names
     assert 'my_task2' in merged_task_names
@@ -253,17 +253,17 @@ def test_dyad_tasks_with_same_name_different_definition():
     assert 'unknown_task' not in merged_task_names
 
 def test_dyad_check_sfreq_same():
-    subject1 = Subject().load_file(snirf_file1)
-    subject1.preprocessed.resample(sfreq=5)
-    subject2 = Subject().load_file(snirf_file2)
-    dyad = Dyad(subject1, subject2)
+    s1 = Recording().load_file(snirf_file1)
+    s1.preprocessed.resample(sfreq=5)
+    s2 = Recording().load_file(snirf_file2)
+    dyad = Dyad(s1, s2)
     with pytest.raises(Exception):
         dyad.get_pairs(dyad.s1, dyad.s2)
     
 def test_dyad_compute_pair_wtc():
     # test with the same subject, so we can check we have a high coherence
-    subject = get_test_subject()
-    dyad = Dyad(subject, subject)
+    recording = get_test_recording()
+    dyad = Dyad(recording, recording)
     pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
     wtc = ComplexMorletWavelet().wtc(pair)
     # Should have a mean of 1 since the first pair is the same signal
@@ -271,8 +271,8 @@ def test_dyad_compute_pair_wtc():
     assert wtc.label_dyad == dyad.label
 
 def test_dyad_cwt_cache_during_wtc():
-    subject1, subject2 = get_test_subjects()
-    dyad = Dyad(subject1, subject2)
+    s1, s2 = get_test_recordings()
+    dyad = Dyad(s1, s2)
     pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
     wavelet = ComplexMorletWavelet(cache=dict())
     with patch.object(wavelet, 'cwt', wraps=wavelet.cwt) as spy_method:
@@ -287,8 +287,8 @@ def test_dyad_cwt_cache_during_wtc():
         assert spy_method.call_count == 4
 
 def test_dyad_coi_cache_during_wtc():
-    subject1, subject2 = get_test_subjects()
-    dyad = Dyad(subject1, subject2)
+    s1, s2 = get_test_recordings()
+    dyad = Dyad(s1, s2)
     pair = dyad.get_pairs(dyad.s1, dyad.s2)[0].sub((0, 10)) # Take 10% of the file
     wavelet = ComplexMorletWavelet(cache=dict())
     with patch.object(wavelet, '_get_cone_of_influence', wraps=wavelet._get_cone_of_influence) as spy_method:
@@ -308,39 +308,39 @@ def test_dyad_cwt_cache_with_different_times():
     # We would have this error if the cache is not invalidated and we have different length
     #   "ValueError: operands could not be broadcast together with shapes (40,79) (40,157)"
     # This can happen for annotation based tasks. Here we force a different task by changing the 2nd subject
-    subject1 = Subject(label='subject1', tasks=[Task('my_task', onset_time=0, duration=10)]).load_file(snirf_file1)
-    subject2 = Subject(label='subject2', tasks=[Task('my_task', onset_time=0, duration=20)]).load_file(snirf_file2)
+    s1 = Recording(subject_label='subject1', tasks=[Task('my_task', onset_time=0, duration=10)]).load_file(snirf_file1)
+    s2 = Recording(subject_label='subject2', tasks=[Task('my_task', onset_time=0, duration=20)]).load_file(snirf_file2)
     # Force a different task length for subject2 to have a different lenght
-    dyad = Dyad(subject1, subject1)
-    dyad.s2 = subject2 # hack for the test
+    dyad = Dyad(s1, s1)
+    dyad.s2 = s2 # hack for the test
     dyad.compute_wtcs(ch_match=get_test_ch_match_one(), with_intra=True)
 
 def test_dyad_compute_all_wtc():
-    subject = Subject().load_file(snirf_file1)
-    dyad = Dyad(subject, subject)
+    recording = Recording().load_file(snirf_file1)
+    dyad = Dyad(recording, recording)
     assert dyad.is_wtc_computed == False
     dyad.compute_wtcs(only_time_range=(0,10))
     assert dyad.is_wtc_computed == True
-    assert len(dyad.wtcs) == len(subject.preprocessed.ch_names)**2
+    assert len(dyad.wtcs) == len(recording.preprocessed.ch_names)**2
     # Should have a mean of 1 since the first pair is the same signal
     assert np.mean(dyad.wtcs[0].W) == pytest.approx(1)
 
     assert len(dyad.df['channel1'].unique()) == 32
     
 def test_dyad_computes_intra_subject():
-    subject1 = Subject().load_file(snirf_file1)
-    subject2 = Subject().load_file(snirf_file2)
-    dyad = Dyad(subject1, subject2)
+    s1 = Recording().load_file(snirf_file1)
+    s2 = Recording().load_file(snirf_file2)
+    dyad = Dyad(s1, s2)
     dyad.compute_wtcs(only_time_range=(0,10), with_intra=True)
-    assert subject1.is_wtc_computed == True
-    assert subject2.is_wtc_computed == True
-    assert len(dyad.wtcs) == len(subject1.intra_wtcs)
-    assert len(dyad.wtcs) == len(subject2.intra_wtcs)
+    assert s1.is_wtc_computed == True
+    assert s2.is_wtc_computed == True
+    assert len(dyad.wtcs) == len(s1.intra_wtcs)
+    assert len(dyad.wtcs) == len(s2.intra_wtcs)
     
 def test_dyad_computes_intra_subject_channel_match():
-    subject1 = Subject().load_file(snirf_file1)
-    subject2 = Subject().load_file(snirf_file2)
-    dyad = Dyad(subject1, subject2)
+    s1 = Recording().load_file(snirf_file1)
+    s2 = Recording().load_file(snirf_file2)
+    dyad = Dyad(s1, s2)
     # have a different channel for each subject
     ch_match = ('S1_D1 760', 'S1_D2 760')
     dyad.compute_wtcs(ch_match=ch_match, only_time_range=(0,10), with_intra=True)
@@ -354,22 +354,22 @@ def test_dyad_computes_intra_subject_channel_match():
     assert np.sum(df_intra['is_intra_of'] == 2) == 1
 
 def test_dyad_compute_str_match_wtc():
-    subject = Subject().load_file(snirf_file1)
-    dyad = Dyad(subject, subject)
+    recording = Recording().load_file(snirf_file1)
+    dyad = Dyad(recording, recording)
     dyad.compute_wtcs(ch_match='760', only_time_range=(0,10))
     assert dyad.is_wtc_computed == True
-    assert len(dyad.wtcs) == (len(subject.preprocessed.pick('all').ch_names)/2)**2
+    assert len(dyad.wtcs) == (len(recording.preprocessed.pick('all').ch_names)/2)**2
 
 def test_dyad_compute_regex_match_wtc():
-    subject = Subject().load_file(snirf_file1)
-    dyad = Dyad(subject, subject)
+    recording = Recording().load_file(snirf_file1)
+    dyad = Dyad(recording, recording)
     dyad.compute_wtcs(ch_match=get_test_ch_match_few(), only_time_range=(0,10))
     assert len(dyad.wtcs) == 4
     assert dyad.wtcs[0].label_pair == dyad.get_pairs(dyad.s1, dyad.s2)[0].label
 
 def test_dyad_compute_tuple_match_wtc():
-    subject = Subject().load_file(snirf_file1)
-    dyad = Dyad(subject, subject)
+    recording = Recording().load_file(snirf_file1)
+    dyad = Dyad(recording, recording)
     regex1 = re.compile(r'^S1_D1.*760')
     regex2 = re.compile(r'.*760')
     dyad.compute_wtcs(ch_match=(regex1, regex2), only_time_range=(0,10))
@@ -377,15 +377,15 @@ def test_dyad_compute_tuple_match_wtc():
     #[print(wtc.label) for wtc in dyad.wtcs]
 
 def test_dyad_compute_list_match_wtc():
-    subject = Subject().load_file(snirf_file1)
-    dyad = Dyad(subject, subject)
+    recording = Recording().load_file(snirf_file1)
+    dyad = Dyad(recording, recording)
     ch_list = ['S1_D1 760', 'S1_D2 760', 'S2_D1 760']
     dyad.compute_wtcs(ch_match=ch_list, only_time_range=(0,10))
     assert len(dyad.wtcs) == len(ch_list) * len(ch_list)
     
 def test_dyad_compute_list_per_subject_match_wtc():
-    subject = Subject().load_file(snirf_file1)
-    dyad = Dyad(subject, subject)
+    recording = Recording().load_file(snirf_file1)
+    dyad = Dyad(recording, recording)
     ch_list1 = ['S1_D1 760', 'S1_D2 760']
     ch_list2 = ['S2_D1 760', 'S2_D2 760']
     dyad.compute_wtcs(ch_match=(ch_list1, ch_list2), only_time_range=(0,10), with_intra=False)
@@ -404,8 +404,8 @@ def test_dyad_wtc_per_task():
         Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT), # these 2 events have different duration
         Task('task3', onset_event_id=3, offset_event_id=TASK_NEXT_EVENT),
     ]
-    subject = Subject(tasks=tasks).load_file(snirf_file1)
-    dyad = Dyad(subject, subject)
+    recording = Recording(tasks=tasks).load_file(snirf_file1)
+    dyad = Dyad(recording, recording)
     ch_name = get_test_ch_match_one()
     pairs = dyad.get_pairs(dyad.s1, dyad.s2, ch_match=ch_name)
     # we will have multiple pairs because we have one pair per epoch
@@ -421,9 +421,9 @@ def test_dyad_task_annotations_and_time_range_combined():
         Task('task_annotation1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT),
         Task('task_time_range', onset_time=10, duration=20),
     ]
-    subject = Subject(tasks=tasks)
-    subject.load_file(snirf_file1)
-    dyad = Dyad(subject, subject)
+    recording = Recording(tasks=tasks)
+    recording.load_file(snirf_file1)
+    dyad = Dyad(recording, recording)
     ch_name = get_test_ch_match_one()
     pairs = dyad.get_pairs(dyad.s1, dyad.s2, ch_match=ch_name)
     # We have the count from annotations + the count from time_range
@@ -439,11 +439,11 @@ def test_dyad_wtc_nan_channel_section():
         Task('task1', onset_time=0, duration=500),
     ]
     # Use the same file for the 2 subjects
-    subject1 = Subject(tasks=tasks).load_file(snirf_file1)
-    subject2 = Subject(tasks=tasks).load_file(snirf_file2)
-    dyad = Dyad(subject1, subject2)
+    s1 = Recording(tasks=tasks).load_file(snirf_file1)
+    s2 = Recording(tasks=tasks).load_file(snirf_file2)
+    dyad = Dyad(s1, s2)
 
-    epochs = subject1.get_epochs_for_task('task1')
+    epochs = s1.get_epochs_for_task('task1')
     data = epochs.get_data()
     # Set some values to NaN to split in 3 sections
     data[0, 0, 20:40] = np.nan
@@ -460,10 +460,10 @@ def test_dyad_wtc_nan_channel_section():
     assert np.all(np.isfinite(df[df['section']==2]['coherence'].head(1)))
 
 def test_study_wtc():
-    subject1, subject2 = get_test_subjects()
-    dyad1 = Dyad(subject1, subject1)
-    dyad2 = Dyad(subject2, subject2)
-    dyad3 = Dyad(subject1, subject2)
+    s1, s2 = get_test_recordings()
+    dyad1 = Dyad(s1, s1)
+    dyad2 = Dyad(s2, s2)
+    dyad3 = Dyad(s1, s2)
 
     # Add a bunch of "dyad3" to our list, so we have a number of "others" for our first dyad
     dyads = [dyad1, dyad2, dyad3, dyad3, dyad3, dyad3]
@@ -480,7 +480,7 @@ def test_study_wtc():
     # dyads shuffle are computed only when we want significance
     assert study.is_wtc_shuffle_computed == False
     assert study.dyads_shuffled is None
-    assert np.all(df['is_shuffle'] == False)
+    assert np.all(df['is_pseudo'] == False)
 
     study.compute_wtcs_shuffle(**wtcs_kwargs)
     df_with_shuffle = study.df
@@ -488,12 +488,12 @@ def test_study_wtc():
 
     assert study.is_wtc_shuffle_computed == True
     assert len(study.dyads_shuffled[0].wtcs) == 1
-    assert len(df_with_shuffle['is_shuffle'].unique()) == 2
+    assert len(df_with_shuffle['is_pseudo'].unique()) == 2
 
-def test_study_is_shuffle_no_duplicate():
-    subjects = get_test_subjects(4)
+def test_study_is_pseudo_no_duplicate():
+    recordings = get_test_recordings(4)
 
-    study = Study([Dyad(subjects[0], subjects[1]), Dyad(subjects[2], subjects[3])])
+    study = Study([Dyad(recordings[0], recordings[1]), Dyad(recordings[2], recordings[3])])
     wtcs_kwargs = dict(ch_match=get_test_ch_match_one())
     study.compute_wtcs(**wtcs_kwargs, show_time_estimation=False, with_intra=False)
     assert len(study.df) == 2
@@ -512,38 +512,38 @@ def test_study_is_shuffle_no_duplicate():
 
 
 def test_dyad_computes_whole_record_by_default():
-    subject = get_test_subject()
-    dyad = Dyad(subject, subject)
+    recording = get_test_recording()
+    dyad = Dyad(recording, recording)
     dyad.compute_wtcs(ch_match=get_test_ch_match_one())
     assert len(dyad.wtcs) == 1
 
 def test_dyad_does_not_compute_tasks_when_epochs_not_loaded():
-    subject = Subject(tasks=[Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT)])
-    subject.load_file(snirf_file1, preprocess=False)
-    dyad = Dyad(subject, subject)
+    recording = Recording(tasks=[Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT)])
+    recording.load_file(snirf_file1, preprocess=False)
+    dyad = Dyad(recording, recording)
     with pytest.raises(Exception):
         # This should raise an exception, since the epochs have not been loaded from annotations
         dyad.compute_wtcs(ch_match=get_test_ch_match_one(), only_time_range=(0,10))
 
 def test_dyad_coherence_pandas():
-    subject1, subject2 = get_test_subjects()
-    dyad = Dyad(subject1, subject2)
+    s1, s2 = get_test_recordings()
+    dyad = Dyad(s1, s2)
     dyad.compute_wtcs(ch_match=get_test_ch_match_few())
     df = dyad._get_coherence_df()
     assert len(df['task'].unique()) == len(dyad.s1.task_keys)
     assert len(df['channel1'].unique()) == 2
     assert len(df['channel2'].unique()) == 2
     assert len(df['dyad'].unique()) == 1
-    assert df['subject1'].unique()[0] == subject1.label
-    assert df['subject2'].unique()[0] == subject2.label
+    assert df['subject1'].unique()[0] == s1.subject_label
+    assert df['subject2'].unique()[0] == s2.subject_label
 
 def test_dyad_coherence_pandas_with_intra():
-    subject1, subject2 = get_test_subjects()
-    dyad = Dyad(subject1, subject2)
+    s1, s2 = get_test_recordings()
+    dyad = Dyad(s1, s2)
 
     with pytest.raises(Exception):
         dyad.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=False)
-        # Since intra subject is not computed, it should raise
+        # Since intra recording is not computed, it should raise
         dyad._get_coherence_df(with_intra=True)
 
     dyad.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True)
@@ -553,11 +553,11 @@ def test_dyad_coherence_pandas_with_intra():
     assert len(df['is_intra'].unique()) == 2
 
 def test_study_coherence_pandas():
-    subject1, subject2 = get_test_subjects()
-    subject3, _ = get_test_subjects()
-    dyad1 = Dyad(subject1, subject2, label='dyad1')
-    dyad2 = Dyad(subject1, subject3, label='dyad2')
-    dyad3 = Dyad(subject2, subject3, label='dyad3')
+    s1, s2 = get_test_recordings()
+    s3, _ = get_test_recordings()
+    dyad1 = Dyad(s1, s2, label='dyad1')
+    dyad2 = Dyad(s1, s3, label='dyad2')
+    dyad3 = Dyad(s2, s3, label='dyad3')
     study = Study([dyad1, dyad2, dyad3])
     study.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=False, show_time_estimation=False)
     df = study.df
@@ -568,30 +568,30 @@ def test_study_coherence_pandas():
     assert np.all(df['is_intra'] == False)
 
 def test_study_coherence_pandas_with_intra():
-    study = Study([Dyad(*get_test_subjects(), label='dyad1')])
+    study = Study([Dyad(*get_test_recordings(), label='dyad1')])
     study.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True, show_time_estimation=False)
     df = study.df
     assert len(df['is_intra'].unique()) == 2
 
 
 def test_dyad_coherence_pandas_on_roi():
-    subject1, subject2 = get_test_subjects()
-    dyad = Dyad(subject1, subject2)
+    s1, s2 = get_test_recordings()
+    dyad = Dyad(s1, s2)
     dyad.compute_wtcs(ch_match=get_test_ch_match_few())
     df = dyad._get_coherence_df()
     assert len(df['roi1']) == 4
     assert len(df['roi2']) == 4
 
 def test_wtc_downsampling():
-    subject = get_test_subject()
-    dyad = Dyad(subject, subject)
+    recording = get_test_recording()
+    dyad = Dyad(recording, recording)
     n = 100
     Study([dyad]).compute_wtcs(ch_match=get_test_ch_match_one(), downsample=n)
     assert len(dyad.wtcs[0].times) <= n
     
 
 def test_save_study_to_disk():
-    subject = get_test_subject()
+    subject = get_test_recording()
     dyad = Dyad(subject, subject)
     study = Study([dyad])
 
@@ -603,8 +603,8 @@ def test_save_study_to_disk():
     assert len(study_reloaded.dyads) == len(study.dyads)
 
 def test_save_study_df_to_disk():
-    subject = get_test_subject()
-    dyad = Dyad(subject, subject)
+    recording = get_test_recording()
+    dyad = Dyad(recording, recording)
     study = Study([dyad])
     study.compute_wtcs(show_time_estimation=False)
 
@@ -613,13 +613,13 @@ def test_save_study_df_to_disk():
         study.save_feather(file_path)
         df = CoherenceDataFrame.from_feather(file_path)
     
-    assert np.all(df['subject1'] == subject.label)
+    assert np.all(df['subject1'] == recording.subject_label)
     
 def test_study_run_estimation(capsys):
-    subject = get_test_subject()
+    recording = get_test_recording()
     dyads = []
     for _ in range(10):
-        dyads.append(Dyad(subject, subject))
+        dyads.append(Dyad(recording, recording))
     study = Study(dyads)
     study.estimate_wtcs_run_time()
     out = capsys.readouterr()
@@ -654,11 +654,11 @@ def test_lionirs_channel_grouping():
 
     assert croi.get_roi_from_channel(ordered_names[0]) == 'PreFr_L'
 
-def test_ordered_subject_ch_names():
+def test_ordered_recording_ch_names():
     roi_file_path = 'data/NIRS/lionirs/channel_grouping_7ROI.mat'
     croi = ChannelROI.from_lionirs_file(roi_file_path)
-    subject = Subject(channel_roi=croi).load_file(snirf_file1)
-    ch_names = subject.ordered_ch_names
+    recording = Recording(channel_roi=croi).load_file(snirf_file1)
+    ch_names = recording.ordered_ch_names
     assert ch_names[0] == 'S2_D2 760'
 
 

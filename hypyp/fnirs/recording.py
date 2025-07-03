@@ -18,10 +18,10 @@ from ..utils import (
 )
 from ..wavelet.base_wavelet import WTC
 
-class Subject:
+class Recording:
     """
-    The Subject object encapsulates the logic around the recording for one participant.
-    The preprocessing is run on the channels of the Subject
+    The Recording object encapsulates the logic around the recording for one participant.
+    The preprocessing is run on the channels of the Recording
 
     Args:
         label (str, optional): unique label for the subject. Defaults to a random string.
@@ -29,9 +29,9 @@ class Subject:
         channel_roi (ChannelROI | None, optional): region of interest object to group channels. Defaults to None.
     """
     filepath: str | None
-    label: str
+    subject_label: str
     channel_roi: ChannelROI | None
-    raw: mne.io.Raw | None
+    mne_raw: mne.io.Raw | None
     intra_wtcs: List[WTC] | None # intra-subject wtc
     epochs_per_task: List[mne.Epochs] | None
     tasks: TaskList
@@ -39,14 +39,14 @@ class Subject:
 
     def __init__(
         self,
-        label:str='',
+        subject_label:str='',
         tasks:TaskList=[],
         channel_roi:ChannelROI|None=None
     ):
         self.filepath = None
-        self.label = label if label != '' else generate_random_label(10)
+        self.subject_label = subject_label if subject_label != '' else generate_random_label(10)
         self.channel_roi = channel_roi
-        self.raw = None
+        self.mne_raw = None
         self.intra_wtcs = None
         self.epochs_per_task = None
         self.preprocess_steps = None
@@ -59,11 +59,11 @@ class Subject:
 
     def _assert_is_preprocessed(self):
         if not self.is_preprocessed:
-            raise RuntimeError('Subject is not preprocessed. Did you run preprocess() ?')
+            raise RuntimeError('Recording is not preprocessed. Did you run preprocess() ?')
 
     def _assert_is_epochs_loaded(self):
         if not self.is_epochs_loaded:
-            raise RuntimeError('Subject does not have epochs loaded. Did you run populate_epochs_from_tasks() ?')
+            raise RuntimeError('Recording does not have epochs loaded. Did you run populate_epochs_from_tasks() ?')
 
     @property
     def task_keys(self):
@@ -129,7 +129,7 @@ class Subject:
         verbose=False
     ):
         """
-        Load a raw NIRS file as the recording of the Subject
+        Load a raw NIRS file as the recording of the Recording
 
         Args:
             filepath (str): disk path of the file to load
@@ -141,7 +141,7 @@ class Subject:
             RuntimeError: When file is not found
 
         Returns:
-            self: the Subject object itself. Useful for chaining operations
+            self: the Recording object itself. Useful for chaining operations
         """
         if preprocessor is None:
             preprocessor = MnePreprocessorAsIs()
@@ -150,23 +150,23 @@ class Subject:
             raise RuntimeError(f'Cannot find file {filepath}')
 
         self.filepath = filepath        
-        self.raw = preprocessor.read_file(filepath, verbose=verbose)
+        self.mne_raw = preprocessor.read_file(filepath, verbose=verbose)
         if preprocess:
             self.preprocess(preprocessor, verbose=verbose)
         return self
     
     def preprocess(self, preprocessor:BasePreprocessor, verbose:bool=False):
         """
-        Run the preprocessing for the raw recording of the Subject
+        Run the preprocessing for the raw recording of the Recording
 
         Args:
             preprocessor (BasePreprocessor): which preprocessor object to use. See existing implementations or extend BasePreprocessor abstract class to develop your own
             verbose (bool, optional): verbosity flag. Defaults to False.
 
         Returns:
-            self: the Subject object itself. Useful for chaining operations
+            self: the Recording object itself. Useful for chaining operations
         """
-        self.preprocess_steps = preprocessor.run(self.raw, verbose=verbose)
+        self.preprocess_steps = preprocessor.run(self.mne_raw, verbose=verbose)
         self.populate_epochs_from_tasks(verbose=verbose)
         return self
 
@@ -189,7 +189,7 @@ class Subject:
     
     def populate_epochs_from_tasks(self, verbose:bool=False):
         """
-        Given the list of tasks (annotations and timed) of the Subject,
+        Given the list of tasks (annotations and timed) of the Recording,
         find the given data in the preprocessed channels and load as epochs that will be compared between subjects
         and store them in the object
 
@@ -197,7 +197,7 @@ class Subject:
             verbose (bool, optional): verbosity flag. Defaults to False.
 
         Returns:
-            self: the Subject object itself. Useful for chaining operations
+            self: the Recording object itself. Useful for chaining operations
         """
         self.epochs_per_task = epochs_from_tasks(self.preprocessed, self.tasks, verbose=verbose)
         return self

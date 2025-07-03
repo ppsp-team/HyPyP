@@ -12,14 +12,14 @@ class PairSignals:
 
     is_intra: bool
     is_intra_of: int
-    is_shuffle: bool
+    is_pseudo: bool
 
     label_ch1: str
     label_ch2: str
     label_task: str
 
-    epoch_id: int
-    section_id: int
+    epoch_idx: int
+    section_idx: int
 
     label_dyad: str
     label_s1: str
@@ -31,19 +31,19 @@ class PairSignals:
                  x,
                  y1,
                  y2,
-                 label_dyad='',
-                 label_s1='',
-                 label_s2='',
                  label_ch1='',
                  label_ch2='',
                  label_roi1='',
                  label_roi2='',
+                 label_s1='',
+                 label_s2='',
+                 label_dyad='',
                  label_task='',
-                 epoch_id=0,
-                 section_id=0,
+                 epoch_idx=0,
+                 section_idx=0,
                  is_intra:bool=False,
                  is_intra_of:int=0,
-                 is_shuffle:bool=False,
+                 is_pseudo:bool=False,
         ):
         """
         A pair of signal that are already aligned and can be compared
@@ -52,19 +52,19 @@ class PairSignals:
             x (_type_): times
             y1 (_type_): signal 1 values
             y2 (_type_): signal 2 values
-            label_dyad (str, optional): label for the dyad. Defaults to ''.
-            label_s1 (str, optional): label for subject 1. Defaults to ''.
-            label_s2 (str, optional): label for subject 2. Defaults to ''.
             label_ch1 (str, optional): label for channel of subject 1. Defaults to ''.
             label_ch2 (str, optional): label for channel of subject 2. Defaults to ''.
             label_roi1 (str, optional): label for region of interest of subject 1. Defaults to ''.
             label_roi2 (str, optional): label for region of interest of subject 2. Defaults to ''.
+            label_s1 (str, optional): label for subject 1. Defaults to ''.
+            label_s2 (str, optional): label for subject 2. Defaults to ''.
+            label_dyad (str, optional): label for the dyad. Defaults to ''.
             label_task (str, optional): label for the task of this signal section. Defaults to ''.
             epoch_id (int, optional): identifier of the epoch of this signal pair. Defaults to 0.
             section_id (int, optional): identifier of the section of this signal pair, when an epoch had to be splitted in smaller sections. Defaults to 0.
             is_intra (bool, optional): if the pair is from an intra-subject. Defaults to False.
             is_intra_of (int, optional): if the pair is from an intra-subject, which subject is this. Defaults to 0 when not intra-subject.
-            is_shuffle (bool, optional): if the pair is from a shuffled dyad. Defaults to False.
+            is_pseudo (bool, optional): if the pair is from a shuffled dyad. Defaults to False.
         """
         self.x = x
         self.n = len(x)
@@ -76,14 +76,14 @@ class PairSignals:
 
         self.is_intra = is_intra
         self.is_intra_of = is_intra_of
-        self.is_shuffle = is_shuffle
+        self.is_pseudo = is_pseudo
 
         self.label_ch1 = label_ch1
         self.label_ch2 = label_ch2
 
         self.label_task = label_task
-        self.epoch_id = epoch_id
-        self.section_id = section_id
+        self.epoch_idx = epoch_idx
+        self.section_idx = section_idx
 
         self.label_dyad = label_dyad
         self.label_s1 = label_s1
@@ -96,18 +96,18 @@ class PairSignals:
         ret = f'{self.label_ch1} - {self.label_ch2}'
 
         prefix = self.label_task
-        if self.epoch_id > 0:
-            prefix = f'{prefix}[{self.epoch_id}]'
+        if self.epoch_idx > 0:
+            prefix = f'{prefix}[{self.epoch_idx}]'
 
-        if self.section_id > 0:
-            prefix = f'{prefix}(section:{self.section_id})'
+        if self.section_idx > 0:
+            prefix = f'{prefix}(section:{self.section_idx})'
 
         if prefix != '':
             ret = f'{prefix} - {ret}'
         
         return ret
 
-    def sub(self, time_range:Tuple[float, float], section_id:int|None=None):
+    def sub(self, time_range:Tuple[float, float], section_idx:int|None=None):
         """
         Get a new PairSignals from a portion of the initial PairSignals
 
@@ -124,8 +124,8 @@ class PairSignals:
         signal_from = int(self.sfreq * time_range[0])
         signal_to = int(self.sfreq * time_range[1]) + 1
 
-        if section_id is None:
-            section_id = self.section_id
+        if section_idx is None:
+            section_idx = self.section_idx
         
         return PairSignals(
             self.x[signal_from:signal_to],
@@ -133,17 +133,17 @@ class PairSignals:
             self.y2[signal_from:signal_to],
             is_intra=self.is_intra,
             is_intra_of=self.is_intra_of,
-            is_shuffle=self.is_shuffle,
-            label_dyad=self.label_dyad,
-            label_s1=self.label_s1,
-            label_s2=self.label_s2,
+            is_pseudo=self.is_pseudo,
             label_ch1=self.label_ch1,
             label_ch2=self.label_ch2,
             label_roi1=self.label_roi1,
             label_roi2=self.label_roi2,
+            label_s1=self.label_s1,
+            label_s2=self.label_s2,
+            label_dyad=self.label_dyad,
             label_task=self.label_task,
-            epoch_id=self.epoch_id,
-            section_id=section_id,
+            epoch_idx=self.epoch_idx,
+            section_idx=section_idx,
         )
     
     def __repr__(self):

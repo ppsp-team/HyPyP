@@ -7,7 +7,7 @@ COHERENCE_FRAME_COLUMNS = [
     'dyad',
     'is_intra',
     'is_intra_of',
-    'is_shuffle',
+    'is_pseudo',
     'subject1',
     'subject2',
     'roi1',
@@ -32,7 +32,7 @@ class CoherenceDataFrame(TypedDict, total=False):
 
     is_intra: bool
     is_intra_of: int
-    is_shuffle: bool
+    is_pseudo: bool
 
     subject1: str
     subject2: str

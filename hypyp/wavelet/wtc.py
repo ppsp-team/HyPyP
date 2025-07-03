@@ -25,7 +25,7 @@ class WTC:
 
     is_intra: bool
     is_intra_of: int
-    is_shuffle: bool
+    is_pseudo: bool
 
     task: str
     epoch_id: int
@@ -95,11 +95,11 @@ class WTC:
 
         self.is_intra = pair.is_intra
         self.is_intra_of = pair.is_intra_of
-        self.is_shuffle = pair.is_shuffle
+        self.is_pseudo = pair.is_pseudo
 
         self.task = pair.label_task
-        self.epoch_id = pair.epoch_id
-        self.section_id = pair.section_id
+        self.epoch_id = pair.epoch_idx
+        self.section_id = pair.section_idx
 
         self.label_dyad = pair.label_dyad
         self.label_pair = pair.label
@@ -262,7 +262,7 @@ class WTC:
                 self.label_dyad,
                 self.is_intra,
                 self.is_intra_of,
-                self.is_shuffle,
+                self.is_pseudo,
                 self.label_s1,
                 self.label_s2,
                 self.label_roi1,
