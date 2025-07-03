@@ -1,13 +1,13 @@
 from typing import List, Tuple
+
 from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 from scipy.ndimage import uniform_filter1d
 
-
 from .pair_signals import PairSignals
 from .coherence_data_frame import CoherenceDataFrame
-from ..plots import plot_wtc
+from ..plots import plot_wavelet_transform_weights
 from ..utils import downsample_in_time
 
 MASK_THRESHOLD = 0.5
@@ -118,6 +118,7 @@ class WTC:
 
         self.bin_seconds = bin_seconds
         self.period_cuts = period_cuts
+        self.frequency_cuts = 1 / np.array(period_cuts) if period_cuts is not None else None
         self.coherence_bins = []
 
         self.wavelet_library = wavelet_library
@@ -154,7 +155,9 @@ class WTC:
                 last_i = p_ranges[-1][1]
                 if last_i < len(self.periods):
                     p_ranges.append((last_i, len(self.periods)))
+                
         return p_ranges
+    
     
     @property
     def p_ranges_str(self):
@@ -182,8 +185,7 @@ class WTC:
                 t_stop = t_start + t_size
                 t_ranges.append((t_start, t_stop))
         return t_ranges
-        
-            
+
     def _compute_coherence_in_coi(self):
         # don't use self.dt because we want to deal with downsampled data as well
         dt = self.times[1] - self.times[0]
@@ -201,7 +203,7 @@ class WTC:
 
         # Time and period bins split
         self.coherence_bins = []
-
+            
         # loop over time bins and period bins
         for t_start, t_stop in self.t_ranges:
             for p_start, p_stop in self.p_ranges:
@@ -229,7 +231,6 @@ class WTC:
         # must recompute coherence in cone of interest
         self._compute_coherence_in_coi()
     
-
     def _moving_average_1d(self, arr, window_size):
         kernel = np.ones(window_size) / window_size
 
@@ -251,7 +252,7 @@ class WTC:
         #print(data.shape)
         result = np.apply_along_axis(self._moving_average_1d, 1, data, window_size)
         return result
-    
+
     @property
     def as_frame_rows(self) -> List[List]:
         # IMPORTANT: must match the ordering of COHERENCE_FRAME_COLUMNS
@@ -304,13 +305,13 @@ class WTC:
         if 'title' not in kwargs:
             kwargs['title'] = f'{self.label_s1}[{self.label_ch1}] - {self.label_s2}[{self.label_ch2}]'
 
-        return plot_wtc(
+        return plot_wavelet_transform_weights(
             self.W,
             self.times,
-            self.periods,
-            self.coi,
+            self.frequencies,
+            self.coif,
             self.sfreq,
             bin_seconds=self.bin_seconds,
-            period_cuts=self.period_cuts,
+            frequency_cuts=self.frequency_cuts,
             **kwargs)
 

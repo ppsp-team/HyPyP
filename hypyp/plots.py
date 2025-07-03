@@ -8,113 +8,82 @@ from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
 
 # Define a custom locator and formatter for periods
-def custom_locator_periods(ymin, ymax):
+def custom_locator_freqs(ymin, ymax):
     ticks = []
     ticks.extend(range(math.ceil(ymin), 11))
     ticks.extend(range(12, 21, 2))
-    ticks.extend(range(25, int(ymax) + 1, 5))
+    ticks.extend(range(25, 40 + 1, 5))
+    ticks.extend(range(50, int(ymax) + 1, 10))
     return ticks
     
-def plot_cwt(W, times, periods, coi, ax=None, title=None, show_colorbar=True, show_coi=True):
-    if ax is None:
-        fig, ax = plt.subplots()
-    else:
-        fig = ax.get_figure()
-    
-    xx, yy = np.meshgrid(times, periods)
-    
-    im = ax.pcolor(xx, yy, np.abs(W))
-    ax.set_yscale('log')
-    ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Period (seconds)')
-
-    if title is not None:
-        ax.set_title(title)
-    else:
-        ax.set_title('CWT Weights')
-
-    if show_colorbar:
-        fig.colorbar(im, ax=ax)
-
-    # cone of influence
-    if show_coi:
-        ax.plot(times, coi)
-        ax.fill_between(times, coi, y2=np.max(periods), step="mid", alpha=0.4)
-
-    ymin, ymax = ax.get_ylim()  # Get the y-axis limits
-    ax.set_yticks(custom_locator_periods(ymin, ymax))
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda y,_: f"{int(y)}" if y >= 1 else ""))
-    ax.set_xlim(times.min(), times.max())
-    ax.set_ylim(periods.min(), periods.max())
-    ax.invert_yaxis()
-
-    return fig
-
-def plot_wtc(
-    wtc,
+def plot_wavelet_transform_weights(
+    W,
     times,
-    periods,
-    coi,
+    freqs,
+    coif,
     sfreq,
     bin_seconds=None,
-    period_cuts=None,
+    frequency_cuts=None,
     title=None,
     ax=None,
     show_colorbar=True,
-    show_coi=True,
+    show_cone_of_influence=True,
     show_nyquist=True,
     show_bins=True,
 ):
-    color_shaded = '0.2'
     # create the figure if needed
     if ax is None:
         fig, ax = plt.subplots()
     else:
         fig = ax.get_figure()
     
-    xx, yy = np.meshgrid(times, periods)
+    xx, yy = np.meshgrid(times, freqs)
     
-    im = ax.pcolor(xx, yy, wtc, vmin=0, vmax=1)
+    #im = ax.pcolor(xx, yy, W, vmin=0, vmax=1)
+    im = ax.pcolor(xx, yy, np.abs(W))
     ax.set_yscale('log')
     ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Period (seconds)')
+    ax.set_ylabel('Frequency (Hz)')
 
+    color_invalid = 'C0'
     # Cone of influence
-    if show_coi:
-        ax.plot(times, coi, color=color_shaded)
-        ax.fill_between(times, coi, y2=np.max(periods), step="mid", color=color_shaded, alpha=0.4)
+    if show_cone_of_influence:
+        ax.plot(times, coif, color=color_invalid)
+        ax.fill_between(times, coif, y2=np.min(freqs), step="mid", color=color_invalid, alpha=0.4)
 
     if show_nyquist:
-        nyquist = np.ones((len(times),)) * sfreq
-        nyquist_period = 1 / nyquist
-        ax.plot(times, nyquist_period, color=color_shaded)
-        ax.fill_between(times, nyquist_period, y2=np.min(periods), step="mid", color=color_shaded, alpha=0.4)
+        nyquist = np.ones((len(times),)) * (sfreq / 2)
+        ax.plot(times, nyquist, color=color_invalid)
+        ax.fill_between(times, nyquist, y2=np.max(freqs), step="mid", color=color_invalid, alpha=0.4)
     
     if show_bins:
         if bin_seconds is not None:
             for time_cut in np.arange(0, max(times), bin_seconds):
                 plt.axvline(x=time_cut, color='red', lw=0.5)
 
-        if period_cuts is not None:
-            for period_cut in period_cuts:
-                plt.axhline(y=period_cut, color='red', lw=0.5)
+        if frequency_cuts is not None:
+            for frequency_cut in frequency_cuts:
+                plt.axhline(y=frequency_cut, color='red', lw=0.5)
     
     # Dynamically set ticks based on the current range
     ymin, ymax = ax.get_ylim()  # Get the y-axis limits
-    ax.set_yticks(custom_locator_periods(ymin, ymax))
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda y,_: f"{int(y)}" if y >= 1 else ""))
+    ax.set_yticks(custom_locator_freqs(ymin, ymax))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y,_: f"{int(y)}" if y >= 1 else f"{y:.1f}"))
     #ax.yaxis.get_major_formatter().set_scientific(False)  # Disable scientific notation
 
     ax.set_xlim(times.min(), times.max())
-    ax.set_ylim(periods.min(), periods.max())
+    ax.set_ylim(freqs.min(), freqs.max())
 
-    ax.invert_yaxis()
+    #ax.invert_yaxis()
 
     if show_colorbar:
         fig.colorbar(im)
 
     if title is not None:
         ax.set_title(title)
+    else:
+        ax.set_title('CWT Weights')
+
 
     return fig
 

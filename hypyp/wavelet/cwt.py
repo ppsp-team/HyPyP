@@ -1,7 +1,7 @@
 from matplotlib.figure import Figure
 import numpy as np
 
-from ..plots import plot_cwt
+from ..plots import plot_wavelet_transform_weights
 
 class CWT:
     W: np.ndarray
@@ -27,6 +27,7 @@ class CWT:
         self.W = weights
         self.times = times
         self.dt = times[1] - times[0]
+        self.sfreq = 1 / self.dt
 
         self.scales = scales
 
@@ -43,6 +44,6 @@ class CWT:
         Returns:
             Figure: matplotlib.Figure
         """
-        return plot_cwt(self.W, self.times, self.periods, self.coi, **kwargs)
+        return plot_wavelet_transform_weights(self.W, self.times, self.frequencies, self.coif, self.sfreq, **kwargs)
 
 

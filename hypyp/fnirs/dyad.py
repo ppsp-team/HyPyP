@@ -14,7 +14,7 @@ from ..utils import TaskList, TASK_NAME_WHOLE_RECORD
 from .subject import Subject
 from .preprocessor.base_preprocessor import BasePreprocessor
 from ..plots import (
-    plot_wtc,
+    plot_wavelet_transform_weights,
     plot_coherence_matrix,
     plot_coherence_bars_per_task,
     plot_coherence_connectogram,
@@ -372,11 +372,11 @@ class Dyad:
         Args:
             wtc (WTC): WTC object
         """
-        return plot_wtc(
+        return plot_wavelet_transform_weights(
             wtc.W,
             wtc.times,
-            wtc.periods,
-            wtc.coi,
+            wtc.frequencies,
+            wtc.coif,
             wtc.sfreq,
             title=wtc.label_pair,
             **kwargs)
