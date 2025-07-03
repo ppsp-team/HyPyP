@@ -2,6 +2,7 @@ from typing import List, Tuple
 from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
+from scipy.ndimage import uniform_filter1d
 
 
 from .pair_signals import PairSignals
@@ -124,37 +125,8 @@ class WTC:
 
         self._compute_coherence_in_coi()
     
-    def _compute_coherence_in_coi(self):
-        # don't use self.dt because we want to deal with downsampled data as well
-        dt = self.times[1] - self.times[0]
-
-        mask = self.periods[:, np.newaxis] > self.coi
-        self.wtc_masked = np.ma.masked_array(self.W, mask)
-
-        coherence = np.mean(self.wtc_masked)
-        coherence_masked = np.mean(self.wtc_masked.mask)
-        if np.ma.is_masked(coherence) or not np.isfinite(coherence):
-            coherence = np.nan
-
-        self.coherence_metric = coherence
-        self.coherence_masked = coherence_masked
-
-        # Time and period bins split
-        self.coherence_bins = []
-
-        if self.bin_seconds is None:
-            # single bin
-            t_ranges = [(0, len(self.times))]
-        else:
-            t_ranges = []
-            duration = len(self.times) * dt
-            t_steps = int(duration / self.bin_seconds)
-            t_size = int(self.bin_seconds / dt)
-            for t_step in range(t_steps):
-                t_start = t_step * t_size
-                t_stop = t_start + t_size
-                t_ranges.append((t_start, t_stop))
-
+    @property
+    def p_ranges(self):
         if self.period_cuts is None:
             # single bin
             p_ranges = [(0, len(self.periods))]
@@ -182,10 +154,57 @@ class WTC:
                 last_i = p_ranges[-1][1]
                 if last_i < len(self.periods):
                     p_ranges.append((last_i, len(self.periods)))
+        return p_ranges
+    
+    @property
+    def p_ranges_str(self):
+        ret = []
+        for p_start, p_end in self.p_ranges:
+            ret.append(f"{self.frequencies[p_start]:.2f}Hz-{self.frequencies[p_end-1]:.2f}Hz")
+        return ret
             
+            
+    @property
+    def t_ranges(self):
+        # don't use self.dt because we want to deal with downsampled data as well
+        dt = self.times[1] - self.times[0]
+
+        if self.bin_seconds is None:
+            # single bin
+            t_ranges = [(0, len(self.times))]
+        else:
+            t_ranges = []
+            duration = len(self.times) * dt
+            t_steps = int(duration / self.bin_seconds)
+            t_size = int(self.bin_seconds / dt)
+            for t_step in range(t_steps):
+                t_start = t_step * t_size
+                t_stop = t_start + t_size
+                t_ranges.append((t_start, t_stop))
+        return t_ranges
+        
+            
+    def _compute_coherence_in_coi(self):
+        # don't use self.dt because we want to deal with downsampled data as well
+        dt = self.times[1] - self.times[0]
+
+        mask = self.periods[:, np.newaxis] > self.coi
+        self.wtc_masked = np.ma.masked_array(self.W, mask)
+
+        coherence = np.mean(self.wtc_masked)
+        coherence_masked = np.mean(self.wtc_masked.mask)
+        if np.ma.is_masked(coherence) or not np.isfinite(coherence):
+            coherence = np.nan
+
+        self.coherence_metric = coherence
+        self.coherence_masked = coherence_masked
+
+        # Time and period bins split
+        self.coherence_bins = []
+
         # loop over time bins and period bins
-        for t_start, t_stop in t_ranges:
-            for p_start, p_stop in p_ranges:
+        for t_start, t_stop in self.t_ranges:
+            for p_start, p_stop in self.p_ranges:
                 wtc_bin = self.wtc_masked[p_start:p_stop, t_start:t_stop]
                 coherence_bin = np.mean(wtc_bin)
                 coherence_masked = np.mean(wtc_bin.mask)
@@ -209,6 +228,29 @@ class WTC:
         self.times, self.W, self.coi, self.coif, _factor = downsample_in_time(self.times, self.W, self.coi, self.coif, bins=bins)
         # must recompute coherence in cone of interest
         self._compute_coherence_in_coi()
+    
+
+    def _moving_average_1d(self, arr, window_size):
+        kernel = np.ones(window_size) / window_size
+
+        # replace the masked values by the closest correct value, to avoid edge effects
+        mask = np.array(arr.mask)
+        valid_indices = np.where(~arr.mask)[0]
+        if len(valid_indices) > 0:
+            arr[:valid_indices[0]] = arr[valid_indices[0]]
+            arr[valid_indices[-1]:] = arr[valid_indices[-1]]
+        result = np.convolve(arr, kernel, mode='same') # keep same size array
+        return np.ma.masked_array(result, mask)
+
+    def get_as_time_series(self, window_size=10) -> np.ndarray:
+        p_ranges = self.p_ranges
+        data = np.ma.zeros((len(p_ranges), self.wtc_masked.shape[1]))
+        for i in range(len(p_ranges)):
+            p_start, p_stop = p_ranges[i]
+            data[i,:] = self.wtc_masked[p_start:p_stop].mean(axis=0)
+        #print(data.shape)
+        result = np.apply_along_axis(self._moving_average_1d, 1, data, window_size)
+        return result
     
     @property
     def as_frame_rows(self) -> List[List]:

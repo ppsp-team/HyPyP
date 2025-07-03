@@ -279,6 +279,17 @@ def test_wtc_period_slicing():
     masked = df['coherence_masked']
     assert masked[0] < masked[1]
 
+def test_wtc_time_series():
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
+    wavelet = ComplexMorletWavelet(disable_caching=True)
+    period_cuts = [3, 5, 10]
+    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), period_cuts=period_cuts)
+    time_series = res.as_time_series
+    assert time_series.shape[0] == 4
+    assert time_series.shape[1] == len(signal1.x)
+    
+
 def test_wtc_period_slicing_edge_cases():
     tmax = 100
     n = 1000

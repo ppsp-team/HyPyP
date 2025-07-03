@@ -67,7 +67,9 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
         raw_od_clean = raw_od.copy().pick(picks)
         steps.append(MneStep(raw_od_clean, PREPROCESS_STEP_OD_CLEAN_KEY, PREPROCESS_STEP_OD_CLEAN_DESC))
 
-        raw_haemo = mne.preprocessing.nirs.beer_lambert_law(raw_od_clean, ppf=0.1)
+        # TODO: should set Partial Pathlength Factor (PPF) depending on age.
+        # See https://doi.org/10.1117/1.JBO.18.10.105004, Table 1
+        raw_haemo = mne.preprocessing.nirs.beer_lambert_law(raw_od_clean)
         steps.append(MneStep(raw_haemo, PREPROCESS_STEP_HAEMO_KEY, PREPROCESS_STEP_HAEMO_DESC))
         raw_haemo_filtered = raw_haemo.copy().filter(
                                                 0.05,

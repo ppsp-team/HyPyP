@@ -45,8 +45,8 @@ mkdocstrings-python-legacy = "^0.2.3"
 jupyterlab = "^4.3.5"
 mkdocs-include-markdown-plugin = "^7.1.5"
 mkdocstrings-python = ">=1.1.0"
-pytest-watch = "^4.2.0"
 tabulate = "^0.9.0"
+pytest-watch = "^4.2.0"
 
 [tool.poetry.group.dashboard.dependencies]
 shiny = "^1.1.0"
