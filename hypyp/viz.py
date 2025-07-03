@@ -2483,7 +2483,7 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
     plt.subplot(122)
 
     if analysis == 'phase':
-        data = xwt(sig1, sig2, sfreq, freqs, analysis='phase')
+        data = xwt(sig1, sig2, freqs, mode='phase')
         analysis_title = 'Cross Wavelet Transform (Phase Angle)'
         cbar_title = 'Phase Difference'
         my_cm = matplotlib.colormaps['hsv']
@@ -2491,7 +2491,7 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
         plt.imshow(data, aspect='auto', cmap=my_cm, interpolation='nearest')
 
     elif analysis == 'power':
-        data = xwt(sig1, sig2, sfreq, freqs, analysis='power')
+        data = xwt(sig1, sig2, freqs, mode='power')
         normed_data = (data - np.min(data)) / (np.max(data) - np.min(data))
         analysis_title = 'Cross Wavelet Transform (Power)'
         cbar_title = 'Cross Power'
@@ -2501,7 +2501,7 @@ def plot_xwt(sig1: mne.Epochs, sig2: mne.Epochs,
                    interpolation='lanczos')
 
     elif analysis == 'wtc':
-        data = xwt(sig1, sig2, sfreq, freqs, analysis='wtc')
+        data = xwt(sig1, sig2, freqs, mode='wtc')
         analysis_title = 'Wavelet Coherence'
         cbar_title = 'Coherence'
         my_cm = matplotlib.colormaps['plasma']

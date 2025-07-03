@@ -14,6 +14,9 @@ Useful tools
 
 from typing import Tuple, List
 import math
+import random
+import string
+
 import numpy as np
 import pandas as pd
 from scipy.integrate import solve_ivp
@@ -594,6 +597,195 @@ def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: flo
     
     return simulation
 
+class Task:
+    name: str
+    onset_event_id: int | None
+    onset_time: float | None
+
+    offset_event_id: int | None
+    duration: float | None
+    
+    def __init__(
+        self,
+        name:str,
+        onset_event_id:int|None=None,
+        onset_time:float|None=None,
+        offset_event_id:int|None=None,
+        duration:float|None=None,
+    ):
+        self.name = name
+        self.onset_event_id = None
+        self.onset_time = None
+        self.offset_event_id = None
+        self.duration = None
+
+        if onset_event_id is not None:
+            self.onset_event_id = onset_event_id
+
+        if onset_time is not None:
+            self.onset_time = onset_time
+
+        if offset_event_id is not None:
+            self.offset_event_id = offset_event_id
+
+        if duration is not None:
+            self.duration = duration
+        
+        # Need one start
+        if self.onset_event_id is None and self.onset_time is None:
+            raise RuntimeError('Must set either onset_event_id or onset_time')
+
+        if self.onset_event_id is not None and self.onset_time is not None:
+            raise RuntimeError('Cannot set both onset_event_id and onset_time')
+
+        # Need one end
+        if self.offset_event_id is None and self.duration is None:
+            raise RuntimeError('Must set either offset_event_id or duration')
+
+        if self.offset_event_id is not None and self.duration is not None:
+            raise RuntimeError('Cannot set both offset_event_id and duration')
+
+        # invalid
+        if self.onset_time is not None and self.offset_event_id is not None:
+            raise RuntimeError('Cannot use offset_event_id with onset_time')
+
+        #if self.onset_event_id is not None and self.onset
+
+    @property
+    def is_event_based(self):
+        return self.onset_event_id is not None
+
+    @property
+    def is_time_based(self):
+        return self.onset_time is not None
+
+# typing
+TaskTuple = tuple[str, int, int|None]
+TaskList = list[Task]
+
+# Constants for task description
+TASK_NEXT_EVENT = -2
+TASK_BEGINNING = -1
+TASK_END = -1
+TASK_NAME_WHOLE_RECORD = 'whole_record'
+
+def epochs_from_tasks(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -> List[mne.Epochs]:
+    events, events_map = mne.events_from_annotations(raw)
+    #print(events)
+
+    all_epochs = []
+    sfreq = raw.info['sfreq']
+
+    for task in [t for t in tasks if t.is_event_based]:
+        task_key = task.name
+        onset_event_id = task.onset_event_id
+        offset_event_id = task.offset_event_id
+        t_starts = []
+        t_durations = []
+        task_events = []
+
+        if onset_event_id is not None and not isinstance(onset_event_id, int):
+            raise ValueError(f'onset_event_id must be an integer. Received {type(onset_event_id)}')
+
+        if offset_event_id is not None and not isinstance(offset_event_id, int):
+            raise ValueError(f'offset_event_id must be an integer. Received {type(offset_event_id)}')
+
+        # To handle start of raw as "event" for task
+        if onset_event_id == TASK_BEGINNING:
+            events_loop = [[0]]
+        else:
+            events_loop = events[events[:, 2] == onset_event_id]
+
+        for event_start in events_loop:
+            t_start = event_start[0]
+            if task.duration is not None: # will not use offset_event_id
+                t_duration = task.duration
+            else:
+                # Find end of task
+                if offset_event_id == TASK_END:
+                    t_end = raw.n_times - 1
+                else:
+                    where_gt_start = events[:, 0] > t_start
+                    if offset_event_id == TASK_NEXT_EVENT:
+                        # until next event
+                        where = where_gt_start
+                    else:
+                        where_task_end = events[:, 2] == offset_event_id
+                        where = where_gt_start & where_task_end
+
+                    event_end = events[where]
+                    if len(event_end) == 0:
+                        raise RuntimeError(f'Cannot find end of task "{task_key}" with trigger_id "{offset_event_id}" (event_id "{offset_event_id}")')
+                    t_end = event_end[0, 0] # use the first
+
+                t_min = (t_start - raw.first_samp) / sfreq
+                t_max = (t_end - raw.first_samp) / sfreq
+                t_duration = t_max - t_min
+
+            t_starts.append(t_start)
+            t_durations.append(t_duration)
+            task_events.append([t_start, 0, onset_event_id])
+
+        all_epochs.append(mne.Epochs(raw,
+            task_events,
+            event_id={ task_key: onset_event_id},
+            tmin=0,
+            tmax=min(t_durations),
+            baseline=None,
+            preload=True,
+            event_repeated='merge',
+            verbose=verbose,
+            ))
+
+    # time based
+    events_per_task = dict()
+    duration_per_task = dict()
+    event_id_per_task = dict()
+    next_event_id = 1000 # start our event_id at 1000 for time based
+
+    for i, task in enumerate([t for t in tasks if t.is_time_based]):
+        task_name = task.name
+        task_start = task.onset_time
+        duration = task.duration
+        task_end = task_start + duration
+
+        if task_name not in event_id_per_task.keys():
+            event_id_per_task[task_name] = next_event_id
+            next_event_id += 1
+        event_id = event_id_per_task[task_name]
+
+        events = mne.make_fixed_length_events(raw,
+                                            id=event_id,
+                                            start=task_start,
+                                            stop=task_end,
+                                            duration=duration,
+                                            first_samp=True,
+                                            overlap=0.0)
+
+        if not task_name in events_per_task.keys():
+            events_per_task[task_name] = events
+            duration_per_task[task_name] = duration
+        else:
+            events_per_task[task_name] = np.vstack([events_per_task[task_name], events])
+            duration_per_task[task_name] = min(duration_per_task[task_name], duration)
+
+
+    for task_name in events_per_task.keys():
+        event_id_map = {task_name: event_id_per_task[task_name]}
+        epochs = mne.Epochs(raw,
+                            events_per_task[task_name],
+                            event_id=event_id_map,
+                            tmin=0,
+                            tmax=duration_per_task[task_name],
+                            baseline=None,
+                            preload=True,
+                            reject=None,
+                            proj=True,
+                            verbose=verbose)
+        all_epochs.append(epochs)
+
+    return all_epochs
+
 def downsample_in_time(times, *args, bins=500):
     ret = []
     # We assume time is always the last column
@@ -616,3 +808,16 @@ def downsample_in_time(times, *args, bins=500):
     ret.append(factor)
 
     return ret
+        
+def generate_random_label(length:int) -> str:
+    """
+    Generate a random label of a specific length
+
+    Args:
+        length (int): length of the string
+
+    Returns:
+        str: a unique label
+    """
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(length))

@@ -1,0 +1,166 @@
+---
+title: "HyPyP fNIRS coherence getting started in R"
+author: "Patrice Fortin"
+date: "2025-01-06"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+This R notebook shows how to load a CSV file produced by HyPyP-fNIRS from a `Study` object, and load it in R to do statistical analysis.
+
+The `.csv` file here has been generated from the Jupyter Notebook `tutorial/fnirs_getting_started.ipynb`.
+
+The code here is to help getting started in loading the transformed data and get it in a suitable dataframe format for analysis. The plots below are very basics and serve only as inspiration.
+
+Here is the list of fields imported from the CSV:
+
+|Field | Description |
+| - | ---- |
+| **dyad**             | Label of the dyad |
+| **is_intra**         | If this is an intra-subject coherence |
+| **is_pseudo**        | If this dyad is a permutation for statistical analysis or a real dyad |
+| **subject1**         | Label of the subject 1 |
+| **subject2**         | Label of the subject 2 |
+| **roi1**             | Label of the Region of Interest of subject 1 channel |
+| **roi2**             | Label of the Region of Interest of subject 2 channel |
+| **channel1**         | Label of the subject 1 channel |
+| **channel2**         | Label of the subject 2 channel |
+| **task**             | Label of the task |
+| **epoch**            | Identifier of the epoch for this coherence |
+| **section**          | Identifier of the section, if an epoch had to be splitted because of invalid data |
+| **bin**              | Identifier of the bin, if the WTC has been sliced for balancing the weight of computed coherence |
+| **coherence**        | Value of the coherence for this bin |
+| **coherence_masked** | Ratio of the excluded data in this bin |
+| **bin_time_range**   | Label of the time range for this bin |
+| **bin_period_range** | Label of the period range for this bin (for grouping) |
+| **wavelet_library**  | Name of the wavelet library used |
+| **wavelet_name**     | Label of the specific wavelet (contains wavelet parameters) |
+
+### Load libraries
+
+```{r}
+library("ggplot2")
+```
+
+### Load libraries and CSV file produced by `fnirs_study_example.ipynb`.
+
+```{r}
+csv_path <- "../data/results/fnirs_study_example.csv"
+data <- read.csv(csv_path, header = TRUE, stringsAsFactors = FALSE)
+```
+
+### Cleanup loaded data and have factors for better use with ggplot
+
+```{r}
+data <- within(data, {
+  dyad <- as.factor(dyad)
+  subject1 <- as.factor(subject1)
+  subject2 <- as.factor(subject2)
+  roi1 <- as.factor(roi1)
+  roi2 <- as.factor(roi2)
+  channel1 <- as.factor(channel1)
+  channel2 <- as.factor(channel2)
+  task <- as.factor(task)
+  bin_time_range <- as.factor(bin_time_range)
+  bin_period_range <- as.factor(bin_period_range)
+  wavelet_library <- as.factor(wavelet_library)
+  wavelet_name <- as.factor(wavelet_name)
+
+  is_intra <- tolower(is_intra) == "true"
+  is_pseudo <- tolower(is_pseudo) == "true"
+})
+```
+
+### Prepare a key for pairs of region of interest, for further grouping
+
+```{r}
+data$roi_pair <- paste(data$roi1, data$roi2, sep = "-")
+```
+
+\newpage
+
+### Inspect the loaded data
+
+```{r}
+str(data)
+```
+
+\newpage
+
+### Prepare a subset with relevant data
+
+Remove any intra-subject and shuffled dyad from our data set to be analysed, to have only inter-subject dyads
+
+```{r}
+sel_not_intra <- data$is_intra == FALSE
+sel_not_shuffle <- data$is_pseudo == FALSE
+sel_not_na <- sapply(data$coherence, is.na) == FALSE
+data_inter <- subset(data, sel_not_intra & sel_not_shuffle & sel_not_na)
+```
+
+```{r}
+head(data_inter)
+```
+
+\newpage
+
+### Show simple inter-subject coherence matrix
+
+The ordering here is lost compared to python code. We use ggplot2 library.
+
+```{r}
+ggplot(data = data_inter, aes(x = channel1, y = channel2, fill = coherence)) +
+  geom_tile() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  ggtitle("Inter subject coherence")
+```
+
+\newpage
+
+### Show inter-subject coherence matrix per Region of Interest
+
+```{r}
+ggplot(data = data_inter, aes(x = roi1, y = roi2, fill = coherence)) +
+  geom_tile() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  ggtitle("Inter subject coherence per region of interest")
+```
+
+\newpage
+
+### Plot the coherence per task, for each dyad
+
+```{r}
+ggplot(data = data_inter, aes(x = coherence, y = dyad, color = task)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  ggtitle("Coherence")
+```
+
+\newpage
+
+### Compare the coherence by zone pairs with facets
+
+This is only to give inspiration, there are much better ways to visualize this.
+
+```{r}
+ggplot(data = data_inter[data_inter$task != "baseline", ], aes(x = coherence, y = roi1)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  scale_y_discrete(labels = function(x) paste("Parent:", x)) +
+  facet_wrap(. ~ roi2, labeller = labeller(roi2 = function(x) paste("Child:", x))) +
+  ggtitle("Zone pair coherence")
+```
+
+\newpage
+
+### Split of coherence per periods range.
+
+```{r}
+ggplot(data = data_inter, aes(x = coherence, y = bin_period_range, color = task)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  ggtitle("Coherence per period range")
+```
+

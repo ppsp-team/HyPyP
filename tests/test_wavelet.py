@@ -84,14 +84,14 @@ def test_pair_signals():
     assert sub.x[0] == 0
     assert sub.x[-1] < 1.1
     assert sub.x[-1] > 0.9
-    assert sub.section_id == pair.section_id
+    assert sub.section_idx == pair.section_idx
     
 def test_pair_signals_epoch():
     signal1 = SyntheticSignal().add_noise()
     signal2 = SyntheticSignal().add_noise()
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
-    sub = pair.sub((0, 1), section_id=pair.section_id+1)
-    assert sub.section_id == pair.section_id+1
+    sub = pair.sub((0, 1), section_idx=pair.section_idx+1)
+    assert sub.section_idx == pair.section_idx+1
     
 
 @pytest.mark.parametrize("wavelet_class", [
@@ -278,6 +278,17 @@ def test_wtc_period_slicing():
     # first and last bins should be excluded (nan) since they do not have enough unmasked values
     masked = df['coherence_masked']
     assert masked[0] < masked[1]
+
+def test_wtc_time_series():
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
+    wavelet = ComplexMorletWavelet(disable_caching=True)
+    period_cuts = [3, 5, 10]
+    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), period_cuts=period_cuts)
+    time_series = res.get_as_time_series()
+    assert time_series.shape[0] == 4
+    assert time_series.shape[1] == len(signal1.x)
+    
 
 def test_wtc_period_slicing_edge_cases():
     tmax = 100

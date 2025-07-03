@@ -417,18 +417,18 @@ class BaseWavelet(ABC):
     def clear_cache(self):
         self.cache = dict()
 
-    def _get_cache_key_pair(self, pair: PairSignals, subject_id: int, obj_id: str, cache_suffix: str = ''):
+    def _get_cache_key_pair(self, pair: PairSignals, subject_idx: int, obj_id: str, cache_suffix: str = ''):
         if not self.use_caching:
             return None
 
-        if subject_id == 0:
+        if subject_idx == 0:
             subject_label = pair.label_s1
             ch_name = pair.label_ch1
-        elif subject_id == 1:
+        elif subject_idx == 1:
             subject_label = pair.label_s2
             ch_name = pair.label_ch2
         else:
-            raise RuntimeError(f'subject_id must be 0 or 1')
+            raise RuntimeError(f'subject_idx must be 0 or 1')
         
         if len(subject_label) < 1:
             raise RuntimeError(f'subjects must have labels to use caching')
@@ -437,7 +437,7 @@ class BaseWavelet(ABC):
             raise RuntimeError(f'must have task to have unique identifiers in caching')
 
         time_range_str = f'{pair.x[0]}-{pair.x[-1]}'
-        key = f'[{subject_label}][{ch_name}][{pair.label_task}][{pair.epoch_id}][{pair.x[0]}-{pair.x[-1]}][{time_range_str}][{obj_id}]'
+        key = f'[{subject_label}][{ch_name}][{pair.label_task}][{pair.epoch_idx}][{pair.x[0]}-{pair.x[-1]}][{time_range_str}][{obj_id}]'
         if cache_suffix != '':
             key += f'_{cache_suffix}'
         

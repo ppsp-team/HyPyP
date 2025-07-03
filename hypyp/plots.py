@@ -68,13 +68,12 @@ def plot_wavelet_transform_weights(
     # Dynamically set ticks based on the current range
     ymin, ymax = ax.get_ylim()  # Get the y-axis limits
     ax.set_yticks(custom_locator_freqs(ymin, ymax))
+
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y,_: f"{int(y)}" if y >= 1 else f"{y:.1f}"))
     #ax.yaxis.get_major_formatter().set_scientific(False)  # Disable scientific notation
 
     ax.set_xlim(times.min(), times.max())
     ax.set_ylim(freqs.min(), freqs.max())
-
-    #ax.invert_yaxis()
 
     if show_colorbar:
         fig.colorbar(im)
