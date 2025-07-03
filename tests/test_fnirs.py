@@ -9,7 +9,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 import mne
 
-from hypyp.fnirs.cohort import Cohort
+from hypyp.fnirs.study import Study
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
@@ -459,7 +459,7 @@ def test_dyad_wtc_nan_channel_section():
     assert np.all(np.isfinite(df[df['section']==1]['coherence'].head(1)))
     assert np.all(np.isfinite(df[df['section']==2]['coherence'].head(1)))
 
-def test_cohort_wtc():
+def test_study_wtc():
     subject1, subject2 = get_test_subjects()
     dyad1 = Dyad(subject1, subject1)
     dyad2 = Dyad(subject2, subject2)
@@ -467,48 +467,48 @@ def test_cohort_wtc():
 
     # Add a bunch of "dyad3" to our list, so we have a number of "others" for our first dyad
     dyads = [dyad1, dyad2, dyad3, dyad3, dyad3, dyad3]
-    cohort = Cohort(dyads)
-    assert len(cohort.dyads) == len(dyads)
-    assert cohort.is_wtc_computed == False
+    study = Study(dyads)
+    assert len(study.dyads) == len(dyads)
+    assert study.is_wtc_computed == False
 
     wtcs_kwargs = dict(ch_match=get_test_ch_match_one())
-    cohort.compute_wtcs(**wtcs_kwargs, show_time_estimation=False)
-    df = cohort.df
-    assert cohort.is_wtc_computed == True
+    study.compute_wtcs(**wtcs_kwargs, show_time_estimation=False)
+    df = study.df
+    assert study.is_wtc_computed == True
     assert len(dyad1.wtcs) == 1
     
     # dyads shuffle are computed only when we want significance
-    assert cohort.is_wtc_shuffle_computed == False
-    assert cohort.dyads_shuffle is None
+    assert study.is_wtc_shuffle_computed == False
+    assert study.dyads_shuffled is None
     assert np.all(df['is_shuffle'] == False)
 
-    cohort.compute_wtcs_shuffle(**wtcs_kwargs)
-    df_with_shuffle = cohort.df
-    assert len(cohort.dyads_shuffle) == len(dyads)*(len(dyads)-1)
+    study.compute_wtcs_shuffle(**wtcs_kwargs)
+    df_with_shuffle = study.df
+    assert len(study.dyads_shuffled) == len(dyads)*(len(dyads)-1)
 
-    assert cohort.is_wtc_shuffle_computed == True
-    assert len(cohort.dyads_shuffle[0].wtcs) == 1
+    assert study.is_wtc_shuffle_computed == True
+    assert len(study.dyads_shuffled[0].wtcs) == 1
     assert len(df_with_shuffle['is_shuffle'].unique()) == 2
 
-def test_cohort_is_shuffle_no_duplicate():
+def test_study_is_shuffle_no_duplicate():
     subjects = get_test_subjects(4)
 
-    cohort = Cohort([Dyad(subjects[0], subjects[1]), Dyad(subjects[2], subjects[3])])
+    study = Study([Dyad(subjects[0], subjects[1]), Dyad(subjects[2], subjects[3])])
     wtcs_kwargs = dict(ch_match=get_test_ch_match_one())
-    cohort.compute_wtcs(**wtcs_kwargs, show_time_estimation=False, with_intra=False)
-    assert len(cohort.df) == 2
-    cohort.compute_wtcs_shuffle(**wtcs_kwargs)
-    assert len(cohort.df) == 4
+    study.compute_wtcs(**wtcs_kwargs, show_time_estimation=False, with_intra=False)
+    assert len(study.df) == 2
+    study.compute_wtcs_shuffle(**wtcs_kwargs)
+    assert len(study.df) == 4
 
-    cohort.reset()
+    study.reset()
 
-    cohort.compute_wtcs(**wtcs_kwargs, show_time_estimation=False, with_intra=True)
-    assert len(cohort.df) == 6
-    assert len(cohort.df[cohort.df['is_intra']==True]) == 4
-    cohort.compute_wtcs_shuffle(**wtcs_kwargs)
+    study.compute_wtcs(**wtcs_kwargs, show_time_estimation=False, with_intra=True)
+    assert len(study.df) == 6
+    assert len(study.df[study.df['is_intra']==True]) == 4
+    study.compute_wtcs_shuffle(**wtcs_kwargs)
     # should not have more "is_intra"
-    assert len(cohort.df) == 8
-    assert len(cohort.df[cohort.df['is_intra']==True]) == 4
+    assert len(study.df) == 8
+    assert len(study.df[study.df['is_intra']==True]) == 4
 
 
 def test_dyad_computes_whole_record_by_default():
@@ -552,25 +552,25 @@ def test_dyad_coherence_pandas_with_intra():
     assert len(df['dyad'].unique()) == 3
     assert len(df['is_intra'].unique()) == 2
 
-def test_cohort_coherence_pandas():
+def test_study_coherence_pandas():
     subject1, subject2 = get_test_subjects()
     subject3, _ = get_test_subjects()
     dyad1 = Dyad(subject1, subject2, label='dyad1')
     dyad2 = Dyad(subject1, subject3, label='dyad2')
     dyad3 = Dyad(subject2, subject3, label='dyad3')
-    cohort = Cohort([dyad1, dyad2, dyad3])
-    cohort.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=False, show_time_estimation=False)
-    df = cohort.df
+    study = Study([dyad1, dyad2, dyad3])
+    study.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=False, show_time_estimation=False)
+    df = study.df
     assert len(df['task'].unique()) == len(dyad1.s1.task_keys)
     assert len(df['channel1'].unique()) == 2
     assert len(df['channel2'].unique()) == 2
     assert len(df['dyad'].unique()) == 3
     assert np.all(df['is_intra'] == False)
 
-def test_cohort_coherence_pandas_with_intra():
-    cohort = Cohort([Dyad(*get_test_subjects(), label='dyad1')])
-    cohort.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True, show_time_estimation=False)
-    df = cohort.df
+def test_study_coherence_pandas_with_intra():
+    study = Study([Dyad(*get_test_subjects(), label='dyad1')])
+    study.compute_wtcs(ch_match=get_test_ch_match_few(), with_intra=True, show_time_estimation=False)
+    df = study.df
     assert len(df['is_intra'].unique()) == 2
 
 
@@ -586,42 +586,42 @@ def test_wtc_downsampling():
     subject = get_test_subject()
     dyad = Dyad(subject, subject)
     n = 100
-    Cohort([dyad]).compute_wtcs(ch_match=get_test_ch_match_one(), downsample=n)
+    Study([dyad]).compute_wtcs(ch_match=get_test_ch_match_one(), downsample=n)
     assert len(dyad.wtcs[0].times) <= n
     
 
-def test_save_cohort_to_disk():
+def test_save_study_to_disk():
     subject = get_test_subject()
     dyad = Dyad(subject, subject)
-    cohort = Cohort([dyad])
+    study = Study([dyad])
 
     with tempfile.NamedTemporaryFile() as temp_file:
         file_path = temp_file.name
-        cohort.save_pickle(file_path)
-        cohort_reloaded = Cohort.from_pickle(file_path)
+        study.save_pickle(file_path)
+        study_reloaded = Study.from_pickle(file_path)
     
-    assert len(cohort_reloaded.dyads) == len(cohort.dyads)
+    assert len(study_reloaded.dyads) == len(study.dyads)
 
-def test_save_cohort_df_to_disk():
+def test_save_study_df_to_disk():
     subject = get_test_subject()
     dyad = Dyad(subject, subject)
-    cohort = Cohort([dyad])
-    cohort.compute_wtcs(show_time_estimation=False)
+    study = Study([dyad])
+    study.compute_wtcs(show_time_estimation=False)
 
     with tempfile.NamedTemporaryFile(suffix='.feather') as temp_file:
         file_path = temp_file.name
-        cohort.save_feather(file_path)
+        study.save_feather(file_path)
         df = CoherenceDataFrame.from_feather(file_path)
     
     assert np.all(df['subject1'] == subject.label)
     
-def test_cohort_run_estimation(capsys):
+def test_study_run_estimation(capsys):
     subject = get_test_subject()
     dyads = []
     for _ in range(10):
         dyads.append(Dyad(subject, subject))
-    cohort = Cohort(dyads)
-    cohort.estimate_wtcs_run_time()
+    study = Study(dyads)
+    study.estimate_wtcs_run_time()
     out = capsys.readouterr()
     assert 'time' in str(out)
 

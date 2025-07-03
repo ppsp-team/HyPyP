@@ -4,13 +4,13 @@ from .preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessor
 from .data_browser import DataBrowser
 from .subject import Subject
 from .dyad import Dyad
-from .cohort import Cohort
+from .study import Study
 from .channel_roi import ChannelROI
 
 __all__ = [
     'Subject',
     'Dyad',
-    'Cohort',
+    'Study',
     'DataBrowser',
     'BasePreprocessor',
     'BaseStep',
