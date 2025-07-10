@@ -1,17 +1,28 @@
 [project]
 name = "hypyp"
-version = "0.5.0-beta.5"
+version = "0.5.0b10"
 description = "The Hyperscanning Python Pipeline."
 readme = "README.md"
 license = "BSD-3-Clause"
-homepage = "https://github.com/ppsp-team/HyPyP"
-repository = "https://github.com/ppsp-team/HyPyP"
-documentation = "https://hypyp.readthedocs.io"
 classifiers=[
     "Development Status :: 4 - Beta",
-    "Topic :: Scientific/Engineering",
-    "License :: OSI Approved :: BSD License"]
+    "Topic :: Scientific/Engineering"]
 keywords=["hyperscanning", "neuroscience", "pipeline", "statistics", "visualization"]
+
+[project.urls]
+Homepage = "https://github.com/ppsp-team/HyPyP"
+Repository = "https://github.com/ppsp-team/HyPyP"
+Documentation = "https://hypyp.readthedocs.io"
+
+[tool.poetry]
+packages = [
+    {include = "hypyp"},
+    {include = "hypyp/ext/mpl3d"},
+    {include = "hypyp/fnirs"},
+    {include = "hypyp/shiny"},
+    {include = "hypyp/wavelet"},
+    {include = "hypyp/xdf"}
+]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
@@ -68,8 +79,8 @@ from = {format = "poetry", path = "pyproject.toml"}
 to = {format = "setuppy", path = "setup.py"}
 
 [build-system]
-requires = ["setuptools>=42"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.setuptools]
 packages = ["hypyp"]
