@@ -424,9 +424,12 @@ class BaseWavelet(ABC):
         if subject_idx == 0:
             subject_label = pair.label_s1
             ch_name = pair.label_ch1
+            # include signal length in key because it might have been croped to align y1 and y2 
+            n = len(pair.y1)
         elif subject_idx == 1:
             subject_label = pair.label_s2
             ch_name = pair.label_ch2
+            n = len(pair.y2)
         else:
             raise RuntimeError(f'subject_idx must be 0 or 1')
         
@@ -437,7 +440,7 @@ class BaseWavelet(ABC):
             raise RuntimeError(f'must have task to have unique identifiers in caching')
 
         time_range_str = f'{pair.x[0]}-{pair.x[-1]}'
-        key = f'[{subject_label}][{ch_name}][{pair.label_task}][{pair.epoch_idx}][{pair.x[0]}-{pair.x[-1]}][{time_range_str}][{obj_id}]'
+        key = f'[{subject_label}][{ch_name}][{pair.label_task}][{pair.epoch_idx}][{n}][{pair.x[0]}-{pair.x[-1]}][{time_range_str}][{obj_id}]'
         if cache_suffix != '':
             key += f'_{cache_suffix}'
         
