@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.0b13] - 2025-09-18
+
+### Security
+- Removed unused `future` package dependency (CVE-2025-50817 - High severity)
+- Verified security updates for critical dependencies:
+  - urllib3 >= 2.5.0 (addresses CVE related to redirect control)
+  - requests >= 2.32.4 (addresses .netrc credentials leak)
+  - pillow >= 11.3.0 (addresses buffer overflow vulnerability)
+
 ## [0.5.0b12] - 2025-09-18
 
 ### Added
