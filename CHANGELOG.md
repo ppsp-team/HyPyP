@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0b12] - 2025-09-18
+
+### Added
+- Python 3.13 support
+
+### Changed
+- Updated Python version constraint to support Python 3.13 (>=3.10,<3.14)
+
 ## [0.5.0b10] - 2025-07-10
 
 ### Added
