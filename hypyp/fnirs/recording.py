@@ -82,6 +82,10 @@ class Recording:
         return self.intra_wtcs is not None
 
     @property
+    def raw(self):
+        return self.mne_raw
+
+    @property
     def preprocessed(self) -> mne.io.Raw:
         self._assert_is_preprocessed()
         # We want the last step of all the preprocessing
@@ -91,6 +95,14 @@ class Recording:
     def pre(self) -> mne.io.Raw:
         return self.preprocessed
     
+    @property
+    def mne_preprocessed(self) -> mne.io.Raw:
+        return self.preprocessed
+
+    @property
+    def mne_pre(self) -> mne.io.Raw:
+        return self.pre
+
     @property
     def ordered_ch_names(self) -> List[str]:
         if self.channel_roi is None:

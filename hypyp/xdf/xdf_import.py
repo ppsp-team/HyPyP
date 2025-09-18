@@ -35,7 +35,6 @@ class XDFImport():
         verbose: bool = False,
         convert_to_mne: bool = True,
     ):
-        
         self.file_path = file_path 
         self.scale = scale
 
@@ -217,8 +216,9 @@ class XDFImport():
         
         # add annotations from markers streams to data streams
         for data_stream in self.selected_signal_streams:
-            if self.markers is not None:
-                data_stream.mne_raw.set_annotations(self.markers.as_mne_annotations(data_stream.reference_time))
+            if data_stream.markers is not None:
+                mne_annotations = data_stream.markers.as_mne_annotations(data_stream.reference_time)
+                data_stream.mne_raw.set_annotations(mne_annotations)
 
         if self.verbose:
             print("All convertion to MNE done.")
