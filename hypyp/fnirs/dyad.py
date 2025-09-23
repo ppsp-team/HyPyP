@@ -51,6 +51,7 @@ class Dyad:
         self.wtcs = None
         self.df = None
         self.is_pseudo = is_pseudo
+        self.is_intra = s1 == s2
 
         self.label = label
         if self.label == '':
@@ -269,6 +270,7 @@ class Dyad:
         only_time_range: Tuple[float,float] | None = None,
         bin_seconds: float | None = None,
         period_cuts: List[float] | None = None,
+        frequency_cuts: List[float] | None = None,
         verbose: bool = False,
         with_intra: bool = True,
         downsample: int | None = None,
@@ -284,7 +286,8 @@ class Dyad:
                                                 Defaults to None, which means all channels.
             only_time_range (Tuple[float,float] | None, optional): compute only a portion of the signal, defined as time range tuple (start, stop). Defaults to None.
             bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
-            period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
+            period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Use this OR frequency_cuts, not both. Defaults to None.
+            frequency_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Use this OR period_cuts, not both. Defaults to None.
             verbose (bool, optional): verbose flag. Defaults to False.
             with_intra (bool, optional): compute intra-subject as well. Defaults to False.
             downsample (int | None, optional): downsample in time the resulting WTC. Useful to save memory space and faster display. Defaults to None.
@@ -296,23 +299,35 @@ class Dyad:
         if wavelet is None:
             wavelet = ComplexMorletWavelet()
 
+        if period_cuts is not None and frequency_cuts is not None:
+            raise RuntimeError('Cannot specify both period_cuts and frequency_cuts')
+
         self.wtcs = []
 
         pairs = self.get_pairs(self.s1, self.s2, ch_match=ch_match, is_pseudo=self.is_pseudo)
 
-        for pair in pairs:
-            if verbose:
-                print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
-            if only_time_range is not None:
-                pair = pair.sub(only_time_range)
-            wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts)
-            if downsample is not None:
-                wtc.downsample_in_time(downsample)
+        if self.is_intra:
+            # Force with_intra when subject 1 is the same as subject 2
+            with_intra = True
+        else:
+            for pair in pairs:
+                if verbose:
+                    print(f'Running Wavelet Coherence for dyad "{self.label}" on pair "{pair.label}"')
+                if only_time_range is not None:
+                    pair = pair.sub(only_time_range)
+                wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, frequency_cuts=frequency_cuts)
+                if downsample is not None:
+                    wtc.downsample_in_time(downsample)
 
-            self.wtcs.append(wtc)
+                self.wtcs.append(wtc)
 
         if with_intra:
-            for i, recording in enumerate([self.s1, self.s2]):
+            if self.is_intra:
+                subjects = [self.s1]
+            else:
+                subjects = [self.s1, self.s2]
+
+            for i, recording in enumerate(subjects):
                 recording.intra_wtcs = []
                 # if we have different channels for each recording, the intra wtc should use only the ones for this subject
                 if isinstance(ch_match, tuple):
@@ -327,7 +342,7 @@ class Dyad:
                         print(f'Running Wavelet Coherence intra-subject "{recording.subject_label}" on pair "{pair.label}"')
                     if only_time_range is not None:
                         pair = pair.sub(only_time_range)
-                    wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts)
+                    wtc = wavelet.wtc(pair, bin_seconds=bin_seconds, period_cuts=period_cuts, frequency_cuts=frequency_cuts)
                     if downsample is not None:
                         wtc.downsample_in_time(downsample)
                     recording.intra_wtcs.append(wtc)

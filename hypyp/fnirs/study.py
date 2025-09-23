@@ -73,6 +73,7 @@ class Study():
         only_time_range: Tuple[float,float]|None = None,
         bin_seconds: float|None = None,
         period_cuts: List[float]|None = None,
+        frequency_cuts: List[float]|None = None,
         verbose: bool = False,
         with_intra: bool = True,
         downsample: int|None = None,
@@ -90,6 +91,7 @@ class Study():
             only_time_range (Tuple[float,float] | None, optional): compute only a portion of the signal, defined as time range. Defaults to None.
             bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
             period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
+            frequency_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
             verbose (bool, optional): verbose flag. Defaults to False.
             with_intra (bool, optional): compute intra-subject as well. Defaults to False.
             downsample (int | None, optional): downsample in time the resulting WTC. Useful to save memory space and faster display. Defaults to None.
@@ -109,6 +111,7 @@ class Study():
                 only_time_range,
                 bin_seconds,
                 period_cuts,
+                frequency_cuts,
                 verbose,
                 with_intra,
                 downsample,

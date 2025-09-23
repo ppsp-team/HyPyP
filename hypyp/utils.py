@@ -821,3 +821,19 @@ def generate_random_label(length:int) -> str:
     """
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(length))
+
+def key_dict_as_data_frame(my_dict, col_names=[]) -> pd.DataFrame:
+    d = dict()
+    col = col_names[0] if len(col_names) > 0 else 'key'
+
+    d[col] = list(my_dict.keys())
+    values = list(my_dict.values())
+
+    if len(values) == 0:
+        return pd.DataFrame()
+
+    for i, k in enumerate(values[0].keys()):
+        col = col_names[i+1] if len(col_names) > 1 else k
+        d[col] = [v[k] for v in values]
+    
+    return pd.DataFrame(d)
