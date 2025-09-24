@@ -186,4 +186,4 @@ widgetsnbextension==3.6.10 ; python_version >= "3.10" and python_version < "3.14
 wrapt==1.17.2 ; python_version >= "3.10" and python_version < "3.14"
 xarray==2025.6.1 ; python_version >= "3.10" and python_version < "3.14"
 xmltodict==0.14.2 ; python_version >= "3.10" and python_version < "3.14"
-hypyp==0.5.0b13
+hypyp==0.5.0b14
