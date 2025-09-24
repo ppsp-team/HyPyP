@@ -238,3 +238,32 @@ def test_downsampling_threshold():
     
 def test_random_label():
     assert len(utils.generate_random_label(10)) == 10
+
+def test_key_dict_as_data_frame():
+    my_dict = {
+        'foo': {
+            'col1': '1',
+            'col2': '2',
+        },
+        'bar': {
+            'col1': '1',
+            'col2': '2',
+        },
+    }
+    df = utils.key_dict_as_data_frame(my_dict)
+
+    assert df.columns[0] == 'key'
+    assert df.columns[1] == 'col1'
+    assert df.columns[2] == 'col2'
+    assert df['key'][0] == 'foo'
+    assert df['col1'][0] == '1'
+
+    # Using column names
+    df = utils.key_dict_as_data_frame(my_dict, col_names=['a', 'b', 'c'])
+    assert df.columns[0] == 'a'
+    assert df.columns[1] == 'b'
+    assert df.columns[2] == 'c'
+    assert df['a'][0] == 'foo'
+    assert df['b'][0] == '1'
+
+    

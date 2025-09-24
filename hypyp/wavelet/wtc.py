@@ -9,11 +9,13 @@ from .pair_signals import PairSignals
 from .coherence_data_frame import CoherenceDataFrame
 from ..plots import plot_wavelet_transform_weights
 from ..utils import downsample_in_time
+from .cwt import CWT
 
 MASK_THRESHOLD = 0.5
 
 class WTC:
     W: np.ndarray
+    cwts: Tuple[CWT]
 
     times: np.ndarray
     scales: np.ndarray
@@ -65,8 +67,10 @@ class WTC:
         pair: PairSignals,
         bin_seconds:float|None=None,
         period_cuts:List[float]|None=None,
+        frequency_cuts:List[float]|None=None,
         wavelet_library:str='',
         wavelet_name_with_args:str='',
+        cwts:Tuple[CWT, CWT]=None,
     ):
         """
         The WTC object holds the results of a Wavelet Transform Coherence
@@ -79,11 +83,13 @@ class WTC:
             coi (np.ndarray): cone of influence
             pair (PairSignals): pair of signals used
             bin_seconds (float | None, optional): split in bins every X seconds. Defaults to None.
-            period_cuts (List[float] | None, optional): split in bins in frequency domain at the specified periods. Defaults to None.
+            period_cuts (List[float] | None, optional): split in bins in frequency domain at the specified periods. Use this OR frequency_cuts Defaults to None.
+            frequency_cuts (List[float] | None, optional): split in bins in frequency domain at the specified frequencies. Use this OR period_cuts. Defaults to None.
             wavelet_library (str, optional): name of the library/implementation used. Defaults to ''.
             wavelet_name (str, optional): name of the wavelet (includes wavelet parameters). Defaults to ''.
         """
         self.W = W
+        self.cwts = cwts
 
         self.times = times
         self.scales = scales
@@ -117,14 +123,41 @@ class WTC:
         self.nyquist = self.sfreq / 2
 
         self.bin_seconds = bin_seconds
-        self.period_cuts = period_cuts
-        self.frequency_cuts = 1 / np.array(period_cuts) if period_cuts is not None else None
+        
+        if period_cuts is not None and frequency_cuts is not None:
+            raise RuntimeError('Cannot specify both period_cuts and frequency_cuts')
+
+        if frequency_cuts is not None:
+            self.period_cuts = list(1 / np.array(frequency_cuts))
+        elif period_cuts is not None:
+            self.period_cuts = period_cuts
+        else:
+            self.period_cuts = None
+        
         self.coherence_bins = []
 
         self.wavelet_library = wavelet_library
         self.wavelet_name_with_args = wavelet_name_with_args
 
         self._compute_coherence_in_coi()
+
+    @property
+    def frequency_cuts(self):
+        if self.period_cuts is None:
+            return None
+        return 1 / np.array(self.period_cuts)
+    
+    @property
+    def cwt1(self):
+        if self.cwts is None:
+            return None
+        return self.cwts[0]
+    
+    @property
+    def cwt2(self):
+        if self.cwts is None:
+            return None
+        return self.cwts[1]
     
     @property
     def p_ranges(self):

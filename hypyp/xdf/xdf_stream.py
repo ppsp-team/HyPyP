@@ -93,7 +93,7 @@ class XDFStream():
             return type_lower
 
         # A few extra cases for convenience
-        if type_lower == 'fnirs':
+        if type_lower == 'fnirs' or type_lower == 'nirs':
             return 'fnirs_cw_amplitude'
 
         if type_lower == 'markers' or type_lower == 'stim':
@@ -140,6 +140,7 @@ class XDFStream():
         self.mne_type_map = mne_type_map
         self.metadata_desc = {}
         self.mne_raw = None
+        self.markers = None
 
         if self.pyxdf_stream["info"]["desc"] and self.pyxdf_stream["info"]["desc"][0]:
             self.metadata_desc = self.pyxdf_stream["info"]["desc"][0]

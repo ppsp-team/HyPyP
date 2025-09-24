@@ -8,8 +8,12 @@ from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
 
 # Define a custom locator and formatter for periods
-def custom_locator_freqs(ymin, ymax):
+def custom_locator_yticks(ymin, ymax):
     ticks = []
+
+    if ymin < 1:
+        values_01 = np.arange(math.ceil(ymin*10), 10) / 10
+        ticks.extend(values_01)
     ticks.extend(range(math.ceil(ymin), 11))
     ticks.extend(range(12, 21, 2))
     ticks.extend(range(25, 40 + 1, 5))
@@ -23,13 +27,15 @@ def plot_wavelet_transform_weights(
     coif,
     sfreq,
     bin_seconds=None,
-    frequency_cuts=None,
+    frequency_cuts=[],
     title=None,
     ax=None,
+    use_periods=False,
     show_colorbar=True,
     show_cone_of_influence=True,
     show_nyquist=True,
     show_bins=True,
+    cmap='jet',
 ):
     # create the figure if needed
     if ax is None:
@@ -37,43 +43,63 @@ def plot_wavelet_transform_weights(
     else:
         fig = ax.get_figure()
     
-    xx, yy = np.meshgrid(times, freqs)
+    nyquist = np.ones((len(times),)) * (sfreq / 2)
+
+    if use_periods:
+        periods = 1 / freqs
+        y_items = periods
+        coi_y = 1 / coif
+        coi_y2 = np.max(periods)
+        nyquist_y = 1 / nyquist
+        nyquist_y2 = np.min(periods)
+        y_lims = [periods.max(), periods.min()]
+        y_cuts = 1 / np.array(frequency_cuts)
+        y_label = 'Period (s)'
+    else:
+        y_items = freqs
+        coi_y = coif
+        coi_y2 = np.min(freqs)
+        nyquist_y = nyquist
+        nyquist_y2 = np.max(freqs)
+        y_lims = [freqs.min(), freqs.max()]
+        y_cuts = frequency_cuts
+        y_label = 'Frequency (Hz)'
+
+    xx, yy = np.meshgrid(times, y_items)
     
     #im = ax.pcolor(xx, yy, W, vmin=0, vmax=1)
-    im = ax.pcolor(xx, yy, np.abs(W))
+    im = ax.pcolor(xx, yy, np.abs(W), cmap=cmap)
     ax.set_yscale('log')
     ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Frequency (Hz)')
+    ax.set_ylabel(y_label)
 
     color_invalid = 'C0'
     # Cone of influence
     if show_cone_of_influence:
-        ax.plot(times, coif, color=color_invalid)
-        ax.fill_between(times, coif, y2=np.min(freqs), step="mid", color=color_invalid, alpha=0.4)
+        ax.plot(times, coi_y, color=color_invalid)
+        ax.fill_between(times, coi_y, y2=coi_y2, step="mid", color=color_invalid, alpha=0.4)
 
     if show_nyquist:
-        nyquist = np.ones((len(times),)) * (sfreq / 2)
-        ax.plot(times, nyquist, color=color_invalid)
-        ax.fill_between(times, nyquist, y2=np.max(freqs), step="mid", color=color_invalid, alpha=0.4)
+        ax.plot(times, nyquist_y, color=color_invalid)
+        ax.fill_between(times, nyquist_y, y2=nyquist_y2, step="mid", color=color_invalid, alpha=0.4)
     
     if show_bins:
         if bin_seconds is not None:
             for time_cut in np.arange(0, max(times), bin_seconds):
                 plt.axvline(x=time_cut, color='red', lw=0.5)
 
-        if frequency_cuts is not None:
-            for frequency_cut in frequency_cuts:
-                plt.axhline(y=frequency_cut, color='red', lw=0.5)
+        for y_cut in y_cuts:
+            plt.axhline(y=y_cut, color='red', lw=0.5)
     
     # Dynamically set ticks based on the current range
     ymin, ymax = ax.get_ylim()  # Get the y-axis limits
-    ax.set_yticks(custom_locator_freqs(ymin, ymax))
+    ax.set_yticks(custom_locator_yticks(ymin, ymax))
 
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y,_: f"{int(y)}" if y >= 1 else f"{y:.1f}"))
     #ax.yaxis.get_major_formatter().set_scientific(False)  # Disable scientific notation
 
     ax.set_xlim(times.min(), times.max())
-    ax.set_ylim(freqs.min(), freqs.max())
+    ax.set_ylim(*y_lims)
 
     if show_colorbar:
         fig.colorbar(im)
@@ -132,6 +158,9 @@ def plot_coherence_matrix(
     if np.all(df['is_intra']):
         fig, ax = plt.subplots(1, 1, figsize=(8, 8), sharex=False, sharey=False)
         subplot_heatmap_from_pivot(pivot_s1.rename_axis(index=s1_label, columns=s1_label), ordered_fields=ordered_fields, ax=ax)
+    elif not np.any(df['is_intra']):
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8), sharex=False, sharey=False)
+        subplot_heatmap_from_pivot(pivot_dyad.rename_axis(index=s1_label, columns=s2_label), ordered_fields=ordered_fields, ax=ax)
     else:
         fig, axes = plt.subplots(2, 2, figsize=(8, 8), sharex=False, sharey=False)
         subplot_heatmap_from_pivot(pivot_s1.rename_axis(index=s1_label, columns=s1_label), ordered_fields=ordered_fields, ax=axes[0,0]) # top left

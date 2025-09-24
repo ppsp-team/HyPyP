@@ -105,6 +105,18 @@ def test_wtc(wavelet_class):
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert res.coherence_metric > 0
     assert res.coherence_metric < 1
+
+@pytest.mark.parametrize("wavelet_class", [
+   ComplexMorletWavelet, 
+   ComplexGaussianWavelet, 
+])
+def test_cwts(wavelet_class):
+    wavelet = wavelet_class(disable_caching=True)
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
+    res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
+    assert res.cwt1 is not None
+    assert res.cwt2 is not None
     
 def test_cache_key():
     assert 'key_foo_bar' in ComplexMorletWavelet()._get_cache_key('foo', 'bar')
@@ -278,6 +290,19 @@ def test_wtc_period_slicing():
     # first and last bins should be excluded (nan) since they do not have enough unmasked values
     masked = df['coherence_masked']
     assert masked[0] < masked[1]
+
+def test_wtc_period_vs_frequency_slicing():
+    tmax = 100
+    n = 1000
+    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    wavelet = ComplexMorletWavelet(disable_caching=True)
+    period_cuts = np.array([3, 5, 10])
+    frequency_cuts = 1 / period_cuts
+    period_res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), period_cuts=period_cuts)
+    frequency_res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), frequency_cuts=frequency_cuts)
+
+    assert np.all(period_res.W == frequency_res.W)
 
 def test_wtc_time_series():
     signal1 = SyntheticSignal().add_noise()

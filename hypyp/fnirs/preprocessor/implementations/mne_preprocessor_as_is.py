@@ -29,7 +29,7 @@ class MnePreprocessorAsIs(BasePreprocessor[mne.io.Raw]):
         if DataBrowser.is_path_snirf(path):
             return mne.io.read_raw_snirf(path, preload=True, verbose=verbose)
 
-        return None
+        raise ValueError(f"No reader for file {path}")
     
     def run(self, raw: mne.io.Raw, verbose: bool = False) -> list[MneStep]:
         if verbose:

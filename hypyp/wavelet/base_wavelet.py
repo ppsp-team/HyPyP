@@ -124,7 +124,7 @@ class BaseWavelet(ABC):
         pass
     
     @abstractmethod
-    def cwt(self, y, dt) -> CWT:
+    def cwt(self, y, dt, label='') -> CWT:
         pass
     
     @property
@@ -164,6 +164,7 @@ class BaseWavelet(ABC):
             pair: PairSignals,
             bin_seconds:float|None=None,
             period_cuts:List[float]|None=None,
+            frequency_cuts:List[float]|None=None,
             cache_suffix:str='') -> WTC:
         """
         Compute the Wavalet Transform Coherence for a pair of signals. 
@@ -179,6 +180,7 @@ class BaseWavelet(ABC):
             pair (PairSignals): a pair of signals on which to compute coherence
             bin_seconds (float | None, optional): split the resulting WTC in time bins for balancing weights. Defaults to None.
             period_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
+            frequency_cuts (List[float] | None, optional): split the resulting WTC in period/frequency bins for balancing weights and finer analysis. Defaults to None.
             cache_suffix (str, optional): string to add to the caching key. Defaults to ''.
 
         Returns:
@@ -203,10 +205,10 @@ class BaseWavelet(ABC):
         y2 = (y2 - y2.mean()) / y2.std()
     
         cwt1_cached = self._get_cache_item(self._get_cache_key_pair(pair, 0, 'cwt', cache_suffix))
-        cwt1: CWT = self.cwt(y1, dt) if cwt1_cached is None else cwt1_cached
+        cwt1: CWT = self.cwt(y1, dt, label=pair.label_ch1) if cwt1_cached is None else cwt1_cached
 
         cwt2_cached = self._get_cache_item(self._get_cache_key_pair(pair, 1, 'cwt', cache_suffix))
-        cwt2: CWT = self.cwt(y2, dt) if cwt2_cached is None else cwt2_cached
+        cwt2: CWT = self.cwt(y2, dt, label=pair.label_ch2) if cwt2_cached is None else cwt2_cached
 
         if (cwt1.scales != cwt2.scales).any():
             raise RuntimeError('The two CWT have different scales')
@@ -260,8 +262,10 @@ class BaseWavelet(ABC):
             pair,
             bin_seconds=bin_seconds,
             period_cuts=period_cuts,
+            frequency_cuts=frequency_cuts,
             wavelet_library=self.wavelet_library,
             wavelet_name_with_args=self.wavelet_name_with_args,
+            cwts=(cwt1, cwt2),
         )
 
     def _update_cache_if_none(self, key, value):

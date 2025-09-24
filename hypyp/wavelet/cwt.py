@@ -12,8 +12,9 @@ class CWT:
     frequencies: np.ndarray
     coi: np.ndarray # Cone of influence, in periods
     coif: np.ndarray # Cone of influence, in frequencies
+    label: str
 
-    def __init__(self, weights:np.ndarray, times:np.ndarray, scales:np.ndarray, periods:np.ndarray, coi:np.ndarray):
+    def __init__(self, weights:np.ndarray, times:np.ndarray, scales:np.ndarray, periods:np.ndarray, coi:np.ndarray, label:str=''):
         """
         The CWT object holds the results of a Continuous Wavelet Transform 
 
@@ -36,6 +37,7 @@ class CWT:
 
         self.coi = coi
         self.coif = 1 / coi
+        self.label = label
 
     def plot(self, **kwargs) -> Figure:
         """
@@ -44,6 +46,6 @@ class CWT:
         Returns:
             Figure: matplotlib.Figure
         """
-        return plot_wavelet_transform_weights(self.W, self.times, self.frequencies, self.coif, self.sfreq, **kwargs)
+        return plot_wavelet_transform_weights(self.W, self.times, self.frequencies, self.coif, self.sfreq, title=f"CWT of {self.label}", **kwargs)
 
 
