@@ -726,7 +726,8 @@ def epochs_from_tasks(raw: mne.io.Raw, tasks: TaskList, verbose: bool = False) -
             t_durations.append(t_duration)
             task_events.append([t_start, 0, onset_event_id])
 
-        all_epochs.append(mne.Epochs(raw,
+        all_epochs.append(mne.Epochs(
+            raw,
             task_events,
             event_id={ task_key: onset_event_id},
             tmin=0,

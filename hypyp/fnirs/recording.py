@@ -75,6 +75,10 @@ class Recording:
         if not self.intra_wtcs:
             raise RuntimeError('Recording has no intra_wtcs. Did you run compute_wtcs(with_intra=True) ?')
 
+    @staticmethod
+    def get_default_preprocessor():
+        return MnePreprocessorAsIs()
+    
     @property
     def task_keys(self):
         return [task.name for task in self.tasks]
@@ -153,6 +157,13 @@ class Recording:
             steps_dict[step.key] = step.desc
         return steps_dict
     
+    def _fill_subject_label(self):
+        if self.subject_label == '':
+            self.subject_label = self.mne_raw.info['subject_info']['his_id']
+        
+        if self.subject_label == '':
+            self.subject_label = generate_random_label(10)
+    
     def load_file(
         self,
         filepath:str,
@@ -176,7 +187,7 @@ class Recording:
             self: the Recording object itself. Useful for chaining operations
         """
         if preprocessor is None:
-            preprocessor = MnePreprocessorAsIs()
+            preprocessor = Recording.get_default_preprocessor()
 
         if not Path(filepath).is_file():
             raise RuntimeError(f'Cannot find file {filepath}')
@@ -184,14 +195,41 @@ class Recording:
         self.filepath = filepath        
         self.mne_raw = preprocessor.read_file(filepath, verbose=verbose)
 
-        if self.subject_label == '':
-            self.subject_label = self.mne_raw.info['subject_info']['his_id']
-        
-        if self.subject_label == '':
-            self.subject_label = generate_random_label(10)
+        self._fill_subject_label()
 
         if preprocess:
             self.preprocess(preprocessor, verbose=verbose)
+
+        return self
+    
+    def load_raw(
+        self,
+        raw:mne.io.Raw,
+        preprocessor:BasePreprocessor|None=None,
+        preprocess=True,
+        verbose=False
+    ):
+        """
+        Use an existing Raw object to load the data into a Recording
+
+        Args:
+            raw (mne.io.Raw): preloaded mne.io.Raw object
+            preprocessor (BasePreprocess, optional): which preprocessor to use. Defaults to MnePreprocessUpstream which only load the data as-is.
+            preprocess (bool, optional): if the preprocessing should be done right away, or if the file should only be loaded and the preprocessing would be run later. Defaults to True.
+            verbose (bool, optional): verbosity flag. Defaults to False.
+
+        Returns:
+            self: the Recording object itself. Useful for chaining operations
+        """
+        if preprocessor is None:
+            preprocessor = Recording.get_default_preprocessor()
+
+        self.mne_raw = raw
+        self._fill_subject_label()
+
+        if preprocess:
+            self.preprocess(preprocessor, verbose=verbose)
+
         return self
     
     def preprocess(self, preprocessor:BasePreprocessor, verbose:bool=False):

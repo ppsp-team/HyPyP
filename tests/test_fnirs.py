@@ -97,6 +97,13 @@ def test_preprocess_step():
 # Subject Recordings
 #
 
+def test_load_from_raw():
+    raw = mne.io.read_raw_snirf(snirf_file1, preload=True)
+    recording = Recording().load_raw(raw)
+    assert recording.subject_label == 'default'
+    assert len(recording.mne_raw.times) == len(raw.times)
+
+
 def test_recording():
     filepath = snirf_file1
     recording = Recording(subject_label='my_subject')
