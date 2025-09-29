@@ -5,7 +5,8 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from ..base_classes.base_dyad import BaseDyad
+# TODO must not import eeg_*, should have a common parent folder
+from ..eeg_classes.base_dyad import BaseDyad
 from ..wavelet.base_wavelet import BaseWavelet
 from ..wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
 from ..wavelet.wtc import WTC
