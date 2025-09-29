@@ -159,7 +159,8 @@ def ICA_choice_comp(icas: List[ICA], epochs: List[mne.Epochs]) -> List[mne.Epoch
 
 
 def ICA_apply(icas: List[ICA], subject_id: int, component_id: int, 
-             epochs: List[mne.Epochs], plot: bool = True) -> List[mne.Epochs]:
+             epochs: List[mne.Epochs], plot: bool = True,
+             label: str = 'blink', ch_type: str = 'eeg', threshold: float = 0.9) -> List[mne.Epochs]:
     """
     Apply ICA artifact rejection using a template component.
     
@@ -183,6 +184,8 @@ def ICA_apply(icas: List[ICA], subject_id: int, component_id: int,
         
     plot : bool, optional
         Whether to plot the identified components (default=True)
+    
+    TODO add new arguments
     
     Returns
     -------
@@ -211,9 +214,9 @@ def ICA_apply(icas: List[ICA], subject_id: int, component_id: int,
     # applying corrmap with at least 1 component detected for each subj
     corrmap(icas,
         template=template_eog_component,
-        threshold=0.9,
-        label='blink',
-        ch_type='eeg',
+        threshold=threshold,
+        label=label,
+        ch_type=ch_type,
         plot=plot,
     )
 
@@ -222,11 +225,12 @@ def ICA_apply(icas: List[ICA], subject_id: int, component_id: int,
 
     # selecting ICA components after viz
     for ica in icas:
-        ica.exclude = ica.labels_['blink']
+        ica.exclude = ica.labels_[label]
 
     # applying ica on clean_epochs
     # for each participant
     for subject_id, ica in zip(range(0, len(epochs)), icas):
+        print("BBBBBBBBBBBBBBBB")
         # taking all channels to apply ICA
         epochs_subj = mne.Epochs.copy(epochs[subject_id])
         bads_keep = epochs_subj.info['bads']
