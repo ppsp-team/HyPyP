@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from ..base_classes.base_dyad import BaseDyad
 from ..wavelet.base_wavelet import BaseWavelet
 from ..wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
 from ..wavelet.wtc import WTC
@@ -26,7 +27,7 @@ PairChannelMatchType = PairChannelMatchSingleType | Tuple[PairChannelMatchSingle
 
 MIN_SECTION_LENGTH = 10
 
-class Dyad:
+class Dyad(BaseDyad):
     """
     The Dyad object is a pair of recordings (per subject) of an hyperscanning recording.
     Their recorded channels should be time aligned.
