@@ -230,7 +230,6 @@ def ICA_apply(icas: List[ICA], subject_id: int, component_id: int,
     # applying ica on clean_epochs
     # for each participant
     for subject_id, ica in zip(range(0, len(epochs)), icas):
-        print("BBBBBBBBBBBBBBBB")
         # taking all channels to apply ICA
         epochs_subj = mne.Epochs.copy(epochs[subject_id])
         bads_keep = epochs_subj.info['bads']
