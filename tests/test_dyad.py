@@ -1,3 +1,4 @@
+import pytest
 import os
 
 import mne
@@ -78,23 +79,23 @@ def test_dyad_create_from_epo_file():
     dyad = EEGDyad.from_files(epo_file1, epo_file2)
     assert dyad.epo1.get_data(copy=False).shape == dyad.epo2.get_data(copy=False).shape
 
-def test_ica_fit():
+def test_prep_ica_fit():
     dyad = EEGDyad.from_files(epo_file1, epo_file2)
     assert dyad.icas == None
-    dyad.ica_fit(2)
+    dyad.prep_ica_fit(2)
     assert len(dyad.icas) == 2
 
-def test_ica_apply():
+def test_prep_ica_apply():
     dyad = EEGDyad.from_files(epo_file1, epo_file2)
-    dyad.ica_fit(2)
+    dyad.prep_ica_fit(2)
     subject_idx = 0
     component_idx = 0
 
     data_before = dyad.epochs_merged.get_data()
-    dyad.ica_apply(subject_idx, component_idx, threshold=0.01, label='dummy')
+    dyad.prep_ica_apply(subject_idx, component_idx, threshold=0.01, label='dummy')
     data_after = dyad.epochs_merged.get_data()
 
-    assert len(dyad.icas[0].labels_['dummy']) > 0
+    assert len(dyad.ica1.labels_['dummy']) > 0
     # if some component has been removed, we should have a lower amplitude
     assert np.sum(np.abs(data_before)) > np.sum(np.abs(data_after))
 
@@ -103,16 +104,34 @@ def test_pipeline_track_steps():
     assert len(dyad.steps) == 1
 
     assert dyad.epos == dyad.steps[-1].epos
-    dyad.ica_fit(2)
-    dyad.ica_apply(0, 0, label='dummy')
+    dyad.prep_ica_fit(2)
+    dyad.prep_ica_apply(0, 0, label='dummy')
     assert len(dyad.steps) == 2
     # Make sure we kept all the stages
     assert dyad.epos == dyad.steps[-1].epos
 
-def test_autoreject():
+def test_prep_autoreject():
     dyad = EEGDyad.from_files(epo_file1, epo_file2)
     # Truncate to 20 epochs to run faster
     dyad.epos = [epo[:20] for epo in dyad.epos]
-    dyad.run_autoreject()
+    dyad.prep_autoreject()
     assert dyad.dic_ar['dyad'] > 0
 
+def test_analyse_pow():
+    dyad = EEGDyad.from_files(epo_file1, epo_file2)
+    assert dyad.psds is None
+    dyad.analyse_pow(8, 12)
+    assert len(dyad.psds) == 2
+    assert dyad.psd1.freqs[0] == 8
+    assert dyad.psd1.freqs[-1] == 12
+
+def test_analyse_connectivity():
+    dyad = EEGDyad.from_files(epo_file1, epo_file2)
+    dyad.analyse_connectivity_ccorr()
+    assert dyad.connectivity['ccorr'] is not None
+    conn = dyad.connectivity['ccorr']
+    assert conn.mode == 'ccorr'
+    n_ch = len(dyad.epo1.ch_names)
+    # TODO improve adressing
+    assert conn.inter[0].values.shape == (n_ch, n_ch)
+    assert conn.intras[0][0].values.shape == (n_ch, n_ch)
