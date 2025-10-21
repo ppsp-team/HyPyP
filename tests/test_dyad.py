@@ -91,9 +91,9 @@ def test_prep_ica_apply():
     subject_idx = 0
     component_idx = 0
 
-    data_before = dyad.epochs_merged.get_data()
+    data_before = dyad.epochs_merged.get_data(copy=False)
     dyad.prep_ica_apply(subject_idx, component_idx, threshold=0.01, label='dummy')
-    data_after = dyad.epochs_merged.get_data()
+    data_after = dyad.epochs_merged.get_data(copy=False)
 
     assert len(dyad.ica1.labels_['dummy']) > 0
     # if some component has been removed, we should have a lower amplitude
@@ -125,13 +125,28 @@ def test_analyse_pow():
     assert dyad.psd1.freqs[0] == 8
     assert dyad.psd1.freqs[-1] == 12
 
-def test_analyse_connectivity():
+
+@pytest.mark.parametrize('mode', [
+   'plv',
+   'envelope_corr',
+   'pow_corr',
+   'coh',
+   'imaginary_coh',
+   'ccorr',  
+   'pli',
+   'wpli',
+])  
+def test_analyse_connectivity(mode):
     dyad = EEGDyad.from_files(epo_file1, epo_file2)
-    dyad.analyse_connectivity_ccorr()
-    assert dyad.connectivity['ccorr'] is not None
-    conn = dyad.connectivity['ccorr']
-    assert conn.mode == 'ccorr'
+    dyad.compute_complex_signal_freq_bands()
+    dyad.analyse_connectivity(mode)
+    assert dyad.connectivities[mode] is not None
+    conn = dyad.connectivities[mode]
+    assert conn.mode == mode
     n_ch = len(dyad.epo1.ch_names)
     # TODO improve adressing
     assert conn.inter[0].values.shape == (n_ch, n_ch)
-    assert conn.intras[0][0].values.shape == (n_ch, n_ch)
+    assert conn.intra1[0].values.shape == (n_ch, n_ch)
+    assert conn.intra2[0].values.shape == (n_ch, n_ch)
+
+    assert conn.intra1[0].ch_names[0] == dyad.epo1.ch_names
