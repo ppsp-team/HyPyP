@@ -60,6 +60,7 @@ class Connectivities():
         return self.intras[1]
     
     def get_connectivities_based_on_subject_id(self, subject_id: int = None):
+        # TODO: should subject_id be zero based or one based for
         if subject_id is None:
             return self.inter
 
