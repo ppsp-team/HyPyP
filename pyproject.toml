@@ -21,8 +21,7 @@ packages = [
     {include = "hypyp/fnirs"},
     {include = "hypyp/shiny"},
     {include = "hypyp/wavelet"},
-    {include = "hypyp/xdf"}
-]
+    {include = "hypyp/xdf"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"

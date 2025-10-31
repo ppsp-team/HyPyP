@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 
-from hypyp.signal import SyntheticSignal
+from hypyp.signal.synthetic_signal import SyntheticSignal
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.base_wavelet import BaseWavelet
 from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexGaussianWavelet, ComplexMorletWavelet

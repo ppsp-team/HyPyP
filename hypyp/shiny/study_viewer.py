@@ -13,7 +13,7 @@ root = os.path.join(Path(__file__).parent, '..', '..')
 sys.path.append(root)
 import hypyp.plots
 
-from hypyp.fnirs import Study, Dyad
+from hypyp.fnirs import FNIRSStudy, FNIRSDyad
 from hypyp.wavelet.base_wavelet import WTC
 
 HARDCODED_RESULTS_PATH = "./data/results"
@@ -147,15 +147,15 @@ app_ui = ui.page_fluid(
 
 def server(input: Inputs, output: Outputs, session: Session):
     @reactive.calc
-    def get_study() -> Study:
+    def get_study() -> FNIRSStudy:
         study_file_name = input.select_study_file()
         if study_file_name == '':
             return None
         study_file_path = os.path.join(HARDCODED_RESULTS_PATH, study_file_name)
-        return Study.from_pickle(study_file_path)
+        return FNIRSStudy.from_pickle(study_file_path)
 
     @reactive.calc
-    def get_dyad() -> Dyad:
+    def get_dyad() -> FNIRSDyad:
         study = get_study()
         if study is None:
             return None

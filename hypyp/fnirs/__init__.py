@@ -1,21 +1,17 @@
-from .preprocessor.base_preprocessor import BasePreprocessor, BaseStep
-from .preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo, MneStep
+from .preprocessor.base_preprocessor import BasePreprocessor
+from .preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo
 from .preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
-from .data_browser import DataBrowser
-from .recording import Recording
-from .dyad import Dyad
-from .study import Study
-from .channel_roi import ChannelROI
+from .fnirs_recording import FNIRSRecording
+from .fnirs_dyad import FNIRSDyad
+from .fnirs_study import FNIRSStudy
+from .fnirs_step import FNIRSStep
 
 __all__ = [
-    'Recording',
-    'Dyad',
-    'Study',
-    'DataBrowser',
+    'FNIRSRecording',
+    'FNIRSDyad',
+    'FNIRSStudy',
+    'FNIRSStep',
     'BasePreprocessor',
-    'BaseStep',
     'MnePreprocessorAsIs',
     'MnePreprocessorRawToHaemo',
-    'MneStep',
-    'ChannelROI',
 ]
