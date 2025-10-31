@@ -6,6 +6,7 @@ from mne.preprocessing import ICA
 from .eeg_step import PREPROCESS_STEP_AR, PREPROCESS_STEP_ICA_FIT, PREPROCESS_STEP_RAW, EEGStep, EEGDyadStep
 
 from ..dataclasses.psd import PSD
+from ..dataclasses.freq_band import FreqBands
 from ..connectivity.connectivities import Connectivities
 from ..connectivity.connectivity import Connectivity
 from ..core.base_dyad import BaseDyad
@@ -222,7 +223,7 @@ class EEGDyad(BaseDyad):
         return self
     
 
-    def compute_complex_signal_freq_bands(self, freq_bands = None, **kwargs):
+    def compute_complex_signal_freq_bands(self, freq_bands: FreqBands = None, **kwargs):
         if freq_bands is not None:
             kwargs['freq_bands'] = freq_bands
 

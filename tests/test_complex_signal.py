@@ -3,7 +3,7 @@ import pytest
 import mne
 import numpy as np
 
-from hypyp.signal.complex_signal import ComplexSignal, FREQ_BANDS_ALPHAS
+from hypyp.signal.complex_signal import ComplexSignal, DEFAULT_FREQ_BANDS
 from hypyp.signal.synthetic_signal import SyntheticSignal
 
 def test_complex_signal():
@@ -20,7 +20,7 @@ def test_complex_signal():
     epos = [mne.make_fixed_length_epochs(raw, 2, preload=True) for raw in [raw1, raw2]]
 
     n_epochs = len(epos[0])
-    n_freq_bands = len(FREQ_BANDS_ALPHAS.keys())
+    n_freq_bands = len(DEFAULT_FREQ_BANDS)
     n_times = len(epos[0].times)
 
     complex_signal = ComplexSignal(epos, sfreq)

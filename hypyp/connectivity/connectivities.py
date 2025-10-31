@@ -3,6 +3,7 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 
+from ..dataclasses.freq_band import FreqBands
 from .connectivity import Connectivity
 from ..plots import plot_coherence_matrix
 
@@ -12,9 +13,9 @@ class Connectivities():
     intras: list[list[Connectivity]]
 
     def __init__(
-            self,
+        self,
         mode: str,
-        freq_bands: OrderedDict,
+        freq_bands: FreqBands,
         matrix: np.ndarray,
         ch_names: list[str] | tuple[list[str], list[str]],
     ):
@@ -28,15 +29,15 @@ class Connectivities():
         if not isinstance(ch_names, tuple):
             ch_names = (ch_names, ch_names)
 
-        for i, k in enumerate(freq_bands.keys()):
+        for i, freq_band in enumerate(freq_bands):
             range_axis_1 = slice(0, n_ch)
             range_axis_2 = slice(n_ch, 2*n_ch)
             values = matrix[i, range_axis_1, range_axis_2]
             C = (values - np.mean(values[:])) / np.std(values[:])
-            self.inter.append(Connectivity(k, freq_bands[k], values, C, ch_names))
+            self.inter.append(Connectivity(freq_band, values, C, ch_names))
 
         for subject_idx in [0, 1]:
-            for i, k in enumerate(freq_bands.keys()):
+            for i, freq_band in enumerate(freq_bands):
                 range_axis_1 = slice((subject_idx * n_ch), ((subject_idx + 1) * n_ch)) 
                 range_axis_2 = range_axis_1
                 values = matrix[i, range_axis_1, range_axis_2]
@@ -48,7 +49,7 @@ class Connectivities():
                 C = (values - np.mean(values[:])) / np.std(values[:])
 
                 ch_names_pair = (ch_names[subject_idx], ch_names[subject_idx])
-                self.intras[subject_idx].append(Connectivity(k, freq_bands[k], values, C, ch_names_pair))
+                self.intras[subject_idx].append(Connectivity(freq_band, values, C, ch_names_pair))
     
     @property
     def intra1(self) -> list[Connectivity]:
@@ -72,7 +73,7 @@ class Connectivities():
     
     def get_connectivity_for_freq_band(self, freq_band_name, subject_id: int = None):
         for connectivity in self.get_connectivities_based_on_subject_id(subject_id):
-            if connectivity.freq_band_name == freq_band_name:
+            if connectivity.freq_band.name == freq_band_name:
                 return connectivity
 
         raise ValueError(f"Cannot find connectivity for freq_band {freq_band_name}")
