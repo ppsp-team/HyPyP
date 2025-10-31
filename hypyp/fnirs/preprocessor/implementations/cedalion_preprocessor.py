@@ -18,8 +18,8 @@ try:
     from cedalion.typing import NDTimeSeries
     import matplotlib.pyplot as plt
 
-    from ...data_browser import DataBrowser
-    from ..base_step import *
+    from ....data_browser import DataBrowser
+    from ....core.base_step import *
     from ..base_preprocessor import BasePreprocessor
 
     class CedalionStep(BaseStep[cdc.Recording]):

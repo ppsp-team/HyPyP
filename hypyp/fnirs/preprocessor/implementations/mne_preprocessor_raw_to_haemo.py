@@ -2,7 +2,7 @@ from itertools import compress
 
 import mne
 
-from ..base_step import *
+from ....core.base_step import *
 from .mne_step import MneStep
 from .mne_preprocessor_as_is import MnePreprocessorAsIs
 

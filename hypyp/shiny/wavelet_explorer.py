@@ -9,12 +9,12 @@ from scipy import fft
 import mne
 
 from hypyp.wavelet.pair_signals import PairSignals
-from hypyp.fnirs.data_browser import DataBrowser
-from hypyp.fnirs.recording import Recording
+from hypyp.data_browser import DataBrowser
+from hypyp.fnirs.fnirs_recording import FNIRSRecording
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from hypyp.fnirs.preprocessor.implementations.cedalion_preprocessor import CedalionPreprocessor
-from hypyp.signal import SyntheticSignal
+from hypyp.signal.synthetic_signal import SyntheticSignal
 from hypyp.wavelet.base_wavelet import BaseWavelet
 from hypyp.wavelet.implementations.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexGaussianWavelet, ComplexMorletWavelet
@@ -295,11 +295,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @reactive.calc()
     def get_recording_s1():
-        return Recording().load_file(get_signal_data_files_s1_path(), get_preprocessor())
+        return FNIRSRecording().load_file(get_signal_data_files_s1_path(), get_preprocessor())
 
     @reactive.calc()
     def get_recording_s2():
-        return Recording().load_file(get_signal_data_files_s2_path(), get_preprocessor())
+        return FNIRSRecording().load_file(get_signal_data_files_s2_path(), get_preprocessor())
 
     @reactive.calc()
     def get_recording_s1_step():
@@ -380,7 +380,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         elif input.signal_type() == 'data_files':
             browser = get_data_browser()
-            browser.download_demo_dataset()
+            browser.download_demo_fnirs_dataset()
 
             choices.append(ui_option_row("Subject 1 file", ui.input_select(
                 "signal_data_files_s1_path",

@@ -1,7 +1,7 @@
 import mne
 
-from ...data_browser import DataBrowser
-from ..base_step import *
+from ....data_browser import DataBrowser
+from ....core.base_step import *
 from ..base_preprocessor import BasePreprocessor
 from .mne_step import MneStep
 

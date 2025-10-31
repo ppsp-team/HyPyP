@@ -470,7 +470,7 @@ def AR_local(cleaned_epochs_ICA: List[mne.Epochs], strategy: str = 'union',
     evoked_after_AR: List[mne.Evoked] = [epochs.average() for epochs in cleaned_epochs_AR]
 
     if verbose:
-        for evoked_before_subj, evoked_after_AR_subj in zip(evoked_before, evoked_after_AR):
+        for subject_id, (evoked_before_subj, evoked_after_AR_subj) in enumerate(zip(evoked_before, evoked_after_AR)):
             fig, axes = plt.subplots(2, 1, figsize=(6, 6))
             for ax in axes:
                 ax.tick_params(axis='x', which='both', bottom='off', top='off')
@@ -483,10 +483,10 @@ def AR_local(cleaned_epochs_ICA: List[mne.Epochs], strategy: str = 'union',
             axes[0].set_title('Before autoreject')
 
             evoked_after_AR_subj.pick_types(eeg=True, exclude=[])
-            evoked_after_AR_subj.plot(exclude=[], axes=axes[1], ylim=ylim)
-            # Problème titre ne s'affiche pas pour le deuxieme axe !!!
+            evoked_after_AR_subj.plot(exclude=[], axes=axes[1], ylim=ylim, show=False)
             axes[1].set_title('After autoreject')
 
-            plt.tight_layout()
+            fig.suptitle(f"Subject {subject_id+1}")
+            fig.tight_layout()
 
     return cleaned_epochs_AR, dic_AR

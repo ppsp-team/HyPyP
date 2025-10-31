@@ -97,6 +97,7 @@ def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int
                   tmin=None, tmax=None, method='welch', picks='all', exclude=[],
                   proj=False, remove_dc=True, n_jobs=1)
     spectrum = EpochsSpectrum(epochs, **kwargs)
+    print(spectrum.freqs)
     psds = spectrum.get_data()
     freq_list = spectrum.freqs
     

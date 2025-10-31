@@ -1,6 +1,6 @@
 import mne
 
-from ..base_step import BaseStep
+from ....core.base_step import BaseStep
 
 class MneStep(BaseStep[mne.io.Raw]):
     @property
