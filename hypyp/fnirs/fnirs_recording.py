@@ -10,7 +10,7 @@ from scipy.spatial.distance import cdist
 
 from .preprocessor.base_preprocessor import BasePreprocessor, BaseStep
 from .preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
-from .channel_roi import ChannelROI
+from ..dataclasses.channel_roi import ChannelROI
 from ..utils import (
     epochs_from_tasks,
     TASK_BEGINNING,
@@ -24,7 +24,7 @@ from ..utils import (
 from ..wavelet.cwt import CWT
 from ..wavelet.wtc import WTC
 
-class Recording:
+class FNIRSRecording:
     """
     The Recording object encapsulates the logic around the recording for one participant.
     The preprocessing is run on the channels of the Recording
@@ -187,7 +187,7 @@ class Recording:
             self: the Recording object itself. Useful for chaining operations
         """
         if preprocessor is None:
-            preprocessor = Recording.get_default_preprocessor()
+            preprocessor = FNIRSRecording.get_default_preprocessor()
 
         if not Path(filepath).is_file():
             raise RuntimeError(f'Cannot find file {filepath}')
@@ -222,7 +222,7 @@ class Recording:
             self: the Recording object itself. Useful for chaining operations
         """
         if preprocessor is None:
-            preprocessor = Recording.get_default_preprocessor()
+            preprocessor = FNIRSRecording.get_default_preprocessor()
 
         self.mne_raw = raw
         self._fill_subject_label()

@@ -1,17 +1,16 @@
-from collections import OrderedDict
-from dataclasses import dataclass
 import warnings
+from dataclasses import dataclass
 
-import numpy as np
 import mne
-import pandas as pd
 from mne.preprocessing import ICA
-from matplotlib.figure import Figure
-from matplotlib.axes import Axes
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-from .base_dyad import BaseDyad
+from ..core.base_step import BaseStep
+
+from ..dataclasses.psd import PSD
+
+from ..connectivity.connectivities import Connectivities
+from ..connectivity.connectivity import Connectivity
+from ..core.base_dyad import BaseDyad
 from ..utils import (
     create_epochs,
     merge,
@@ -25,145 +24,38 @@ from ..prep import (
 )
 from ..analyses import (
     pow,
-    compute_freq_bands,
     compute_sync,
 )
-from ..plots import (
-    plot_coherence_matrix,
-)
 
-from .complex_signal import ComplexSignal
+from ..signal.complex_signal import ComplexSignal
 
 DEFAULT_EPOCHS_DURATION = 1
+
+PREPROCESS_STEP_RAW = 'raw'
+PREPROCESS_STEP_ICA_FIT = 'ica_fit'
+PREPROCESS_STEP_AR = 'autoreject'
 
 @dataclass
 class EEGStep():
     epos: list[mne.Epochs] | None
+    key: str
 
-@dataclass
-class PSD():
-    freqs: np.array
-    psd: np.ndarray
+#class MneStep(BaseStep[mne.Epochs]):
+#    @property
+#    def n_times(self):
+#        return self.obj.n_times
+#        
+#    @property
+#    def sfreq(self):
+#        return self.obj.info['sfreq']
+#        
+#    @property
+#    def ch_names(self):
+#        return self.obj.ch_names
+#        
+#    def plot(self, **kwargs):
+#        return self.obj.plot(**kwargs)
 
-@dataclass
-class Connectivity():
-    freq_band_name: str
-    freq_band: tuple[float, float]
-    values: np.ndarray
-    zscore: np.ndarray
-    ch_names: tuple[list[str], list[str]]
-
-    def plot_zscore(self, ax:Axes = None):
-        if ax is None:
-            fig, ax = plt.subplots(1, 1)
-        else:
-            fig = ax.get_figure()
-        sns.heatmap(self.zscore, cmap='viridis', cbar=True, ax=ax)
-        return fig
-
-
-class DyadConnectivity():
-    mode: str
-    inter: list[Connectivity]
-    intras: list[list[Connectivity]]
-
-    def __init__(
-            self,
-        mode: str,
-        freq_bands: OrderedDict,
-        matrix: np.ndarray,
-        ch_names: list[str] | tuple[list[str], list[str]],
-    ):
-        self.mode = mode
-        self.inter = [] 
-        self.intras = [[], []]
-
-        # Determine the number of channels
-        n_ch = matrix.shape[1] // 2
-
-        if not isinstance(ch_names, tuple):
-            ch_names = (ch_names, ch_names)
-
-        for i, k in enumerate(freq_bands.keys()):
-            range_axis_1 = slice(0, n_ch)
-            range_axis_2 = slice(n_ch, 2*n_ch)
-            values = matrix[i, range_axis_1, range_axis_2]
-            C = (values - np.mean(values[:])) / np.std(values[:])
-            self.inter.append(Connectivity(k, freq_bands[k], values, C, ch_names))
-
-        for subject_idx in [0, 1]:
-            for i, k in enumerate(freq_bands.keys()):
-                range_axis_1 = slice((subject_idx * n_ch), ((subject_idx + 1) * n_ch)) 
-                range_axis_2 = range_axis_1
-                values = matrix[i, range_axis_1, range_axis_2]
-            
-                # Remove self-connections
-                values -= np.diag(np.diag(values))
-            
-                # Compute Z-score normalization for intra connectivity
-                C = (values - np.mean(values[:])) / np.std(values[:])
-
-                ch_names_pair = (ch_names[subject_idx], ch_names[subject_idx])
-                self.intras[subject_idx].append(Connectivity(k, freq_bands[k], values, C, ch_names_pair))
-    
-    @property
-    def intra1(self) -> list[Connectivity]:
-        return self.intras[0]
-
-    @property
-    def intra2(self) -> list[Connectivity]:
-        return self.intras[1]
-    
-    def get_connectivities_based_on_subject_id(self, subject_id: int = None):
-        if subject_id is None:
-            return self.inter
-
-        if subject_id == 1:
-            return self.intra1
-
-        if subject_id == 2:
-            return self.intra2
-
-        raise ValueError(f"Cannot have connectivity of subject_id '{subject_id}'")
-    
-    def get_connectivity_for_freq_band(self, freq_band_name, subject_id: int = None):
-        for connectivity in self.get_connectivities_based_on_subject_id(subject_id):
-            if connectivity.freq_band_name == freq_band_name:
-                return connectivity
-
-        raise ValueError(f"Cannot find connectivity for freq_band {freq_band_name}")
-    
-    def plot_connectivity_for_freq_band(self, freq_band_name):
-        conn = self.get_connectivity_for_freq_band(freq_band_name)
-        flat = conn.zscore.flatten()
-        dfs = []
-        df_inter = pd.DataFrame({
-            'coherence': flat,
-            'channel1': np.repeat(conn.ch_names[0], len(conn.ch_names[1])),
-            'channel2': np.array(conn.ch_names[1] * len(conn.ch_names[0])),
-            'is_intra': np.full_like(flat, False),
-            'is_intra_of': np.full_like(flat, None),
-        })
-        dfs.append(df_inter)
-
-        for subject_id in [1, 2]:
-            conn = self.get_connectivity_for_freq_band(freq_band_name, subject_id)
-            flat = conn.zscore.flatten()
-            df_intra = pd.DataFrame({
-                'coherence': flat,
-                'channel1': np.repeat(conn.ch_names[0], len(conn.ch_names[0])),
-                'channel2': np.array(conn.ch_names[0] * len(conn.ch_names[0])),
-                'is_intra': np.full_like(flat, True),
-                'is_intra_of': np.full_like(flat, subject_id),
-            })
-            dfs.append(df_intra)
-        
-        df = pd.concat(dfs, ignore_index=True)
-
-        return plot_coherence_matrix(df, 'subject1', 'subject2', 'channel1', 'channel2', [])
-
-    
-    
 class EEGDyad(BaseDyad):
     steps: list[EEGStep]
     sfreq: float
@@ -176,7 +68,7 @@ class EEGDyad(BaseDyad):
     complex_signal: ComplexSignal | None
 
     # analysis results
-    connectivities: dict[str, DyadConnectivity]
+    connectivities: dict[str, Connectivity]
 
     def __init__(self):
         super().__init__()
@@ -193,10 +85,10 @@ class EEGDyad(BaseDyad):
     def from_files(file_path1: str, file_path2: str):
         self = EEGDyad()
         if file_path1.endswith('-epo.fif') and file_path2.endswith('-epo.fif'):
-            self.epos = [
+            self.epos_add_step([
                 mne.read_epochs(file_path1, preload=True),
                 mne.read_epochs(file_path2, preload=True),
-            ]
+            ], PREPROCESS_STEP_RAW)
             assert self.epo1.info['sfreq'] == self.epo2.info['sfreq']
             self.sfreq = self.epo1.info['sfreq']
             self._equalize_epoch_counts()
@@ -210,7 +102,7 @@ class EEGDyad(BaseDyad):
         assert epo1.info['sfreq'] == epo2.info['sfreq']
         self = EEGDyad()
         self.sfreq = epo1.info['sfreq']
-        self.epos = [epo1, epo2]
+        self.epos_add_step([epo1, epo2], PREPROCESS_STEP_RAW)
         self._equalize_epoch_counts()
         return self
     
@@ -256,10 +148,6 @@ class EEGDyad(BaseDyad):
     def epos(self):
         return self.steps[-1].epos
     
-    @epos.setter
-    def epos(self, epos):
-        self.steps.append(EEGStep([epo.copy() for epo in epos]))
-
     @property
     def epochs_merged(self) -> mne.Epochs:
         self._assert_has_epochs()
@@ -305,9 +193,12 @@ class EEGDyad(BaseDyad):
         self._assert_has_psds()
         return self.psds[1]
     
+    def epos_add_step(self, epos, name: str = ''):
+        self.steps.append(EEGStep([epo.copy() for epo in epos], key=name))
+    
     def create_epochs_from_raws(self, duration:float=DEFAULT_EPOCHS_DURATION) -> 'EEGDyad':
         list1, list2 = create_epochs([self.raw1], [self.raw2], duration)
-        self.epos = [list1[0], list2[0]]
+        self.epos_add_step([list1[0], list2[0]], PREPROCESS_STEP_RAW)
         return self
 
     def prep_ica_fit(
@@ -331,20 +222,21 @@ class EEGDyad(BaseDyad):
             plot: bool = False,
     ) -> 'EEGDyad':
         self._assert_has_icas()
-        self.epos = ICA_apply(self.icas, subject_idx, component_idx, self.epos, plot=plot, label=label, ch_type=ch_type, threshold=threshold)
+        self.epos_add_step(ICA_apply(self.icas, subject_idx, component_idx, self.epos, plot=plot, label=label, ch_type=ch_type, threshold=threshold), PREPROCESS_STEP_ICA_FIT)
         return self
     
-    def prep_autoreject(self, strategy: str = None, threshold: float = None, verbose: bool = None, **kwargs) -> 'EEGDyad':
+    def prep_autoreject(self, strategy: str = None, threshold: float = None, show: bool = None, **kwargs) -> 'EEGDyad':
         # Forward arguments to underlying function
         if strategy is not None:
             kwargs['strategy'] = strategy
         if threshold is not None:
             kwargs['threshold'] = threshold
-        if verbose is not None:
-            kwargs['verbose'] = verbose
+        if show is not None:
+            # AR_local use the "verbose" argument to control plot display
+            kwargs['verbose'] = show
         
         epos, dic_ar = AR_local(self.epos, **kwargs)
-        self.epos = epos
+        self.epos_add_step(epos, PREPROCESS_STEP_AR)
         self.dic_ar = dic_ar
         return self
 
@@ -352,15 +244,20 @@ class EEGDyad(BaseDyad):
             self,
             fmin: float,
             fmax: float,
-            n_fft: int = 1000,
-            n_per_seg: int = 1000,
+            n_fft: int = None,
+            n_per_seg: int = None,
             epochs_average: bool = True,
             **kwargs,
     ) -> 'EEGDyad':
+        if n_fft is None:
+            n_fft = int(self.sfreq)
+        if n_per_seg is None:
+            n_per_seg = int(self.sfreq)
+
         self.psds = []
         for epo in self.epos:
             freqs, psd = pow(epo, fmin=fmin, fmax=fmax, n_fft=n_fft, n_per_seg=n_per_seg, epochs_average=epochs_average, **kwargs)
-            self.psds.append(PSD(freqs, psd))
+            self.psds.append(PSD(freqs, psd, epo.ch_names))
         return self
     
 
@@ -374,7 +271,7 @@ class EEGDyad(BaseDyad):
     def analyse_connectivity(self, mode: str, epochs_average: bool = True):
         assert self.complex_signal is not None
         matrix = compute_sync(self.complex_signal.data, mode = mode, epochs_average = epochs_average)
-        self.connectivities[mode] = DyadConnectivity(mode, self.complex_signal.freq_bands, matrix, (self.epo1.ch_names, self.epo2.ch_names))
+        self.connectivities[mode] = Connectivities(mode, self.complex_signal.freq_bands, matrix, (self.epo1.ch_names, self.epo2.ch_names))
         return self
 
     def plot_icas_components(self) -> 'EEGDyad':

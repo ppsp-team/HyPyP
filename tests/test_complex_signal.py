@@ -3,8 +3,8 @@ import pytest
 import mne
 import numpy as np
 
-from hypyp.eeg_classes.complex_signal import ComplexSignal, FREQ_BANDS_ALPHAS
-from hypyp.signal import SyntheticSignal
+from hypyp.signal.complex_signal import ComplexSignal, FREQ_BANDS_ALPHAS
+from hypyp.signal.synthetic_signal import SyntheticSignal
 
 def test_complex_signal():
     duration = 10

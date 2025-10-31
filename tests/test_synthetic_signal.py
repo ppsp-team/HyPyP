@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 
-from hypyp.signal import SyntheticSignal
+from hypyp.signal.synthetic_signal import SyntheticSignal
 
 def test_instanciate():
     signal = SyntheticSignal(duration=300)

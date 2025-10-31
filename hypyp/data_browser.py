@@ -4,10 +4,6 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import pooch
-import numpy as np
-import scipy.io
-
-from ..wavelet.pair_signals import PairSignals
 
 DOWNLOADS_RELATIVE_PATH = os.path.join('data', 'NIRS', 'downloads')
 
@@ -21,10 +17,11 @@ class DataBrowser:
 
         It can also download demo dataset for convenience.
         """
-        self.absolute_root_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        # If you move the this code file into another folder, you have to change this line
+        self.absolute_root_path = os.path.dirname(os.path.dirname(__file__))
         self.paths = [
             self.absolute_path(os.path.join('data')),
-            self.absolute_path(os.path.join('data', 'fNIRS')),
+            self.absolute_path(os.path.join('data', 'NIRS')),
             DOWNLOADS_RELATIVE_PATH,
         ]
     
@@ -89,7 +86,7 @@ class DataBrowser:
         unique.sort()
         return unique
 
-    def download_demo_dataset(self) -> str:
+    def download_demo_fnirs_dataset(self) -> str:
         """
         Download a publicly available demo NIRS dataset of dyads recordings
 

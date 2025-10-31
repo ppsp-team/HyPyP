@@ -6,14 +6,14 @@ import numpy as np
 import pandas as pd
 
 # TODO must not import eeg_*, should have a common parent folder
-from ..eeg_classes.base_dyad import BaseDyad
+from ..core.base_dyad import BaseDyad
 from ..wavelet.base_wavelet import BaseWavelet
 from ..wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
 from ..wavelet.wtc import WTC
 from ..wavelet.pair_signals import PairSignals
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from ..utils import TaskList, TASK_NAME_WHOLE_RECORD
-from .recording import Recording
+from .fnirs_recording import FNIRSRecording
 from .preprocessor.base_preprocessor import BasePreprocessor
 from ..plots import (
     plot_wavelet_transform_weights,
@@ -28,7 +28,7 @@ PairChannelMatchType = PairChannelMatchSingleType | Tuple[PairChannelMatchSingle
 
 MIN_SECTION_LENGTH = 10
 
-class Dyad(BaseDyad):
+class FNIRSDyad(BaseDyad):
     """
     The Dyad object is a pair of recordings (per subject) of an hyperscanning recording.
     Their recorded channels should be time aligned.
@@ -39,15 +39,15 @@ class Dyad(BaseDyad):
         label (str, optional): Custom label for the dyad. Defaults to `s1.label`-`s2.label`.
         is_pseudo (bool, optional): If the dyad is a permutated pair created for comparison. Used to track dyad "type" in results. Defaults to False.
     """
-    s1: Recording
-    s2: Recording
+    s1: FNIRSRecording
+    s2: FNIRSRecording
     label: str
     is_pseudo: bool
     tasks: TaskList # intersection of tasks of subject 1 and subject 2
     wtcs: List[WTC] | None # the computed Wavelet Transform Coherence for each channel pairs in the dyad
     df: CoherenceDataFrame | None # pandas dataframe from computed coherence
 
-    def __init__(self, s1:Recording, s2:Recording, label:str='', is_pseudo:bool=False):
+    def __init__(self, s1:FNIRSRecording, s2:FNIRSRecording, label:str='', is_pseudo:bool=False):
         self.s1 = s1
         self.s2 = s2
         self.wtcs = None
@@ -57,7 +57,7 @@ class Dyad(BaseDyad):
 
         self.label = label
         if self.label == '':
-            self.label = Dyad._get_label_from_recordings(s1, s2)
+            self.label = FNIRSDyad._get_label_from_recordings(s1, s2)
 
         # Intersect the tasks
         self.tasks = []
@@ -73,7 +73,7 @@ class Dyad(BaseDyad):
                 found_tasks_names.append(task_name)
     
     @property 
-    def recordings(self) -> Tuple[Recording, Recording]:
+    def recordings(self) -> Tuple[FNIRSRecording, FNIRSRecording]:
         return (self.s1, self.s2)
     
     @property
@@ -88,7 +88,7 @@ class Dyad(BaseDyad):
         return self.wtcs is not None
 
     @staticmethod
-    def _get_label_from_recordings(s1:Recording, s2:Recording) -> str:
+    def _get_label_from_recordings(s1:FNIRSRecording, s2:FNIRSRecording) -> str:
         return f'{s1.subject_label}-{s2.subject_label}'
 
     def preprocess(self, preprocessor: BasePreprocessor):
@@ -111,8 +111,8 @@ class Dyad(BaseDyad):
                       s2_ch_names:List[str],
                       s1_task_data:np.ndarray,
                       s2_task_data:np.ndarray,
-                      s1:Recording,
-                      s2:Recording,
+                      s1:FNIRSRecording,
+                      s2:FNIRSRecording,
                       task_name:str,
                       epoch_id:int,
                       is_intra_of:int|None,
@@ -173,7 +173,7 @@ class Dyad(BaseDyad):
                     ))
             
     
-    def get_pairs(self, s1:Recording, s2:Recording, label_dyad:str|None=None, ch_match:PairChannelMatchType|None=None, is_intra_of:int|None=None, is_pseudo:bool=False) -> List[PairSignals]:
+    def get_pairs(self, s1:FNIRSRecording, s2:FNIRSRecording, label_dyad:str|None=None, ch_match:PairChannelMatchType|None=None, is_intra_of:int|None=None, is_pseudo:bool=False) -> List[PairSignals]:
         """
         Generate all the signal pairs between the 2 subjects and returns them in a format suitable for signal processing
 
@@ -487,7 +487,7 @@ class Dyad(BaseDyad):
     #
     # Plot connectogram (Proof of Concept)
     # 
-    def plot_coherence_connectogram_intra(self, recording:Recording, query:str|None=None, **kwargs):
+    def plot_coherence_connectogram_intra(self, recording:FNIRSRecording, query:str|None=None, **kwargs):
         df = self.df
         selector = df['is_intra']==True
         df_filtered = df[selector]

@@ -5,7 +5,7 @@ import tempfile
 import numpy as np
 import pandas as pd
 
-from hypyp.signal import SyntheticSignal
+from hypyp.signal.synthetic_signal import SyntheticSignal
 from hypyp.wavelet.coherence_data_frame import CoherenceDataFrame
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet

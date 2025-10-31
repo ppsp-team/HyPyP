@@ -1,8 +1,10 @@
 from typing import List
 from collections import OrderedDict
+from dataclasses import dataclass
 
 import scipy.io
 
+@dataclass
 class ChannelROI:
     rois: OrderedDict
 

@@ -5,7 +5,7 @@ from ..wavelet.base_wavelet import BaseWavelet
 from .preprocessor.base_preprocessor import BasePreprocessor
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from ..profiling import TimeTracker
-from .dyad import Dyad, PairChannelMatchType
+from .fnirs_dyad import FNIRSDyad, PairChannelMatchType
 from ..plots import (
     plot_coherence_matrix,
     plot_coherence_bars_per_task,
@@ -13,11 +13,11 @@ from ..plots import (
     plot_coherence_connectogram_split,
 )
 
-class Study():
-    dyads: List[Dyad]
-    dyads_shuffled: List[Dyad]|None
+class FNIRSStudy():
+    dyads: List[FNIRSDyad]
+    dyads_shuffled: List[FNIRSDyad]|None
 
-    def __init__(self, dyads: List[Dyad] = []):
+    def __init__(self, dyads: List[FNIRSDyad] = []):
         """
         The Study object encapsulates the logic of an hyperscanning experiment.
 
@@ -161,7 +161,7 @@ class Study():
         self.dyads_shuffled = None
         return self
     
-    def get_dyads_shuffle(self) -> List[Dyad]:
+    def get_dyads_shuffle(self) -> List[FNIRSDyad]:
         """
         Get a list of permutated recording pairs, useful for statistical analysis.
 
@@ -173,7 +173,7 @@ class Study():
             for j, dyad2 in enumerate(self.dyads):
                 if i == j:
                     continue
-                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}', is_pseudo=True))
+                dyads_shuffle.append(FNIRSDyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}', is_pseudo=True))
         return dyads_shuffle
 
     # TODO add as argument the number of shuffle dyads
