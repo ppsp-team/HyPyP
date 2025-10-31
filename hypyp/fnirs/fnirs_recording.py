@@ -145,7 +145,7 @@ class FNIRSRecording:
         # get in the reverse order so that the last step is first in list
         keys = []
         for i in range(len(self.preprocess_steps)-1, -1, -1):
-            keys.append(self.preprocess_steps[i].key)
+            keys.append(self.preprocess_steps[i].name)
         return keys
 
     @property
@@ -154,7 +154,7 @@ class FNIRSRecording:
         steps_dict = dict()
         for i in range(len(self.preprocess_steps)-1, -1, -1):
             step = self.preprocess_steps[i]
-            steps_dict[step.key] = step.desc
+            steps_dict[step.name] = step.desc
         return steps_dict
     
     def _fill_subject_label(self):
@@ -259,7 +259,7 @@ class FNIRSRecording:
         """
         self._assert_is_preprocessed()
         for step in self.preprocess_steps:
-            if step.key == key:
+            if step.name == key:
                 return step
 
         raise RuntimeError(f'No preprocess step named "{key}"')

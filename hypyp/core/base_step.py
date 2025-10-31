@@ -1,21 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Generic, TypeVar
 
-PREPROCESS_STEP_BASE_KEY = 'base'
-PREPROCESS_STEP_BASE_DESC = 'Loaded data'
-
-PREPROCESS_STEP_OD_KEY = 'od'
-PREPROCESS_STEP_OD_DESC = 'Optical density'
-
-PREPROCESS_STEP_OD_CLEAN_KEY = 'od_clean'
-PREPROCESS_STEP_OD_CLEAN_DESC = 'Optical density cleaned'
-
-PREPROCESS_STEP_HAEMO_KEY = 'haemo'
-PREPROCESS_STEP_HAEMO_DESC = 'Hemoglobin'
-
-PREPROCESS_STEP_HAEMO_FILTERED_KEY = 'haemo_filtered'
-PREPROCESS_STEP_HAEMO_FILTERED_DESC = 'Hemoglobin Band-pass Filtered'
-
 # Generic type for underlying fnirs implementation (mne raw / cedalion recording)
 T = TypeVar('T')
 
@@ -29,14 +14,14 @@ class BaseStep(ABC, Generic[T]):
         desc (str | None, optional): description of the setup. Defaults to "key" value.
     """
     obj: T
-    key: str
+    name: str
     desc: str
 
-    def __init__(self, obj:T, key:str, desc:str|None=None):
+    def __init__(self, obj:T, name:str, desc:str|None=None):
         self.obj = obj
-        self.key = key
+        self.name = name
         if desc is None:
-            self.desc = key
+            self.desc = name
         else:
             self.desc = desc
 

@@ -17,8 +17,7 @@ from hypyp.fnirs.fnirs_recording import FNIRSRecording
 from hypyp.dataclasses.channel_roi import ChannelROI
 from hypyp.fnirs.fnirs_dyad import FNIRSDyad
 from hypyp.data_browser import DataBrowser
-from hypyp.core.base_step import PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_HAEMO_FILTERED_KEY
-from hypyp.fnirs.preprocessor.implementations.mne_step import MneStep
+from hypyp.fnirs.fnirs_step import FNIRSStep, PREPROCESS_STEP_BASE, PREPROCESS_STEP_HAEMO_FILTERED
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from hypyp.utils import TASK_NEXT_EVENT, Task
@@ -86,10 +85,10 @@ def test_preprocess_step():
     key = 'foo_key'
     desc = 'foo_description'
     raw = mne.io.RawArray(np.array([[1., 2.]]), mne.create_info(['foo'], 1))
-    step = MneStep(raw, key, desc)
+    step = FNIRSStep(raw, key, desc)
     assert step.obj.get_data().shape[0] == 1
     assert step.obj.get_data().shape[1] == 2
-    assert step.key == key
+    assert step.name == key
     assert step.desc == desc
     assert step.duration == 2
 
@@ -171,7 +170,7 @@ def test_upstream_preprocessor():
     recording = FNIRSRecording(tasks=[Task('task1', onset_event_id=1, offset_event_id=TASK_NEXT_EVENT)]).load_file(snirf_file1, MnePreprocessorAsIs())
     assert len(recording.preprocess_steps) == 1
     assert recording.is_preprocessed == True
-    assert recording.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
+    assert recording.preprocess_steps[0].name == PREPROCESS_STEP_BASE
     assert recording.epochs_per_task is not None
     assert len(recording.epochs_per_task) > 0
 
@@ -181,14 +180,14 @@ def test_mne_preprocessor():
     recording.preprocess(preprocessor)
     assert len(recording.preprocess_steps) > 1
     assert recording.is_preprocessed == True
-    assert recording.preprocess_steps[0].key == PREPROCESS_STEP_BASE_KEY
-    assert recording.preprocess_steps[-1].key == PREPROCESS_STEP_HAEMO_FILTERED_KEY
+    assert recording.preprocess_steps[0].name == PREPROCESS_STEP_BASE
+    assert recording.preprocess_steps[-1].name == PREPROCESS_STEP_HAEMO_FILTERED
     assert recording.preprocessed is not None
-    assert recording.preprocess_step_keys[0] == recording.preprocess_steps[-1].key
+    assert recording.preprocess_step_keys[0] == recording.preprocess_steps[-1].name
 
     # can get step by key
-    assert recording.get_preprocess_step(PREPROCESS_STEP_BASE_KEY).key == PREPROCESS_STEP_BASE_KEY
-    assert recording.get_preprocess_step(PREPROCESS_STEP_HAEMO_FILTERED_KEY).key == PREPROCESS_STEP_HAEMO_FILTERED_KEY
+    assert recording.get_preprocess_step(PREPROCESS_STEP_BASE).name == PREPROCESS_STEP_BASE
+    assert recording.get_preprocess_step(PREPROCESS_STEP_HAEMO_FILTERED).name == PREPROCESS_STEP_HAEMO_FILTERED
 
 #
 # Dyad

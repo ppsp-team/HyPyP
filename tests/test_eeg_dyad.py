@@ -29,7 +29,6 @@ def get_test_dyad() -> EEGDyad:
     raw2 = mne.io.RawArray(data2, info)
     return EEGDyad.from_raws(raw1, raw2)
 
-
 def test_dyad():
     dyad = get_test_dyad()
     assert len(dyad.raws) == 2
@@ -135,7 +134,7 @@ def test_prep_ica_apply(dyad_factory):
 def test_pipeline_track_steps(dyad_factory):
     dyad: EEGDyad = dyad_factory(epo_file1, epo_file2)
     assert len(dyad.steps) == 1
-    assert dyad.steps[0].key == PREPROCESS_STEP_RAW
+    assert dyad.steps[0].name == PREPROCESS_STEP_RAW
 
     assert dyad.epos == dyad.steps[-1].epos
     dyad.prep_ica_fit(2)
@@ -199,3 +198,6 @@ def test_analyse_connectivity(mode):
 
 def test_factory_class():
     dyad = Dyad.from_eeg_files(epo_file1, epo_file2)
+
+#def test_frequency_bands():
+#    assert 'TODO' == True

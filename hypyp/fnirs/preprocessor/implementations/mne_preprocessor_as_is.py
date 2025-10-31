@@ -1,9 +1,8 @@
 import mne
 
 from ....data_browser import DataBrowser
-from ....core.base_step import *
 from ..base_preprocessor import BasePreprocessor
-from .mne_step import MneStep
+from ...fnirs_step import FNIRSStep, PREPROCESS_STEP_BASE, PREPROCESS_STEP_BASE_DESC
 
 # This is the same as MnePreprocessorBasic, but without the default preprocessor
 class MnePreprocessorAsIs(BasePreprocessor[mne.io.Raw]):
@@ -31,11 +30,11 @@ class MnePreprocessorAsIs(BasePreprocessor[mne.io.Raw]):
 
         raise ValueError(f"No reader for file {path}")
     
-    def run(self, raw: mne.io.Raw, verbose: bool = False) -> list[MneStep]:
+    def run(self, raw: mne.io.Raw, verbose: bool = False) -> list[FNIRSStep]:
         if verbose:
             print('Using MnePreprocessorAsIs, using raw data as already preprocessed')
 
-        step = MneStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC)
+        step = FNIRSStep(raw, PREPROCESS_STEP_BASE, PREPROCESS_STEP_BASE_DESC)
         steps = [step]
         return steps
         

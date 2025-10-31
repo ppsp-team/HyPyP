@@ -1,69 +1,29 @@
 import warnings
-from dataclasses import dataclass
 
 import mne
 from mne.preprocessing import ICA
 
-from ..core.base_step import BaseStep
+from .eeg_step import PREPROCESS_STEP_AR, PREPROCESS_STEP_ICA_FIT, PREPROCESS_STEP_RAW, EEGStep, EEGDyadStep
 
 from ..dataclasses.psd import PSD
-
 from ..connectivity.connectivities import Connectivities
 from ..connectivity.connectivity import Connectivity
 from ..core.base_dyad import BaseDyad
-from ..utils import (
-    create_epochs,
-    merge,
-    split,
-)
-from ..prep import (
-    ICA_fit,
-    ICA_apply,
-    AR_local,
-    DicAR,
-)
-from ..analyses import (
-    pow,
-    compute_sync,
-)
-
 from ..signal.complex_signal import ComplexSignal
+
+from ..utils import create_epochs, merge, split
+from ..prep import ICA_fit, ICA_apply, AR_local, DicAR
+from ..analyses import pow, compute_sync
+
 
 DEFAULT_EPOCHS_DURATION = 1
 
-PREPROCESS_STEP_RAW = 'raw'
-PREPROCESS_STEP_ICA_FIT = 'ica_fit'
-PREPROCESS_STEP_AR = 'autoreject'
-
-@dataclass
-class EEGStep():
-    epos: list[mne.Epochs] | None
-    key: str
-
-#class MneStep(BaseStep[mne.Epochs]):
-#    @property
-#    def n_times(self):
-#        return self.obj.n_times
-#        
-#    @property
-#    def sfreq(self):
-#        return self.obj.info['sfreq']
-#        
-#    @property
-#    def ch_names(self):
-#        return self.obj.ch_names
-#        
-#    def plot(self, **kwargs):
-#        return self.obj.plot(**kwargs)
-
 class EEGDyad(BaseDyad):
-    steps: list[EEGStep]
+    steps: list[EEGDyadStep]
     sfreq: float
-    epos: list[mne.Epochs] | None
     raws: list[mne.io.Raw] | None
     icas: list[ICA] | None
     dic_ar: DicAR | None
-    steps: list[EEGStep]
     psds: list[PSD]
     complex_signal: ComplexSignal | None
 
@@ -124,7 +84,7 @@ class EEGDyad(BaseDyad):
         return self
 
     def _assert_has_epochs(self):
-        if len(self.steps) ==  0:
+        if len(self.steps) == 0:
             raise RuntimeError('Epochs not created. Use create_epochs(duration)')
     
     def _assert_has_raws(self):
@@ -194,8 +154,9 @@ class EEGDyad(BaseDyad):
         return self.psds[1]
     
     def epos_add_step(self, epos, name: str = ''):
-        self.steps.append(EEGStep([epo.copy() for epo in epos], key=name))
-    
+        single_steps = [EEGStep(epo.copy(), name=name) for epo in epos]
+        self.steps.append(EEGDyadStep(single_steps, name=name))
+
     def create_epochs_from_raws(self, duration:float=DEFAULT_EPOCHS_DURATION) -> 'EEGDyad':
         list1, list2 = create_epochs([self.raw1], [self.raw2], duration)
         self.epos_add_step([list1[0], list2[0]], PREPROCESS_STEP_RAW)
