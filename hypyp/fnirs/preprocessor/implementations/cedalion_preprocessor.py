@@ -78,10 +78,10 @@ try:
             # TODO honor verbose
             steps = []
             amp = rec['amp']
-            steps.append(CedalionStep(amp, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))
+            steps.append(CedalionStep(amp, 'raw'))
 
             od = cedalion.nirs.int2od(amp)
-            steps.append(CedalionStep(od, PREPROCESS_STEP_OD_KEY, PREPROCESS_STEP_OD_DESC))
+            steps.append(CedalionStep(od, 'optical_density'))
 
 
             dpf = xr.DataArray(
@@ -90,7 +90,7 @@ try:
                 coords={"wavelength" : [760., 850.]}) # TODO unhardcode wavelengts
 
             haemo = cedalion.nirs.beer_lambert(rec['amp'], rec.geo3d, dpf)
-            steps.append(CedalionStep(haemo, PREPROCESS_STEP_HAEMO_KEY, PREPROCESS_STEP_HAEMO_DESC))
+            steps.append(CedalionStep(haemo, 'haemo'))
 
             return steps
             

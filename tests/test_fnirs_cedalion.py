@@ -1,6 +1,5 @@
 import pytest
 
-from hypyp.core.base_step import PREPROCESS_STEP_BASE_KEY
 from hypyp.fnirs.preprocessor.implementations.cedalion_preprocessor import CedalionPreprocessor
 
 snirf_file = './data/NIRS/DCARE_02_sub1.snirf'
@@ -15,7 +14,7 @@ def test_cedalion_preprocessor():
 
     steps = preprocessor.run(preprocessor.read_file(snirf_file))
     step = steps[0]
-    assert step.key == PREPROCESS_STEP_BASE_KEY
+    assert step.name == 'raw'
     assert isinstance(step.obj, xr.DataArray)
     assert step.n_times == len(step.obj['time'])
     assert step.sfreq == 7.8125

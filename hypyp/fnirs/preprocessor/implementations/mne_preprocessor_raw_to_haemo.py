@@ -2,8 +2,7 @@ from itertools import compress
 
 import mne
 
-from ....core.base_step import *
-from .mne_step import MneStep
+from ...fnirs_step import *
 from .mne_preprocessor_as_is import MnePreprocessorAsIs
 
 class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
@@ -33,7 +32,7 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
         self.lp_filter = lp_filter
         self.quality_sci_threshold = quality_sci_threshold
     
-    def run(self, raw:mne.io.Raw, verbose:bool=False) -> list[MneStep]:
+    def run(self, raw:mne.io.Raw, verbose:bool=False) -> list[FNIRSStep]:
         # If have hbo or hbr, it means it is already in concentration
         if len(mne.pick_types(raw.info, fnirs=['hbo', 'hbr'])) > 0:
             raise ValueError('Loaded data seems to already be in concentrations. Use MnePreprocessorAsIs instead.')
@@ -42,23 +41,23 @@ class MnePreprocessorRawToHaemo(MnePreprocessorAsIs):
             print('Using MnePreprocessorRawToHaemo, converting fNIRS raw data to haemoglobin concentrations')
 
         steps = []
-        steps.append(MneStep(raw, PREPROCESS_STEP_BASE_KEY, PREPROCESS_STEP_BASE_DESC))
+        steps.append(FNIRSStep(raw, PREPROCESS_STEP_BASE, PREPROCESS_STEP_BASE_DESC))
 
         raw_od = mne.preprocessing.nirs.optical_density(raw)
-        steps.append(MneStep(raw_od, PREPROCESS_STEP_OD_KEY, PREPROCESS_STEP_OD_DESC))
+        steps.append(FNIRSStep(raw_od, PREPROCESS_STEP_OD, PREPROCESS_STEP_OD_DESC))
 
         quality_sci = mne.preprocessing.nirs.scalp_coupling_index(raw_od)
         raw_od.info['bads'] = list(compress(raw_od.ch_names, quality_sci < self.quality_sci_threshold))
         picks = mne.pick_types(raw_od.info, fnirs=True, exclude='bads')
         raw_od_clean = raw_od.copy().pick(picks)
-        steps.append(MneStep(raw_od_clean, PREPROCESS_STEP_OD_CLEAN_KEY, PREPROCESS_STEP_OD_CLEAN_DESC))
+        steps.append(FNIRSStep(raw_od_clean, PREPROCESS_STEP_OD_CLEAN, PREPROCESS_STEP_OD_CLEAN_DESC))
 
         # For partial pathlength, see https://doi.org/10.1117/1.JBO.18.10.105004, Table 1
         raw_haemo: mne.io.Raw = mne.preprocessing.nirs.beer_lambert_law(raw_od_clean.copy(), ppf=self.ppf)
-        steps.append(MneStep(raw_haemo, PREPROCESS_STEP_HAEMO_KEY, PREPROCESS_STEP_HAEMO_DESC))
+        steps.append(FNIRSStep(raw_haemo, PREPROCESS_STEP_HAEMO, PREPROCESS_STEP_HAEMO_DESC))
 
         raw_haemo_filtered = raw_haemo.copy().filter(self.hp_filter, self.lp_filter, verbose=verbose, method='iir')
-        steps.append(MneStep(raw_haemo_filtered, PREPROCESS_STEP_HAEMO_FILTERED_KEY, PREPROCESS_STEP_HAEMO_FILTERED_DESC))
+        steps.append(FNIRSStep(raw_haemo_filtered, PREPROCESS_STEP_HAEMO_FILTERED, PREPROCESS_STEP_HAEMO_FILTERED_DESC))
 
         return steps
         
