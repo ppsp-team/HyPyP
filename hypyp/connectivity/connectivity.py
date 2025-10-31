@@ -5,10 +5,11 @@ from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from ..dataclasses.freq_band import FreqBand
+
 @dataclass
 class Connectivity():
-    freq_band_name: str
-    freq_band: tuple[float, float]
+    freq_band: FreqBand
     values: np.ndarray
     zscore: np.ndarray
     ch_names: tuple[list[str], list[str]]

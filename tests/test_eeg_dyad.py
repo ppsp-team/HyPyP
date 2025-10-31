@@ -8,6 +8,7 @@ from hypyp.dyad import Dyad
 from hypyp.eeg.eeg_dyad import EEGDyad, PREPROCESS_STEP_ICA_FIT, PREPROCESS_STEP_RAW
 from hypyp.signal.synthetic_signal import SyntheticSignal
 from hypyp.utils import generate_random_epoch
+from hypyp.dataclasses.freq_band import FreqBand, FreqBands
 
 epo_file1 = os.path.join("data", "participant1-epo.fif")
 epo_file2 = os.path.join("data", "participant2-epo.fif")
@@ -199,5 +200,13 @@ def test_analyse_connectivity(mode):
 def test_factory_class():
     dyad = Dyad.from_eeg_files(epo_file1, epo_file2)
 
-#def test_frequency_bands():
-#    assert 'TODO' == True
+def test_frequency_bands():
+    freq_bands = FreqBands({
+        'Alpha-Low': [7.5, 11],
+        'Alpha-High': [11.5, 13]
+    })
+    # test indexing
+    assert freq_bands[0].fmin == 7.5
+    assert freq_bands['Alpha-Low'].fmin == 7.5
+    assert freq_bands['Alpha-Low'][0] == 7.5
+    assert freq_bands['Alpha-Low'][1] == 11
