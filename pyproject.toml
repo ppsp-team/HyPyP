@@ -1,6 +1,6 @@
 [project]
 name = "hypyp"
-version = "0.5.0b14"
+version = "0.5.0b15"
 description = "The Hyperscanning Python Pipeline."
 readme = "README.md"
 license = "BSD-3-Clause"
