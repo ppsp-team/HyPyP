@@ -22,6 +22,11 @@ class FreqBands():
         for k, v in freq_bands_dict.items():
             self.bands.append(FreqBand(k, v[0], v[1]))
 
+    @staticmethod
+    def from_simple_min_max(fmin: float, fmax: float) -> 'FreqBands':
+        name = f"{fmin}-{fmax}"
+        return FreqBands({name: (fmin, fmax)})
+
     @property
     def as_dict(self):
         out = {}
@@ -42,3 +47,9 @@ class FreqBands():
     
     def __iter__(self):
         return iter(self.bands)
+
+# Typical frequency bands
+FREQ_BANDS_ALPHA_LOW_HIGH = FreqBands({
+    'Alpha-Low': [7.5, 11],
+    'Alpha-High': [11.5, 13]
+})

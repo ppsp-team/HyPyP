@@ -3,23 +3,18 @@ from collections import OrderedDict
 import mne
 import numpy as np
 
-from ..dataclasses.freq_band import FreqBands
+from ..dataclasses.freq_band import FreqBands, FREQ_BANDS_ALPHA_LOW_HIGH
 
 from ..analyses import (
     compute_freq_bands,
 )
-
-DEFAULT_FREQ_BANDS = FreqBands({
-    'Alpha-Low': [7.5, 11],
-    'Alpha-High': [11.5, 13]
-})
 
 class ComplexSignal():
     def __init__(
             self,
             epos: list[mne.Epochs],
             sfreq: float,
-            freq_bands: FreqBands = DEFAULT_FREQ_BANDS,
+            freq_bands: FreqBands = FREQ_BANDS_ALPHA_LOW_HIGH,
             **compute_freq_bands_kwargs,
         ):
         self.data = compute_freq_bands(

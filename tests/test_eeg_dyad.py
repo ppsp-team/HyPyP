@@ -5,7 +5,7 @@ import mne
 import numpy as np
 
 from hypyp.dyad import Dyad
-from hypyp.eeg.eeg_dyad import EEGDyad, PREPROCESS_STEP_ICA_FIT, PREPROCESS_STEP_RAW
+from hypyp.eeg.eeg_dyad import EEGDyad, PREPROCESS_STEP_ICA_APPLY, PREPROCESS_STEP_RAW
 from hypyp.signal.synthetic_signal import SyntheticSignal
 from hypyp.utils import generate_random_epoch
 from hypyp.dataclasses.freq_band import FreqBand, FreqBands
@@ -28,11 +28,16 @@ def get_test_dyad() -> EEGDyad:
 
     raw1 = mne.io.RawArray(data1, info)
     raw2 = mne.io.RawArray(data2, info)
-    return EEGDyad.from_raws(raw1, raw2)
+    return EEGDyad.from_raws(raw1, raw2, label='test')
 
 def test_dyad():
     dyad = get_test_dyad()
     assert len(dyad.raws) == 2
+    assert dyad.label == 'test'
+    assert dyad.is_icas_computed == False
+    assert dyad.is_autoreject_applied == False
+    assert dyad.is_psds_computed == False
+    assert dyad.is_connectivity_computed == False
 
 def test_dyad_epochs():
     dyad = get_test_dyad()
@@ -120,8 +125,14 @@ def test_prep_ica_apply(dyad_factory):
     subject_idx = 0
     component_idx = 0
 
+    assert dyad.is_icas_computed == True
+    assert len(dyad.icas_applied) == 0
+
     data_before = dyad.epochs_merged.get_data(copy=False)
     dyad.prep_ica_apply(subject_idx, component_idx, threshold=0.01, label='dummy')
+    assert len(dyad.icas_applied) == 1
+    assert dyad.icas_applied[0] == 'dummy'
+
     data_after = dyad.epochs_merged.get_data(copy=False)
 
     assert len(dyad.ica1.labels_['dummy']) > 0
@@ -148,28 +159,28 @@ def test_prep_autoreject():
     dyad = EEGDyad.from_files(epo_file1, epo_file2)
     # Truncate to 20 epochs to run faster
     dyad.epos_add_step([epo[:20] for epo in dyad.epos])
-    dyad.prep_autoreject()
+    dyad.prep_autoreject_apply()
     assert dyad.dic_ar['dyad'] > 0
 
 def test_analyse_pow_average():
     dyad = EEGDyad.from_files(epo_file1, epo_file2)
     assert dyad.psds is None
-    dyad.analyse_pow(8, 12)
+    dyad.analyse_pow(FreqBands.from_simple_min_max(8, 12), epochs_average=True)
     assert len(dyad.psds) == 2
-    assert dyad.psd1.freqs[0] == 8
-    assert dyad.psd1.freqs[-1] == 12
-    assert len(dyad.psd1.psd.shape) == 2
-    assert len(dyad.psd1.ch_names) == len(dyad.epo1.ch_names)
+    assert dyad.psds1[0].freqs[0] == 8
+    assert dyad.psds1[0].freqs[-1] == 12
+    assert len(dyad.psds1[0].psd.shape) == 2
+    assert len(dyad.psds1[0].ch_names) == len(dyad.epo1.ch_names)
 
 def test_analyse_pow_not_average():
     dyad = EEGDyad.from_files(epo_file1, epo_file2)
     assert dyad.psds is None
-    dyad.analyse_pow(8, 12, epochs_average=False)
+    dyad.analyse_pow(FreqBands.from_simple_min_max(8, 12), epochs_average=False)
     assert len(dyad.psds) == 2
-    assert dyad.psd1.freqs[0] == 8
-    assert dyad.psd1.freqs[-1] == 12
-    assert len(dyad.psd1.psd.shape) == 3
-    assert len(dyad.psd1.ch_names) == len(dyad.epo1.ch_names)
+    assert dyad.psds1[0].freqs[0] == 8
+    assert dyad.psds1[0].freqs[-1] == 12
+    assert len(dyad.psds1[0].psd.shape) == 3
+    assert len(dyad.psds1[0].ch_names) == len(dyad.epo1.ch_names)
 
 
 @pytest.mark.parametrize('mode', [
@@ -186,8 +197,8 @@ def test_analyse_connectivity(mode):
     dyad = EEGDyad.from_files(epo_file1, epo_file2)
     dyad.compute_complex_signal_freq_bands()
     dyad.analyse_connectivity(mode)
-    assert dyad.connectivities[mode] is not None
-    conn = dyad.connectivities[mode]
+    assert dyad.connectivities_per_mode[mode] is not None
+    conn = dyad.connectivities_per_mode[mode]
     assert conn.mode == mode
     n_ch = len(dyad.epo1.ch_names)
     # TODO improve adressing
@@ -196,6 +207,14 @@ def test_analyse_connectivity(mode):
     assert conn.intra2[0].values.shape == (n_ch, n_ch)
 
     assert conn.intra1[0].ch_names[0] == dyad.epo1.ch_names
+
+def test_connectivity_mode_keys(mode):
+    dyad = EEGDyad.from_files(epo_file1, epo_file2)
+    dyad.compute_complex_signal_freq_bands()
+    dyad.analyse_connectivity('ccorr')
+    dyad.analyse_connectivity('plv')
+
+    assert dyad.connectivity_modes == ['ccorr', 'plv']
 
 def test_factory_class():
     dyad = Dyad.from_eeg_files(epo_file1, epo_file2)

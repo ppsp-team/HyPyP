@@ -59,7 +59,7 @@ class Connectivities():
     def intra2(self) -> list[Connectivity]:
         return self.intras[1]
     
-    def get_connectivities_based_on_subject_id(self, subject_id: int = None):
+    def get_based_on_subject_id(self, subject_id: int = None):
         # TODO: should subject_id be zero based or one based for
         if subject_id is None:
             return self.inter
@@ -72,15 +72,21 @@ class Connectivities():
 
         raise ValueError(f"Cannot have connectivity of subject_id '{subject_id}'")
     
-    def get_connectivity_for_freq_band(self, freq_band_name, subject_id: int = None):
-        for connectivity in self.get_connectivities_based_on_subject_id(subject_id):
+    def get_for_freq_band(self, freq_band_name, subject_id: int | None):
+        for connectivity in self.get_based_on_subject_id(subject_id):
             if connectivity.freq_band.name == freq_band_name:
                 return connectivity
 
         raise ValueError(f"Cannot find connectivity for freq_band {freq_band_name}")
     
+    def get_inter_for_freq_band(self, freq_band_name):
+        return self.get_for_freq_band(freq_band_name, None)
+    
+    def get_intra_for_freq_band(self, freq_band_name, subject_id: int):
+        return self.get_for_freq_band(freq_band_name, subject_id)
+    
     def plot_connectivity_for_freq_band(self, freq_band_name):
-        conn = self.get_connectivity_for_freq_band(freq_band_name)
+        conn = self.get_inter_for_freq_band(freq_band_name)
         flat = conn.zscore.flatten()
         dfs = []
         df_inter = pd.DataFrame({
@@ -93,7 +99,7 @@ class Connectivities():
         dfs.append(df_inter)
 
         for subject_id in [1, 2]:
-            conn = self.get_connectivity_for_freq_band(freq_band_name, subject_id)
+            conn = self.get_inter_for_freq_band(freq_band_name, subject_id)
             flat = conn.zscore.flatten()
             df_intra = pd.DataFrame({
                 'coherence': flat,

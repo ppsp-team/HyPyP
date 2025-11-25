@@ -6,7 +6,7 @@ from ..core.base_step import BaseStep
 
 from ..signal.complex_signal import ComplexSignal
 PREPROCESS_STEP_RAW = 'raw'
-PREPROCESS_STEP_ICA_FIT = 'ica_fit'
+PREPROCESS_STEP_ICA_APPLY = 'ica_apply'
 PREPROCESS_STEP_AR = 'autoreject'
 
 class EEGStep(BaseStep[mne.Epochs]):

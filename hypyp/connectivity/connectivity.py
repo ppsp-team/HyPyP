@@ -14,11 +14,15 @@ class Connectivity():
     zscore: np.ndarray
     ch_names: tuple[list[str], list[str]]
 
-    def plot_zscore(self, ax:Axes = None):
+    def plot_zscore(self, ax:Axes = None, title: str = None):
+        if title is None:
+            title = f"Z Score {self.freq_band.name}"
+
         if ax is None:
             fig, ax = plt.subplots(1, 1)
         else:
             fig = ax.get_figure()
-        sns.heatmap(self.zscore, cmap='viridis', cbar=True, ax=ax)
+        sns.heatmap(self.zscore, xticklabels=self.ch_names[0], yticklabels=self.ch_names[1], cmap='viridis', cbar=True, ax=ax)
+        ax.set_title(title)
         return fig
 

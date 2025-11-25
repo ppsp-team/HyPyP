@@ -7,6 +7,9 @@ import pooch
 
 DOWNLOADS_RELATIVE_PATH = os.path.join('data', 'NIRS', 'downloads')
 
+# Template URL for downloading participant data
+DEMO_EEG_EPO_URL_TEMPLATE = "https://github.com/ppsp-team/HyPyP/blob/master/data/participant{}-epo.fif?raw=true"
+
 class DataBrowser:
     absolute_root_path: str
     paths: List[str]
@@ -113,3 +116,9 @@ class DataBrowser:
         self.add_source(target_path)
         return target_path
     
+    def download_demo_eeg_epochs(self, idx: int = 1, verbose: bool = False):
+        url = DEMO_EEG_EPO_URL_TEMPLATE.format(idx)
+        file_name = f"participant{idx}-epo.fif"
+        if verbose:
+            print(f'Demo data from {url}')
+        return pooch.retrieve(fname = file_name, url = url, known_hash = None, progressbar = verbose)
