@@ -208,7 +208,7 @@ def test_analyse_connectivity(mode):
 
     assert conn.intra1[0].ch_names[0] == dyad.epo1.ch_names
 
-def test_connectivity_mode_keys(mode):
+def test_connectivity_mode_keys():
     dyad = EEGDyad.from_files(epo_file1, epo_file2)
     dyad.compute_complex_signal_freq_bands()
     dyad.analyse_connectivity('ccorr')
