@@ -201,7 +201,6 @@ def test_analyse_connectivity(mode):
     conn = dyad.connectivities_per_mode[mode]
     assert conn.mode == mode
     n_ch = len(dyad.epo1.ch_names)
-    # TODO improve adressing
     assert conn.inter[0].values.shape == (n_ch, n_ch)
     assert conn.intra1[0].values.shape == (n_ch, n_ch)
     assert conn.intra2[0].values.shape == (n_ch, n_ch)

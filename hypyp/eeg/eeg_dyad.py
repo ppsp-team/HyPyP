@@ -318,22 +318,23 @@ class EEGDyad(BaseDyad):
         return 
     
     def __repr__(self):
+        nl = "\n" # cannot have backslashes in multiline below
         return f"""EEGDyad
   label: {self.label}
   sfreq: {self.sfreq}
   n epochs initial: s1: {len(self.steps[0].epos[0])}, s2: {len(self.steps[0].epos[1])}
   n epochs remaining: s1: {len(self.steps[-1].epos[0])}, s2: {len(self.steps[-1].epos[1])}
   steps: 
-{"\n".join([f"  - {step.name}" for step in self.steps])}
+{nl.join([f"  - {step.name}" for step in self.steps])}
   icas computed: {'yes' if self.is_icas_computed else 'no'}
   icas applied:
-{"\n".join([f"  - {label}" for label in self.icas_applied])}
+{nl.join([f"  - {label}" for label in self.icas_applied])}
   autoreject applied: {f"yes ({self.dic_ar['dyad']:.1f}% rejected)" if self.is_autoreject_applied else 'no'}
   psd computed: {'yes' if self.is_psds_computed else 'no'}
-{"\n".join([f"  - {psd.band_name}" for psd in self.psds1]) if self.is_psds_computed else ""}
+{nl.join([f"  - {psd.band_name}" for psd in self.psds1]) if self.is_psds_computed else ""}
   complex signal computed: {'yes' if self.is_complex_signal_computed else 'no'}
   connectivity computed: {'yes' if self.is_connectivity_computed else 'no'}
-{"\n".join([f"  - {mode}" for mode in self.connectivity_modes])}
+{nl.join([f"  - {mode}" for mode in self.connectivity_modes])}
 """
     # steps: list[EEGDyadStep]
     # sfreq: float
