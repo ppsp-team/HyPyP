@@ -291,3 +291,45 @@ def test_compute_nmPLV(epochs):
     assert hPLV < PLV1
     assert hPLV < PLV2
     assert (PLV1 - PLV2) < 1e-2
+
+
+def test_pair_connectivity_accorr(epochs):
+    """
+    Test adjusted circular correlation (accorr) connectivity metric.
+    """
+    mne.epochs.equalize_epoch_counts([epochs.epo1, epochs.epo2])
+    
+    # Test with epochs_average=True
+    con = analyses.pair_connectivity(
+        np.array([epochs.epo1, epochs.epo2]),
+        sampling_rate=epochs.epo1.info['sfreq'],
+        frequencies=[8, 12],
+        mode='accorr',
+        epochs_average=True
+    )
+    
+    n_channels = len(epochs.epo1.info['ch_names'])
+    # Shape should be (n_freq, 2*n_channels, 2*n_channels)
+    assert con.shape[1] == 2 * n_channels
+    assert con.shape[2] == 2 * n_channels
+    
+    # Values should be bounded (typically between -1 and 1 for correlation)
+    assert np.all(np.isfinite(con))
+    
+    # Test with epochs_average=False
+    con_no_avg = analyses.pair_connectivity(
+        np.array([epochs.epo1, epochs.epo2]),
+        sampling_rate=epochs.epo1.info['sfreq'],
+        frequencies=[8, 12],
+        mode='accorr',
+        epochs_average=False
+    )
+    
+    # Shape should be (n_freq, n_epochs, 2*n_channels, 2*n_channels)
+    assert con_no_avg.shape[1] == len(epochs.epo1)
+    assert con_no_avg.shape[2] == 2 * n_channels
+    assert con_no_avg.shape[3] == 2 * n_channels
+    
+    # Diagonal should have high values (self-correlation)
+    diag_values = np.array([con[0, i, i] for i in range(con.shape[1])])
+    assert np.mean(diag_values) > 0.5
