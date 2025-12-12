@@ -228,7 +228,8 @@ class BaseWavelet(ABC):
 
         periods = cwt1.periods
         scales = cwt1.scales
-        times = cwt1.times
+        # Add the offset of pair times, if the time does not start at zero
+        times = cwt1.times + pair.x[0]
 
         scaleMatrix = np.ones([1, N]) * scales[:, None]
         smoothing_kwargs = dict(

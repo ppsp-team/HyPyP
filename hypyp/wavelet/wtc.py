@@ -278,6 +278,8 @@ class WTC:
 
     def get_as_time_series(self, window_size=10) -> np.ndarray:
         p_ranges = self.p_ranges
+        # TODO we sometimes have one extra small range at the end
+        print(p_ranges)
         data = np.ma.zeros((len(p_ranges), self.wtc_masked.shape[1]))
         for i in range(len(p_ranges)):
             p_start, p_stop = p_ranges[i]

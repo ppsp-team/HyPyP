@@ -297,6 +297,9 @@ class EEGDyad(BaseDyad):
         self.connectivities_per_mode[mode] = Connectivities(mode, self.complex_signal.freq_bands, matrix, (self.epo1.ch_names, self.epo2.ch_names))
         return self
 
+    def get_synchrony_time_series(self):
+        raise NotImplementedError()
+
     def plot_icas_components(self) -> 'EEGDyad':
         for i, ica in enumerate(self.icas):
             print(f"Subject idx: {i}")

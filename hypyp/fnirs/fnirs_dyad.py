@@ -372,6 +372,54 @@ class FNIRSDyad(BaseDyad):
 
         return CoherenceDataFrame.from_wtc_frame_rows(frame_rows)
 
+    def get_all_wtcs_as_ts_matrix(self, wtcs:list[WTC]):
+        # Make sure that all received belong together (are aligned)
+        n_rows = len(wtcs)
+        max_time = 0
+        for wtc in wtcs:
+            if wtc.times[-1] > max_time:
+                max_time = wtc.times[-1]
+        
+        n_ranges = len(wtcs[0].p_ranges)
+        n_ts = int(np.ceil(max_time / wtcs[0].dt)) + 1
+        shape = (n_rows, n_ranges, n_ts)
+        mat = np.full(shape, np.nan)
+        for row_idx, wtc in enumerate(wtcs):
+            if wtc.times[0] == 0:
+                col_start = 0
+            else:
+                col_start = int(wtc.times[0] / wtc.dt)
+            
+            col_end = col_start + len(wtc.times)
+
+            # TODO check if we want to adjust the window
+            # TODO see if we want to put some nan for edge values
+            ts = wtc.get_as_time_series()
+            # TODO must deal with all the "ranges". Each row is a range
+            # TODO we sometimes have an extra range like this on the wtc. This is from 2 segments
+            # [(0, 28), (28, 40)]
+            # (2, 20)
+            # [(0, 28), (28, 39), (39, 40)]
+            # (3, 741)
+            mat[row_idx, :, col_start:col_end] = ts[:n_ranges,:]
+
+        return mat
+
+    def get_synchrony_time_series(self):
+        wtcs_per_task = dict()
+        ret = dict()
+        for wtc in self.wtcs:
+            k = wtc.task
+            if k not in wtcs_per_task.keys():
+                wtcs_per_task[k] = []
+            wtcs_per_task[k].append(wtc)
+        
+        for task, wtcs in wtcs_per_task.items():
+            mat = self.get_all_wtcs_as_ts_matrix(wtcs)
+            ret[task] = np.nanmean(mat, axis=0)
+        
+        return ret
+
     def reset(self):
         self.s1.intra_wtcs = None
         self.s2.intra_wtcs = None

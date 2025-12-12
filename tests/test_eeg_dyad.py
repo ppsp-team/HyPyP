@@ -1,14 +1,17 @@
 import pytest
 import os
+import logging
 
 import mne
 import numpy as np
 
-from hypyp.dyad import Dyad
 from hypyp.eeg.eeg_dyad import EEGDyad, PREPROCESS_STEP_ICA_APPLY, PREPROCESS_STEP_RAW
 from hypyp.signal.synthetic_signal import SyntheticSignal
 from hypyp.utils import generate_random_epoch
 from hypyp.dataclasses.freq_band import FreqBand, FreqBands
+
+# avoid all the output from mne
+logging.disable()
 
 epo_file1 = os.path.join("data", "participant1-epo.fif")
 epo_file2 = os.path.join("data", "participant2-epo.fif")
@@ -51,7 +54,7 @@ def test_dyad_epochs():
 
 def test_dyad_factory_from_raws():
     template_dyad = get_test_dyad()
-    dyad = Dyad.from_eeg_raws(template_dyad.raw1, template_dyad.raw2)
+    dyad = EEGDyad.from_raws(template_dyad.raw1, template_dyad.raw2)
     assert np.all(dyad.raw1.get_data() == template_dyad.raw1.get_data())
     assert np.all(dyad.raw2.get_data() == template_dyad.raw2.get_data())
 
@@ -65,11 +68,7 @@ def test_dyad_epochs_merged():
     #assert epochs
 
 
-@pytest.mark.parametrize('dyad_factory', [
-   EEGDyad.from_raw_merge,
-   Dyad.from_eeg_raw_merge,
-])  
-def test_dyad_from_raw_merge(dyad_factory):
+def test_dyad_from_raw_merge():
     base_dyad = get_test_dyad()
     raw1 = base_dyad.raw1
     raw2 = base_dyad.raw2
@@ -79,48 +78,32 @@ def test_dyad_from_raw_merge(dyad_factory):
     info = mne.create_info(ch_names, raw1.info['sfreq'], ch_types)
     raw = mne.io.RawArray(merged_data, info)
 
-    new_dyad = dyad_factory(raw)
+    new_dyad = EEGDyad.from_raw_merge(raw)
     assert np.all(new_dyad.raw1.get_data() == base_dyad.raw1.get_data())
     assert np.all(new_dyad.raw2.get_data() == base_dyad.raw2.get_data())
 
-@pytest.mark.parametrize('dyad_factory', [
-   EEGDyad.from_epochs,
-   Dyad.from_eeg_epochs,
-])  
-def test_dyad_create_from_epochs(dyad_factory):
+def test_dyad_create_from_epochs():
     epo_template = get_test_dyad().epo1
     epos = [
         generate_random_epoch(epo_template),
         generate_random_epoch(epo_template),
     ]
-    dyad = dyad_factory(*epos)
+    dyad = EEGDyad.from_epochs(*epos)
     assert dyad.epo1.get_data(copy=False).shape == epos[0].get_data(copy=False).shape
     assert dyad.epo2.get_data(copy=False).shape == epos[0].get_data(copy=False).shape
 
-@pytest.mark.parametrize('dyad_factory', [
-   EEGDyad.from_files,
-   Dyad.from_eeg_files,
-])  
-def test_dyad_create_from_epo_file(dyad_factory):
-    dyad: EEGDyad = dyad_factory(epo_file1, epo_file2)
+def test_dyad_create_from_epo_file():
+    dyad = EEGDyad.from_files(epo_file1, epo_file2)
     assert dyad.epo1.get_data(copy=False).shape == dyad.epo2.get_data(copy=False).shape
 
-@pytest.mark.parametrize('dyad_factory', [
-   EEGDyad.from_files,
-   Dyad.from_eeg_files,
-])  
-def test_prep_ica_fit(dyad_factory):
-    dyad: EEGDyad = dyad_factory(epo_file1, epo_file2)
+def test_prep_ica_fit():
+    dyad: EEGDyad = EEGDyad.from_files(epo_file1, epo_file2)
     assert dyad.icas == None
     dyad.prep_ica_fit(2)
     assert len(dyad.icas) == 2
 
-@pytest.mark.parametrize('dyad_factory', [
-   EEGDyad.from_files,
-   Dyad.from_eeg_files,
-])  
-def test_prep_ica_apply(dyad_factory):
-    dyad: EEGDyad = dyad_factory(epo_file1, epo_file2)
+def test_prep_ica_apply():
+    dyad: EEGDyad = EEGDyad.from_files(epo_file1, epo_file2)
     dyad.prep_ica_fit(2)
     subject_idx = 0
     component_idx = 0
@@ -139,12 +122,8 @@ def test_prep_ica_apply(dyad_factory):
     # if some component has been removed, we should have a lower amplitude
     assert np.sum(np.abs(data_before)) > np.sum(np.abs(data_after))
 
-@pytest.mark.parametrize('dyad_factory', [
-   EEGDyad.from_files,
-   Dyad.from_eeg_files,
-])  
-def test_pipeline_track_steps(dyad_factory):
-    dyad: EEGDyad = dyad_factory(epo_file1, epo_file2)
+def test_pipeline_track_steps():
+    dyad = EEGDyad.from_files(epo_file1, epo_file2)
     assert len(dyad.steps) == 1
     assert dyad.steps[0].name == PREPROCESS_STEP_RAW
 
@@ -215,9 +194,6 @@ def test_connectivity_mode_keys():
 
     assert dyad.connectivity_modes == ['ccorr', 'plv']
 
-def test_factory_class():
-    dyad = Dyad.from_eeg_files(epo_file1, epo_file2)
-
 def test_frequency_bands():
     freq_bands = FreqBands({
         'Alpha-Low': [7.5, 11],
@@ -228,3 +204,7 @@ def test_frequency_bands():
     assert freq_bands['Alpha-Low'].fmin == 7.5
     assert freq_bands['Alpha-Low'][0] == 7.5
     assert freq_bands['Alpha-Low'][1] == 11
+
+# TODO
+#def test_synchrony_time_series():
+#    assert False
