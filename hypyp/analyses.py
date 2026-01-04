@@ -21,6 +21,7 @@ import copy
 from collections import namedtuple
 from typing import Union, List, Tuple
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 plt.ion()
 
@@ -368,6 +369,7 @@ def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int,
         - 'pow_corr': power correlation
         - 'plv': phase locking value
         - 'ccorr': circular correlation coefficient
+        - 'accorr': adjusted circular correlation coefficient
         - 'coh': coherence
         - 'imaginary_coh': imaginary coherence
         - 'pli': phase lag index
@@ -451,6 +453,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
         - 'pow_corr': power correlation - correlation between signal power
         - 'plv': phase locking value - consistency of phase differences
         - 'ccorr': circular correlation coefficient - circular statistic for phase coupling
+        - 'accorr': adjusted circular correlation - circular correlation with optimized phase centering
         - 'coh': coherence - normalized cross-spectrum
         - 'imaginary_coh': imaginary coherence - imaginary part of coherence (volume conduction resistant)
         - 'pli': phase lag index - asymmetry of phase difference distribution
@@ -547,6 +550,10 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
         con = np.abs(np.einsum(formula, angle, angle.transpose(transpose_axes)) /
                      np.sqrt(np.einsum('nil,nik->nilk', np.sum(angle ** 2, axis=3), 
                                        np.sum(angle ** 2, axis=3))))
+
+    elif mode.lower() == 'accorr':
+        con = _accorr_hybrid(complex_signal, epochs_average=epochs_average, show_progress=True)
+        return con
         
     elif mode.lower() == 'pli':
         c = np.real(complex_signal)
@@ -1151,3 +1158,159 @@ def _multiply_conjugate_time(real: np.ndarray, imag: np.ndarray, transpose_axes:
                np.einsum(formula, imag, real.transpose(transpose_axes)))
     
     return product
+
+
+# helper function
+def _multiply_product(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
+    """
+    Computes the product of two complex arrays (not conjugate) efficiently.
+    
+    This helper function performs matrix multiplication between complex arrays
+    represented by their real and imaginary parts, collapsing the last dimension.
+    Unlike _multiply_conjugate, this computes z1 * z2 instead of z1 * conj(z2).
+    
+    Parameters
+    ----------
+    real : np.ndarray
+        Real part of the complex array
+        
+    imag : np.ndarray
+        Imaginary part of the complex array
+        
+    transpose_axes : tuple
+        Axes to transpose for matrix multiplication
+    
+    Returns
+    -------
+    product : np.ndarray
+        Product of the array with itself (non-conjugate)
+    
+    Notes
+    -----
+    This function implements the formula for z1 * z2:
+    product = (real × real.T - imag × imag.T) + i(real × imag.T + imag × real.T)
+    
+    Using einsum for efficient computation without explicitly creating complex arrays.
+    This is used in the adjusted circular correlation (accorr) metric.
+    """
+    formula = 'jilm,jimk->jilk'
+    product = np.einsum(formula, real, real.transpose(transpose_axes)) - \
+              np.einsum(formula, imag, imag.transpose(transpose_axes)) + 1j * \
+              (np.einsum(formula, real, imag.transpose(transpose_axes)) + \
+               np.einsum(formula, imag, real.transpose(transpose_axes)))
+
+    return product
+
+
+# helper function
+def _accorr_hybrid(complex_signal: np.ndarray, epochs_average: bool = True, 
+                   show_progress: bool = True) -> np.ndarray:
+    """
+    Computes Adjusted Circular Correlation using a hybrid approach.
+    
+    This function calculates the adjusted circular correlation coefficient between
+    all channel pairs. It uses a vectorized computation for the numerator and an
+    exact loop-based computation for the denominator.
+    
+    Parameters
+    ----------
+    complex_signal : np.ndarray
+        Complex analytic signals with shape (n_epochs, n_freq, 2*n_channels, n_times)
+        Note: This is the already reshaped signal from compute_sync.
+        
+    epochs_average : bool, optional
+        If True, connectivity values are averaged across epochs (default)
+        If False, epoch-by-epoch connectivity is preserved
+        
+    show_progress : bool, optional
+        If True, display a progress bar during computation (default)
+        If False, no progress bar is shown
+    
+    Returns
+    -------
+    con : np.ndarray
+        Adjusted circular correlation matrix with shape:
+        - If epochs_average=True: (n_freq, 2*n_channels, 2*n_channels)
+        - If epochs_average=False: (n_freq, n_epochs, 2*n_channels, 2*n_channels)
+    
+    Notes
+    -----
+    The adjusted circular correlation is computed as:
+    
+    1. Numerator (vectorized): Uses the difference between the absolute values of
+       the conjugate product and the direct product of normalized complex signals.
+       
+    2. Denominator (loop): For each channel pair, computes optimal phase centering
+       parameters (m_adj, n_adj) that minimize the denominator, then calculates
+       the normalization factor.
+    
+    This metric provides a more accurate measure of circular correlation by
+    adjusting the phase centering for each channel pair individually, rather than
+    using a global circular mean.
+    
+    References
+    ----------
+    Zimmermann, M., Schultz-Nielsen, K., Dumas, G., & Konvalinka, I. (2024).
+    Arbitrary methodological decisions skew inter-brain synchronization estimates
+    in hyperscanning-EEG studies. Imaging Neuroscience, 2.
+    https://doi.org/10.1162/imag_a_00350
+    """
+    n_epochs = complex_signal.shape[0]
+    n_freq = complex_signal.shape[1]
+    n_ch_total = complex_signal.shape[2]
+    
+    transpose_axes = (0, 1, 3, 2)
+    
+    # Numerator (vectorized)
+    z = complex_signal / np.abs(complex_signal)
+    c, s = np.real(z), np.imag(z)
+    
+    cross_conj = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
+    r_minus = np.abs(cross_conj)
+    
+    cross_prod = _multiply_product(c, s, transpose_axes=transpose_axes)
+    r_plus = np.abs(cross_prod)
+    
+    num = r_minus - r_plus
+    
+    # Denominator (loop)
+    angle = np.angle(complex_signal)
+    den = np.zeros((n_epochs, n_freq, n_ch_total, n_ch_total))
+    
+    total_pairs = (n_ch_total * (n_ch_total + 1)) // 2
+    pbar = tqdm(total=total_pairs, desc="    accorr (denominator)", 
+                disable=not show_progress, leave=False)
+    
+    for i in range(n_ch_total):
+        for j in range(i, n_ch_total):
+            alpha1 = angle[:, :, i, :]
+            alpha2 = angle[:, :, j, :]
+            
+            phase_diff = alpha1 - alpha2
+            phase_sum = alpha1 + alpha2
+            
+            mean_diff = np.angle(np.mean(np.exp(1j * phase_diff), axis=2, keepdims=True))
+            mean_sum = np.angle(np.mean(np.exp(1j * phase_sum), axis=2, keepdims=True))
+            
+            n_adj = -1 * (mean_diff - mean_sum) / 2
+            m_adj = mean_diff + n_adj
+            
+            x_sin = np.sin(alpha1 - m_adj)
+            y_sin = np.sin(alpha2 - n_adj)
+            
+            den_ij = 2 * np.sqrt(np.sum(x_sin**2, axis=2) * np.sum(y_sin**2, axis=2))
+            den[:, :, i, j] = den_ij
+            den[:, :, j, i] = den_ij
+            
+            pbar.update(1)
+    
+    pbar.close()
+    
+    den = np.where(den == 0, 1, den)
+    con = num / den
+    con = con.swapaxes(0, 1)  # n_freq x n_epoch x 2*n_ch x 2*n_ch
+    
+    if epochs_average:
+        con = np.nanmean(con, axis=1)
+    
+    return con

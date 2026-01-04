@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- New connectivity metric: Adjusted Circular Correlation (`accorr`) in `analyses.py`
+  - Hybrid implementation with vectorized numerator and exact denominator computation
+  - Progress bar support via `tqdm` for monitoring computation progress
+  - Available through `pair_connectivity()` and `compute_sync()` functions with `mode='accorr'`
+
 ## [0.5.0b13] - 2025-09-18
 
 ### Security
