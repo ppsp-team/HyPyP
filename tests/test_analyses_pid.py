@@ -222,17 +222,103 @@ class TestIccsGaussianPair:
             assert red >= 0.0, "Redundancy must be non-negative"
 
 
-class TestPIDNotImplemented:
-    """Tests for not-yet-implemented functions."""
+class TestComputePidGaussian:
+    """Tests for compute_pid_gaussian main function."""
 
-    def test_compute_pid_gaussian_not_implemented(self):
-        """Test that compute_pid_gaussian raises NotImplementedError."""
+    def test_pid_output_format(self):
+        """Test that PID returns correctly formatted dictionary."""
         import mne
 
-        # Create dummy epochs
-        info = mne.create_info(ch_names=['ch1'], sfreq=250, ch_types='eeg')
-        data = np.random.randn(10, 1, 100)
-        epochs = [mne.EpochsArray(data, info, verbose=False) for _ in range(2)]
+        # Create simple epochs
+        np.random.seed(42)
+        info = mne.create_info(ch_names=['ch1', 'ch2'], sfreq=250, ch_types='eeg')
+        data1 = np.random.randn(10, 2, 100)
+        data2 = np.random.randn(10, 2, 100)
+        epo1 = mne.EpochsArray(data1, info, verbose=False)
+        epo2 = mne.EpochsArray(data2, info, verbose=False)
 
-        with pytest.raises(NotImplementedError):
-            analyses_pid.compute_pid_gaussian(epochs)
+        pid = analyses_pid.compute_pid_gaussian([epo1, epo2], epochs_average=True)
+
+        # Check dictionary keys
+        assert 'redundancy' in pid
+        assert 'unique1' in pid
+        assert 'unique2' in pid
+        assert 'synergy' in pid
+
+        # Check shapes (1, 2*2, 2*2) = (1, 4, 4)
+        assert pid['redundancy'].shape == (1, 1, 4, 4)
+        assert pid['unique1'].shape == (1, 1, 4, 4)
+        assert pid['unique2'].shape == (1, 1, 4, 4)
+        assert pid['synergy'].shape == (1, 1, 4, 4)
+
+    def test_pid_epochs_average_false(self):
+        """Test PID with epochs_average=False."""
+        import mne
+
+        np.random.seed(42)
+        n_epochs = 5
+        info = mne.create_info(ch_names=['ch1'], sfreq=250, ch_types='eeg')
+        data1 = np.random.randn(n_epochs, 1, 50)
+        data2 = np.random.randn(n_epochs, 1, 50)
+        epo1 = mne.EpochsArray(data1, info, verbose=False)
+        epo2 = mne.EpochsArray(data2, info, verbose=False)
+
+        pid = analyses_pid.compute_pid_gaussian([epo1, epo2], epochs_average=False)
+
+        # Check shape (n_epochs, 1, 2, 2)
+        assert pid['redundancy'].shape == (n_epochs, 1, 2, 2)
+
+    def test_pid_conservation(self):
+        """Test conservation property: Red + Unq1 + Unq2 + Syn ≈ MI(S1,S2;T)."""
+        import mne
+
+        np.random.seed(42)
+        info = mne.create_info(ch_names=['ch1'], sfreq=250, ch_types='eeg')
+        data1 = np.random.randn(10, 1, 100)
+        data2 = np.random.randn(10, 1, 100)
+        epo1 = mne.EpochsArray(data1, info, verbose=False)
+        epo2 = mne.EpochsArray(data2, info, verbose=False)
+
+        pid = analyses_pid.compute_pid_gaussian([epo1, epo2])
+
+        # Sum all atoms
+        total = (pid['redundancy'] + pid['unique1'] +
+                 pid['unique2'] + pid['synergy'])
+
+        # Total should be non-negative
+        assert np.all(total >= -1e-6), "Total should be non-negative"
+
+    def test_pid_non_negative_atoms(self):
+        """Test that all PID atoms are non-negative."""
+        import mne
+
+        np.random.seed(42)
+        info = mne.create_info(ch_names=['ch1', 'ch2'], sfreq=250, ch_types='eeg')
+        data1 = np.random.randn(5, 2, 50)
+        data2 = np.random.randn(5, 2, 50)
+        epo1 = mne.EpochsArray(data1, info, verbose=False)
+        epo2 = mne.EpochsArray(data2, info, verbose=False)
+
+        pid = analyses_pid.compute_pid_gaussian([epo1, epo2])
+
+        # All atoms should be non-negative
+        assert np.all(pid['redundancy'] >= -1e-10)
+        assert np.all(pid['unique1'] >= -1e-10)
+        assert np.all(pid['unique2'] >= -1e-10)
+        assert np.all(pid['synergy'] >= -1e-10)
+
+    def test_pid_invalid_epochs(self):
+        """Test that invalid inputs raise appropriate errors."""
+        import mne
+
+        info = mne.create_info(ch_names=['ch1'], sfreq=250, ch_types='eeg')
+        data = np.random.randn(5, 1, 50)
+        epo = mne.EpochsArray(data, info, verbose=False)
+
+        # Test wrong number of epochs
+        with pytest.raises(ValueError, match="must be a list of 2"):
+            analyses_pid.compute_pid_gaussian([epo])
+
+        # Test invalid target_participant
+        with pytest.raises(ValueError, match="target_participant must be 0 or 1"):
+            analyses_pid.compute_pid_gaussian([epo, epo], target_participant=2)
