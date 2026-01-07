@@ -3008,6 +3008,26 @@ files = [
 ptyprocess = ">=0.5"
 
 [[package]]
+name = "phyid"
+version = "0+untagged.6.g16421d6"
+description = "Python Toolbox for Information Decomposition"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = []
+develop = false
+
+[package.dependencies]
+numpy = "*"
+scipy = "*"
+
+[package.source]
+type = "git"
+url = "https://github.com/Imperial-MIND-lab/integrated-info-decomp.git"
+reference = "HEAD"
+resolved_reference = "16421d68a00ac4f24e60f34eba197b76ee9ebdcb"
+
+[[package]]
 name = "pillow"
 version = "11.3.0"
 description = "Python Imaging Library (Fork)"
@@ -5321,4 +5341,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "d7ce7d8f7ecf1fdef20e5ed513110ea855c8b093e753a0f68ae84c19ca8b47c8"
+content-hash = "33bfdb41def280c9b63dfac19150f759567a6649e7049e00533ae043e1338276"
