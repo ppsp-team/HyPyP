@@ -161,33 +161,39 @@ class WTC:
     
     @property
     def p_ranges(self):
+        n_periods = len(self.periods)
         if self.period_cuts is None:
             # single bin
-            p_ranges = [(0, len(self.periods))]
+            p_ranges = [(0, n_periods)]
         else:
             p_ranges = []
-            start_look_at = 0
-            for cut in self.period_cuts:
-                cursor = start_look_at
+            low_idx = 0
+            for period_cut in self.period_cuts:
+                cursor_idx = low_idx
 
-                if cursor < len(self.periods) and cut < self.periods[cursor]:
-                    # skip
-                    continue
+                if cursor_idx < n_periods and period_cut < self.periods[cursor_idx]:
+                    # period cut is too small, skip
+                    continue # for loop, next period_cut
+                
 
-                while cursor < len(self.periods):
-                    if self.periods[cursor] > cut and cursor > start_look_at:
-                        p_ranges.append((start_look_at, cursor))
-                        start_look_at = cursor
+                while cursor_idx < n_periods:
+                    cursor_period = self.periods[cursor_idx]
+                    if cursor_period > period_cut and cursor_idx > low_idx:
+                        print(cursor_period)
+                        high_idx = cursor_idx
+                        p_ranges.append((low_idx, high_idx))
+                        # next "low" is the last "high"
+                        low_idx = high_idx
                         break
-                    cursor += 1
+                    cursor_idx += 1
             
             # add one last for the remaining
             if len(p_ranges) == 0:
-                p_ranges.append((0, len(self.periods)))
+                p_ranges.append((0, n_periods))
             else:
-                last_i = p_ranges[-1][1]
-                if last_i < len(self.periods):
-                    p_ranges.append((last_i, len(self.periods)))
+                last_range_value = p_ranges[-1][1]
+                if last_range_value < n_periods:
+                    p_ranges.append((last_range_value, n_periods))
                 
         return p_ranges
     

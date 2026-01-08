@@ -158,6 +158,10 @@ class BaseWavelet(ABC):
         n_scales = np.log2(high/low) 
         n_steps = int(np.round(n_scales / self.dj))
         periods = np.logspace(np.log2(low), np.log2(high), n_steps, base=2)
+        # requesting periods with high value of "20" gives us "20.000000000000004"
+        # make sure our last period is not bigger than the actual requested period
+        if periods[-1] > high:
+            periods[-1] = high
         return periods
         
     def wtc(self,
