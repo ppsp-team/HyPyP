@@ -353,7 +353,8 @@ def test_dyad_wtc_nan_channel_section():
 
     synchronies = dyad.get_synchrony_time_series()
     # We should have rows for "frequency range" and cols for time series
-    assert len(synchronies['task1'].shape) == 2
+    assert len(synchronies.by_task['task1'].time_series_per_range.shape) == 2
+    assert synchronies.by_task['task1'].time_series_per_range.shape[0] == 1
     assert np.nanmean(synchronies['task1']) > 0
 
 def test_study_wtc():
