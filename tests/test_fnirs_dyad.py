@@ -524,15 +524,48 @@ def test_study_run_estimation(capsys):
     out = capsys.readouterr()
     assert 'time' in str(out)
 
+
 def test_synchrony_time_series():
     recordings = get_test_recordings()
     dyad = FNIRSDyad(*recordings)
-    dyad.compute_wtcs()
+    dyad.compute_wtcs(period_cuts=[3, 10])
 
     mat = dyad.get_all_wtcs_as_ts_matrix(dyad.wtcs)
     assert mat.shape[0] == len(dyad.wtcs)
 
     synchronies = dyad.get_synchrony_time_series()
-    assert len(synchronies['task1'].shape) == 2
-    assert not np.isnan(synchronies['task1'][0,0])
-    assert not np.isnan(synchronies['task1'][0,-1])
+    assert len(synchronies.by_task['task1'].time_series_per_range.shape) == 2
+    assert synchronies.by_task['task1'].time_series_per_range.shape[0] == 3 # the cuts makes 3 "ranges"
+
+    # Check that we mask values when we don't have a valid WTC (cone of influence)
+    assert np.isnan(synchronies.by_task['task1'].time_series_per_range[0, 0]) == True
+    assert np.isnan(synchronies.by_task['task1'].time_series_per_range[0, -1]) == True
+    assert np.isnan(synchronies.by_task['task1'].time_series_per_range[0, 100]) == False
+    assert np.isnan(synchronies.by_task['task1'].time_series_per_range[-1, 100]) == True
+
+def test_synchrony_time_series_perfect_coherence():
+    import matplotlib.pyplot as plt
+    # use the same recording to have perfect coherence,
+    # but load it twice, otherwise if it is the same python object, it will be computed as "intra-subject"
+    s1 = get_test_recording()
+    s2 = get_test_recording()
+    # use twice the same recording
+    dyad = FNIRSDyad(s1, s2)
+    # use only one channel
+    dyad.compute_wtcs(period_cuts=[3, 4, 10], ch_match=['S1_D1 850'])
+
+    mat = dyad.get_all_wtcs_as_ts_matrix(dyad.wtcs)
+    #print(mat)
+    assert mat.shape[0] == len(dyad.wtcs)
+
+    synchronies = dyad.get_synchrony_time_series()
+
+    for freq_range, ts in synchronies.by_task['task1'].by_freq_range.items():
+        value = np.nanmean(ts)
+        print(f"synchrony for freq_range: {freq_range}: {value}")
+
+    assert np.nanmean(synchronies.by_task['task1'].time_series_per_range[0,:]) == pytest.approx(1.0)
+    assert np.nanmean(synchronies.by_task['task1'].time_series_per_range[1,:]) == pytest.approx(1.0)
+    assert np.nanmean(synchronies.by_task['task1'].time_series_per_range[2,:]) == pytest.approx(1.0)
+    # the last one is period of 10sec and above, should not have any value since it is all masked (cone of influence)
+    assert np.isnan(np.mean(synchronies.by_task['task1'].time_series_per_range[3,:]))

@@ -3,6 +3,7 @@ import mne
 from ..core import BaseDyad
 from ..eeg import EEGDyad
 from ..fnirs import FNIRSDyad
+from ..dataclasses.synchrony import SynchronyTimeSeries
 
 class MultimodalDyad():
     eeg: EEGDyad | None
@@ -31,5 +32,5 @@ class MultimodalDyad():
             raise ValueError('MultimodalDyad already has fnirs')
         self.fnirs = fnirs
 
-    def get_synchrony_time_series(self):
+    def get_synchrony_time_series(self) ->  list[SynchronyTimeSeries]:
         return [modality.get_synchrony_time_series() for modality in self.modalities]

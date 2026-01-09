@@ -11,6 +11,7 @@ import mne
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.data_browser import DataBrowser
 from hypyp.fnirs.fnirs_recording import FNIRSRecording
+from hypyp.fnirs import FNIRSStep
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from hypyp.fnirs.preprocessor.implementations.cedalion_preprocessor import CedalionPreprocessor
@@ -336,11 +337,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     def ui_preprocess_steps():
         # Need to wrap the plot function to have dynamic display in shiny.
         # Because of order of execution, this cannot be directly in the loop
-        def bind_plot_mne_figure(step: int):
+        def bind_plot_mne_figure(step: FNIRSStep):
             def plot_mne_figure():
                 return mne_figure_as_image(step.plot(**get_mne_raw_plot_kwargs(step, input.input_s1_mne_duration_slider())))
             # need to rename the function because every "output plot" must have a unique name
-            plot_mne_figure.__name__ = f'{plot_mne_figure.__name__}_{step.key}'
+            plot_mne_figure.__name__ = f'{plot_mne_figure.__name__}_{step.name}'
             renderer = render.image(plot_mne_figure)
             # This is needed to avoid having the scrollbar on the right
             renderer._auto_output_ui_kwargs = dict(height=f'{DEFAULT_PLOT_MNE_HEIGHT}px')

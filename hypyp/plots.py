@@ -278,4 +278,3 @@ def plot_coherence_bars_per_task(df):
     plt.subplots_adjust(bottom=0.5)
     return p
 
-

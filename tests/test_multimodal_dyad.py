@@ -22,8 +22,8 @@ def get_test_eeg_dyad() -> EEGDyad:
     return EEGDyad.from_files(epo_file1, epo_file2)
 
 def get_test_fnirs_dyad():
-    s1 = FNIRSRecording().load_file(snirf_file1, preprocess=False)
-    s2 = FNIRSRecording().load_file(snirf_file2, preprocess=False)
+    s1 = FNIRSRecording().load_file(snirf_file1, preprocess=True)
+    s2 = FNIRSRecording().load_file(snirf_file2, preprocess=True)
     return FNIRSDyad(s1, s2)
 
 def test_multimodal_dyad():
@@ -48,7 +48,11 @@ def test_generic_list_of_modalities():
     dyad = MultimodalDyad(eeg=get_test_eeg_dyad(), fnirs=get_test_fnirs_dyad())
     assert len(dyad.modalities) == 2
 
-#def test_synchrony_time_series():
-#    dyad = MultimodalDyad(eeg=get_test_eeg_dyad(), fnirs=get_test_fnirs_dyad())
-#    synchronies = dyad.get_synchrony_time_series()
-#    assert len(synchronies) == 2
+def test_synchrony_time_series():
+    # Not implemented yet for EEG
+    #dyad = MultimodalDyad(eeg=get_test_eeg_dyad(), fnirs=get_test_fnirs_dyad())
+
+    dyad = MultimodalDyad(fnirs=get_test_fnirs_dyad())
+    dyad.fnirs.compute_wtcs(ch_match='S1_D1 850') # run on a single channel for speed
+    synchronies = dyad.get_synchrony_time_series()
+    assert len(synchronies) == 1

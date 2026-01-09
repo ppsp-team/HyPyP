@@ -5,7 +5,6 @@ import warnings
 import numpy as np
 import pandas as pd
 
-# TODO must not import eeg_*, should have a common parent folder
 from ..core.base_dyad import BaseDyad
 from ..wavelet.base_wavelet import BaseWavelet
 from ..wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
@@ -13,6 +12,7 @@ from ..wavelet.wtc import WTC
 from ..wavelet.pair_signals import PairSignals
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from ..utils import TaskList, TASK_NAME_WHOLE_RECORD
+from ..dataclasses.synchrony import SynchronyTimeSeries, SynchronyForATask
 from .fnirs_recording import FNIRSRecording
 from .preprocessor.base_preprocessor import BasePreprocessor
 from ..plots import (
@@ -372,42 +372,44 @@ class FNIRSDyad(BaseDyad):
 
         return CoherenceDataFrame.from_wtc_frame_rows(frame_rows)
 
-    def get_all_wtcs_as_ts_matrix(self, wtcs:list[WTC]):
+    def get_all_wtcs_as_ts_matrix(self, wtcs:list[WTC], window_size_seconds:float=None) -> np.ndarray:
         # Make sure that all received belong together (are aligned)
-        n_rows = len(wtcs)
+        # We create one "row" per wtc, then the caller should np.nanmean them all
+        # This way if we have multiple trial for a task they will be averaged
+        # and segments are well aligned too
+
+        # prepare our matrix shape
+        n_wtcs = len(wtcs)
         max_time = 0
         for wtc in wtcs:
             if wtc.times[-1] > max_time:
                 max_time = wtc.times[-1]
         
-        n_ranges = len(wtcs[0].p_ranges)
+        n_ranges = len(wtcs[0].ranges_indices)
         n_ts = int(np.ceil(max_time / wtcs[0].dt)) + 1
-        shape = (n_rows, n_ranges, n_ts)
+        shape = (n_wtcs, n_ranges, n_ts)
         mat = np.full(shape, np.nan)
-        for row_idx, wtc in enumerate(wtcs):
-            if wtc.times[0] == 0:
-                col_start = 0
-            else:
-                col_start = int(wtc.times[0] / wtc.dt)
-            
-            col_end = col_start + len(wtc.times)
 
-            # TODO check if we want to adjust the window
-            # TODO see if we want to put some nan for edge values
-            ts = wtc.get_as_time_series()
-            # TODO must deal with all the "ranges". Each row is a range
-            # TODO we sometimes have an extra range like this on the wtc. This is from 2 segments
-            # [(0, 28), (28, 40)]
-            # (2, 20)
-            # [(0, 28), (28, 39), (39, 40)]
-            # (3, 741)
-            mat[row_idx, :, col_start:col_end] = ts[:n_ranges,:]
+        # fill the matrix with time series
+        for wtc_idx, wtc in enumerate(wtcs):
+            n_times = len(wtc.times)
+            if wtc.times[0] == 0:
+                ts_start = 0
+            else:
+                # need to position in time the segment (probably due to missing data)
+                ts_start = int(wtc.times[0] / wtc.dt)
+            
+            ts_end = ts_start + n_times
+
+            ts = wtc.get_as_time_series(window_size_seconds=window_size_seconds) # shape (n_ranges, len(wtc.times))
+            mat[wtc_idx, :, ts_start:ts_end] = ts
 
         return mat
 
-    def get_synchrony_time_series(self):
-        wtcs_per_task = dict()
-        ret = dict()
+    def get_synchrony_time_series(self, window_size_seconds:float=None) -> SynchronyTimeSeries:
+        wtcs_per_task: dict[str, list[WTC]] = dict()
+        ret = SynchronyTimeSeries()
+
         for wtc in self.wtcs:
             k = wtc.task
             if k not in wtcs_per_task.keys():
@@ -415,8 +417,13 @@ class FNIRSDyad(BaseDyad):
             wtcs_per_task[k].append(wtc)
         
         for task, wtcs in wtcs_per_task.items():
-            mat = self.get_all_wtcs_as_ts_matrix(wtcs)
-            ret[task] = np.nanmean(mat, axis=0)
+            freq_ranges = wtcs[0].freq_ranges_str
+            dt = wtcs[0].dt
+            mat = self.get_all_wtcs_as_ts_matrix(wtcs, window_size_seconds=window_size_seconds)
+            print(mat.shape)
+            time_series_per_range = np.nanmean(mat, axis=0)
+            
+            ret.add_task(SynchronyForATask(time_series_per_range, task, freq_ranges, dt))
         
         return ret
 
@@ -584,4 +591,8 @@ class FNIRSDyad(BaseDyad):
             pivot,
             title=title,
             **kwargs)
+
+    def plot_synchrony_time_series(self, window_size_seconds:float=None):
+        synchronies = self.get_synchrony_time_series(window_size_seconds=window_size_seconds)
+        synchronies.plot()
 

@@ -12,6 +12,7 @@ from ..utils import downsample_in_time
 from .cwt import CWT
 
 MASK_THRESHOLD = 0.5
+DEFAULT_TS_WINDOW_SIZE_SECONDS = 5
 
 class WTC:
     W: np.ndarray
@@ -160,13 +161,13 @@ class WTC:
         return self.cwts[1]
     
     @property
-    def p_ranges(self):
+    def ranges_indices(self):
         n_periods = len(self.periods)
         if self.period_cuts is None:
             # single bin
-            p_ranges = [(0, n_periods)]
+            ranges_indices = [(0, n_periods)]
         else:
-            p_ranges = []
+            ranges_indices = []
             low_idx = 0
             for period_cut in self.period_cuts:
                 cursor_idx = low_idx
@@ -179,29 +180,28 @@ class WTC:
                 while cursor_idx < n_periods:
                     cursor_period = self.periods[cursor_idx]
                     if cursor_period > period_cut and cursor_idx > low_idx:
-                        print(cursor_period)
                         high_idx = cursor_idx
-                        p_ranges.append((low_idx, high_idx))
+                        ranges_indices.append((low_idx, high_idx))
                         # next "low" is the last "high"
                         low_idx = high_idx
                         break
                     cursor_idx += 1
             
             # add one last for the remaining
-            if len(p_ranges) == 0:
-                p_ranges.append((0, n_periods))
+            if len(ranges_indices) == 0:
+                ranges_indices.append((0, n_periods))
             else:
-                last_range_value = p_ranges[-1][1]
+                last_range_value = ranges_indices[-1][1]
                 if last_range_value < n_periods:
-                    p_ranges.append((last_range_value, n_periods))
+                    ranges_indices.append((last_range_value, n_periods))
                 
-        return p_ranges
+        return ranges_indices
     
     
     @property
-    def p_ranges_str(self):
+    def freq_ranges_str(self):
         ret = []
-        for p_start, p_end in self.p_ranges:
+        for p_start, p_end in self.ranges_indices:
             ret.append(f"{self.frequencies[p_start]:.2f}Hz-{self.frequencies[p_end-1]:.2f}Hz")
         return ret
             
@@ -245,7 +245,7 @@ class WTC:
             
         # loop over time bins and period bins
         for t_start, t_stop in self.t_ranges:
-            for p_start, p_stop in self.p_ranges:
+            for p_start, p_stop in self.ranges_indices:
                 wtc_bin = self.wtc_masked[p_start:p_stop, t_start:t_stop]
                 coherence_bin = np.mean(wtc_bin)
                 coherence_masked = np.mean(wtc_bin.mask)
@@ -272,27 +272,34 @@ class WTC:
     
     def _moving_average_1d(self, arr, window_size):
         kernel = np.ones(window_size) / window_size
+        return np.convolve(arr, kernel, mode='same') # keep same size array
 
-        # replace the masked values by the closest correct value, to avoid edge effects
-        mask = np.array(arr.mask)
-        valid_indices = np.where(~arr.mask)[0]
-        if len(valid_indices) > 0:
-            arr[:valid_indices[0]] = arr[valid_indices[0]]
-            arr[valid_indices[-1]:] = arr[valid_indices[-1]]
-        result = np.convolve(arr, kernel, mode='same') # keep same size array
-        return np.ma.masked_array(result, mask)
+    def get_as_time_series(self, window_size_seconds:float=None, disable_moving_window:bool=False) -> np.ndarray:
+        n_ts = self.wtc_masked.shape[1]
+        n_ranges = len(self.ranges_indices)
+        mat = np.zeros((n_ranges, n_ts))
 
-    def get_as_time_series(self, window_size=10) -> np.ndarray:
-        p_ranges = self.p_ranges
-        # TODO we sometimes have one extra small range at the end
-        print(p_ranges)
-        data = np.ma.zeros((len(p_ranges), self.wtc_masked.shape[1]))
-        for i in range(len(p_ranges)):
-            p_start, p_stop = p_ranges[i]
-            data[i,:] = self.wtc_masked[p_start:p_stop].mean(axis=0)
-        #print(data.shape)
-        result = np.apply_along_axis(self._moving_average_1d, 1, data, window_size)
-        return result
+        if window_size_seconds is None:
+            window_size_seconds = DEFAULT_TS_WINDOW_SIZE_SECONDS
+
+        # for each range, squash all coherence values to get a time series for each range
+        for range_idx, range_indices in enumerate(self.ranges_indices):
+            range_start, range_end = range_indices
+            wtc_range_masked = self.wtc_masked[range_start:range_end]
+
+            # transform to np.nan, we don't want to keep masked values as they no longer make sense
+            wtc_range = wtc_range_masked.filled(np.nan)
+
+            # squash the values in range in individual time series
+            mat[range_idx, :] = np.nanmean(wtc_range, axis=0)
+
+        if disable_moving_window:
+            return mat
+
+        # make sure our window is at least 1 and not bigger than the data itself
+        window_size = min(n_ts, max(1, int(window_size_seconds * self.sfreq)))
+
+        return np.apply_along_axis(self._moving_average_1d, 1, mat, window_size)
 
     @property
     def as_frame_rows(self) -> List[List]:

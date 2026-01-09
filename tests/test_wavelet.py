@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 
 from hypyp.signal.synthetic_signal import SyntheticSignal
+from hypyp.wavelet.wtc import WTC
 from hypyp.wavelet.pair_signals import PairSignals
 from hypyp.wavelet.base_wavelet import BaseWavelet
 from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexGaussianWavelet, ComplexMorletWavelet
@@ -374,4 +375,19 @@ def test_cone_of_influence(wavelet):
     assert len(coi) == n
 
     
-    
+def test_period_ranges():
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
+    pair = PairSignals(signal1.x, signal1.y, signal2.y)
+    wavelet = ComplexMorletWavelet(disable_caching=True, period_range=(5, 20))
+    wtc = wavelet.wtc(pair, period_cuts=[10])
+    assert len(wtc.ranges_indices) == 2
+
+def test_period_ranges_edge():
+    signal1 = SyntheticSignal().add_noise()
+    signal2 = SyntheticSignal().add_noise()
+    pair = PairSignals(signal1.x, signal1.y, signal2.y)
+    wavelet = ComplexMorletWavelet(disable_caching=True, period_range=(5, 20))
+    # make sure we stop exactly at our period if the last cut is exactly the same as the highest value of the range
+    wtc = wavelet.wtc(pair, period_cuts=[10, 20])
+    assert len(wtc.ranges_indices) == 2
