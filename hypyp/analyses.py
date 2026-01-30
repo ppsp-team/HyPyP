@@ -11,6 +11,7 @@ PSD, intra- and inter-brain measures functions
 | date            | 2020-03-18 |
 """
 
+import warnings
 import numpy as np
 import scipy
 import scipy.signal as signal
@@ -30,6 +31,7 @@ from mne.io.constants import FIFF
 from mne.time_frequency import EpochsSpectrum
 
 from .mvarica import MVAR, connectivity_mvarica
+from .sync import get_metric
 
 
 def pow(epochs: mne.Epochs, fmin: float, fmax: float, n_fft: int, n_per_seg: int, epochs_average: bool) -> namedtuple:
@@ -449,13 +451,13 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
         
     mode : str
         Connectivity measure to compute. Options:
-        - 'envelope_corr': envelope correlation - correlation between signal envelopes
-        - 'pow_corr': power correlation - correlation between signal power
+        - 'envelope_corr' or 'envcorr': envelope correlation - correlation between signal envelopes
+        - 'pow_corr' or 'powcorr': power correlation - correlation between signal power
         - 'plv': phase locking value - consistency of phase differences
         - 'ccorr': circular correlation coefficient - circular statistic for phase coupling
         - 'accorr': adjusted circular correlation - circular correlation with optimized phase centering
         - 'coh': coherence - normalized cross-spectrum
-        - 'imaginary_coh': imaginary coherence - imaginary part of coherence (volume conduction resistant)
+        - 'imaginary_coh' or 'imcoh': imaginary coherence - imaginary part of coherence (volume conduction resistant)
         - 'pli': phase lag index - asymmetry of phase difference distribution
         - 'wpli': weighted phase lag index - weighted version of PLI with improved properties
         
@@ -504,74 +506,22 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
     # calculate all epochs at once, the only downside is that the disk may not have enough space
     complex_signal = complex_signal.transpose((1, 3, 0, 2, 4)).reshape(n_epoch, n_freq, 2 * n_ch, n_samp)
     transpose_axes = (0, 1, 3, 2)
-    if mode.lower() == 'plv':
-        phase = complex_signal / np.abs(complex_signal)
-        c = np.real(phase)
-        s = np.imag(phase)
-        dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
-        con = abs(dphi) / n_samp
-
-    elif mode.lower() == 'envelope_corr':
-        env = np.abs(complex_signal)
-        mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
-        env = env - mu_env
-        con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
-              np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
-
-    elif mode.lower() == 'pow_corr':
-        env = np.abs(complex_signal) ** 2
-        mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
-        env = env - mu_env
-        con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
-              np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
-
-    elif mode.lower() == 'coh':
-        c = np.real(complex_signal)
-        s = np.imag(complex_signal)
-        amp = np.abs(complex_signal) ** 2
-        dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
-        con = np.abs(dphi) / np.sqrt(np.einsum('nil,nik->nilk', np.nansum(amp, axis=3),
-                                               np.nansum(amp, axis=3)))
-
-    elif mode.lower() == 'imaginary_coh':
-        c = np.real(complex_signal)
-        s = np.imag(complex_signal)
-        amp = np.abs(complex_signal) ** 2
-        dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
-        con = np.abs(np.imag(dphi)) / np.sqrt(np.einsum('nil,nik->nilk', np.nansum(amp, axis=3),
-                                                        np.nansum(amp, axis=3)))
-
-    elif mode.lower() == 'ccorr':
-        angle = np.angle(complex_signal)
-        mu_angle = circmean(angle, high=np.pi, low=-np.pi, axis=3).reshape(n_epoch, n_freq, 2 * n_ch, 1)
-        angle = np.sin(angle - mu_angle)
-
-        formula = 'nilm,nimk->nilk'
-        con = np.abs(np.einsum(formula, angle, angle.transpose(transpose_axes)) /
-                     np.sqrt(np.einsum('nil,nik->nilk', np.sum(angle ** 2, axis=3), 
-                                       np.sum(angle ** 2, axis=3))))
-
-    elif mode.lower() == 'accorr':
-        con = _accorr_hybrid(complex_signal, epochs_average=epochs_average, show_progress=True)
-        return con
-        
-    elif mode.lower() == 'pli':
-        c = np.real(complex_signal)
-        s = np.imag(complex_signal)
-        dphi = _multiply_conjugate_time(c, s, transpose_axes=transpose_axes)
-        con = abs(np.mean(np.sign(np.imag(dphi)), axis=4))
-        
-    elif mode.lower() == 'wpli':
-        c = np.real(complex_signal)
-        s = np.imag(complex_signal)
-        dphi = _multiply_conjugate_time(c, s, transpose_axes=transpose_axes)
-        con_num = abs(np.mean(abs(np.imag(dphi)) * np.sign(np.imag(dphi)), axis=4))
-        con_den = np.mean(abs(np.imag(dphi)), axis=4)      
-        con_den[con_den == 0] = 1 
-        con = con_num / con_den        
-
-    else:
-        raise ValueError('Metric type not supported.')
+    
+    # Normalize mode names (handle aliases)
+    mode_lower = mode.lower()
+    mode_map = {
+        'envelope_corr': 'envcorr',
+        'pow_corr': 'powcorr',
+        'imaginary_coh': 'imcoh',
+    }
+    mode_normalized = mode_map.get(mode_lower, mode_lower)
+    
+    # Get the metric from the sync module
+    try:
+        metric = get_metric(mode_normalized)
+        con = metric.compute(complex_signal, n_samp, transpose_axes)
+    except ValueError:
+        raise ValueError(f'Metric type "{mode}" not supported.')
 
     con = con.swapaxes(0, 1)  # n_freq x n_epoch x 2*n_ch x 2*n_ch
     if epochs_average:
@@ -1082,6 +1032,10 @@ def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tupl
     """
     Computes the product of a complex array and its conjugate efficiently.
     
+    .. deprecated:: 0.5.0
+        This function is deprecated and will be removed in version 1.0.0.
+        Use :func:`hypyp.sync.multiply_conjugate` instead.
+    
     This helper function performs matrix multiplication between complex arrays
     represented by their real and imaginary parts, collapsing the last dimension.
     
@@ -1108,6 +1062,12 @@ def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tupl
     
     Using einsum for efficient computation without explicitly creating complex arrays.
     """
+    warnings.warn(
+        "_multiply_conjugate is deprecated and will be removed in version 1.0.0. "
+        "Use hypyp.sync.multiply_conjugate instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
 
     formula = 'jilm,jimk->jilk'
     product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
@@ -1122,6 +1082,10 @@ def _multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tupl
 def _multiply_conjugate_time(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
     """
     Computes the product of a complex array and its conjugate without collapsing time dimension.
+    
+    .. deprecated:: 0.5.0
+        This function is deprecated and will be removed in version 1.0.0.
+        Use :func:`hypyp.sync.multiply_conjugate_time` instead.
     
     Similar to _multiply_conjugate, but preserves the time dimension, which is
     needed for certain connectivity metrics like wPLI.
@@ -1151,6 +1115,12 @@ def _multiply_conjugate_time(real: np.ndarray, imag: np.ndarray, transpose_axes:
     computing metrics that require individual time point values rather than 
     time-averaged products.
     """
+    warnings.warn(
+        "_multiply_conjugate_time is deprecated and will be removed in version 1.0.0. "
+        "Use hypyp.sync.multiply_conjugate_time instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     formula = 'jilm,jimk->jilkm'
     product = np.einsum(formula, real, real.transpose(transpose_axes)) + \
               np.einsum(formula, imag, imag.transpose(transpose_axes)) - 1j * \
@@ -1164,6 +1134,10 @@ def _multiply_conjugate_time(real: np.ndarray, imag: np.ndarray, transpose_axes:
 def _multiply_product(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
     """
     Computes the product of two complex arrays (not conjugate) efficiently.
+    
+    .. deprecated:: 0.5.0
+        This function is deprecated and will be removed in version 1.0.0.
+        Use :func:`hypyp.sync.multiply_product` instead.
     
     This helper function performs matrix multiplication between complex arrays
     represented by their real and imaginary parts, collapsing the last dimension.
@@ -1193,6 +1167,12 @@ def _multiply_product(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple)
     Using einsum for efficient computation without explicitly creating complex arrays.
     This is used in the adjusted circular correlation (accorr) metric.
     """
+    warnings.warn(
+        "_multiply_product is deprecated and will be removed in version 1.0.0. "
+        "Use hypyp.sync.multiply_product instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     formula = 'jilm,jimk->jilk'
     product = np.einsum(formula, real, real.transpose(transpose_axes)) - \
               np.einsum(formula, imag, imag.transpose(transpose_axes)) + 1j * \
@@ -1207,6 +1187,10 @@ def _accorr_hybrid(complex_signal: np.ndarray, epochs_average: bool = True,
                    show_progress: bool = True) -> np.ndarray:
     """
     Computes Adjusted Circular Correlation using a hybrid approach.
+    
+    .. deprecated:: 0.5.0
+        This function is deprecated and will be removed in version 1.0.0.
+        Use :class:`hypyp.sync.ACorr` instead.
     
     This function calculates the adjusted circular correlation coefficient between
     all channel pairs. It uses a vectorized computation for the numerator and an
@@ -1255,6 +1239,12 @@ def _accorr_hybrid(complex_signal: np.ndarray, epochs_average: bool = True,
     in hyperscanning-EEG studies. Imaging Neuroscience, 2.
     https://doi.org/10.1162/imag_a_00350
     """
+    warnings.warn(
+        "_accorr_hybrid is deprecated and will be removed in version 1.0.0. "
+        "Use hypyp.sync.ACorr instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     n_epochs = complex_signal.shape[0]
     n_freq = complex_signal.shape[1]
     n_ch_total = complex_signal.shape[2]
