@@ -15,14 +15,7 @@ Repository = "https://github.com/ppsp-team/HyPyP"
 Documentation = "https://hypyp.readthedocs.io"
 
 [tool.poetry]
-packages = [
-    {include = "hypyp"},
-    {include = "hypyp/ext/mpl3d"},
-    {include = "hypyp/fnirs"},
-    {include = "hypyp/shiny"},
-    {include = "hypyp/wavelet"},
-    {include = "hypyp/xdf"}
-]
+packages = [{include = "hypyp"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
