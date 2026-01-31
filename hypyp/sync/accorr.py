@@ -1,9 +1,3 @@
-import numpy as np
-from tqdm import tqdm
-from numpy.typing import NDArray
-from hypyp.sync.utils import _multiply_conjugate, _multiply_product
-from typing import Optional 
-
 try:
     import torch
     TORCH_AVAILABLE = True
@@ -11,11 +5,19 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
 
-try:
+try:    
+    import os
+    os.environ['NUMBA_THREADING_LAYER'] = 'workqueue'
     from numba import njit, prange
     NUMBA_AVAILABLE = True
 except ImportError:
     NUMBA_AVAILABLE = False
+
+import numpy as np
+from tqdm import tqdm
+from numpy.typing import NDArray
+from hypyp.sync.utils import _multiply_conjugate, _multiply_product
+from typing import Optional 
 
 NUMBA_OPTIMIZATION = 'numba'
 TORCH_CPU_OPTIMIZATION = 'torch_cpu'
@@ -182,7 +184,7 @@ def _accorr_hybrid_precompute(
 
 
 if NUMBA_AVAILABLE:
-    @njit(nopython=True, parallel=True, cache=True)
+    @njit(nopython=True, parallel=False, cache=True)
     def _accorr_den_calc_precalc(n_epochs : int, n_freq : int, n_ch_total : int, 
                                  angle : np.array, m_adj_all : np.array, 
                                  n_adj_all : np.array):
