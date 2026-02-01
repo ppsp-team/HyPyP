@@ -473,7 +473,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
     optimization : str, optional
         Allows using optimization strategies. May require extra dependencies.
         Only available for 'accorr'. See sync.accorr.accorr for description of 
-        the optimization options and related depednencies.
+        the optimization options and related dependencies.
     
     Returns
     -------

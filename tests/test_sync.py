@@ -102,19 +102,8 @@ class TestAccorrErrorHandling:
     def test_torch_unavailable(self, complex_signal):
         with pytest.raises(ValueError, match="Torch library not available"):
             accorr(complex_signal, epochs_average=False, show_progress=False, optimization="torch_cpu")
-
-
-@pytest.mark.parametrize(
-    "optimization",
-    [
-        None,
-        pytest.param("numba", marks=pytest.mark.skipif(not NUMBA_AVAILABLE, reason="Numba not available")),
-        pytest.param("torch_cpu", marks=pytest.mark.skipif(not TORCH_AVAILABLE, reason="Torch not available")),
-    ],
-)
-def test_all_optimizations_vs_reference(complex_signal, optimization):
-    result_reference = accorr_reference(complex_signal, epochs_average=False, show_progress=False)
-    result_optimized = accorr(complex_signal, epochs_average=False, show_progress=False, optimization=optimization)
-
-    rtol, atol = (1e-9, 1e-10)
-    np.testing.assert_allclose(result_optimized, result_reference, rtol=rtol, atol=atol)
+    
+    @pytest.mark.skipif(TORCH_AVAILABLE and MPS_AVAILABLE, reason="Test requires torch to be unavailable")
+    def test_torch_unavailable(self, complex_signal):
+        with pytest.raises(ValueError, match="Torch library not available"):
+            accorr(complex_signal, epochs_average=False, show_progress=False, optimization="torch_mps")

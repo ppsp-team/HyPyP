@@ -21,6 +21,8 @@ New contributors: Ryssa MOFFAT, Marine Gautier MARTINS, Rémy RAMADOUR, Patrice 
 
 `pip install HyPyP`
 
+> For installation with dependencies optimized algorithms, see (**Poetry installation** below).
+
 ## Documentation
 
 HyPyP documentation of all the API functions is available online at [hypyp.readthedocs.io](https://hypyp.readthedocs.io/)
@@ -51,6 +53,7 @@ For getting started with HyPyP, we have designed a little walkthrough: [getting_
 
 📊 [shiny/\*.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/app) — Shiny dashboards, install using `poetry install --extras shiny` (Patrice)
 
+
 ## Poetry Installation (Only for Developers and Adventurous Users)
 
 To develop HyPyP, we recommend using [Poetry 2.x](https://python-poetry.org/). Follow these steps:
@@ -79,6 +82,26 @@ To install development dependencies, you can run:
 
 ```bash
 poetry install --with dev
+```
+
+#### 3.1 Installing optimizations
+
+To use `numba` optimizations, you can run:
+
+```bash
+poetry install --with optim_numba
+```
+
+To use `torch` optimizations, you can run:
+
+```bash
+poetry install --with optim_torch
+```
+
+You can also update dependencies on a pre-installed HyPyP with:
+
+```bash
+poetry sync --with optim_torch
 ```
 
 ### 4. Launch Jupyter Lab to Run Notebooks:

@@ -9,6 +9,7 @@ import seaborn as sns
 from pathlib import Path
 from collections import OrderedDict
 from hypyp import analyses
+from tests.hypyp.sync.accorr import accorr_reference
 from hypyp.sync.accorr import accorr
 import numba
 
@@ -38,8 +39,8 @@ freq_bands = {
 freq_bands = OrderedDict(freq_bands)
 print('Frequency bands:', freq_bands)
 
-preproc_S1 = mne.read_epochs('../data/preproc_S1.fif')
-preproc_S2 = mne.read_epochs('../data/preproc_S2.fif')
+preproc_S1 = mne.read_epochs('../../data/preproc_S1.fif')
+preproc_S2 = mne.read_epochs('../../data/preproc_S2.fif')
 
 sampling_rate = preproc_S1.info['sfreq']
 
@@ -65,17 +66,19 @@ def torch_run(device):
 
 
 method_dict = {
-    'original': accorr,
+    'original': accorr_reference,
+    'precomputed': accorr,
     'numba4': numba_run(4),
     'numba8': numba_run(8),
     'torch_cpu': torch_run('cpu'),
     'torch_mps': torch_run('mps'),
 }
 
-numba_palette = sns.light_palette('C1', 3)
-torch_palette = sns.light_palette('C5', 4)
+numba_palette = sns.light_palette('C2', 3)
+torch_palette = sns.light_palette('C3', 4)
 method_palette = OrderedDict({
     'original': 'C0',
+    'precomputed': 'C1',
     'numba4': numba_palette[1],
     'numba8': numba_palette[2],
     'torch_cpu': torch_palette[1],
