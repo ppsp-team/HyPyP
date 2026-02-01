@@ -103,7 +103,7 @@ class TestAccorrErrorHandling:
         with pytest.raises(ValueError, match="Torch library not available"):
             accorr(complex_signal, epochs_average=False, show_progress=False, optimization="torch_cpu")
     
-    @pytest.mark.skipif(TORCH_AVAILABLE and MPS_AVAILABLE, reason="Test requires torch to be unavailable")
-    def test_torch_unavailable(self, complex_signal):
-        with pytest.raises(ValueError, match="Torch library not available"):
+    @pytest.mark.skipif(not TORCH_AVAILABLE and MPS_AVAILABLE, reason="Test requires MPS to be unavailable")
+    def test_mps_unavailable(self, complex_signal):
+        with pytest.raises(ValueError, match="MPS not available"):
             accorr(complex_signal, epochs_average=False, show_progress=False, optimization="torch_mps")

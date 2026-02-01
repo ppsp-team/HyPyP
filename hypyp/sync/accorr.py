@@ -183,6 +183,7 @@ def _accorr_hybrid_precompute(
 
 
 if NUMBA_AVAILABLE:
+    # TODO(@m2march): research why parallelization is not working
     @njit(parallel=False, cache=True)
     def _accorr_den_calc_precalc(n_epochs : int, n_freq : int, n_ch_total : int, 
                                  angle : np.array, m_adj_all : np.array, 
