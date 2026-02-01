@@ -43,7 +43,9 @@ def accorr(complex_signal: np.ndarray, epochs_average: bool = True,
     optimization : str, optional
         If None, execution is done in cpu with no additional python libraries
         If 'numba', execution is done in cpu using numba optimization 
-                    (just-in-time compilation and parallelization)
+                    (just-in-time compilation) 
+                    DISCLAIMER: currently, this optimization does not provide an 
+                    enhancement as parallelization is not working (see https://github.com/ppsp-team/HyPyP/pull/246/)
         If 'torch_cpu', execution is parallelized with pytorch numeric library 
                         in cpu
         If 'torch_mps', execution is parallelized with pytorch numeric library 
@@ -191,7 +193,7 @@ if NUMBA_AVAILABLE:
         """
         Computes denominator for adjusted circular correlation using precomputed m_adj and n_adj.
         
-        This helper function is JIT-compiled and parallelized with numba for performance.
+        This helper function is JIT-compiled with numba for performance.
         It computes the denominator values for all channel pairs using lookup tables of
         precomputed m_adj and n_adj values.
         
@@ -334,7 +336,7 @@ if TORCH_AVAILABLE:
             raise ValueError(f'Unsupported device requested, must be one of {SUPPORTED_DEVICES}')
         
         if device == 'mps':
-            if not torch.backends.mps.is_available():
+            if not MPS_AVAILABLE:
                 raise ValueError(f'MSP device requested, but not supported in this device')
             else:
                 float_type = torch.float32

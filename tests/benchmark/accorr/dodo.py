@@ -15,18 +15,6 @@ import numba
 
 """
 Benchmark script comparing different optimization approaches for the Adjusted Circular Correlation (accorr) metric.
-
-This script tests:
-1. Original: Loop-based approach with tqdm progress bar
-2. Vectorized: Full vectorization using NumPy broadcasting (higher memory usage)
-3. Numba: JIT compilation with parallelization (if numba is installed)
-4. Multiprocessing: Distributed computation across multiple processes
-
-Performance characteristics:
-- Original (loop-based): Good baseline, low memory overhead, CPU-friendly
-- Vectorized: High memory usage, slower due to large intermediate arrays
-- Numba: Requires compilation on first run, can be fast with parallelization
-- Multiprocessing: IPC overhead makes it slower for small datasets
 """
 
 # Define frequency bands as a dictionary
@@ -176,6 +164,7 @@ benchmark_configs = pd.DataFrame(
 )
 
 def task_calc_benchmarks():
+    "Executes the different optimizations on different problem sizes."
     def benchmark_action(method, epoch_multiplier, channels_multiplier, targets):
         res = benchmark(method, epoch_multiplier, channels_multiplier)
 
@@ -225,6 +214,7 @@ def get_perfs():
 
 
 def task_summary_plots():
+    "Generates summary plot of the speed-up of different optimizations"
     def action(targets):
         perfs = get_perfs()
         
@@ -267,6 +257,7 @@ def task_summary_plots():
 
 
 def task_bad_perfs():
+    "Outputs a csv listing optimizations that do not equal the original results within tolerance."
     def action(targets):
         bad_perfs = (
             get_perfs()
