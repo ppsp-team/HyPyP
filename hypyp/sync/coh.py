@@ -49,14 +49,7 @@ class Coh(BaseMetric):
         con : np.ndarray
             Coherence connectivity matrix with shape (n_epoch, n_freq, 2*n_ch, 2*n_ch).
         """
-        if self.backend == 'numpy':
-            return self._compute_numpy(complex_signal, n_samp, transpose_axes)
-        elif self.backend == 'numba':
-            return self._compute_numba(complex_signal, n_samp, transpose_axes)
-        elif self.backend == 'torch':
-            return self._compute_torch(complex_signal, n_samp, transpose_axes)
-        else:
-            return self._compute_numpy(complex_signal, n_samp, transpose_axes)
+        return self._compute_numpy(complex_signal, n_samp, transpose_axes)
     
     def _compute_numpy(self, complex_signal: np.ndarray, n_samp: int,
                        transpose_axes: tuple) -> np.ndarray:

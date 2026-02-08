@@ -8,10 +8,12 @@ This module provides a collection of connectivity metrics that can be used
 to measure neural synchronization between participants.
 """
 
-from .base import BaseMetric, detect_backend, multiply_conjugate, multiply_conjugate_time, multiply_product
+from typing import Optional
+
+from .base import BaseMetric, multiply_conjugate, multiply_conjugate_time, multiply_product
 from .plv import PLV
 from .ccorr import CCorr
-from .accorr import ACorr
+from .accorr import ACCorr
 from .coh import Coh
 from .imaginary_coh import ImCoh
 from .pli import PLI
@@ -23,7 +25,7 @@ from .pow_corr import PowCorr
 METRICS = {
     'plv': PLV,
     'ccorr': CCorr,
-    'accorr': ACorr,
+    'accorr': ACCorr,
     'coh': Coh,
     'imcoh': ImCoh,
     'pli': PLI,
@@ -35,14 +37,13 @@ METRICS = {
 __all__ = [
     # Base classes and utilities
     'BaseMetric',
-    'detect_backend',
     'multiply_conjugate',
     'multiply_conjugate_time',
     'multiply_product',
     # Metric classes
     'PLV',
     'CCorr',
-    'ACorr',
+    'ACCorr',
     'Coh',
     'ImCoh',
     'PLI',
@@ -55,39 +56,38 @@ __all__ = [
 ]
 
 
-def get_metric(mode: str, backend: str = 'numpy') -> BaseMetric:
+def get_metric(mode: str, optimization: Optional[str] = None) -> BaseMetric:
     """
     Get a connectivity metric instance by name.
-    
+
     Parameters
     ----------
     mode : str
         Name of the connectivity metric. One of: 'plv', 'ccorr', 'accorr',
         'coh', 'imcoh', 'pli', 'wpli', 'envcorr', 'powcorr'.
-        
-    backend : str, optional
-        Computation backend to use. One of: 'numpy', 'numba', 'torch'.
-        Default is 'numpy'.
-    
+    optimization : str, optional
+        Optimization strategy. Options: None, 'auto', 'numba', 'torch'.
+        See BaseMetric for fallback behavior.
+
     Returns
     -------
     metric : BaseMetric
         An instance of the requested metric class.
-    
+
     Raises
     ------
     ValueError
         If the mode is not recognized.
-    
+
     Examples
     --------
     >>> from hypyp.sync import get_metric
-    >>> plv = get_metric('plv', backend='numpy')
-    >>> result = plv.compute(complex_signal, n_samp, transpose_axes)
+    >>> accorr = get_metric('accorr', optimization='torch')
+    >>> result = accorr.compute(complex_signal, n_samp, transpose_axes)
     """
     mode_lower = mode.lower()
     if mode_lower not in METRICS:
         available = ', '.join(METRICS.keys())
         raise ValueError(f"Unknown metric mode '{mode}'. Available: {available}")
-    
-    return METRICS[mode_lower](backend=backend)
+
+    return METRICS[mode_lower](optimization=optimization)

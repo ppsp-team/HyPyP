@@ -20,7 +20,7 @@ from scipy.stats import circmean
 import statsmodels.stats.multitest
 import copy
 from collections import namedtuple
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Optional
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
@@ -437,18 +437,18 @@ def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int,
     return result
 
 
-def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = True) -> np.ndarray:
+def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = True,
+                 optimization: Optional[str] = None) -> np.ndarray:
     """
     Computes frequency-domain connectivity measures from analytic signals.
-    
+
     This function calculates various connectivity metrics between all possible
     channel pairs based on the input complex-valued signals.
-    
+
     Parameters
     ----------
     complex_signal : np.ndarray
         Complex analytic signals with shape (2, n_epochs, n_channels, n_freq_bins, n_times)
-        
     mode : str
         Connectivity measure to compute. Options:
         - 'envelope_corr' or 'envcorr': envelope correlation - correlation between signal envelopes
@@ -460,40 +460,24 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
         - 'imaginary_coh' or 'imcoh': imaginary coherence - imaginary part of coherence (volume conduction resistant)
         - 'pli': phase lag index - asymmetry of phase difference distribution
         - 'wpli': weighted phase lag index - weighted version of PLI with improved properties
-        
     epochs_average : bool, optional
         If True, connectivity values are averaged across epochs (default)
         If False, epoch-by-epoch connectivity is preserved
-    
+    optimization : str, optional
+        Optimization strategy. May require extra dependencies.
+        Currently only available for 'accorr'. Options:
+        - None: standard numpy implementation (default)
+        - 'auto': best available (torch > numba > numpy)
+        - 'numba': numba JIT compilation (falls back to numpy if unavailable)
+        - 'torch': PyTorch with auto-detected GPU (falls back gracefully)
+
     Returns
     -------
     con : np.ndarray
         Connectivity matrix with shape:
         - If epochs_average=True: (n_freq, 2*n_channels, 2*n_channels)
         - If epochs_average=False: (n_freq, n_epochs, 2*n_channels, 2*n_channels)
-    
-    Notes
-    -----
-    Mathematical formulations for each connectivity measure:
-    
-    - PLV: |⟨e^(i(φₓ-φᵧ))⟩|
-      Measures consistency of phase differences across time
-      
-    - Envelope correlation: corr(env(x), env(y))
-      Pearson correlation between signal envelopes
-      
-    - Coherence: |⟨XY*⟩|²/(⟨|X|²⟩⟨|Y|²⟩)
-      Normalized cross-spectrum
-      
-    - Imaginary coherence: |Im(⟨XY*⟩)|/√(⟨|X|²⟩⟨|Y|²⟩)
-      Takes only imaginary part which is less affected by volume conduction
-      
-    - PLI: |⟨sign(Im(XY*))⟩|
-      Quantifies asymmetry in phase difference distribution
-      
-    - wPLI: |⟨|Im(XY*)|sign(Im(XY*))⟩|/⟨|Im(XY*)|⟩
-      Weighted version that downweights phase differences near 0 or π
-    
+
     Raises
     ------
     ValueError
@@ -506,7 +490,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
     # calculate all epochs at once, the only downside is that the disk may not have enough space
     complex_signal = complex_signal.transpose((1, 3, 0, 2, 4)).reshape(n_epoch, n_freq, 2 * n_ch, n_samp)
     transpose_axes = (0, 1, 3, 2)
-    
+
     # Normalize mode names (handle aliases)
     mode_lower = mode.lower()
     mode_map = {
@@ -515,10 +499,10 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
         'imaginary_coh': 'imcoh',
     }
     mode_normalized = mode_map.get(mode_lower, mode_lower)
-    
+
     # Get the metric from the sync module
     try:
-        metric = get_metric(mode_normalized)
+        metric = get_metric(mode_normalized, optimization=optimization)
         con = metric.compute(complex_signal, n_samp, transpose_axes)
     except ValueError:
         raise ValueError(f'Metric type "{mode}" not supported.')
@@ -1190,7 +1174,7 @@ def _accorr_hybrid(complex_signal: np.ndarray, epochs_average: bool = True,
     
     .. deprecated:: 0.5.0
         This function is deprecated and will be removed in version 1.0.0.
-        Use :class:`hypyp.sync.ACorr` instead.
+        Use :class:`hypyp.sync.ACCorr` instead.
     
     This function calculates the adjusted circular correlation coefficient between
     all channel pairs. It uses a vectorized computation for the numerator and an
@@ -1241,7 +1225,7 @@ def _accorr_hybrid(complex_signal: np.ndarray, epochs_average: bool = True,
     """
     warnings.warn(
         "_accorr_hybrid is deprecated and will be removed in version 1.0.0. "
-        "Use hypyp.sync.ACorr instead.",
+        "Use hypyp.sync.ACCorr instead.",
         DeprecationWarning,
         stacklevel=2
     )
