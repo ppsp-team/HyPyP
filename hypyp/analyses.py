@@ -1036,11 +1036,22 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs, freqs: Union[int, np.ndarray],
     assert n_samples1 == n_samples2, "n_samples1 and n_samples2 should have the same number of samples."
 
     cross_sigs = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
-    wtcs = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
+    wtcs = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1)) * np.nan
 
     # Set the mother wavelet
     Ws = mne.time_frequency.tfr.morlet(sfreq, freqs, 
                                        n_cycles=n_cycles, sigma=None, zero_mean=True)
+
+    # Wavelet scales in samples (Morlet scale-frequency relation)
+    scales = n_cycles * sfreq / (2 * np.pi * freqs)
+
+    # Precompute Gaussian smoothing windows per frequency
+    smooth_wins = []
+    for s in scales:
+        win_size = max(3, int(2 * s))
+        win = scipy.signal.windows.gaussian(win_size, std=s)
+        win /= win.sum()
+        smooth_wins.append(win)
 
     # Perform a continuous wavelet transform on all epochs of each signal
     for ind1, ch_label1 in enumerate(sig1.ch_names):
@@ -1052,15 +1063,24 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs, freqs: Union[int, np.ndarray],
             cur_sig2 = np.squeeze(sig2.get_data(mne.pick_channels(sig2.ch_names, [ch_label2])))
             out2 = mne.time_frequency.tfr.cwt(cur_sig2, Ws, use_fft=True,
                                               mode='same', decim=1)
-            
-            # Compute cross-spectrum
-            wps1 = out1 * out1.conj()
-            wps2 = out2 * out2.conj()
+
+            # Compute cross-spectrum and auto-spectra
             cross_sig = out1 * out2.conj()
             cross_sigs[ind1, ind2, :, :, :] = cross_sig
-            coh = (cross_sig) / (np.sqrt(wps1*wps2))
-            abs_coh = np.abs(coh)
-            wtc = (abs_coh - np.min(abs_coh)) / (np.max(abs_coh) - np.min(abs_coh))
+            wps1 = np.abs(out1) ** 2
+            wps2 = np.abs(out2) ** 2
+
+            # Smooth in time with scale-dependent Gaussian window
+            # following Grinsted et al. (2004)
+            for fi, win in enumerate(smooth_wins):
+                wps1[:, fi, :] = np.apply_along_axis(
+                    lambda x: np.convolve(x, win, mode='same'), -1, wps1[:, fi, :])
+                wps2[:, fi, :] = np.apply_along_axis(
+                    lambda x: np.convolve(x, win, mode='same'), -1, wps2[:, fi, :])
+                cross_sig[:, fi, :] = np.apply_along_axis(
+                    lambda x: np.convolve(x, win, mode='same'), -1, cross_sig[:, fi, :])
+
+            wtc = np.abs(cross_sig) ** 2 / (wps1 * wps2)
             wtcs[ind1, ind2, :, :, :] = wtc
 
     if mode == 'power':
