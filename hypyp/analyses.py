@@ -19,6 +19,7 @@ from scipy.stats import circmean
 import statsmodels.stats.multitest
 import copy
 from collections import namedtuple
+from fractions import Fraction
 from typing import Union, List, Tuple
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -715,7 +716,7 @@ def compute_conn_mvar(complex_signal: np.ndarray, mvar_params: dict,
                         fit_mvar = mvar.fit(merged_signal[:, 0, 0, :][np.newaxis, ...])
                         is_stable = fit_mvar.stability()
                         aug_signal = merged_signal[np.newaxis, ...]
-                        counter += counter
+                        counter += 1
 
                     else:
 
@@ -929,7 +930,7 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int,
 
     r = np.mean(freq_range2)/np.mean(freq_range1)
     freq_range = [np.min(freq_range1), np.max(freq_range2)]
-    complex_signal = np.mean(compute_single_freq(data, sampling_rate, freq_range, **filter_options),3).squeeze()
+    complex_signal = np.mean(compute_single_freq(data, sampling_rate, freq_range),3).squeeze()
 
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
                                     complex_signal.shape[3], complex_signal.shape[4]
@@ -939,13 +940,13 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int,
     transpose_axes = (0, 1, 3, 2)
     phase = complex_signal / np.abs(complex_signal)
 
-    freqsn = freq_range
-    freqsm = [f * r for f in freqsn]
-    n_mult = (freqsn[0] + freqsm[0]) / (2 * freqsn[0])
-    m_mult = (freqsm[0] + freqsn[0]) / (2 * freqsm[0])
+    # Compute integer n:m ratio so that n*f1 = m*f2
+    frac = Fraction(r).limit_denominator(10)
+    n, m = frac.numerator, frac.denominator
 
-    phase[:, :, :, :n_ch] = n_mult * phase[:, :, :, :n_ch]
-    phase[:, :, :, n_ch:] = m_mult * phase[:, :, :, n_ch:]
+    # Raise phases to integer powers for n:m coupling
+    phase[:, :, :, :n_ch] = phase[:, :, :, :n_ch] ** n
+    phase[:, :, :, n_ch:] = phase[:, :, :, n_ch:] ** m
 
     c = np.real(phase)
     s = np.imag(phase)
