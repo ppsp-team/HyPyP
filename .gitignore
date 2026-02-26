@@ -138,9 +138,6 @@ _build/
 .DS_Store
 **/.DS_Store
 
-# Poetry lock file
-poetry.lock
-
 # Preprocessed and results data
 data/results/
 private/
