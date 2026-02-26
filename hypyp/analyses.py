@@ -870,8 +870,7 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict,
 
 
 def compute_nmPLV(data: np.ndarray, sampling_rate: int, 
-                 freq_range1: List[float], freq_range2: List[float], 
-                 **filter_options) -> np.ndarray:
+                 freq_range1: List[float], freq_range2: List[float]) -> np.ndarray:
     """
     Computes n:m Phase-Locking Value for cross-frequency coupling between participants.
     
@@ -893,9 +892,6 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int,
     freq_range2 : List[float]
         Frequency range [fmin, fmax] for participant 2
         
-    **filter_options
-        Additional arguments for the underlying filtering functions
-    
     Returns
     -------
     con : np.ndarray
@@ -1059,17 +1055,17 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs, freqs: Union[int, np.ndarray],
         for ind2, ch_label2 in enumerate(sig2.ch_names):
             # Extract the channel's data for both participants and apply cwt
             cur_sig1 = np.squeeze(sig1.get_data(mne.pick_channels(sig1.ch_names, [ch_label1])))
-            out1 = mne.time_frequency.tfr.cwt(cur_sig1, Ws, use_fft=True,
+            cwt1 = mne.time_frequency.tfr.cwt(cur_sig1, Ws, use_fft=True,
                                               mode='same', decim=1)
             cur_sig2 = np.squeeze(sig2.get_data(mne.pick_channels(sig2.ch_names, [ch_label2])))
-            out2 = mne.time_frequency.tfr.cwt(cur_sig2, Ws, use_fft=True,
+            cwt2 = mne.time_frequency.tfr.cwt(cur_sig2, Ws, use_fft=True,
                                               mode='same', decim=1)
 
             # Compute cross-spectrum and auto-spectra
-            cross_sig = out1 * out2.conj()
+            cross_sig = cwt1 * cwt2.conj()
             cross_sigs[ind1, ind2, :, :, :] = cross_sig
-            wps1 = np.abs(out1) ** 2
-            wps2 = np.abs(out2) ** 2
+            wps1 = np.abs(cwt1) ** 2
+            wps2 = np.abs(cwt2) ** 2
 
             # Smooth in time with scale-dependent Gaussian window
             # following Grinsted et al. (2004)
