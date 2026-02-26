@@ -401,7 +401,7 @@ def AR_local(cleaned_epochs_ICA: List[mne.Epochs], strategy: str = 'union',
 
     for subject_id, clean_epochs_subj in enumerate(cleaned_epochs_ICA):  # per subj
         picks = mne.pick_types(
-            clean_epochs_subj[subject_id].info,
+            clean_epochs_subj.info,
             meg=False,
             eeg=True,
             stim=False,

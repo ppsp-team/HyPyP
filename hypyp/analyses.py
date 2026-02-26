@@ -19,6 +19,7 @@ from scipy.stats import circmean
 import statsmodels.stats.multitest
 import copy
 from collections import namedtuple
+from fractions import Fraction
 from typing import Union, List, Tuple
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -715,7 +716,7 @@ def compute_conn_mvar(complex_signal: np.ndarray, mvar_params: dict,
                         fit_mvar = mvar.fit(merged_signal[:, 0, 0, :][np.newaxis, ...])
                         is_stable = fit_mvar.stability()
                         aug_signal = merged_signal[np.newaxis, ...]
-                        counter += counter
+                        counter += 1
 
                     else:
 
@@ -869,8 +870,7 @@ def compute_freq_bands(data: np.ndarray, sampling_rate: int, freq_bands: dict,
 
 
 def compute_nmPLV(data: np.ndarray, sampling_rate: int, 
-                 freq_range1: List[float], freq_range2: List[float], 
-                 **filter_options) -> np.ndarray:
+                 freq_range1: List[float], freq_range2: List[float]) -> np.ndarray:
     """
     Computes n:m Phase-Locking Value for cross-frequency coupling between participants.
     
@@ -892,9 +892,6 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int,
     freq_range2 : List[float]
         Frequency range [fmin, fmax] for participant 2
         
-    **filter_options
-        Additional arguments for the underlying filtering functions
-    
     Returns
     -------
     con : np.ndarray
@@ -929,7 +926,7 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int,
 
     r = np.mean(freq_range2)/np.mean(freq_range1)
     freq_range = [np.min(freq_range1), np.max(freq_range2)]
-    complex_signal = np.mean(compute_single_freq(data, sampling_rate, freq_range, **filter_options),3).squeeze()
+    complex_signal = np.mean(compute_single_freq(data, sampling_rate, freq_range),3).squeeze()
 
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \
                                     complex_signal.shape[3], complex_signal.shape[4]
@@ -939,13 +936,13 @@ def compute_nmPLV(data: np.ndarray, sampling_rate: int,
     transpose_axes = (0, 1, 3, 2)
     phase = complex_signal / np.abs(complex_signal)
 
-    freqsn = freq_range
-    freqsm = [f * r for f in freqsn]
-    n_mult = (freqsn[0] + freqsm[0]) / (2 * freqsn[0])
-    m_mult = (freqsm[0] + freqsn[0]) / (2 * freqsm[0])
+    # Compute integer n:m ratio so that n*f1 = m*f2
+    frac = Fraction(r).limit_denominator(10)
+    n, m = frac.numerator, frac.denominator
 
-    phase[:, :, :, :n_ch] = n_mult * phase[:, :, :, :n_ch]
-    phase[:, :, :, n_ch:] = m_mult * phase[:, :, :, n_ch:]
+    # Raise phases to integer powers for n:m coupling
+    phase[:, :, :, :n_ch] = phase[:, :, :, :n_ch] ** n
+    phase[:, :, :, n_ch:] = phase[:, :, :, n_ch:] ** m
 
     c = np.real(phase)
     s = np.imag(phase)
@@ -1036,31 +1033,51 @@ def xwt(sig1: mne.Epochs, sig2: mne.Epochs, freqs: Union[int, np.ndarray],
     assert n_samples1 == n_samples2, "n_samples1 and n_samples2 should have the same number of samples."
 
     cross_sigs = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
-    wtcs = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1), dtype=complex) * np.nan
+    wtcs = np.zeros((n_chans1, n_chans2, n_epochs1, n_freqs, n_samples1)) * np.nan
 
     # Set the mother wavelet
     Ws = mne.time_frequency.tfr.morlet(sfreq, freqs, 
                                        n_cycles=n_cycles, sigma=None, zero_mean=True)
+
+    # Wavelet scales in samples (Morlet scale-frequency relation)
+    scales = n_cycles * sfreq / (2 * np.pi * freqs)
+
+    # Precompute Gaussian smoothing windows per frequency
+    smooth_wins = []
+    for s in scales:
+        win_size = max(3, int(2 * s))
+        win = scipy.signal.windows.gaussian(win_size, std=s)
+        win /= win.sum()
+        smooth_wins.append(win)
 
     # Perform a continuous wavelet transform on all epochs of each signal
     for ind1, ch_label1 in enumerate(sig1.ch_names):
         for ind2, ch_label2 in enumerate(sig2.ch_names):
             # Extract the channel's data for both participants and apply cwt
             cur_sig1 = np.squeeze(sig1.get_data(mne.pick_channels(sig1.ch_names, [ch_label1])))
-            out1 = mne.time_frequency.tfr.cwt(cur_sig1, Ws, use_fft=True,
+            cwt1 = mne.time_frequency.tfr.cwt(cur_sig1, Ws, use_fft=True,
                                               mode='same', decim=1)
             cur_sig2 = np.squeeze(sig2.get_data(mne.pick_channels(sig2.ch_names, [ch_label2])))
-            out2 = mne.time_frequency.tfr.cwt(cur_sig2, Ws, use_fft=True,
+            cwt2 = mne.time_frequency.tfr.cwt(cur_sig2, Ws, use_fft=True,
                                               mode='same', decim=1)
-            
-            # Compute cross-spectrum
-            wps1 = out1 * out1.conj()
-            wps2 = out2 * out2.conj()
-            cross_sig = out1 * out2.conj()
+
+            # Compute cross-spectrum and auto-spectra
+            cross_sig = cwt1 * cwt2.conj()
             cross_sigs[ind1, ind2, :, :, :] = cross_sig
-            coh = (cross_sig) / (np.sqrt(wps1*wps2))
-            abs_coh = np.abs(coh)
-            wtc = (abs_coh - np.min(abs_coh)) / (np.max(abs_coh) - np.min(abs_coh))
+            wps1 = np.abs(cwt1) ** 2
+            wps2 = np.abs(cwt2) ** 2
+
+            # Smooth in time with scale-dependent Gaussian window
+            # following Grinsted et al. (2004)
+            for fi, win in enumerate(smooth_wins):
+                wps1[:, fi, :] = np.apply_along_axis(
+                    lambda x: np.convolve(x, win, mode='same'), -1, wps1[:, fi, :])
+                wps2[:, fi, :] = np.apply_along_axis(
+                    lambda x: np.convolve(x, win, mode='same'), -1, wps2[:, fi, :])
+                cross_sig[:, fi, :] = np.apply_along_axis(
+                    lambda x: np.convolve(x, win, mode='same'), -1, cross_sig[:, fi, :])
+
+            wtc = np.abs(cross_sig) ** 2 / (wps1 * wps2)
             wtcs[ind1, ind2, :, :, :] = wtc
 
     if mode == 'power':

@@ -586,7 +586,7 @@ def generate_virtual_epoch(epoch: mne.Epochs, W: np.ndarray, frequency_mean: flo
         dotp = omega - coupling + noise_phase_level * np.random.randn(n_chan) / n_samp
         return dotp
 
-    p0 = 2 * np.pi * np.block([np.zeros(n_chan/2), np.zeros(n_chan/2) + np.random.rand(n_chan/2) + 0.5])
+    p0 = 2 * np.pi * np.block([np.zeros(n_chan//2), np.zeros(n_chan//2) + np.random.rand(n_chan//2) + 0.5])
     ans = solve_ivp(fun=fp, t_span=(tv[0], tv[-1]), y0=p0, t_eval=tv)
     phi = ans['y'].T  % (2*np.pi)
 
