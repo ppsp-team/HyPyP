@@ -490,14 +490,14 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
         Lachaux et al. (1999). *Human Brain Mapping*, 8(4), 194–208.
     'ccorr' : Circular Correlation
         Circular analogue of Pearson r using global circular mean centering.
-        Berens (2009). *Journal of Statistical Software*, 31(10), 1–21.
+        Fisher, N. I. (1995). *Statistical analysis of circular data*. Cambridge University Press.
     'accorr' : Adjusted Circular Correlation
         Same as ccorr but with per-pair phase centering for improved accuracy.
         Supports ``optimization`` parameter (numba / torch).
         Zimmermann et al. (2024). *Imaging Neuroscience*, 2.
     'coh' : Coherence
         ``Coh = |⟨S₁₂⟩|² / (⟨|S₁|²⟩·⟨|S₂|²⟩)`` — ranges [0, 1].
-        Nolte et al. (2004). *Clinical Neurophysiology*, 115(10), 2292–2307.
+        Nunez, P. L., & Srinivasan, R. (2006). *Electric fields of the brain*. Oxford University Press.
     'imaginary_coh' / 'imcoh' : Imaginary Coherence
         ``Im(⟨S₁₂⟩) / √(⟨|S₁|²⟩·⟨|S₂|²⟩)`` — volume-conduction resistant.
         Nolte et al. (2004). *Clinical Neurophysiology*, 115(10), 2292–2307.

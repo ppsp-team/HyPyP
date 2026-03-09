@@ -34,9 +34,8 @@ CCorr = Σ sin(α₁ − ᾱ₁) · sin(α₂ − ᾱ₂)
 ```
 where `ᾱ` is the circular mean of `α`.
 
-**Reference:** Berens, P. (2009). CircStat: A MATLAB toolbox for circular statistics.
-*Journal of Statistical Software*, 31(10), 1–21.
-https://doi.org/10.18637/jss.v031.i10
+**Reference:** Fisher, N. I. (1995). *Statistical analysis of circular data*.
+Cambridge University Press.
 
 ---
 
@@ -76,9 +75,8 @@ where `S₁₂(f)` is the cross-spectrum.
 
 Ranges from 0 to 1. Sensitive to volume conduction.
 
-**Reference:** Nolte, G., et al. (2004). Identifying true brain interaction from EEG
-data using the imaginary part of coherency. *Clinical Neurophysiology*, 115(10), 2292–2307.
-https://doi.org/10.1016/j.clinph.2004.04.029
+**Reference:** Nunez, P. L., & Srinivasan, R. (2006). *Electric fields of the brain:
+the neurophysics of EEG*. Oxford University Press.
 
 ---
 
