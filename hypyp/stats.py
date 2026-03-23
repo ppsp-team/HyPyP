@@ -109,12 +109,7 @@ def statsCond(data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: 
                                                        tail=0, n_jobs=1)
     adj_p = mne.stats.fdr_correction(p_values, alpha=alpha, method='indep')
 
-    T_obs_plot = np.nan * np.ones_like(T_obs)
-    for c in adj_p[1]:
-        if c <= alpha:
-            i = np.where(adj_p[1] == c)
-            T_obs_plot[i] = T_obs[i]
-    T_obs_plot = np.nan_to_num(T_obs_plot)
+    T_obs_plot = np.where(adj_p[0], T_obs, 0)
 
     # retrieving sensor position
     pos = np.array([[0, 0]])
@@ -475,7 +470,7 @@ def statscondCluster(data: list, freqs_mean: list, ch_con_freq: scipy.sparse.csr
     dfd = np.sum([len(d) for d in data]) - len(data)  # Denominator degrees of freedom
 
     if tail == 0:
-        threshold = f_dist.ppf(1 - alpha / 2, dfn, dfd)  # 2-tailed F-test
+        threshold = f_dist.ppf(1 - alpha, dfn, dfd)
     else:
         threshold = None  # One-tailed test uses MNE's default
     
@@ -605,22 +600,28 @@ def statscluster(data: list, test: str, factor_levels: List[int], ch_con_freq: s
     if test == 'ind ttest':
         def stat_fun(*arg):
             return(scipy.stats.ttest_ind(arg[0], arg[1], equal_var=False)[0])
-        threshold = alpha
+        df = len(data[0]) + len(data[1]) - 2
+        p = alpha / 2 if tail == 0 else alpha
+        threshold = scipy.stats.t.ppf(1 - p, df)
     elif test == 'rel ttest':
         def stat_fun(*arg):
             return(scipy.stats.ttest_rel(arg[0], arg[1])[0])
-        threshold = alpha
+        df = len(data[0]) - 1
+        p = alpha / 2 if tail == 0 else alpha
+        threshold = scipy.stats.t.ppf(1 - p, df)
     elif test == 'f oneway':
         def stat_fun(*arg):
             return(scipy.stats.f_oneway(arg[0], arg[1])[0])
-        threshold = alpha
+        dfn = len(data) - 1
+        dfd = sum(len(d) for d in data) - len(data)
+        threshold = f_dist.ppf(1 - alpha, dfn, dfd)
     elif test == 'f multipleway':
         if max(factor_levels) > 2:
             correction = True
         else:
             correction = False
         def stat_fun(*arg):
-            return(mne.stats.f_mway_rm(np.swapaxes(args, 1, 0),
+            return(mne.stats.f_mway_rm(np.swapaxes(arg, 1, 0),
                                        factor_levels,
                                        effects='all',
                                        correction=correction,
@@ -628,7 +629,7 @@ def statscluster(data: list, test: str, factor_levels: List[int], ch_con_freq: s
         threshold = mne.stats.f_threshold_mway_rm(n_subjects=data.shape[1],
                                                   factor_levels=factor_levels,
                                                   effects='all',
-                                                  pvalue=0.05)
+                                                  pvalue=alpha)
 
     # computing the cluster permutation t test
     Stat_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(data,
