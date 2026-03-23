@@ -482,6 +482,50 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
     ------
     ValueError
         If an unsupported connectivity metric is specified
+
+    Modes
+    -----
+    'plv' : Phase Locking Value
+        ``PLV = |⟨e^{i·Δφ}⟩|`` — ranges [0, 1].
+        Lachaux et al. (1999). *Human Brain Mapping*, 8(4), 194–208.
+    'ccorr' : Circular Correlation
+        Circular analogue of Pearson r using global circular mean centering.
+        Fisher, N. I. (1995). *Statistical analysis of circular data*. Cambridge University Press.
+    'accorr' : Adjusted Circular Correlation
+        Same as ccorr but with per-pair phase centering for improved accuracy.
+        Supports ``optimization`` parameter (numba / torch).
+        Zimmermann et al. (2024). *Imaging Neuroscience*, 2.
+    'coh' : Coherence
+        ``Coh = |⟨S₁₂⟩|² / (⟨|S₁|²⟩·⟨|S₂|²⟩)`` — ranges [0, 1].
+        Nunez, P. L., & Srinivasan, R. (2006). *Electric fields of the brain*. Oxford University Press.
+    'imaginary_coh' / 'imcoh' : Imaginary Coherence
+        ``Im(⟨S₁₂⟩) / √(⟨|S₁|²⟩·⟨|S₂|²⟩)`` — volume-conduction resistant.
+        Nolte et al. (2004). *Clinical Neurophysiology*, 115(10), 2292–2307.
+    'pli' : Phase Lag Index
+        ``|⟨sign(Im(S₁₂))⟩|`` — ranges [0, 1], insensitive to zero-lag coupling.
+        Stam et al. (2007). *Human Brain Mapping*, 28(11), 1178–1193.
+    'wpli' : Weighted Phase Lag Index
+        ``|⟨|Im(S₁₂)|·sign(Im(S₁₂))⟩| / ⟨|Im(S₁₂)|⟩`` — noise-robust PLI.
+        Vinck et al. (2011). *NeuroImage*, 55(4), 1548–1565.
+    'envelope_corr' / 'envcorr' : Envelope Correlation
+        Pearson r between signal envelopes (analytic amplitude).
+        Hipp et al. (2012). *Nature Neuroscience*, 15(6), 884–890.
+    'pow_corr' / 'powcorr' : Power Correlation
+        Pearson r between instantaneous signal power.
+
+    See Also
+    --------
+    hypyp.sync.PLV : Phase Locking Value class
+    hypyp.sync.CCorr : Circular Correlation class
+    hypyp.sync.ACCorr : Adjusted Circular Correlation class (with GPU support)
+    hypyp.sync.Coh : Coherence class
+    hypyp.sync.ImCoh : Imaginary Coherence class
+    hypyp.sync.PLI : Phase Lag Index class
+    hypyp.sync.WPLI : Weighted Phase Lag Index class
+    hypyp.sync.EnvCorr : Envelope Correlation class
+    hypyp.sync.PowCorr : Power Correlation class
+
+    For full mathematical details and references, see ``hypyp/sync/README.md``.
     """
 
     n_epoch, n_ch, n_freq, n_samp = complex_signal.shape[1], complex_signal.shape[2], \

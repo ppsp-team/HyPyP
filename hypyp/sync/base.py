@@ -165,12 +165,34 @@ class BaseMetric(ABC):
         Implements fallback logic with warnings when requested
         optimization is not available.
 
+        Parameters
+        ----------
+        optimization : str or None
+            Requested optimization strategy:
+
+            - ``None``: standard numpy, no acceleration (default).
+            - ``'auto'``: best available backend — tries torch first, then
+              numba, then falls back to numpy. No warning is emitted.
+            - ``'numba'``: JIT-compiled loops via numba. Falls back to numpy
+              with a UserWarning if numba is not installed.
+            - ``'torch'``: PyTorch tensors with auto-detected GPU (see
+              ``_resolve_torch`` for device priority). Falls back to numpy
+              with a UserWarning if torch is not installed.
+
         Returns
         -------
         backend : str
-            One of 'numpy', 'numba', 'torch'.
+            One of ``'numpy'``, ``'numba'``, ``'torch'``.
         device : str
-            One of 'cpu', 'mps', 'cuda'.
+            One of ``'cpu'``, ``'mps'``, ``'cuda'``.
+
+        Notes
+        -----
+        Fallback cascade for ``'auto'``:
+            torch (best available device) → numba → numpy
+
+        Fallback cascade for ``'torch'`` or ``'numba'`` when unavailable:
+            requested backend → numpy (with UserWarning)
         """
         if optimization is None:
             return 'numpy', 'cpu'
@@ -209,7 +231,29 @@ class BaseMetric(ABC):
 
     @staticmethod
     def _resolve_torch() -> tuple:
-        """Resolves the best torch device, with warnings."""
+        """
+        Resolves the best available torch device, with warnings if no GPU found.
+
+        Device priority: MPS > CUDA > CPU.
+
+        MPS (Metal Performance Shaders) is Apple Silicon's GPU backend and is
+        checked first. CUDA is checked second for NVIDIA GPUs on Linux/Windows.
+        The two are mutually exclusive — a machine will have one or the other,
+        never both. If neither is available, torch runs on CPU with a warning.
+
+        Returns
+        -------
+        backend : str
+            Always ``'torch'``.
+        device : str
+            One of ``'mps'``, ``'cuda'``, or ``'cpu'``.
+
+        Notes
+        -----
+        MPS uses 32-bit float precision (``torch.float32``), so numerical
+        results may differ from CPU/CUDA (64-bit) by up to ~1e-5. Tests
+        should apply a looser tolerance when MPS is the active device.
+        """
         if MPS_AVAILABLE:
             return 'torch', 'mps'
         if CUDA_AVAILABLE:

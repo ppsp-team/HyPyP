@@ -4,8 +4,21 @@
 """
 Adjusted Circular Correlation (ACCorr) connectivity metric.
 
-Optimizations (numba, torch) originally developed by @m2march
-as part of BrainHack Montreal 2026 (see PR #246).
+ACCorr computes the circular correlation between two phase time-series with
+per-pair phase centering, providing a more accurate inter-brain synchrony
+estimate than standard circular correlation (ccorr).
+
+Reference: Zimmermann et al. (2024). *Imaging Neuroscience*, 2.
+https://doi.org/10.1162/imag_a_00350
+
+Credits
+-------
+The ``precompute`` optimization strategy (vectorized numerator + loop denominator
+with pre-computed per-pair adjustments) was contributed by **Martín A. Miguel**
+([@m2march](https://github.com/m2march)) during BrainHack Montréal 2026 (PR #246).
+
+The numba JIT and PyTorch GPU/MPS backends were also developed by @m2march and
+integrated into the modular sync architecture in PR #250.
 """
 
 from typing import Optional

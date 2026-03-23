@@ -10,6 +10,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+from hypyp.analyses import compute_sync
 from hypyp.sync.accorr import ACCorr
 from hypyp.sync.base import BaseMetric, NUMBA_AVAILABLE, TORCH_AVAILABLE, MPS_AVAILABLE
 from tests.accorr_reference import accorr_reference
@@ -86,15 +87,32 @@ class TestAccorrOptimizations:
 class TestAccorrViaComputeSync:
     """Test accorr through the compute_sync API with optimization parameter."""
 
-    def test_compute_sync_default(self, complex_signal):
+    MPS_TOL = 1e-5
+
+    def test_compute_sync_default(self, complex_signal, complex_signal_raw):
         """compute_sync with optimization=None should match reference."""
         result_reference = accorr_reference(complex_signal, epochs_average=True, show_progress=False)
-        metric = ACCorr(show_progress=False)
-        n_samp = complex_signal.shape[3]
-        result = metric.compute(complex_signal, n_samp, (0, 1, 3, 2))
-        result = result.swapaxes(0, 1)
-        result = np.nanmean(result, axis=1)
+        result = compute_sync(complex_signal_raw, 'accorr', optimization=None, epochs_average=True)
         np.testing.assert_allclose(result, result_reference, rtol=1e-9, atol=1e-10)
+
+    @pytest.mark.skipif(not NUMBA_AVAILABLE, reason="Numba not available")
+    def test_compute_sync_numba(self, complex_signal, complex_signal_raw):
+        """compute_sync with optimization='numba' should match reference."""
+        result_reference = accorr_reference(complex_signal, epochs_average=True, show_progress=False)
+        result = compute_sync(complex_signal_raw, 'accorr', optimization='numba', epochs_average=True)
+        np.testing.assert_allclose(result, result_reference, rtol=1e-9, atol=1e-10)
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="Torch not available")
+    def test_compute_sync_torch(self, complex_signal, complex_signal_raw):
+        """compute_sync with optimization='torch' should match reference."""
+        result_reference = accorr_reference(complex_signal, epochs_average=True, show_progress=False)
+        result = compute_sync(complex_signal_raw, 'accorr', optimization='torch', epochs_average=True)
+        # MPS uses float32, so a looser tolerance is required
+        if MPS_AVAILABLE:
+            np.testing.assert_allclose(result, result_reference,
+                                       rtol=self.MPS_TOL, atol=self.MPS_TOL)
+        else:
+            np.testing.assert_allclose(result, result_reference, rtol=1e-9, atol=1e-10)
 
 
 class TestAccorrErrorHandling:
