@@ -10,7 +10,7 @@ The **Hy**perscanning **Py**thon **P**ipeline
 
 🤝 If you want to help you can submit bugs and suggestions of enhancements in our Github [Issues section](https://github.com/ppsp-team/HyPyP/issues).
 
-🤓 For the motivated contributors, you can even help directly in the development of HyPyP. You will need to install [Poetry](https://python-poetry.org/) (see section below).
+🤓 For the motivated contributors, you can even help directly in the development of HyPyP. You will need to install [uv](https://docs.astral.sh/uv/) (see section below).
 
 ## Contributors
 
@@ -49,16 +49,20 @@ For getting started with HyPyP, we have designed a little walkthrough: [getting_
 
 🌊 [wavelet/\*.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/wavelet) — Continuous Wavelet Transform and Wavelet Transform Coherence (Patrice)
 
-📊 [shiny/\*.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/app) — Shiny dashboards, install using `poetry install --extras shiny` (Patrice)
+📊 [shiny/\*.py](https://github.com/ppsp-team/HyPyP/blob/master/hypyp/app) — Shiny dashboards, install using `uv sync --extra shiny` (Patrice)
 
-## Poetry Installation (Only for Developers and Adventurous Users)
+## Developer Installation (uv)
 
-To develop HyPyP, we recommend using [Poetry 2.x](https://python-poetry.org/). Follow these steps:
+To develop HyPyP, we recommend using [uv](https://docs.astral.sh/uv/). Follow these steps:
 
-### 1. Install Poetry:
+### 1. Install uv:
 
 ```bash
-   pip install poetry
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# or with pip
+pip install uv
 ```
 
 ### 2. Clone the Repository:
@@ -71,48 +75,31 @@ cd HyPyP
 ### 3. Install Dependencies:
 
 ```bash
-poetry install
-```
-
-Note: By default, dev dependencies (including JupyterLab) are not included in the main dependencies.
-To install development dependencies, you can run:
-
-```bash
-poetry install --with dev
+uv sync --group dev
 ```
 
 ### 4. Launch Jupyter Lab to Run Notebooks:
 
-Instead of entering a shell, launch Jupyter Lab directly within the Poetry environment:
-
 ```bash
-poetry run jupyter lab
+uv run jupyter lab
 ```
 
-## Additional Setup for Poetry
-
-- **Install Poetry Plugins:**
-
-To have full functionality with Poetry, add the following plugins:
+### Optional extras:
 
 ```bash
-poetry self add poetry-plugin-shell
-poetry self add poetry-plugin-export
+# Shiny dashboards
+uv sync --group dev --extra shiny
+
+# Numba optimization backend (CPU JIT)
+uv sync --group dev --extra numba
+
+# PyTorch optimization backend (GPU/MPS)
+uv sync --group dev --extra torch
 ```
 
-- **VS Code Integration:**
+### VS Code Integration
 
-To make the Poetry virtual environment available in VS Code, you might need to set Poetry to create in-project virtual environments. You can do this either by running:
-
-```bash
-poetry config virtualenvs.in-project true
-```
-
-or by adding the following line to your .bashrc or .zshrc:
-
-```bash
-poetry config virtualenvs.in-project true
-```
+uv creates a `.venv` directory in the project root by default. VS Code should auto-detect it. If not, point the Python interpreter to `.venv/bin/python`.
 
 ## Child Head Visualization
 
