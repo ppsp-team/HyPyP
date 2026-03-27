@@ -88,8 +88,9 @@ def plot_wavelet_transform_weights(
             for time_cut in np.arange(0, max(times), bin_seconds):
                 plt.axvline(x=time_cut, color='red', lw=0.5)
 
-        for y_cut in y_cuts:
-            plt.axhline(y=y_cut, color='red', lw=0.5)
+        if y_cuts is not None:
+            for y_cut in y_cuts:
+                plt.axhline(y=y_cut, color='red', lw=0.5)
     
     # Dynamically set ticks based on the current range
     ymin, ymax = ax.get_ylim()  # Get the y-axis limits
@@ -276,5 +277,4 @@ def plot_coherence_bars_per_task(df):
 
     plt.subplots_adjust(bottom=0.5)
     return p
-
 

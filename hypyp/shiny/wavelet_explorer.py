@@ -9,12 +9,13 @@ from scipy import fft
 import mne
 
 from hypyp.wavelet.pair_signals import PairSignals
-from hypyp.fnirs.data_browser import DataBrowser
-from hypyp.fnirs.recording import Recording
+from hypyp.data_browser import DataBrowser
+from hypyp.fnirs.fnirs_recording import FNIRSRecording
+from hypyp.fnirs import FNIRSStep
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from hypyp.fnirs.preprocessor.implementations.cedalion_preprocessor import CedalionPreprocessor
-from hypyp.signal import SyntheticSignal
+from hypyp.signal.synthetic_signal import SyntheticSignal
 from hypyp.wavelet.base_wavelet import BaseWavelet
 from hypyp.wavelet.implementations.matlab_wavelet import MatlabWavelet
 from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexGaussianWavelet, ComplexMorletWavelet
@@ -295,11 +296,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @reactive.calc()
     def get_recording_s1():
-        return Recording().load_file(get_signal_data_files_s1_path(), get_preprocessor())
+        return FNIRSRecording().load_file(get_signal_data_files_s1_path(), get_preprocessor())
 
     @reactive.calc()
     def get_recording_s2():
-        return Recording().load_file(get_signal_data_files_s2_path(), get_preprocessor())
+        return FNIRSRecording().load_file(get_signal_data_files_s2_path(), get_preprocessor())
 
     @reactive.calc()
     def get_recording_s1_step():
@@ -336,11 +337,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     def ui_preprocess_steps():
         # Need to wrap the plot function to have dynamic display in shiny.
         # Because of order of execution, this cannot be directly in the loop
-        def bind_plot_mne_figure(step: int):
+        def bind_plot_mne_figure(step: FNIRSStep):
             def plot_mne_figure():
                 return mne_figure_as_image(step.plot(**get_mne_raw_plot_kwargs(step, input.input_s1_mne_duration_slider())))
             # need to rename the function because every "output plot" must have a unique name
-            plot_mne_figure.__name__ = f'{plot_mne_figure.__name__}_{step.key}'
+            plot_mne_figure.__name__ = f'{plot_mne_figure.__name__}_{step.name}'
             renderer = render.image(plot_mne_figure)
             # This is needed to avoid having the scrollbar on the right
             renderer._auto_output_ui_kwargs = dict(height=f'{DEFAULT_PLOT_MNE_HEIGHT}px')
@@ -380,7 +381,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         
         elif input.signal_type() == 'data_files':
             browser = get_data_browser()
-            browser.download_demo_dataset()
+            browser.download_demo_fnirs_dataset()
 
             choices.append(ui_option_row("Subject 1 file", ui.input_select(
                 "signal_data_files_s1_path",

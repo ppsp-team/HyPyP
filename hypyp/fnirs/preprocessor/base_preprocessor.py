@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Generic, TypeVar
 
-from .base_step import BaseStep
+from ...core.base_step import BaseStep
 
 # Generic type for underlying fnirs implementation (mne raw / cedalion recording)
 T = TypeVar('T')

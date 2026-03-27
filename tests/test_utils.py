@@ -5,7 +5,7 @@ import pytest
 import numpy as np
 import mne
 from hypyp import utils
-from hypyp.signal import SyntheticSignal
+from hypyp.signal.synthetic_signal import SyntheticSignal
 from hypyp.wavelet.implementations.pywavelets_wavelet import ComplexMorletWavelet
 
 def get_fake_raw():

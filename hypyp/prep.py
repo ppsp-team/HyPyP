@@ -159,7 +159,8 @@ def ICA_choice_comp(icas: List[ICA], epochs: List[mne.Epochs]) -> List[mne.Epoch
 
 
 def ICA_apply(icas: List[ICA], subject_id: int, component_id: int, 
-             epochs: List[mne.Epochs], plot: bool = True) -> List[mne.Epochs]:
+             epochs: List[mne.Epochs], plot: bool = True,
+             label: str = 'blink', ch_type: str = 'eeg', threshold: float = 0.9) -> List[mne.Epochs]:
     """
     Apply ICA artifact rejection using a template component.
     
@@ -183,6 +184,8 @@ def ICA_apply(icas: List[ICA], subject_id: int, component_id: int,
         
     plot : bool, optional
         Whether to plot the identified components (default=True)
+    
+    TODO add new arguments
     
     Returns
     -------
@@ -211,9 +214,9 @@ def ICA_apply(icas: List[ICA], subject_id: int, component_id: int,
     # applying corrmap with at least 1 component detected for each subj
     corrmap(icas,
         template=template_eog_component,
-        threshold=0.9,
-        label='blink',
-        ch_type='eeg',
+        threshold=threshold,
+        label=label,
+        ch_type=ch_type,
         plot=plot,
     )
 
@@ -222,7 +225,7 @@ def ICA_apply(icas: List[ICA], subject_id: int, component_id: int,
 
     # selecting ICA components after viz
     for ica in icas:
-        ica.exclude = ica.labels_['blink']
+        ica.exclude = ica.labels_[label]
 
     # applying ica on clean_epochs
     # for each participant
@@ -467,7 +470,7 @@ def AR_local(cleaned_epochs_ICA: List[mne.Epochs], strategy: str = 'union',
     evoked_after_AR: List[mne.Evoked] = [epochs.average() for epochs in cleaned_epochs_AR]
 
     if verbose:
-        for evoked_before_subj, evoked_after_AR_subj in zip(evoked_before, evoked_after_AR):
+        for subject_id, (evoked_before_subj, evoked_after_AR_subj) in enumerate(zip(evoked_before, evoked_after_AR)):
             fig, axes = plt.subplots(2, 1, figsize=(6, 6))
             for ax in axes:
                 ax.tick_params(axis='x', which='both', bottom='off', top='off')
@@ -480,10 +483,10 @@ def AR_local(cleaned_epochs_ICA: List[mne.Epochs], strategy: str = 'union',
             axes[0].set_title('Before autoreject')
 
             evoked_after_AR_subj.pick_types(eeg=True, exclude=[])
-            evoked_after_AR_subj.plot(exclude=[], axes=axes[1], ylim=ylim)
-            # Problème titre ne s'affiche pas pour le deuxieme axe !!!
+            evoked_after_AR_subj.plot(exclude=[], axes=axes[1], ylim=ylim, show=False)
             axes[1].set_title('After autoreject')
 
-            plt.tight_layout()
+            fig.suptitle(f"Subject {subject_id+1}")
+            fig.tight_layout()
 
     return cleaned_epochs_AR, dic_AR
