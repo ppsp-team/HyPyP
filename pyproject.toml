@@ -4,7 +4,7 @@ version = "0.5.0b18"
 description = "The Hyperscanning Python Pipeline."
 readme = "README.md"
 license = "BSD-3-Clause"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: Scientific/Engineering",
@@ -28,7 +28,7 @@ dependencies = [
     "pyxdf>=1.17.0",
     "requests>=2.32.4",
     "scikit-image>=0.25.2",
-    "scipy>=1.11.1,<1.17.0",
+    "scipy>=1.17.1",
     "seaborn>=0.13.2",
     "snirf>=0.8.0",
     "statsmodels>=0.14.4",
