@@ -3,7 +3,7 @@ import os
 from collections import namedtuple, OrderedDict
 import numpy as np
 import mne
-from hypyp import utils, analyses
+from hypyp import utils, analyses, datasets
 
 
 @pytest.fixture(scope="module")
@@ -11,10 +11,8 @@ def epochs():
     """
     Loading data files & extracting sensor infos
     """
-    epo1 = mne.read_epochs(os.path.join("data", "participant1-epo.fif"),
-                           preload=True)
-    epo2 = mne.read_epochs(os.path.join("data", "participant2-epo.fif"),
-                           preload=True)
+    epo1 = mne.read_epochs(datasets.eeg_epochs(participant=1), preload=True)
+    epo2 = mne.read_epochs(datasets.eeg_epochs(participant=2), preload=True)
     mne.epochs.equalize_epoch_counts([epo1, epo2])
     epoch_merge = utils.merge(epo1, epo2)
 

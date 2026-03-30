@@ -9,10 +9,15 @@ import scipy.io
 
 from ..wavelet.pair_signals import PairSignals
 
-DOWNLOADS_RELATIVE_PATH = os.path.join('data', 'NIRS', 'downloads')
+# MNE-style cache directory — respects MNE_DATA env var, mirrors hypyp.datasets convention
+_CACHE_DIR = os.path.join(
+    os.environ.get("MNE_DATA", os.path.expanduser("~/mne_data")),
+    "HypypData",
+    "fnirs",
+    "downloads",
+)
 
 class DataBrowser:
-    absolute_root_path: str
     paths: List[str]
 
     def __init__(self):
@@ -21,24 +26,7 @@ class DataBrowser:
 
         It can also download demo dataset for convenience.
         """
-        self.absolute_root_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        self.paths = [
-            self.absolute_path(os.path.join('data')),
-            self.absolute_path(os.path.join('data', 'fNIRS')),
-            DOWNLOADS_RELATIVE_PATH,
-        ]
-    
-    def absolute_path(self, relative_path:str) -> str:
-        """
-        Get absolute path from relative path
-
-        Args:
-            relative_path (str): a path relative to the project
-
-        Returns:
-            str: the absolute path on disk
-        """
-        return os.path.join(self.absolute_root_path, relative_path)
+        self.paths = []
 
     def add_source(self, path:str):
         """
@@ -74,6 +62,8 @@ class DataBrowser:
         """
         file_paths = []
         for root_path in self.paths:
+            if not Path(root_path).exists():
+                continue
             for path in Path(root_path).rglob('*'):
                 if DataBrowser.is_path_fif(str(path)):
                     file_paths.append(str(path.absolute()))
@@ -98,12 +88,14 @@ class DataBrowser:
         Returns:
             str: the local path where the dataset has been downloaded
         """
-        extract_path = self.absolute_path(DOWNLOADS_RELATIVE_PATH)
+        extract_path = _CACHE_DIR
+        os.makedirs(extract_path, exist_ok=True)
         zip_path = pooch.retrieve(
             fname="fathers.zip",
             url="https://researchdata.ntu.edu.sg/api/access/datafile/91950?gbrecs=true",
             known_hash="md5:786e0c13caab4fc744b93070999dff63",
-            progressbar=True
+            path=extract_path,
+            progressbar=True,
         )
 
         target_path = os.path.join(extract_path, 'fathers')

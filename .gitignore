@@ -141,3 +141,13 @@ _build/
 # Preprocessed and results data
 data/results/
 private/
+
+# Tutorial outputs — generated locally, not committed
+tutorial/results/
+
+# Sample data — moved to HypypData repo (https://github.com/ppsp-team/HypypData)
+# Only data/Basehead.obj is kept (listed as package_data in pyproject.toml)
+data/*.fif
+data/EEGLAB/
+data/NIRS/
+data/XDF/
