@@ -129,7 +129,7 @@ ptyprocess==0.7.0 ; python_version >= "3.10" and python_version < "3.14" and (os
 pure-eval==0.2.3 ; python_version >= "3.10" and python_version < "3.14"
 pyarrow==23.0.0 ; python_version >= "3.10" and python_version < "3.14"
 pycparser==3.0 ; python_version >= "3.10" and python_version < "3.14" and implementation_name != "PyPy"
-pygments==2.19.2 ; python_version >= "3.10" and python_version < "3.14"
+pygments==2.20.0 ; python_version >= "3.10" and python_version < "3.14"
 pylint==4.0.4 ; python_version >= "3.10" and python_version < "3.14"
 pymatreader==1.1.0 ; python_version >= "3.10" and python_version < "3.14"
 pymdown-extensions==10.20.1 ; python_version >= "3.10" and python_version < "3.14"
