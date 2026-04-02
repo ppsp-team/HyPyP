@@ -22,10 +22,11 @@ from hypyp.fnirs.preprocessor.implementations.mne_step import MneStep
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_raw_to_haemo import MnePreprocessorRawToHaemo
 from hypyp.fnirs.preprocessor.implementations.mne_preprocessor_as_is import MnePreprocessorAsIs
 from hypyp.utils import TASK_NEXT_EVENT, Task
+from hypyp import datasets
 
-fif_file = './data/sub-110_session-1_pre.fif'
-snirf_file1 = './data/NIRS/DCARE_02_sub1.snirf'
-snirf_file2 = './data/NIRS/DCARE_02_sub2.snirf'
+fif_file = datasets.eeg_raw()
+snirf_file1 = datasets.fnirs_dcare(subject=1)
+snirf_file2 = datasets.fnirs_dcare(subject=2)
 fnirs_files = [fif_file, snirf_file1, snirf_file2]
 
 # avoid all the output from mne
@@ -53,7 +54,7 @@ def get_test_ch_match_few():
 def test_list_paths():
     browser = DataBrowser()
     paths = browser.paths
-    assert len(paths) > 0
+    assert len(paths) == 0
 
 def test_add_source():
     browser = DataBrowser()
@@ -63,7 +64,9 @@ def test_add_source():
     assert len(new_paths) == previous_count + 1
 
 def test_list_files():
+    import os
     browser = DataBrowser()
+    browser.add_source(os.path.dirname(snirf_file1))
     assert len(browser.paths) > 0
     assert len(browser.list_all_files()) > 0
     # path should be absolute
@@ -661,7 +664,7 @@ def test_study_run_estimation(capsys):
     assert 'time' in str(out)
 
 def test_lionirs_channel_grouping():
-    roi_file_path = 'data/NIRS/lionirs/channel_grouping_7ROI.mat'
+    roi_file_path = datasets.fetch('fnirs/lionirs/channel_grouping_7ROI.mat')
     croi = ChannelROI.from_lionirs_file(roi_file_path)
     assert len(croi.rois.keys()) == 14
 
@@ -690,7 +693,7 @@ def test_lionirs_channel_grouping():
     assert croi.get_roi_from_channel(ordered_names[0]) == 'PreFr_L'
 
 def test_ordered_recording_ch_names():
-    roi_file_path = 'data/NIRS/lionirs/channel_grouping_7ROI.mat'
+    roi_file_path = datasets.fetch('fnirs/lionirs/channel_grouping_7ROI.mat')
     croi = ChannelROI.from_lionirs_file(roi_file_path)
     recording = Recording(channel_roi=croi).load_file(snirf_file1)
     ch_names = recording.ordered_ch_names
@@ -699,7 +702,7 @@ def test_ordered_recording_ch_names():
 
 def test_positions_to_standard_montage():
     #recording = get_test_recording()
-    recording = Recording().load_file('data/NIRS/slow_breathing.snirf')
+    recording = Recording().load_file(datasets.fnirs_slow_breathing())
     map = recording.get_channel_to_standard_montage_map(as_data_frame=False)
     assert map['S1']['name'] == 'AF7'
     assert map['S1_D2']['name'] == 'AF7'

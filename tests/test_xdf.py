@@ -2,10 +2,11 @@ import tempfile
 import pytest
 
 from hypyp.xdf import XDFImport, XDFStream
+from hypyp import datasets
 import mne
 
-file_path = 'data/XDF/dyad-example-noise.xdf'
-file_path_with_markers = 'data/XDF/dyad-example-with-markers.xdf'
+file_path = datasets.xdf_dyad_noise()
+file_path_with_markers = datasets.xdf_dyad_with_markers()
 
 ## These have been extracted with print(xdf), and are used for testing select_match by stream id and mapping
 #   Stream id 1 of type 'Accelerometer' with name 'LSLOutletHS1-Accelerometer'
