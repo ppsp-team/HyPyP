@@ -1,5 +1,7 @@
 import mne
 
+import matplotlib.pyplot as plt
+
 from ..core import BaseDyad
 from ..eeg import EEGDyad
 from ..fnirs import FNIRSDyad
@@ -34,3 +36,15 @@ class MultimodalDyad():
 
     def get_synchrony_time_series(self) ->  list[SynchronyTimeSeries]:
         return [modality.get_synchrony_time_series() for modality in self.modalities]
+    
+    def plot_synchrony_time_series(self):
+        fig, axes = plt.subplots(2, 1, sharex=True)
+        for i, ax, mod in zip(range(len(axes)), axes, ['eeg', 'fnirs']):
+            dyad_mod: BaseDyad = self.__getattribute__(mod)
+            if dyad_mod is not None:
+                dyad_mod.plot_synchrony_time_series(ax=ax)
+            ax.set_title(mod)
+
+            if i < len(axes)-1:
+                ax.set_xlabel('')
+

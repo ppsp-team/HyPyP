@@ -9,3 +9,7 @@ class BaseDyad(ABC):
     @abstractmethod
     def get_synchrony_time_series() -> SynchronyTimeSeries:
         pass
+
+    @abstractmethod
+    def plot_synchrony_time_series(self, ax):
+        pass

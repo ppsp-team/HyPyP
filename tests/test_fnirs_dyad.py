@@ -353,9 +353,9 @@ def test_dyad_wtc_nan_channel_section():
 
     synchronies = dyad.get_synchrony_time_series()
     # We should have rows for "frequency range" and cols for time series
-    assert len(synchronies.by_task['task1'].time_series_per_range.shape) == 2
-    assert synchronies.by_task['task1'].time_series_per_range.shape[0] == 1
-    assert np.nanmean(synchronies.by_task['task1'].time_series_per_range) > 0
+    assert len(synchronies.by_condition['task1'].time_series_per_range.shape) == 2
+    assert synchronies.by_condition['task1'].time_series_per_range.shape[0] == 1
+    assert np.nanmean(synchronies.by_condition['task1'].time_series_per_range) > 0
 
 def test_study_wtc():
     s1, s2 = get_test_recordings()
@@ -535,14 +535,14 @@ def test_synchrony_time_series():
     assert mat.shape[0] == len(dyad.wtcs)
 
     synchronies = dyad.get_synchrony_time_series()
-    assert len(synchronies.by_task['task1'].time_series_per_range.shape) == 2
-    assert synchronies.by_task['task1'].time_series_per_range.shape[0] == 3 # the cuts makes 3 "ranges"
+    assert len(synchronies.by_condition['task1'].time_series_per_range.shape) == 2
+    assert synchronies.by_condition['task1'].time_series_per_range.shape[0] == 3 # the cuts makes 3 "ranges"
 
     # Check that we mask values when we don't have a valid WTC (cone of influence)
-    assert np.isnan(synchronies.by_task['task1'].time_series_per_range[0, 0]) == True
-    assert np.isnan(synchronies.by_task['task1'].time_series_per_range[0, -1]) == True
-    assert np.isnan(synchronies.by_task['task1'].time_series_per_range[0, 100]) == False
-    assert np.isnan(synchronies.by_task['task1'].time_series_per_range[-1, 100]) == True
+    assert np.isnan(synchronies.by_condition['task1'].time_series_per_range[0, 0]) == True
+    assert np.isnan(synchronies.by_condition['task1'].time_series_per_range[0, -1]) == True
+    assert np.isnan(synchronies.by_condition['task1'].time_series_per_range[0, 100]) == False
+    assert np.isnan(synchronies.by_condition['task1'].time_series_per_range[-1, 100]) == True
 
 def test_synchrony_time_series_perfect_coherence():
     import matplotlib.pyplot as plt
@@ -561,12 +561,12 @@ def test_synchrony_time_series_perfect_coherence():
 
     synchronies = dyad.get_synchrony_time_series()
 
-    for freq_range, ts in synchronies.by_task['task1'].by_freq_range.items():
+    for freq_range, ts in synchronies.by_condition['task1'].by_freq_band.items():
         value = np.nanmean(ts)
         print(f"synchrony for freq_range: {freq_range}: {value}")
 
-    assert np.nanmean(synchronies.by_task['task1'].time_series_per_range[0,:]) == pytest.approx(1.0)
-    assert np.nanmean(synchronies.by_task['task1'].time_series_per_range[1,:]) == pytest.approx(1.0)
-    assert np.nanmean(synchronies.by_task['task1'].time_series_per_range[2,:]) == pytest.approx(1.0)
+    assert np.nanmean(synchronies.by_condition['task1'].time_series_per_range[0,:]) == pytest.approx(1.0)
+    assert np.nanmean(synchronies.by_condition['task1'].time_series_per_range[1,:]) == pytest.approx(1.0)
+    assert np.nanmean(synchronies.by_condition['task1'].time_series_per_range[2,:]) == pytest.approx(1.0)
     # the last one is period of 10sec and above, should not have any value since it is all masked (cone of influence)
-    assert np.isnan(np.mean(synchronies.by_task['task1'].time_series_per_range[3,:]))
+    assert np.isnan(np.mean(synchronies.by_condition['task1'].time_series_per_range[3,:]))

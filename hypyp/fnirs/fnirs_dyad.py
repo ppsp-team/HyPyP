@@ -12,7 +12,7 @@ from ..wavelet.wtc import WTC
 from ..wavelet.pair_signals import PairSignals
 from ..wavelet.coherence_data_frame import CoherenceDataFrame
 from ..utils import TaskList, TASK_NAME_WHOLE_RECORD
-from ..dataclasses.synchrony import SynchronyTimeSeries, SynchronyForATask
+from ..dataclasses.synchrony import SynchronyTimeSeries, SynchronyForCondition
 from .fnirs_recording import FNIRSRecording
 from .preprocessor.base_preprocessor import BasePreprocessor
 from ..plots import (
@@ -417,13 +417,12 @@ class FNIRSDyad(BaseDyad):
             wtcs_per_task[k].append(wtc)
         
         for task, wtcs in wtcs_per_task.items():
+            condition = task
             freq_ranges = wtcs[0].freq_ranges_str
             dt = wtcs[0].dt
             mat = self.get_all_wtcs_as_ts_matrix(wtcs, window_size_seconds=window_size_seconds)
-            print(mat.shape)
             time_series_per_range = np.nanmean(mat, axis=0)
-            
-            ret.add_task(SynchronyForATask(time_series_per_range, task, freq_ranges, dt))
+            ret.add_condition(SynchronyForCondition(time_series_per_range, condition, freq_ranges, dt))
         
         return ret
 
@@ -592,7 +591,6 @@ class FNIRSDyad(BaseDyad):
             title=title,
             **kwargs)
 
-    def plot_synchrony_time_series(self, window_size_seconds:float=None):
+    def plot_synchrony_time_series(self, ax=None, window_size_seconds:float=None):
         synchronies = self.get_synchrony_time_series(window_size_seconds=window_size_seconds)
-        synchronies.plot()
-
+        synchronies.plot(ax=ax)

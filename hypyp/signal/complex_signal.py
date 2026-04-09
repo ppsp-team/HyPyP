@@ -17,6 +17,7 @@ class ComplexSignal():
             freq_bands: FreqBands = FREQ_BANDS_ALPHA_LOW_HIGH,
             **compute_freq_bands_kwargs,
         ):
+
         self.data = compute_freq_bands(
             np.array(epos),
             sfreq,

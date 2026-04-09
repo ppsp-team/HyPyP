@@ -1,5 +1,6 @@
 import warnings
 
+import numpy as np
 import mne
 from mne.preprocessing import ICA
 import matplotlib.pyplot as plt
@@ -7,9 +8,9 @@ import matplotlib.pyplot as plt
 from .eeg_step import PREPROCESS_STEP_AR, PREPROCESS_STEP_ICA_APPLY, PREPROCESS_STEP_RAW, EEGStep, EEGDyadStep
 
 from ..dataclasses.psd import SpectralPower
-from ..dataclasses.freq_band import FreqBands
+from ..dataclasses.freq_band import FreqBands, FREQ_BANDS_ALPHA_LOW_HIGH
 from ..connectivity.connectivities import Connectivities
-from ..connectivity.connectivity import Connectivity
+from ..dataclasses.synchrony import SynchronyTimeSeries, SynchronyForCondition
 from ..core.base_dyad import BaseDyad
 from ..signal.complex_signal import ComplexSignal
 
@@ -19,6 +20,7 @@ from ..analyses import pow, compute_sync
 
 
 DEFAULT_EPOCHS_DURATION = 1
+CONDITION_NOT_SPECIFIED = 'default'
 
 class EEGDyad(BaseDyad):
     label: str
@@ -64,7 +66,7 @@ class EEGDyad(BaseDyad):
             ], PREPROCESS_STEP_RAW)
             assert self.epo1.info['sfreq'] == self.epo2.info['sfreq']
             self.sfreq = self.epo1.info['sfreq']
-            self._equalize_epoch_counts(verbose=verbose)
+            self.align_epochs(verbose=verbose)
         else:
             raise NotImplementedError()
 
@@ -79,7 +81,7 @@ class EEGDyad(BaseDyad):
         self = EEGDyad(label)
         self.sfreq = epo1.info['sfreq']
         self.epos_add_step([epo1, epo2], PREPROCESS_STEP_RAW)
-        self._equalize_epoch_counts(verbose=verbose)
+        self.align_epochs(verbose=verbose)
         return self
     
     @staticmethod
@@ -91,7 +93,7 @@ class EEGDyad(BaseDyad):
         self.sfreq = raw1.info['sfreq']
         self.raws = [raw1, raw2]
         self.create_epochs_from_raws(epochs_duration, verbose=verbose)
-        self._equalize_epoch_counts(verbose=verbose)
+        self.align_epochs(verbose=verbose)
         return self
     
     @staticmethod
@@ -114,17 +116,17 @@ class EEGDyad(BaseDyad):
     
     def _assert_has_icas(self):
         if self.icas is None:
-            raise RuntimeError('ICAs is None. Make sure to call "ica_fit()" first.')
+            raise RuntimeError('No ICAs. Make sure to call "ica_fit()" first.')
     
     def _assert_has_psds(self):
         if self.psds is None:
-            raise RuntimeError('ICAs is None. Make sure to call "ica_fit()" first.')
+            raise RuntimeError('No PSDs. Make sure to call "analyse_pow()" first.')
     
-    def _equalize_epoch_counts(self, verbose: bool = False):
+    def align_epochs(self, verbose: bool = False):
         if verbose:
             print("Equalizing epochs")
         if len(self.epo1) != len(self.epo2):
-            warnings.warn(f"The 2 epochs objects don't have the same length: {len(self.epo1)} != {len(self.epo2)}")
+            warnings.warn(f"The 2 epochs objects don't have the same length: {len(self.epo1)} != {len(self.epo2)}. Equalizing epochs by minimizing events time between them.")
             mne.epochs.equalize_epoch_counts(self.epos)
     
     @property
@@ -204,18 +206,19 @@ class EEGDyad(BaseDyad):
     def connectivity_modes(self) -> list[str]:
         return list(self.connectivities_per_mode.keys())
     
-    def epos_add_step(self, epos, name: str = ''):
+    def epos_add_step(self, epos: list[mne.Epochs], name: str = ''):
         single_steps = [EEGStep(epo.copy(), name=name) for epo in epos]
         self.steps.append(EEGDyadStep(single_steps, name=name))
 
     def create_epochs_from_raws(self, duration:float=DEFAULT_EPOCHS_DURATION, verbose: bool = False) -> 'EEGDyad':
         list1, list2 = create_epochs([self.raw1], [self.raw2], duration)
+        epo1 = list1[0]
+        epo2 = list2[0]
 
         if verbose:
-            print(f"Created {len(list1)} and {len(list2)} epochs of duration {DEFAULT_EPOCHS_DURATION} seconds")
+            print(f"Created {len(epo1)} and {len(epo2)} epochs of duration {DEFAULT_EPOCHS_DURATION} seconds")
 
-        self.epos_add_step([list1[0], list2[0]], PREPROCESS_STEP_RAW)
-        return self
+        self.epos_add_step([epo1, epo2], PREPROCESS_STEP_RAW)
 
     def prep_ica_fit(
             self,
@@ -225,8 +228,12 @@ class EEGDyad(BaseDyad):
             random_state: int = 42,
             **kwargs,
     ) -> 'EEGDyad':
+        """
+        Wrapper for hypyp.prep.ICA_fit() See code for full documentation
+        
+        ICAs will be stored in self.icas property
+        """
         self.icas = ICA_fit(self.epos, n_components, method, fit_params, random_state, **kwargs)
-        return self
     
     def prep_ica_apply(
             self,
@@ -237,12 +244,24 @@ class EEGDyad(BaseDyad):
             threshold: float = 0.9,
             plot: bool = False,
     ) -> 'EEGDyad':
+        """
+        Wrapper for hypyp.prep.ICA_apply() See code for full documentation
+        Can be called multiple times with different component_idx to add another label.
+
+        A new preprocess "Step" will be added to self.steps that can be inspected 
+        The label will also be added to self.icas_applied for visibility
+        """
         self._assert_has_icas()
         self.epos_add_step(ICA_apply(self.icas, subject_idx, component_idx, self.epos, plot=plot, label=label, ch_type=ch_type, threshold=threshold), PREPROCESS_STEP_ICA_APPLY)
         self.icas_applied.append(label)
-        return self
     
     def prep_autoreject_apply(self, strategy: str = None, threshold: float = None, show: bool = None, **kwargs) -> 'EEGDyad':
+        """
+        Wrapper for hypyp.prep.AR_local() See code for full documentation
+
+        A new preprocess "Step" will be added to the dyad that can be inspected
+        Autoreject info for both subjects will be stored in self.dic_ar
+        """
         # Forward arguments to underlying function
         if strategy is not None:
             kwargs['strategy'] = strategy
@@ -255,23 +274,27 @@ class EEGDyad(BaseDyad):
         epos, dic_ar = AR_local(self.epos, **kwargs)
         self.epos_add_step(epos, PREPROCESS_STEP_AR)
         self.dic_ar = dic_ar
-        return self
 
     def analyse_pow(
             self,
-            freq_bands: FreqBands,
+            freq_bands: FreqBands = FREQ_BANDS_ALPHA_LOW_HIGH,
             n_fft: int = None,
             n_per_seg: int = None,
             epochs_average: bool = True,
             show: bool = False,
             **kwargs,
     ) -> 'EEGDyad':
+        """
+        Wrapper for hypyp.prep.AR_local() See code for full documentation
+
+        PSDs will be stored in self.psds
+        """
+        self.psds = []
         if n_fft is None:
             n_fft = int(self.sfreq)
         if n_per_seg is None:
             n_per_seg = int(self.sfreq)
 
-        self.psds = []
         for freq_band in freq_bands:
             for epo in self.epos:
                 freqs, psd = pow(epo, fmin=freq_band.fmin, fmax=freq_band.fmax, n_fft=n_fft, n_per_seg=n_per_seg, epochs_average=epochs_average, **kwargs)
@@ -280,25 +303,88 @@ class EEGDyad(BaseDyad):
         if show:
             self.plot_psds()
 
-        return self
-    
 
     def compute_complex_signal_freq_bands(self, freq_bands: FreqBands = None, **kwargs):
+        """
+        Prepare complex signal for each frequency band of interest that will be used for synchrony computation.
+        The computed complex signal will be reused every call to self.analyse_connectivity() with different mode
+
+        Parameters
+        ----------
+        freq_bands : FreqBands
+            Definition of the frequency bands of interest. If None, a default alpha band will be used
+        **kwargs :
+            Extra arguments will be passed to ComplexSignal constructor
+        """
         if freq_bands is not None:
             kwargs['freq_bands'] = freq_bands
 
         self.complex_signal = ComplexSignal(self.epos, self.sfreq, **kwargs)
-        return self
 
+    def analyse_connectivity(self, mode: str = 'plv', epochs_average: bool = True):
+        """
+        Wrapper for hypyp.analyses.compute_sync() See code for full documentation and modes
 
-    def analyse_connectivity(self, mode: str, epochs_average: bool = True):
-        assert self.complex_signal is not None
+        Connectivities will be stored in self.connectivities_per_mode[mode], for convenient comparison of modes
+        To get a list of modes, see 
+        """
+        if self.complex_signal is None:
+            raise RuntimeError("compute_complex_signal_freq_bands() must be called before analyse_connectivity()")
+
         matrix = compute_sync(self.complex_signal.data, mode = mode, epochs_average = epochs_average)
         self.connectivities_per_mode[mode] = Connectivities(mode, self.complex_signal.freq_bands, matrix, (self.epo1.ch_names, self.epo2.ch_names))
-        return self
 
-    def get_synchrony_time_series(self):
-        raise NotImplementedError()
+    def get_synchrony_time_series_for_mode(self, mode: str) -> SynchronyForCondition:
+        freq_bands = []
+        connectivities = self.connectivities_per_mode[mode]
+        if connectivities.is_averaged:
+            raise ValueError("Cannot get synchrony time series for averaged connectivity. Make sure to call analyse_connectivity(..., epochs_average=False)")
+
+        n_rows = len(connectivities.inter)
+
+        # Since we have discontinuities, prepare the final ts matrix with the biggest size and np.nan 
+        n_cols = max([self.epo1.selection[-1], self.epo2.selection[-1]]) + 1
+        #n_cols = connectivities.inter[0].values.shape[0]
+
+        time_series_per_range = np.full((n_rows, n_cols), np.nan)
+
+        for row_idx, conn_inter_on_band in enumerate(connectivities.inter):
+            freq_bands.append(conn_inter_on_band.freq_band.name)
+            # take the mean of all channels
+            res = np.nanmean(conn_inter_on_band.values, axis=(1, 2))
+            time_series_per_range[row_idx, self.epo1.selection] = res
+
+        dt = self.epo1[0].times[-1] - self.epo1[0].times[0]
+
+        return SynchronyForCondition(
+            time_series_per_range=time_series_per_range,
+            condition_name=CONDITION_NOT_SPECIFIED,
+            freq_bands=freq_bands,
+            dt=dt,
+        )
+
+    def get_synchrony_time_series(self, mode: str = None) -> SynchronyTimeSeries:
+        """
+        NOTE: SynchronyTimeSeries allow for multiple conditions, but the implementation of EEGDyad deals with a single condition
+              Therefore there is only one condition "default" with these synchrony time series
+        """
+        modes = list(self.connectivities_per_mode.keys())
+        if len(modes) == 0:
+            raise ValueError(f"No connectivity has been computed on dyad. Make sure to call analyse_connectivity()")
+        
+        if mode is None:
+            if len(modes) > 1:
+                raise ValueError("More than one mode has been computed. Please specify 'mode' argument to get_synchrony_time_series()")
+            mode = modes[0]
+        elif mode not in modes:
+            raise ValueError(f"Mode '{mode}' has not been computed on dyad. Make sure to call analyse_connectivity()")
+        
+        ret = SynchronyTimeSeries()
+        synchrony = self.get_synchrony_time_series_for_mode(mode)
+        ret.add_condition(synchrony)
+        return ret
+
+    ### Plots
 
     def plot_icas_components(self) -> 'EEGDyad':
         for i, ica in enumerate(self.icas):
@@ -320,6 +406,19 @@ class EEGDyad(BaseDyad):
         fig.suptitle('Average power in EEG Frequency Bands')
         return 
     
+    def plot_synchrony_time_series(self, ax=None, mode=None):
+        # TODO must be checked properly
+        # INCOMPLETE
+
+        synchronies = self.get_synchrony_time_series(mode=mode)
+
+        if len(synchronies) > 1:
+            raise NotImplementedError('More than one condition has been computed. Plotting synchrony time series for many conditions is not implemented yet')
+
+        return synchronies[0].plot(ax=ax)
+
+    
+    ### Useful info when using print(dyad)
     def __repr__(self):
         nl = "\n" # cannot have backslashes in multiline below
         return f"""EEGDyad
@@ -339,15 +438,3 @@ class EEGDyad(BaseDyad):
   connectivity computed: {'yes' if self.is_connectivity_computed else 'no'}
 {nl.join([f"  - {mode}" for mode in self.connectivity_modes])}
 """
-    # steps: list[EEGDyadStep]
-    # sfreq: float
-    # raws: list[mne.io.Raw] | None
-    # icas: list[ICA] | None
-    # dic_ar: DicAR | None
-    # psds: list[PSD]
-    # complex_signal: ComplexSignal | None
-    #    self.icas = None
-    #    self.dic_ar = None
-    #    self.psds = None
-    #    self.complex_signal = None
-    #    self.connectivities = {}

@@ -11,6 +11,21 @@ class Connectivities():
     mode: str
     inter: list[Connectivity]
     intras: list[list[Connectivity]]
+    is_averaged: bool
+
+    @staticmethod
+    def matrix_is_averaged(matrix: np.ndarray):
+        """
+        Expected shape when averaged:     (n_bands, 2*n_ch, 2*n_ch)
+        Expected shape when not averaged: (n_bands, n_epochs, 2*n_ch, 2*n_ch)
+        """
+        if len(matrix.shape) == 3:
+            return True
+        elif len(matrix.shape) == 4:
+            return False
+        else:
+            raise ValueError(f"Received matrix have an invalid shape: {np.shape(matrix)}")
+
 
     def __init__(
         self,
@@ -22,31 +37,43 @@ class Connectivities():
         self.mode = mode
         self.inter = [] 
         self.intras = [[], []]
+        self.is_averaged = Connectivities.matrix_is_averaged(matrix)
 
         # Determine the number of channels
-        n_ch = matrix.shape[1] // 2
+        n_ch = matrix.shape[-1] // 2
+
+        if self.is_averaged:
+            # add a "epoch" dimension to simplify code below, even of there is a single value when averaged
+            matrix = np.expand_dims(matrix, axis=1)
 
         if not isinstance(ch_names, tuple):
             ch_names = (ch_names, ch_names)
-
+        
         for i, freq_band in enumerate(freq_bands):
             range_axis_1 = slice(0, n_ch)
             range_axis_2 = slice(n_ch, 2*n_ch)
-            values = matrix[i, range_axis_1, range_axis_2]
+            values = matrix[i, :, range_axis_1, range_axis_2]
             C = (values - np.mean(values[:])) / np.std(values[:])
+
+            # drop the epoch dimension when averaged
+            if self.is_averaged:
+                values = np.squeeze(values, axis=0)
+
             self.inter.append(Connectivity(freq_band, values, C, ch_names))
 
         for subject_idx in [0, 1]:
             for i, freq_band in enumerate(freq_bands):
                 range_axis_1 = slice((subject_idx * n_ch), ((subject_idx + 1) * n_ch)) 
                 range_axis_2 = range_axis_1
-                values = matrix[i, range_axis_1, range_axis_2]
             
-                # Remove self-connections
-                values -= np.diag(np.diag(values))
-            
-                # Compute Z-score normalization for intra connectivity
+                values = matrix[i, :, range_axis_1, range_axis_2]
+                for epoch_idx in range(values.shape[0]):
+                    values[epoch_idx] -= np.diag(np.diag(values[epoch_idx]))
                 C = (values - np.mean(values[:])) / np.std(values[:])
+
+                # drop the epoch dimension when averaged
+                if self.is_averaged:
+                    values = np.squeeze(values, axis=0)
 
                 ch_names_pair = (ch_names[subject_idx], ch_names[subject_idx])
                 self.intras[subject_idx].append(Connectivity(freq_band, values, C, ch_names_pair))
@@ -60,7 +87,9 @@ class Connectivities():
         return self.intras[1]
     
     def get_based_on_subject_id(self, subject_id: int = None):
-        # TODO: should subject_id be zero based or one based for
+        if subject_id == 0:
+            raise ValueError("This method expects subject_id starting at 1, not 0")
+
         if subject_id is None:
             return self.inter
 

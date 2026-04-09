@@ -27,7 +27,6 @@ def get_test_dyad() -> EEGDyad:
     data2 = np.array([SyntheticSignal(duration, n).add_noise().y for _ in range(len(ch_names))])
 
     info = mne.create_info(ch_names=ch_names, ch_types=ch_types, sfreq=sfreq)
-    print(data1.shape)
 
     raw1 = mne.io.RawArray(data1, info)
     raw2 = mne.io.RawArray(data2, info)
@@ -162,6 +161,7 @@ def test_analyse_pow_not_average():
     assert len(dyad.psds1[0].ch_names) == len(dyad.epo1.ch_names)
 
 
+# Test all the modes
 @pytest.mark.parametrize('mode', [
    'plv',
    'envelope_corr',
@@ -205,6 +205,50 @@ def test_frequency_bands():
     assert freq_bands['Alpha-Low'][0] == 7.5
     assert freq_bands['Alpha-Low'][1] == 11
 
-# TODO
-#def test_synchrony_time_series():
-#    assert False
+def test_synchrony_time_series():
+    dyad = get_test_dyad()
+    dyad.compute_complex_signal_freq_bands()
+    dyad.analyse_connectivity('plv', epochs_average=False)
+
+    synchronies = dyad.get_synchrony_time_series()
+    freq_bands = synchronies[0].freq_bands
+    assert len(freq_bands) == len(dyad.complex_signal.freq_bands)
+    assert synchronies[0].by_freq_band[freq_bands[0]].shape[0] == len(dyad.epo1)
+
+def test_synchrony_time_series_for_mode():
+    dyad = get_test_dyad()
+    dyad.compute_complex_signal_freq_bands()
+    dyad.analyse_connectivity('plv', epochs_average=False)
+
+    synchrony = dyad.get_synchrony_time_series_for_mode('plv')
+    freq_bands = synchrony.freq_bands
+    assert len(freq_bands) == len(dyad.complex_signal.freq_bands)
+    assert synchrony.by_freq_band[freq_bands[0]].shape[0] == len(dyad.epo1)
+
+def test_synchrony_time_series_exceptions():
+    dyad = get_test_dyad()
+    dyad.compute_complex_signal_freq_bands()
+
+    # Must raise an exception if connectivity is not computed yet
+    with pytest.raises(ValueError):
+        dyad.get_synchrony_time_series()
+
+    # Must raise an exception if epochs are averaged
+    dyad.analyse_connectivity('plv', epochs_average=True)
+    with pytest.raises(ValueError):
+        dyad.get_synchrony_time_series_for_mode('plv')
+
+def test_synchrony_discontinuity():
+    dyad = get_test_dyad()
+
+    count_before_drop = len(dyad.epo1)
+    dyad.epo1.drop(indices=[3, 4], reason='TEST')
+    assert 3 not in dyad.epo1.selection
+    dyad.align_epochs()
+
+    dyad.compute_complex_signal_freq_bands()
+    dyad.analyse_connectivity('plv', epochs_average=False)
+    synchronies = dyad.get_synchrony_time_series()
+    synchrony = synchronies[0]
+
+    assert synchrony.time_series_per_range.shape[1] == count_before_drop

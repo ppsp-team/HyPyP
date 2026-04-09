@@ -22,7 +22,14 @@ class Connectivity():
             fig, ax = plt.subplots(1, 1)
         else:
             fig = ax.get_figure()
-        sns.heatmap(self.zscore, xticklabels=self.ch_names[0], yticklabels=self.ch_names[1], cmap='viridis', cbar=True, ax=ax)
+
+        # If zscore was not averaged, we need to average it for display
+        if len(self.zscore.shape) == 3:
+            zscore = np.mean(self.zscore, axis=0)
+        else:
+            zscore = self.zscore
+
+        sns.heatmap(zscore, xticklabels=self.ch_names[0], yticklabels=self.ch_names[1], cmap='viridis', cbar=True, ax=ax)
         ax.set_title(title)
         return fig
 

@@ -4,7 +4,7 @@ import mne
 
 from ..core.base_step import BaseStep
 
-from ..signal.complex_signal import ComplexSignal
+# well known steps, define their names as constants
 PREPROCESS_STEP_RAW = 'raw'
 PREPROCESS_STEP_ICA_APPLY = 'ica_apply'
 PREPROCESS_STEP_AR = 'autoreject'
