@@ -439,7 +439,8 @@ def pair_connectivity(data: Union[list, np.ndarray], sampling_rate: int,
 
 
 def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = True,
-                 optimization: Optional[str] = None) -> np.ndarray:
+                 optimization: Optional[str] = None,
+                 priority: Optional[list] = None) -> np.ndarray:
     """
     Computes frequency-domain connectivity measures from analytic signals.
 
@@ -547,7 +548,7 @@ def compute_sync(complex_signal: np.ndarray, mode: str, epochs_average: bool = T
 
     # Get the metric from the sync module
     try:
-        metric = get_metric(mode_normalized, optimization=optimization)
+        metric = get_metric(mode_normalized, optimization=optimization, priority=priority)
         con = metric.compute(complex_signal, n_samp, transpose_axes)
     except ValueError:
         raise ValueError(f'Metric type "{mode}" not supported.')

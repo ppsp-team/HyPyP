@@ -58,9 +58,6 @@ Arbitrary methodological decisions skew inter-brain synchronization estimates
 in hyperscanning-EEG studies. *Imaging Neuroscience*, 2.
 https://doi.org/10.1162/imag_a_00350
 
-**Note:** ACCorr supports hardware acceleration via `optimization` parameter.
-See [Optimization Backends](#optimization-backends) below.
-
 ---
 
 ### Coherence (`coh`)
@@ -165,24 +162,110 @@ amplitude. More sensitive to high-amplitude bursts.
 
 ## Optimization Backends
 
-ACCorr supports three computational backends via the `optimization` parameter
-in `compute_sync()` or the class constructor:
+All 9 metrics support multiple computational backends via the `optimization`
+parameter in `compute_sync()` or the class constructor.
+
+### Backend Support Matrix
+
+| Metric | numpy | numba | torch | metal | cuda_kernel |
+|--------|:-----:|:-----:|:-----:|:-----:|:-----------:|
+| PLV    |   x   |   x   |   x   |   --  |      x      |
+| CCorr  |   x   |   x   |   x   |   --  |      x      |
+| Coh    |   x   |   x   |   x   |   --  |      x      |
+| ImCoh  |   x   |   x   |   x   |   --  |      x      |
+| EnvCorr|   x   |   x   |   x   |   --  |      x      |
+| PowCorr|   x   |   x   |   x   |   --  |      x      |
+| PLI    |   x   |   x   |   x   |   x   |      x      |
+| wPLI   |   x   |   x   |   x   |   x   |      x      |
+| ACCorr |   x   |   x   |   x   |   x   |      x      |
+
+### Backend Descriptions
 
 | Value | Backend | Device | Notes |
 |-------|---------|--------|-------|
 | `None` (default) | NumPy | CPU | Standard, no extra dependencies |
-| `'auto'` | Best available | Auto | torch → numba → numpy |
-| `'numba'` | Numba JIT | CPU | ~2× speedup; install: `poetry install --with optim_numba` |
-| `'torch'` | PyTorch | GPU/CPU | ~20× speedup on GPU; install: `poetry install --with optim_torch` |
+| `'auto'` | Best available | Auto | Selects best GPU backend per metric and platform |
+| `'numba'` | Numba JIT | CPU | Fused single-pass kernels with `prange` parallelism |
+| `'torch'` | PyTorch | GPU/CPU | Batched einsum; MPS (Apple) / CUDA (NVIDIA) / CPU |
+| `'metal'` | Metal shaders | Apple GPU | Custom compute shaders for PLI, wPLI, ACCorr only |
+| `'cuda_kernel'` | CuPy RawKernel | NVIDIA GPU | Custom CUDA kernels; float64 precision |
 
-**Device priority for `'torch'` and `'auto'`:** MPS (Apple Silicon) > CUDA (NVIDIA) > CPU.
-MPS and CUDA are mutually exclusive; the best available device is selected automatically.
+### `optimization='auto'` — Benchmark-Driven Dispatch
 
-**Precision note:** MPS uses `float32`, which may introduce numerical differences
-of up to ~1e-5 compared to CPU/CUDA (`float64`).
+The `'auto'` mode selects the best GPU backend for each metric based on
+benchmark data compiled from Mac M4 Max (131 runs) and Narval A100 (111 runs).
 
-All other metrics currently use numpy only (`optimization` parameter is accepted
-but ignored for non-ACCorr metrics).
+**MPS (Apple Silicon):**
+- Einsum metrics (PLV, CCorr, Coh, ImCoh, EnvCorr, PowCorr): torch (batched BLAS)
+- Sign-based (PLI, wPLI) + ACCorr: Metal custom kernels
+
+**CUDA (NVIDIA):**
+- All metrics: `cuda_kernel` first (pairwise computation, OOM-safe at 512+ channels),
+  with torch as fallback.
+
+The priority can be overridden per-call:
+```python
+get_metric('plv', optimization='auto', priority=['torch', 'cuda_kernel'])
+```
+
+If no GPU backend is available, `'auto'` falls back to numba, then numpy.
+
+### Precision
+
+- **CPU / CUDA (`float64`):** reference precision, `rtol=1e-9, atol=1e-10`
+- **MPS / Metal (`float32`):** up to ~1e-5 difference vs CPU reference.
+  Sign-based metrics (PLI, wPLI) may show larger differences (`rtol=1e-2`)
+  near the sign discontinuity at zero.
+
+---
+
+## Architecture
+
+```
+hypyp/sync/
+├── __init__.py          # Registry, get_metric(), exports
+├── base.py              # BaseMetric, AUTO_PRIORITY, helpers
+├── plv.py ... wpli.py   # One file per metric (9 files)
+└── kernels/             # Custom GPU kernels
+    ├── __init__.py      # METAL_AVAILABLE, CUPY_AVAILABLE flags
+    ├── _metal_dispatch.py   # Shared Metal pairwise dispatch
+    ├── _cuda_dispatch.py    # Shared CUDA pairwise dispatch
+    ├── metal_phase.py       # PLI, wPLI Metal shaders
+    ├── metal_accorr.py      # ACCorr Metal shader
+    ├── cuda_phase.py        # PLI, wPLI, PLV, CCorr CUDA kernels
+    ├── cuda_amplitude.py    # Coh, ImCoh, EnvCorr, PowCorr CUDA kernels
+    └── cuda_accorr.py       # ACCorr CUDA kernel
+```
+
+Each metric class inherits from `BaseMetric` and implements:
+- `_compute_numpy()` — always available (reference implementation)
+- `_compute_numba()` — fused loop with `numba.prange` parallelism
+- `_compute_torch()` — batched einsum on auto-detected device
+- `_compute_metal()` — Metal shader dispatch (PLI, wPLI, ACCorr only)
+- `_compute_cuda()` — CUDA RawKernel dispatch
+
+Backend selection happens at `__init__()`, dispatch at `compute()`.
+
+---
+
+## Installation
+
+```bash
+# Core (numpy backend always available)
+pip install hypyp
+
+# CPU parallelism
+pip install "hypyp[numba]"
+
+# GPU acceleration (PyTorch)
+pip install "hypyp[torch]"
+
+# Apple Silicon Metal shaders (PLI, wPLI, ACCorr)
+pip install "hypyp[metal]"
+
+# NVIDIA CUDA kernels (all metrics, requires CUDA 12.x)
+pip install "hypyp[cupy]"
+```
 
 ---
 
@@ -192,13 +275,20 @@ but ignored for non-ACCorr metrics).
 from hypyp.analyses import compute_sync
 
 # Standard (numpy)
-con = compute_sync(complex_signal, 'accorr')
+con = compute_sync(complex_signal, 'plv')
 
-# With GPU acceleration
-con = compute_sync(complex_signal, 'accorr', optimization='torch')
+# Best available GPU backend
+con = compute_sync(complex_signal, 'plv', optimization='auto')
+
+# Specific backend
+con = compute_sync(complex_signal, 'pli', optimization='metal')
+
+# Custom priority
+con = compute_sync(complex_signal, 'coh', optimization='auto',
+                   priority=['torch', 'cuda_kernel'])
 
 # Direct class instantiation
-from hypyp.sync import ACCorr
-metric = ACCorr(optimization='auto', show_progress=True)
+from hypyp.sync import get_metric
+metric = get_metric('accorr', optimization='auto')
 con = metric.compute(complex_signal_internal, n_samp, transpose_axes)
 ```

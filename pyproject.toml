@@ -41,6 +41,8 @@ dependencies = [
 shiny = ["shiny>=1.1.0"]
 numba = ["numba>=0.60.0"]
 torch = ["torch>=2.0.0"]
+metal = ["pyobjc-framework-Metal>=10.0"]
+cupy = ["cupy-cuda12x>=13.0.0"]
 
 [project.urls]
 Homepage = "https://github.com/ppsp-team/HyPyP"
