@@ -35,6 +35,48 @@ try:
 except ImportError:
     NUMBA_AVAILABLE = False
 
+# Custom kernel backends
+from .kernels import METAL_AVAILABLE, CUPY_AVAILABLE
+
+
+# ---------------------------------------------------------------------------
+# Benchmark-driven GPU backend priority for optimization='auto'
+# ---------------------------------------------------------------------------
+# Compiled from Mac M4 Max (131 rows) and Narval A100 (111 rows) benchmarks.
+# Format: {metric_name: {platform: [gpu_backend_1, gpu_backend_2]}}
+# First available GPU backend in the list wins.
+#
+# 'auto' selects the best GPU backend only. Users choose CPU strategies
+# explicitly: optimization=None (numpy) or optimization='numba'.
+#
+# The priority can be overridden per-call via the `priority` parameter:
+#   get_metric('plv', optimization='auto', priority=['metal', 'torch'])
+#
+# Rationale:
+#   MPS — einsum metrics: torch wins (batched matrix ops via Apple MPS).
+#          sign-based/accorr: Metal custom kernels win (sign() and circular
+#          correlation are not vectorizable; torch OOMs at ≥512ch for PLI/wPLI).
+#          No Metal kernels for einsum metrics (torch_mps dominates at all scales).
+#   CUDA — cuda_kernel first for all metrics: torch_cuda is faster at small/
+#          medium scale but OOMs at realistic_hd (512ch) due to large
+#          intermediate tensors. cuda_kernel computes pairwise without
+#          materializing the full output tensor.
+AUTO_PRIORITY = {
+    # einsum metrics — torch wins on MPS, cuda_kernel safe-first on CUDA
+    # (torch OOMs at ≥512ch on CUDA; cuda_kernel computes pairwise)
+    'plv':     {'mps': ['torch'], 'cuda': ['cuda_kernel', 'torch']},
+    'ccorr':   {'mps': ['torch'], 'cuda': ['cuda_kernel', 'torch']},
+    'coh':     {'mps': ['torch'], 'cuda': ['cuda_kernel', 'torch']},
+    'imcoh':   {'mps': ['torch'], 'cuda': ['cuda_kernel', 'torch']},
+    'envcorr': {'mps': ['torch'], 'cuda': ['cuda_kernel', 'torch']},
+    'powcorr': {'mps': ['torch'], 'cuda': ['cuda_kernel', 'torch']},
+    # sign-based — custom kernels beat torch on both platforms
+    'pli':     {'mps': ['metal', 'torch'], 'cuda': ['cuda_kernel', 'torch']},
+    'wpli':    {'mps': ['metal', 'torch'], 'cuda': ['cuda_kernel', 'torch']},
+    # accorr — Metal wins on MPS (circular correlation), cuda_kernel safe on CUDA
+    'accorr':  {'mps': ['metal', 'torch'], 'cuda': ['cuda_kernel', 'torch']},
+}
+
 
 def multiply_conjugate(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) -> np.ndarray:
     """
@@ -127,6 +169,56 @@ def multiply_product(real: np.ndarray, imag: np.ndarray, transpose_axes: tuple) 
     return product
 
 
+def multiply_conjugate_torch(c, s):
+    """
+    Compute z * conj(z) using torch tensors, collapsing time dimension.
+
+    Torch equivalent of :func:`multiply_conjugate`. Uses the einsum convention
+    ``e=epoch, f=freq, i=ch_row, j=ch_col, t=time``.
+
+    Parameters
+    ----------
+    c : torch.Tensor
+        Real part, shape (E, F, C, T).
+    s : torch.Tensor
+        Imaginary part, shape (E, F, C, T).
+
+    Returns
+    -------
+    torch.Tensor
+        Complex product, shape (E, F, C, C).
+    """
+    formula = 'efit,efjt->efij'
+    import torch
+    return (torch.einsum(formula, c, c) + torch.einsum(formula, s, s)) - 1j * \
+           (torch.einsum(formula, c, s) - torch.einsum(formula, s, c))
+
+
+def multiply_conjugate_time_torch(c, s):
+    """
+    Compute z * conj(z) using torch tensors, preserving time dimension.
+
+    Torch equivalent of :func:`multiply_conjugate_time`. Produces a 5D tensor
+    ``(E, F, C, C, T)`` — can be very large for high channel counts.
+
+    Parameters
+    ----------
+    c : torch.Tensor
+        Real part, shape (E, F, C, T).
+    s : torch.Tensor
+        Imaginary part, shape (E, F, C, T).
+
+    Returns
+    -------
+    torch.Tensor
+        Complex product, shape (E, F, C, C, T).
+    """
+    formula = 'efit,efjt->efijt'
+    import torch
+    return (torch.einsum(formula, c, c) + torch.einsum(formula, s, s)) - 1j * \
+           (torch.einsum(formula, c, s) - torch.einsum(formula, s, c))
+
+
 class BaseMetric(ABC):
     """
     Abstract base class for connectivity metrics.
@@ -153,12 +245,17 @@ class BaseMetric(ABC):
 
     name: str = "base"
 
-    def __init__(self, optimization: Optional[str] = None):
+    def __init__(self, optimization: Optional[str] = None,
+                 priority: Optional[list] = None):
         self.optimization = optimization
-        self._backend, self._device = self._resolve_optimization(optimization)
+        self._priority = priority
+        self._backend, self._device = self._resolve_optimization(
+            optimization, priority
+        )
 
-    @staticmethod
-    def _resolve_optimization(optimization: Optional[str] = None) -> tuple:
+    @classmethod
+    def _resolve_optimization(cls, optimization: Optional[str] = None,
+                              priority: Optional[list] = None) -> tuple:
         """
         Resolves an optimization value to (backend, device).
 
@@ -171,38 +268,46 @@ class BaseMetric(ABC):
             Requested optimization strategy:
 
             - ``None``: standard numpy, no acceleration (default).
-            - ``'auto'``: best available backend — tries torch first, then
-              numba, then falls back to numpy. No warning is emitted.
+            - ``'auto'``: best available backend, selected per-metric from
+              the ``AUTO_PRIORITY`` table (compiled from benchmarks).
+              See ``_resolve_auto`` for details.
             - ``'numba'``: JIT-compiled loops via numba. Falls back to numpy
               with a UserWarning if numba is not installed.
             - ``'torch'``: PyTorch tensors with auto-detected GPU (see
               ``_resolve_torch`` for device priority). Falls back to numpy
               with a UserWarning if torch is not installed.
+            - ``'metal'``: Apple Metal compute shaders. Falls back to numpy
+              with a UserWarning if PyObjC Metal is not available.
+            - ``'cuda_kernel'``: Custom CUDA kernels via CuPy. Falls back
+              to numpy with a UserWarning if CuPy is not available.
+        priority : list of str, optional
+            Custom backend priority list for ``'auto'`` mode. Overrides
+            the default ``AUTO_PRIORITY`` table for this call.
+            Example: ``['metal', 'torch', 'numba']``.
 
         Returns
         -------
         backend : str
-            One of ``'numpy'``, ``'numba'``, ``'torch'``.
+            One of ``'numpy'``, ``'numba'``, ``'torch'``, ``'metal'``,
+            ``'cuda_kernel'``.
         device : str
             One of ``'cpu'``, ``'mps'``, ``'cuda'``.
 
         Notes
         -----
-        Fallback cascade for ``'auto'``:
-            torch (best available device) → numba → numpy
+        Fallback cascade for ``'auto'`` (per-metric, per-platform):
+            Iterates ``AUTO_PRIORITY[metric][platform]`` and returns the
+            first available backend. Falls back to numba → numpy if no
+            GPU backend is available.
 
-        Fallback cascade for ``'torch'`` or ``'numba'`` when unavailable:
+        Fallback cascade for explicit backends when unavailable:
             requested backend → numpy (with UserWarning)
         """
         if optimization is None:
             return 'numpy', 'cpu'
 
         if optimization == 'auto':
-            if TORCH_AVAILABLE:
-                return BaseMetric._resolve_torch()
-            if NUMBA_AVAILABLE:
-                return 'numba', 'cpu'
-            return 'numpy', 'cpu'
+            return cls._resolve_auto(priority)
 
         if optimization == 'numba':
             if NUMBA_AVAILABLE:
@@ -216,7 +321,7 @@ class BaseMetric(ABC):
 
         if optimization == 'torch':
             if TORCH_AVAILABLE:
-                return BaseMetric._resolve_torch()
+                return cls._resolve_torch()
             warnings.warn(
                 "torch not installed, falling back to numpy. "
                 "Install with: poetry install --with optim_torch",
@@ -224,10 +329,93 @@ class BaseMetric(ABC):
             )
             return 'numpy', 'cpu'
 
+        if optimization == 'metal':
+            if METAL_AVAILABLE:
+                return 'metal', 'mps'
+            warnings.warn(
+                "PyObjC Metal not available, falling back to numpy. "
+                "Install with: pip install pyobjc-framework-Metal",
+                UserWarning, stacklevel=3
+            )
+            return 'numpy', 'cpu'
+
+        if optimization == 'cuda_kernel':
+            if CUPY_AVAILABLE:
+                return 'cuda_kernel', 'cuda'
+            warnings.warn(
+                "CuPy not available, falling back to numpy. "
+                "Install with: pip install cupy-cuda12x",
+                UserWarning, stacklevel=3
+            )
+            return 'numpy', 'cpu'
+
         raise ValueError(
             f"Unknown optimization '{optimization}'. "
-            f"Options: None, 'auto', 'numba', 'torch'"
+            f"Options: None, 'auto', 'numba', 'torch', 'metal', 'cuda_kernel'"
         )
+
+    @classmethod
+    def _resolve_auto(cls, priority: Optional[list] = None) -> tuple:
+        """
+        Benchmark-driven backend selection, per metric and platform.
+
+        Uses the ``AUTO_PRIORITY`` table compiled from Mac M4 Max and
+        Narval A100 benchmarks. Iterates the priority list and returns
+        the first available backend.
+
+        Parameters
+        ----------
+        priority : list of str, optional
+            Custom priority list overriding ``AUTO_PRIORITY`` for this call.
+
+        Returns
+        -------
+        backend : str
+            Selected backend name.
+        device : str
+            Associated device (``'cpu'``, ``'mps'``, or ``'cuda'``).
+
+        Notes
+        -----
+        Platform detection: MPS → 'mps', CUDA → 'cuda', else 'cpu'.
+        On CPU-only machines, warns and falls back to numba → numpy.
+        """
+        if MPS_AVAILABLE:
+            platform = 'mps'
+        elif CUDA_AVAILABLE:
+            platform = 'cuda'
+        else:
+            # No GPU — warn and fall back to CPU
+            warnings.warn(
+                "No GPU available. optimization='auto' selects the best GPU "
+                "backend. Use optimization='numba' for CPU parallelism or "
+                "optimization=None for numpy.",
+                UserWarning, stacklevel=4
+            )
+            if NUMBA_AVAILABLE:
+                return 'numba', 'cpu'
+            return 'numpy', 'cpu'
+
+        if priority is None:
+            priority = AUTO_PRIORITY.get(cls.name, {}).get(platform, [])
+
+        for backend in priority:
+            if backend == 'torch' and TORCH_AVAILABLE:
+                return cls._resolve_torch()
+            if backend == 'metal' and METAL_AVAILABLE:
+                return 'metal', 'mps'
+            if backend == 'cuda_kernel' and CUPY_AVAILABLE:
+                return 'cuda_kernel', 'cuda'
+
+        # No GPU backend from priority list available — fall back
+        warnings.warn(
+            f"No GPU backend available for {cls.name!r} on platform "
+            f"'{platform}'. Falling back to CPU.",
+            UserWarning, stacklevel=4
+        )
+        if NUMBA_AVAILABLE:
+            return 'numba', 'cpu'
+        return 'numpy', 'cpu'
 
     @staticmethod
     def _resolve_torch() -> tuple:

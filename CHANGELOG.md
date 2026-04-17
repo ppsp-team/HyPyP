@@ -4,11 +4,21 @@
 
 ### Added
 - **New `hypyp.sync` module**: Modular architecture for connectivity metrics
-  - Extracted 9 connectivity metrics into separate classes: `PLV`, `CCorr`, `ACorr`, `Coh`, `ImCoh`, `PLI`, `WPLI`, `EnvCorr`, `PowCorr`
+  - Extracted 9 connectivity metrics into separate classes: `PLV`, `CCorr`, `ACCorr`, `Coh`, `ImCoh`, `PLI`, `WPLI`, `EnvCorr`, `PowCorr`
   - `BaseMetric` abstract class for uniform interface across all metrics
-  - `get_metric(mode, backend)` function for easy metric instantiation
-  - Backend support infrastructure (numpy default, with future support for numba/torch)
+  - `get_metric(mode, optimization)` function for easy metric instantiation
   - Helper functions: `multiply_conjugate`, `multiply_conjugate_time`, `multiply_product`
+- **GPU and numba backends for all 9 sync metrics**:
+  - numba JIT with `prange`: PLV, CCorr, Coh, ImCoh, PLI, wPLI, EnvCorr, PowCorr
+  - PyTorch (MPS/CUDA/CPU) via batched einsum: all 9 metrics
+  - Metal compute shaders (Apple Silicon): PLI, wPLI, ACCorr
+  - CUDA raw kernels via CuPy (NVIDIA GPUs): all 9 metrics
+- Benchmark-driven `AUTO_PRIORITY` table for `optimization='auto'`, compiled from
+  Mac M4 Max (131 runs) and Narval A100 (111 runs) benchmarks
+- `priority` parameter on `get_metric()` and `compute_sync()` for custom backend ordering
+- `hypyp/sync/kernels/` submodule with Metal and CUDA dispatch infrastructure
+- New optional dependencies: `pyobjc-framework-Metal` (Apple), `cupy-cuda12x` (NVIDIA)
+- `multiply_conjugate_torch` and `multiply_conjugate_time_torch` GPU helpers
 
 ### Changed
 - **BREAKING**: `accorr` metric now returns raw connectivity values with shape `(n_epoch, n_freq, 2*n_ch, 2*n_ch)` like all other metrics. The `swapaxes` and `epochs_average` operations are now handled by `compute_sync()` instead of being applied inside the metric.
@@ -18,7 +28,7 @@
 - `_multiply_conjugate()` in analyses.py - use `hypyp.sync.multiply_conjugate` instead (will be removed in 1.0.0)
 - `_multiply_conjugate_time()` in analyses.py - use `hypyp.sync.multiply_conjugate_time` instead (will be removed in 1.0.0)
 - `_multiply_product()` in analyses.py - use `hypyp.sync.multiply_product` instead (will be removed in 1.0.0)
-- `_accorr_hybrid()` in analyses.py - use `hypyp.sync.ACorr` instead (will be removed in 1.0.0)
+- `_accorr_hybrid()` in analyses.py - use `hypyp.sync.ACCorr` instead (will be removed in 1.0.0)
 
 ## [0.5.0b13] - 2025-09-18
 
