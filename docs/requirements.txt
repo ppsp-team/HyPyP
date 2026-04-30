@@ -302,7 +302,7 @@ netcdf4==1.7.4
     # via mne-connectivity
 networkx==3.6.1
     # via scikit-image
-notebook==7.5.5
+notebook==7.5.6
 notebook-shim==0.2.4
     # via
     #   jupyterlab
