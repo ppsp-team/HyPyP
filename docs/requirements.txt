@@ -381,7 +381,7 @@ pillow==12.2.0
     #   imageio
     #   matplotlib
     #   scikit-image
-pip==26.0.1
+pip==26.1
     # via snirf
 platformdirs==4.9.4
     # via
