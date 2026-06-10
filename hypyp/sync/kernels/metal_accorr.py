@@ -15,7 +15,7 @@ from functools import lru_cache
 import numpy as np
 
 from . import METAL_AVAILABLE
-from ._metal_dispatch import make_const_buffer
+from ._metal_dispatch import make_const_buffer, _autorelease_pool, _get_command_queue
 
 if METAL_AVAILABLE:
     import Metal
@@ -150,45 +150,59 @@ def accorr_metal(complex_signal: np.ndarray) -> np.ndarray:
     buf_pj = device.newBufferWithBytes_length_options_(
         idx_j.tobytes(), idx_j.nbytes, Metal.MTLResourceStorageModeShared)
 
-    # Dispatch
+    # Constant buffers held in named locals so they can be released in the
+    # finally block (passing them inline to setBuffer would leak them).
+    buf_n_ef = make_const_buffer(device, n_ef)
+    buf_n_ch = make_const_buffer(device, C)
+    buf_n_t = make_const_buffer(device, T)
+    buf_n_pairs = make_const_buffer(device, n_pairs)
+
+    # Dispatch — wrapped in an autorelease pool so the autoreleased command
+    # buffer / encoder are reclaimed each call (see the module docstring).
     try:
-        queue = device.newCommandQueue()
-        cmd_buffer = queue.commandBuffer()
-        encoder = cmd_buffer.computeCommandEncoder()
+        with _autorelease_pool():
+            queue = _get_command_queue(device)
+            cmd_buffer = queue.commandBuffer()
+            encoder = cmd_buffer.computeCommandEncoder()
 
-        encoder.setComputePipelineState_(pipeline)
-        encoder.setBuffer_offset_atIndex_(buf_s, 0, 0)
-        encoder.setBuffer_offset_atIndex_(buf_c, 0, 1)
-        encoder.setBuffer_offset_atIndex_(buf_angle, 0, 2)
-        encoder.setBuffer_offset_atIndex_(buf_out, 0, 3)
-        encoder.setBuffer_offset_atIndex_(buf_pi, 0, 4)
-        encoder.setBuffer_offset_atIndex_(buf_pj, 0, 5)
-        encoder.setBuffer_offset_atIndex_(make_const_buffer(device, n_ef), 0, 6)
-        encoder.setBuffer_offset_atIndex_(make_const_buffer(device, C), 0, 7)
-        encoder.setBuffer_offset_atIndex_(make_const_buffer(device, T), 0, 8)
-        encoder.setBuffer_offset_atIndex_(make_const_buffer(device, n_pairs), 0, 9)
+            encoder.setComputePipelineState_(pipeline)
+            encoder.setBuffer_offset_atIndex_(buf_s, 0, 0)
+            encoder.setBuffer_offset_atIndex_(buf_c, 0, 1)
+            encoder.setBuffer_offset_atIndex_(buf_angle, 0, 2)
+            encoder.setBuffer_offset_atIndex_(buf_out, 0, 3)
+            encoder.setBuffer_offset_atIndex_(buf_pi, 0, 4)
+            encoder.setBuffer_offset_atIndex_(buf_pj, 0, 5)
+            encoder.setBuffer_offset_atIndex_(buf_n_ef, 0, 6)
+            encoder.setBuffer_offset_atIndex_(buf_n_ch, 0, 7)
+            encoder.setBuffer_offset_atIndex_(buf_n_t, 0, 8)
+            encoder.setBuffer_offset_atIndex_(buf_n_pairs, 0, 9)
 
-        total_threads = n_ef * n_pairs
-        threads_per_group = min(256, pipeline.maxTotalThreadsPerThreadgroup())
+            total_threads = n_ef * n_pairs
+            threads_per_group = min(256, pipeline.maxTotalThreadsPerThreadgroup())
 
-        encoder.dispatchThreads_threadsPerThreadgroup_(
-            Metal.MTLSize(total_threads, 1, 1),
-            Metal.MTLSize(threads_per_group, 1, 1))
-        encoder.endEncoding()
+            encoder.dispatchThreads_threadsPerThreadgroup_(
+                Metal.MTLSize(total_threads, 1, 1),
+                Metal.MTLSize(threads_per_group, 1, 1))
+            encoder.endEncoding()
 
-        cmd_buffer.commit()
-        cmd_buffer.waitUntilCompleted()
+            cmd_buffer.commit()
+            cmd_buffer.waitUntilCompleted()
 
-        out_ptr = buf_out.contents()
-        membuf = out_ptr.as_buffer(out_nbytes)
-        result = np.frombuffer(membuf, dtype=np.float32).copy().reshape(n_ef, C, C)
+            out_ptr = buf_out.contents()
+            membuf = out_ptr.as_buffer(out_nbytes)
+            result = np.frombuffer(membuf, dtype=np.float32).copy().reshape(n_ef, C, C)
 
         return result.reshape(E, F, C, C)
     finally:
-        # Critical: Release all Metal buffers to prevent GPU memory leak
+        # Release every owned Metal buffer to prevent GPU memory growth —
+        # the data buffers and the four const buffers alike.
         buf_s.release()
         buf_c.release()
         buf_angle.release()
         buf_out.release()
         buf_pi.release()
         buf_pj.release()
+        buf_n_ef.release()
+        buf_n_ch.release()
+        buf_n_t.release()
+        buf_n_pairs.release()
