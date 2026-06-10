@@ -1,8 +1,13 @@
 """
 Shared CUDA dispatch logic for all pairwise sync metric kernels.
 
-Uses CuPy RawKernel for inline CUDA source. All kernels use float64
-for exact precision (A100 has 9.7 TFLOPS fp64).
+Provides ``run_pairwise_kernel``, the common launch + memory-management
+routine used by every metric-specific CUDA kernel module
+(``cuda_phase``, ``cuda_amplitude``, ``cuda_accorr``).
+
+Uses CuPy ``RawKernel`` for inline CUDA source. All kernels run in
+float64 — the NVIDIA A100 reference target has 9.7 TFLOPS of fp64
+throughput, so the precision/speed trade-off favours fp64 there.
 """
 
 import numpy as np
@@ -17,14 +22,28 @@ def run_pairwise_kernel(complex_signal, get_kernel_fn):
     """
     Shared dispatch for pairwise CUDA kernels.
 
+    Builds the upper-triangle channel-pair index list, transfers the real
+    and imaginary parts to the device as float64, launches one thread per
+    ``(epoch*freq, pair)`` tuple, and reads the result back. Computing
+    pairwise — rather than materialising the full ``(E, F, C, C, T)``
+    cross-spectrum — keeps device memory bounded at high channel counts.
+
     Parameters
     ----------
     complex_signal : np.ndarray, shape (E, F, C, T)
-    get_kernel_fn : callable -> CuPy RawKernel
+        Complex analytic signals (epochs, freqs, channels, samples).
+    get_kernel_fn : callable -> cupy.RawKernel
+        Lazily compiles (and caches) the metric-specific CUDA kernel.
 
     Returns
     -------
     np.ndarray, shape (E, F, C, C), float64
+        Connectivity matrix per (epoch, freq).
+
+    Notes
+    -----
+    The CuPy default memory pool is explicitly freed before returning, so
+    repeated calls in a tight loop don't accumulate device allocations.
     """
     kernel = get_kernel_fn()
 

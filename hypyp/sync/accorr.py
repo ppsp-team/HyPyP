@@ -4,11 +4,22 @@
 """
 Adjusted Circular Correlation (ACCorr) connectivity metric.
 
-ACCorr computes the circular correlation between two phase time-series with
-per-pair phase centering, providing a more accurate inter-brain synchrony
-estimate than standard circular correlation (ccorr).
+ACCorr computes the circular correlation between two phase time-series
+with **per-pair** phase centering, providing a more accurate inter-brain
+synchrony estimate than standard circular correlation (ccorr).
 
-Reference: Zimmermann et al. (2024). *Imaging Neuroscience*, 2.
+See the ``ACCorr`` class for the public API; it supports a CPU
+``precompute`` strategy (vectorised numerator + loop denominator with
+pre-computed per-pair adjustments), a numba JIT backend, and PyTorch
+GPU/MPS backends. The torch implementation switches between a fully
+vectorised 5-D broadcast and a per-pair loop based on
+``ACCorr._VRAM_THRESHOLD`` — see that attribute's docstring.
+
+References
+----------
+Zimmermann, M., Schultz-Nielsen, K., Dumas, G., & Konvalinka, I. (2024).
+Arbitrary methodological decisions skew inter-brain synchronization
+estimates in hyperscanning-EEG studies. *Imaging Neuroscience*, 2.
 https://doi.org/10.1162/imag_a_00350
 
 Credits
@@ -211,9 +222,24 @@ class ACCorr(BaseMetric):
 
         return con
 
-    # Memory threshold for vectorized denominator (bytes). If the 5D tensor
-    # (E, F, C, C, T) would exceed this, fall back to the loop-based approach.
     _VRAM_THRESHOLD = 2 * 1024**3  # 2 GB
+    """
+    Memory threshold (bytes) for the vectorised torch denominator path.
+
+    Notes
+    -----
+    The torch implementation prefers a fully-vectorised broadcast over the
+    intermediate 5-D tensor of shape ``(n_epochs, n_freq, n_channels,
+    n_channels, n_samples)`` for the per-pair phase centering. When the
+    estimated tensor size in bytes exceeds this threshold, ``_compute_torch``
+    falls back to a per-pair loop on the same device (CPU / MPS / CUDA).
+
+    The 2 GB default is sized to keep one such tensor comfortably under
+    Apple-Silicon MPS and Quadro-class GPU memory budgets when the rest of
+    the pipeline (data tensors, kernel state) is already resident — a 4 GB
+    threshold can OOM on high-channel-count realistic_hd benchmarks. This
+    value is empirical; re-derive if you change the upstream tensor layout.
+    """
 
     def _compute_torch(self, complex_signal: np.ndarray, n_samp: int,
                        transpose_axes: tuple) -> np.ndarray:

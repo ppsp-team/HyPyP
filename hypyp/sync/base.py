@@ -2,13 +2,44 @@
 # coding=utf-8
 
 """
-Base classes and helper functions for connectivity metrics.
+Base classes, einsum helpers, optional-dependency probing, and the
+AUTO_PRIORITY benchmark dispatch table for the connectivity metrics.
 
-| Option | Description |
-| ------ | ----------- |
-| title           | base.py |
-| authors         | HyPyP Team |
-| date            | 2026-01-30 |
+This module is shared by every concrete metric in ``hypyp.sync``. It
+exposes:
+
+- ``BaseMetric`` — abstract base. Concrete metrics override
+  ``BaseMetric.compute`` and rely on the shared backend-resolution and
+  warning-fallback logic.
+- ``multiply_conjugate``, ``multiply_conjugate_time``,
+  ``multiply_product`` — vectorised einsum kernels (numpy).
+- ``multiply_conjugate_torch``, ``multiply_conjugate_time_torch`` —
+  torch equivalents (only resolvable if torch is installed).
+- ``AUTO_PRIORITY`` — benchmark-driven backend lookup table per
+  ``{metric_name: {platform: [gpu_backend, fallback]}}``.
+- Capability flags ``TORCH_AVAILABLE``, ``MPS_AVAILABLE``,
+  ``CUDA_AVAILABLE``, ``NUMBA_AVAILABLE``, ``METAL_AVAILABLE``,
+  ``CUPY_AVAILABLE`` — probed at import time so concrete metric classes
+  don't have to retry.
+
+Design note
+-----------
+``AUTO_PRIORITY`` is intentionally kept as a Python dict (not
+externalised to a YAML file) for three reasons:
+
+1. The values are not user-tunable — they are derived from benchmarks
+   on Mac M4 Max (131 rows) and Narval A100 (111 rows) and need
+   re-derivation if the kernels change. Putting them in YAML would
+   wrongly suggest they are configuration knobs.
+2. The per-call ``priority=`` kwarg on ``get_metric`` already provides
+   the override path users actually need.
+3. The table is short (9 entries) and sits next to its rationale
+   comment block; a YAML file would split the explanation from the
+   data.
+
+If a future benchmark sweep changes the optimal backend, the change
+should be a code edit (with a tests/benchmarks update) — not a config
+change.
 """
 
 import warnings

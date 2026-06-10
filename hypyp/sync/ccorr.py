@@ -3,6 +3,15 @@
 
 """
 Circular Correlation (CCorr) connectivity metric.
+
+CCorr is the circular analogue of Pearson's r: it measures the linear
+correlation between the sines of phase deviations from a global
+circular mean. See the ``CCorr`` class for the public API.
+
+References
+----------
+Fisher, N. I. (1995). *Statistical Analysis of Circular Data*.
+Cambridge University Press.
 """
 
 import numpy as np

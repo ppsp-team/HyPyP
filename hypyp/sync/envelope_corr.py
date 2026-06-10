@@ -3,6 +3,16 @@
 
 """
 Envelope Correlation (EnvCorr) connectivity metric.
+
+EnvCorr is the Pearson correlation between the analytic-signal
+amplitude (envelope) of two channels — it captures slow co-modulation
+of band-limited power. See the ``EnvCorr`` class for the public API.
+
+References
+----------
+Hipp, J. F., Hawellek, D. J., Corbetta, M., Siegel, M., & Engel, A. K.
+(2012). Large-scale cortical correlation structure of spontaneous
+oscillatory activity. *Nature Neuroscience*, 15(6), 884-890.
 """
 
 import numpy as np

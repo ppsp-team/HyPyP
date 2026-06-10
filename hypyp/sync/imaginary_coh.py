@@ -3,6 +3,17 @@
 
 """
 Imaginary Coherence (ImCoh) connectivity metric.
+
+ImCoh isolates the imaginary part of the cross-spectrum normalised by
+the auto-spectra, which makes it insensitive to zero-lag interactions
+(volume conduction). See the ``ImCoh`` class for the public API.
+
+References
+----------
+Nolte, G., Bai, O., Wheaton, L., Mari, Z., Vorbach, S., & Hallett, M.
+(2004). Identifying true brain interaction from EEG data using the
+imaginary part of coherency. *Clinical Neurophysiology*, 115(10),
+2292-2307.
 """
 
 import numpy as np

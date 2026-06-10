@@ -3,6 +3,18 @@
 
 """
 Phase Lag Index (PLI) connectivity metric.
+
+PLI is a sign-based phase synchrony measure that is robust against
+zero-lag couplings (volume conduction) — it captures the asymmetry of
+the imaginary-cross-spectrum sign distribution. See the ``PLI`` class
+for the public API.
+
+References
+----------
+Stam, C. J., Nolte, G., & Daffertshofer, A. (2007). Phase lag index:
+assessment of functional connectivity from multi channel EEG and MEG
+with diminished bias from common sources. *Human Brain Mapping*,
+28(11), 1178-1193.
 """
 
 import numpy as np

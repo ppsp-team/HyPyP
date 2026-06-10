@@ -1,9 +1,18 @@
 """
-Metal kernels for sign-based sync metrics: PLI, wPLI.
+Metal kernels for sign-based sync metrics on Apple Silicon.
 
-These metrics work on the imaginary part of the cross-spectrum and
-cannot be efficiently expressed as batched einsum/BLAS operations,
-making custom kernels faster than torch on Apple Silicon.
+Implements:
+
+- ``pli_metal`` — Phase Lag Index.
+- ``wpli_metal`` — Weighted Phase Lag Index.
+
+These metrics operate on the imaginary part of the cross-spectrum and
+cannot be efficiently expressed as batched einsum / BLAS operations
+(the ``sign()`` step is not vectorisable on MPS), which makes custom
+Metal compute shaders faster than torch-on-MPS at every channel count.
+The shared launch routine ``_metal_dispatch.run_pairwise_kernel``
+handles buffer allocation, command-encoder lifecycle, and dispatch
+geometry.
 """
 
 from functools import lru_cache

@@ -1,9 +1,11 @@
 """
 CUDA kernel for ACCorr (Adjusted Circular Correlation).
-Float64 for exact precision on NVIDIA GPUs.
 
-ACCorr requires a custom dispatch (not run_pairwise_kernel) because
-it needs an extra angle buffer for the sin^2 denominator in pass 2.
+ACCorr requires a **custom** dispatch rather than the shared
+``_cuda_dispatch.run_pairwise_kernel`` because it needs an extra angle
+buffer for the ``sin²`` adjusted-phase denominator in pass 2. Float64
+throughout for exact precision on NVIDIA GPUs (the A100 reference
+target has 9.7 TFLOPS of fp64).
 """
 
 import numpy as np

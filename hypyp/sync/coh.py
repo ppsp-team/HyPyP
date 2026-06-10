@@ -3,6 +3,16 @@
 
 """
 Coherence (Coh) connectivity metric.
+
+Coh measures the linear relationship between two complex analytic
+signals in the frequency domain — it is the squared modulus of the
+cross-spectrum normalised by the product of the auto-spectra. See the
+``Coh`` class for the public API.
+
+References
+----------
+Nunez, P. L., & Srinivasan, R. (2006). *Electric Fields of the Brain:
+The Neurophysics of EEG* (2nd ed.). Oxford University Press.
 """
 
 import numpy as np
