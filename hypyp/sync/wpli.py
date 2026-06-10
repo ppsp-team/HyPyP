@@ -3,6 +3,17 @@
 
 """
 Weighted Phase Lag Index (wPLI) connectivity metric.
+
+wPLI improves on PLI by weighing each cross-spectrum sample by the
+magnitude of its imaginary part, reducing the sensitivity to
+small-imaginary noise. See the ``WPLI`` class for the public API.
+
+References
+----------
+Vinck, M., Oostenveld, R., van Wingerden, M., Battaglia, F., &
+Pennartz, C. M. A. (2011). An improved index of phase-synchronization
+for electrophysiological data in the presence of volume-conduction,
+noise and sample-size bias. *NeuroImage*, 55(4), 1548-1565.
 """
 
 import numpy as np

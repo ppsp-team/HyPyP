@@ -4,8 +4,41 @@
 """
 Synchrony and connectivity metrics for hyperscanning analysis.
 
-This module provides a collection of connectivity metrics that can be used
-to measure neural synchronization between participants.
+Public API
+----------
+``BaseMetric``
+    Abstract base class. Concrete metrics inherit from it and implement
+    ``BaseMetric.compute``.
+
+Concrete metric classes (one per file):
+
+- ``PLV`` (``hypyp.sync.plv``) — Phase Locking Value.
+- ``CCorr`` (``hypyp.sync.ccorr``) — Circular Correlation.
+- ``ACCorr`` (``hypyp.sync.accorr``) — Adjusted Circular Correlation.
+- ``Coh`` (``hypyp.sync.coh``) — Coherence.
+- ``ImCoh`` (``hypyp.sync.imaginary_coh``) — Imaginary Coherence.
+- ``PLI`` (``hypyp.sync.pli``) — Phase Lag Index.
+- ``WPLI`` (``hypyp.sync.wpli``) — Weighted Phase Lag Index.
+- ``EnvCorr`` (``hypyp.sync.envelope_corr``) — Envelope Correlation.
+- ``PowCorr`` (``hypyp.sync.pow_corr``) — Power Correlation.
+
+Helpers
+-------
+``multiply_conjugate``, ``multiply_conjugate_time``,
+``multiply_product``, ``multiply_conjugate_torch``,
+``multiply_conjugate_time_torch``
+    Einsum building blocks shared across the metric implementations.
+
+Dispatcher
+----------
+``METRICS``
+    Dict mapping mode strings to metric classes.
+``get_metric``
+    Lookup helper used by ``hypyp.eeg.analyses.compute_sync`` and
+    ``hypyp.eeg.analyses.pair_connectivity``.
+
+Per-metric mathematical details and references live in each metric
+class's docstring.
 """
 
 from typing import Optional

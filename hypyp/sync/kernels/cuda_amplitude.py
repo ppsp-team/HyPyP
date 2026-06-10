@@ -1,6 +1,16 @@
 """
-CUDA kernels for amplitude-based sync metrics: Coh, ImCoh, EnvCorr, PowCorr.
-All float64 for exact precision on NVIDIA GPUs.
+CUDA kernels for amplitude-based sync metrics.
+
+Implements:
+
+- ``coh_cuda`` — magnitude-squared Coherence.
+- ``imcoh_cuda`` — Imaginary Coherence.
+- ``envcorr_cuda`` — Envelope Correlation.
+- ``powcorr_cuda`` — Power Correlation.
+
+All kernels run in float64 for exact precision on NVIDIA GPUs. They
+share the pair-iteration scaffolding from
+``_cuda_dispatch.run_pairwise_kernel``.
 """
 
 import numpy as np

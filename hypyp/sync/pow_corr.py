@@ -3,6 +3,18 @@
 
 """
 Power Correlation (PowCorr) connectivity metric.
+
+PowCorr is the Pearson correlation between the **squared** envelope
+(instantaneous power) of two channels — closely related to envelope
+correlation (``EnvCorr``) but applied to power instead of amplitude.
+See the ``PowCorr`` class for the public API.
+
+Notes
+-----
+Power correlation is a standard companion to envelope correlation in
+resting-state hyperscanning analyses; the two often qualitatively
+agree but differ in their sensitivity to outlier amplitude bursts (the
+squaring in PowCorr amplifies them).
 """
 
 import numpy as np

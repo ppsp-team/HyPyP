@@ -3,6 +3,16 @@
 
 """
 Phase Locking Value (PLV) connectivity metric.
+
+PLV measures the consistency of phase differences between two complex
+analytic signals across time, regardless of amplitude. See the ``PLV``
+class for the public API and references.
+
+References
+----------
+Lachaux, J. P., Rodriguez, E., Martinerie, J., & Varela, F. J. (1999).
+Measuring phase synchrony in brain signals. *Human Brain Mapping*,
+8(4), 194-208.
 """
 
 import numpy as np

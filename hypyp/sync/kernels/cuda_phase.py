@@ -1,6 +1,16 @@
 """
-CUDA kernels for phase-based sync metrics: PLI, wPLI, PLV, CCorr.
-All float64 for exact precision on NVIDIA GPUs.
+CUDA kernels for phase-based sync metrics.
+
+Implements:
+
+- ``pli_cuda`` — Phase Lag Index.
+- ``wpli_cuda`` — Weighted Phase Lag Index.
+- ``plv_cuda`` — Phase Locking Value.
+- ``ccorr_cuda`` — Circular Correlation.
+
+All kernels run in float64 for exact precision on NVIDIA GPUs. They
+share the pair-iteration scaffolding from
+``_cuda_dispatch.run_pairwise_kernel``.
 """
 
 import numpy as np
