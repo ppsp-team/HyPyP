@@ -531,7 +531,7 @@ six==1.17.0
     #   rfc3339-validator
 snirf==0.8.0
     # via hypyp
-soupsieve==2.8.3
+soupsieve==2.8.4
     # via beautifulsoup4
 stack-data==0.6.3
     # via ipython
