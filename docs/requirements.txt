@@ -251,7 +251,7 @@ mergedeep==1.3.4
     #   mkdocs-get-deps
 meshio==5.3.5
     # via hypyp
-mistune==3.2.0
+mistune==3.3.0
     # via
     #   hypyp
     #   nbconvert
