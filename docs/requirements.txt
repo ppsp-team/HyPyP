@@ -521,7 +521,7 @@ seaborn==0.13.2
     # via hypyp
 send2trash==2.1.0
     # via jupyter-server
-setuptools==82.0.1
+setuptools==83.0.0
     # via
     #   jupyterlab
     #   snirf
