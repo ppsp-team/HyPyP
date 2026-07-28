@@ -423,7 +423,7 @@ pygments==2.19.2
 pylint==4.0.5
 pymatreader==1.2.2
     # via mne
-pymdown-extensions==10.21
+pymdown-extensions==11.0
     # via
     #   mkdocs-material
     #   mkdocstrings
