@@ -5,13 +5,14 @@ All optimized implementations are tested against the unoptimized reference
 implementation to ensure numerical correctness.
 """
 
+import warnings
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
 from hypyp.analyses import compute_sync
-from hypyp.sync import get_metric
+from hypyp.sync import METRICS, get_metric
 from hypyp.sync.accorr import ACCorr
 from hypyp.sync.base import (
     BaseMetric,
@@ -1237,3 +1238,95 @@ class TestAutoDispatch:
         """get_metric passes priority through to the metric class."""
         m = get_metric("accorr", optimization="auto", priority=["numba"])
         assert m._priority == ["numba"]
+
+
+class TestBackendCapability:
+    """
+    A requested backend must either run, or degrade with a warning.
+
+    Only PLI, wPLI and ACCorr have Metal kernels — torch/MPS is the intended
+    GPU path for the six einsum metrics (see hypyp/sync/base.py AUTO_PRIORITY
+    rationale and the support matrix in hypyp/sync/README.md). Requesting
+    'metal' for a metric that has no Metal kernel must therefore be reported,
+    never silently answered with numpy.
+
+    These tests patch the availability flags instead of gating on hardware, so
+    the capability contract is verified on any machine including CI.
+    """
+
+    METAL_CAPABLE = {"pli", "wpli", "accorr"}
+
+    def test_supports_reflects_the_implemented_methods(self):
+        """supports() must be derived from the code, not a hand-kept list."""
+        for mode, cls in METRICS.items():
+            assert cls.supports("metal") == hasattr(cls, "_compute_metal")
+            assert cls.supports("numpy") is True
+            assert cls.supports("numba") == hasattr(cls, "_compute_numba")
+
+    def test_metal_capability_matches_documented_support_matrix(self):
+        """Exactly PLI/wPLI/ACCorr expose a Metal kernel."""
+        actual = {mode for mode, cls in METRICS.items() if cls.supports("metal")}
+        assert actual == self.METAL_CAPABLE
+
+    @pytest.mark.parametrize("mode", sorted(METRICS))
+    def test_metal_request_never_silently_degrades(self, mode):
+        """
+        optimization='metal' either resolves to metal, or warns and uses numpy.
+
+        Regression test: before the capability check, _resolve_optimization
+        granted ('metal', 'mps') to every metric, and compute() then fell
+        through its if/elif chain into _compute_numpy — so six metrics returned
+        a numpy result while reporting _backend == 'metal', with no warning.
+        """
+        with patch("hypyp.sync.base.METAL_AVAILABLE", True):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                metric = get_metric(mode, optimization="metal")
+
+        if mode in self.METAL_CAPABLE:
+            assert metric._backend == "metal"
+        else:
+            assert metric._backend == "numpy", (
+                f"{mode}: asked for metal, resolved to {metric._backend!r} "
+                f"but has no Metal kernel"
+            )
+            messages = [
+                str(w.message) for w in caught if issubclass(w.category, UserWarning)
+            ]
+            assert any("Metal" in m for m in messages), (
+                f"{mode}: degraded to numpy without warning (messages: {messages})"
+            )
+
+    @pytest.mark.parametrize("mode", sorted(set(METRICS) - {"pli", "wpli", "accorr"}))
+    def test_auto_priority_skips_unsupported_backend(self, mode):
+        """
+        A priority list must skip a backend the metric cannot run.
+
+        priority=['metal', 'torch'] on an einsum metric should land on torch,
+        not on a metal that resolves to numpy behind the caller's back.
+        """
+        with (
+            patch("hypyp.sync.base.METAL_AVAILABLE", True),
+            patch("hypyp.sync.base.TORCH_AVAILABLE", True),
+            patch("hypyp.sync.base.MPS_AVAILABLE", True),
+        ):
+            metric = get_metric(mode, optimization="auto", priority=["metal", "torch"])
+        assert metric._backend == "torch", (
+            f"{mode}: priority=['metal','torch'] resolved to {metric._backend!r}"
+        )
+
+    def test_unknown_backend_fails_closed(self, complex_signal):
+        """
+        An unrecognised _backend must raise, not quietly compute in numpy.
+
+        This is the fail-closed guarantee: the original if/elif chains ended in
+        a bare `return self._compute_numpy(...)`, so any unhandled backend value
+        became indistinguishable from the default.
+        """
+        from hypyp.sync.plv import PLV
+
+        n_samp = complex_signal.shape[3]
+        metric = PLV()
+        metric._backend = "not_a_backend"
+        with pytest.raises(KeyError):
+            metric.compute(complex_signal, n_samp, (0, 1, 3, 2))

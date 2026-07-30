@@ -109,16 +109,7 @@ class ACCorr(BaseMetric):
         con : np.ndarray
             ACCorr connectivity matrix with shape (n_epoch, n_freq, 2*n_ch, 2*n_ch).
         """
-        if self._backend == "metal":
-            return self._compute_metal(complex_signal, n_samp, transpose_axes)
-        elif self._backend == "cuda_kernel":
-            return self._compute_cuda(complex_signal, n_samp, transpose_axes)
-        elif self._backend == "numba":
-            return self._compute_numba(complex_signal, n_samp, transpose_axes)
-        elif self._backend == "torch":
-            return self._compute_torch(complex_signal, n_samp, transpose_axes)
-        else:
-            return self._compute_numpy(complex_signal, n_samp, transpose_axes)
+        return super().compute(complex_signal, n_samp, transpose_axes)
 
     def _compute_metal(
         self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple

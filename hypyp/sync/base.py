@@ -303,12 +303,65 @@ class BaseMetric(ABC):
 
     name: str = "base"
 
+    #: Maps a backend name to the method implementing it. This table is the
+    #: single source of truth for dispatch: ``compute`` looks the backend up
+    #: here, so an unrecognised backend raises ``KeyError`` instead of silently
+    #: falling through to numpy, and ``supports`` derives capability from the
+    #: methods a subclass actually defines rather than from a hand-kept list.
+    _BACKEND_METHODS = {
+        "numpy": "_compute_numpy",
+        "numba": "_compute_numba",
+        "torch": "_compute_torch",
+        "metal": "_compute_metal",
+        "cuda_kernel": "_compute_cuda",
+    }
+
+    #: Human-readable backend names, used in fallback warnings.
+    _BACKEND_LABELS = {
+        "numpy": "numpy",
+        "numba": "numba",
+        "torch": "torch",
+        "metal": "Metal",
+        "cuda_kernel": "CUDA",
+    }
+
     def __init__(
         self, optimization: Optional[str] = None, priority: Optional[list] = None
     ):
         self.optimization = optimization
         self._priority = priority
         self._backend, self._device = self._resolve_optimization(optimization, priority)
+
+    @classmethod
+    def supports(cls, backend: str) -> bool:
+        """
+        Whether this metric implements ``backend``.
+
+        Capability is derived from the presence of the corresponding
+        ``_compute_*`` method, so it cannot drift out of sync with the code.
+        Not every metric has every backend — Metal kernels exist only for the
+        sign-based metrics and ACCorr, because torch on MPS is faster for the
+        einsum metrics at every channel count (see ``AUTO_PRIORITY``).
+
+        Parameters
+        ----------
+        backend : str
+            One of ``'numpy'``, ``'numba'``, ``'torch'``, ``'metal'``,
+            ``'cuda_kernel'``. An unknown name returns ``False``.
+
+        Returns
+        -------
+        bool
+            True if the metric can run on ``backend``.
+
+        Examples
+        --------
+        >>> from hypyp.sync import PLI, PLV
+        >>> PLI.supports('metal'), PLV.supports('metal')
+        (True, False)
+        """
+        method = cls._BACKEND_METHODS.get(backend)
+        return method is not None and hasattr(cls, method)
 
     @classmethod
     def _resolve_optimization(
@@ -367,6 +420,27 @@ class BaseMetric(ABC):
         if optimization == "auto":
             return cls._resolve_auto(priority)
 
+        if optimization not in ("numba", "torch", "metal", "cuda_kernel"):
+            raise ValueError(
+                f"Unknown optimization '{optimization}'. "
+                f"Options: None, 'auto', 'numba', 'torch', 'metal', 'cuda_kernel'"
+            )
+
+        # Capability before availability: a backend the machine can run is
+        # still useless if this metric has no implementation for it. Without
+        # this check the backend was accepted and dispatch quietly returned a
+        # numpy result — the caller believed they were on the GPU.
+        if not cls.supports(optimization):
+            label = cls._BACKEND_LABELS[optimization]
+            warnings.warn(
+                f"{cls.name!r} has no {label} implementation, falling back to "
+                f"numpy. Use optimization='auto' to select the best backend "
+                f"available for this metric.",
+                UserWarning,
+                stacklevel=3,
+            )
+            return "numpy", "cpu"
+
         if optimization == "numba":
             if NUMBA_AVAILABLE:
                 return "numba", "cpu"
@@ -411,6 +485,9 @@ class BaseMetric(ABC):
             )
             return "numpy", "cpu"
 
+        # Unreachable: the membership test above already rejected any other
+        # value. Kept as a guard in case a backend is added to that tuple
+        # without a matching branch here.
         raise ValueError(
             f"Unknown optimization '{optimization}'. "
             f"Options: None, 'auto', 'numba', 'torch', 'metal', 'cuda_kernel'"
@@ -463,6 +540,11 @@ class BaseMetric(ABC):
             priority = AUTO_PRIORITY.get(cls.name, {}).get(platform, [])
 
         for backend in priority:
+            # Skip a backend this metric has no implementation for, so a
+            # priority list falls through to the next candidate instead of
+            # selecting a backend that would degrade to numpy at dispatch.
+            if not cls.supports(backend):
+                continue
             if backend == "torch" and TORCH_AVAILABLE:
                 return cls._resolve_torch()
             if backend == "metal" and METAL_AVAILABLE:
@@ -513,12 +595,58 @@ class BaseMetric(ABC):
         warnings.warn("No GPU found, using torch on CPU", UserWarning, stacklevel=4)
         return "torch", "cpu"
 
-    @abstractmethod
     def compute(
         self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
     ) -> np.ndarray:
         """
-        Compute the connectivity metric.
+        Compute the connectivity metric on the resolved backend.
+
+        Dispatch is table-driven via ``_BACKEND_METHODS``: the backend chosen at
+        construction selects the ``_compute_*`` method to run. Subclasses
+        implement those methods and do not override this one.
+
+        Parameters
+        ----------
+        complex_signal : np.ndarray
+            Complex analytic signals with shape (n_epochs, n_freq, 2*n_channels, n_times).
+        n_samp : int
+            Number of time samples.
+        transpose_axes : tuple
+            Axes to transpose for matrix multiplication.
+
+        Returns
+        -------
+        con : np.ndarray
+            Connectivity matrix with shape (n_epoch, n_freq, 2*n_ch, 2*n_ch).
+
+        Raises
+        ------
+        KeyError
+            If ``self._backend`` is not a known backend name. This is
+            deliberate: an earlier hand-written ``if/elif`` chain per metric
+            ended in a bare ``return self._compute_numpy(...)``, so an
+            unhandled backend was indistinguishable from the numpy default and
+            failed silently. Dispatching through the table fails loudly instead.
+
+        Notes
+        -----
+        Output dtype follows the backend: numpy, numba and CUDA return
+        ``float64``; the Metal kernels return ``float32``.
+        """
+        method_name = self._BACKEND_METHODS[self._backend]
+        method = getattr(self, method_name)
+        return method(complex_signal, n_samp, transpose_axes)
+
+    @abstractmethod
+    def _compute_numpy(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
+        """
+        Reference implementation, in numpy. Always available.
+
+        Every metric must provide this: it is the correctness oracle the
+        accelerated backends are validated against, and the fallback target
+        whenever a requested backend is unavailable or unimplemented.
 
         Parameters
         ----------
@@ -534,4 +662,3 @@ class BaseMetric(ABC):
         con : np.ndarray
             Connectivity matrix with shape (n_epoch, n_freq, 2*n_ch, 2*n_ch).
         """
-        pass
