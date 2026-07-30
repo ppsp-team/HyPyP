@@ -226,20 +226,6 @@ class TestPLV:
                     result[e, f], result[e, f].T, rtol=1e-10, atol=1e-12
                 )
 
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_plv_metal_vs_numpy(self, complex_signal):
-        """Metal PLV should match numpy PLV within float32 tolerance."""
-        from hypyp.sync.plv import PLV
-
-        n_samp = complex_signal.shape[3]
-        result_np = PLV(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = PLV(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
-
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_plv_cuda_vs_numpy(self, complex_signal):
         """CUDA PLV should match numpy PLV exactly (both float64)."""
@@ -357,23 +343,6 @@ class TestCCorr:
         else:
             np.testing.assert_allclose(result_torch, result_np, rtol=1e-9, atol=1e-10)
 
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_ccorr_metal_vs_numpy(self, complex_signal):
-        """Metal CCorr should match numpy CCorr within float32 tolerance.
-
-        Uses Kahan summation with fastMath=OFF to preserve IEEE-754 compliance.
-        """
-        from hypyp.sync.ccorr import CCorr
-
-        n_samp = complex_signal.shape[3]
-        result_np = CCorr(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = CCorr(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
-
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_ccorr_cuda_vs_numpy(self, complex_signal):
         """CUDA CCorr should match numpy CCorr exactly (both float64)."""
@@ -457,20 +426,6 @@ class TestCoh:
                     result[e, f], result[e, f].T, rtol=1e-10, atol=1e-12
                 )
 
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_coh_metal_vs_numpy(self, complex_signal):
-        """Metal Coh should match numpy Coh within float32 tolerance."""
-        from hypyp.sync.coh import Coh
-
-        n_samp = complex_signal.shape[3]
-        result_np = Coh(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = Coh(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
-
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_coh_cuda_vs_numpy(self, complex_signal):
         """CUDA Coh should match numpy Coh exactly (both float64)."""
@@ -553,20 +508,6 @@ class TestImCoh:
                 np.testing.assert_allclose(
                     result[e, f], result[e, f].T, rtol=1e-10, atol=1e-12
                 )
-
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_imcoh_metal_vs_numpy(self, complex_signal):
-        """Metal ImCoh should match numpy ImCoh within float32 tolerance."""
-        from hypyp.sync.imaginary_coh import ImCoh
-
-        n_samp = complex_signal.shape[3]
-        result_np = ImCoh(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = ImCoh(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
 
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_imcoh_cuda_vs_numpy(self, complex_signal):
@@ -756,9 +697,11 @@ class TestPLI:
         result_np = PLI(optimization=None).compute(
             complex_signal, n_samp, self.TRANSPOSE_AXES
         )
-        result_metal = PLI(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
+        metric_metal = PLI(optimization="metal")
+        # Assert the kernel actually ran: a silent fallback to numpy would make
+        # this comparison numpy-vs-numpy and therefore vacuous.
+        assert metric_metal._backend == "metal"
+        result_metal = metric_metal.compute(complex_signal, n_samp, self.TRANSPOSE_AXES)
         # Float32 precision — sign() near zero can flip
         np.testing.assert_allclose(result_metal, result_np, rtol=1e-2, atol=1e-2)
 
@@ -772,7 +715,9 @@ class TestPLI:
             (2, 1, 256, 256)
         )
         n_samp = sig.shape[3]
-        result = PLI(optimization="metal").compute(sig, n_samp, self.TRANSPOSE_AXES)
+        metric = PLI(optimization="metal")
+        assert metric._backend == "metal"
+        result = metric.compute(sig, n_samp, self.TRANSPOSE_AXES)
         assert result.shape == (2, 1, 256, 256)
         assert not np.any(np.isnan(result))
         assert np.allclose(np.diagonal(result[0, 0]), 0)  # diagonal = 0
@@ -956,20 +901,6 @@ class TestEnvCorr:
         else:
             np.testing.assert_allclose(result_torch, result_np, rtol=1e-9, atol=1e-10)
 
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_envcorr_metal_vs_numpy(self, complex_signal):
-        """Metal EnvCorr should match numpy EnvCorr within float32 tolerance."""
-        from hypyp.sync.envelope_corr import EnvCorr
-
-        n_samp = complex_signal.shape[3]
-        result_np = EnvCorr(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = EnvCorr(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
-
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_envcorr_cuda_vs_numpy(self, complex_signal):
         """CUDA EnvCorr should match numpy EnvCorr exactly (both float64)."""
@@ -1053,20 +984,6 @@ class TestPowCorr:
         else:
             np.testing.assert_allclose(result_torch, result_np, rtol=1e-9, atol=1e-10)
 
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_powcorr_metal_vs_numpy(self, complex_signal):
-        """Metal PowCorr should match numpy PowCorr within float32 tolerance."""
-        from hypyp.sync.pow_corr import PowCorr
-
-        n_samp = complex_signal.shape[3]
-        result_np = PowCorr(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = PowCorr(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
-
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_powcorr_cuda_vs_numpy(self, complex_signal):
         """CUDA PowCorr should match numpy PowCorr exactly (both float64)."""
@@ -1090,9 +1007,9 @@ class TestPowCorr:
         result_np = WPLI(optimization=None).compute(
             complex_signal, n_samp, self.TRANSPOSE_AXES
         )
-        result_metal = WPLI(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
+        metric_metal = WPLI(optimization="metal")
+        assert metric_metal._backend == "metal"
+        result_metal = metric_metal.compute(complex_signal, n_samp, self.TRANSPOSE_AXES)
         np.testing.assert_allclose(result_metal, result_np, rtol=1e-2, atol=1e-2)
 
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
@@ -1124,9 +1041,9 @@ class TestAccorrKernels:
         result_np = ACCorr(optimization=None, show_progress=False).compute(
             complex_signal, n_samp, self.TRANSPOSE_AXES
         )
-        result_metal = ACCorr(optimization="metal", show_progress=False).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
+        metric_metal = ACCorr(optimization="metal", show_progress=False)
+        assert metric_metal._backend == "metal"
+        result_metal = metric_metal.compute(complex_signal, n_samp, self.TRANSPOSE_AXES)
         np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
 
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
