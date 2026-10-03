@@ -49,6 +49,7 @@ Documentation = "https://hypyp.readthedocs.io"
 [dependency-groups]
 dev = [
     {include-group = "docs"},
+    {include-group = "lint"},
     "black>=25.1.0",
     "ipykernel>=6.19.4",
     "ipywidgets>=7.5.1",
@@ -73,6 +74,10 @@ docs = [
     "mkdocstrings>=0.20.0",
     "mkdocstrings-python>=1.1.0",
 ]
+# Only the formatter and linter, so that the CI lint job installs nothing else.
+lint = [
+    "ruff>=0.16.10",
+]
 benchmark = [
     "doit>=0.36.0",
 ]
@@ -86,3 +91,15 @@ include = ["hypyp*"]
 
 [tool.setuptools.package-data]
 hypyp = ["data/*.obj"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+# hypyp/ext is vendored third-party code and is kept as upstream wrote it.
+# The tutorial notebooks are not formatted yet.
+extend-exclude = ["hypyp/ext", "*.ipynb"]
+
+[tool.ruff.lint]
+# Only what is certainly a bug: syntax errors, invalid comparisons and
+# statements, undefined names. Style rules are deliberately left out for now.
+select = ["E9", "F63", "F7", "F82"]
