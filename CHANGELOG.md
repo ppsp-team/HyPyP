@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Fixed
+- Metal backend: a single command queue is now cached per device instead of one being created on every call. Long loops (for example surrogate tests) used to exhaust the device's command queues and crash with `'NoneType' object has no attribute 'commandBuffer'` after about 7,800 calls (#279)
+
+### Security
+- Upgraded the 20 packages of the lock file that had known vulnerabilities: anyio, bleach, click, idna, jupyter-server, jupyterlab, mistune, mkdocs-material, nbconvert, notebook, pillow, pip, pygments, pymdown-extensions, python-multipart, setuptools, soupsieve, starlette, tornado and urllib3. None of the numerical dependencies (numpy, scipy, mne, numba, torch) changes version
+- torch stays at 2.10.0 in the lock file for now. Its two open advisories concern `torch.jit.script` (CVE-2025-3000) and the loading of `.pt2` files (CVE-2026-4538), neither of which HyPyP uses
+
+### Changed
+- `mistune`, `pillow` and `urllib3` are no longer direct dependencies. HyPyP never imported them; they were listed only to force minimum versions of indirect dependencies. `pillow` and `urllib3` are still installed through `scikit-image`, `matplotlib` and `requests`, but HyPyP no longer imposes a minimum version on them: a fresh install receives the current releases, while an existing environment keeps whatever versions it already has, so keeping them up to date is now the user's responsibility. The lock file pins patched versions for development with `uv` only
+- New `docs` dependency group holding only the documentation tools. `docs/requirements.txt` is now exported from it (36 packages instead of the whole development environment) and no longer installs `hypyp` itself from PyPI, which the documentation build does not need. The `dev` group includes the new group
+- Read the Docs now builds with Python 3.12 instead of 3.10, which the project no longer supports
+
+### Documentation
+- Richer docstrings for the nine `hypyp.sync` metrics and for the CUDA and Metal kernels, with intent and literature references (#278)
+
 ## [0.6.0] - 2026-04-21
 
 ### Added
