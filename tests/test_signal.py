@@ -4,6 +4,7 @@ import numpy as np
 
 from hypyp.signal import SyntheticSignal
 
+
 def test_instanciate():
     signal = SyntheticSignal(duration=300)
     assert signal is not None
@@ -11,10 +12,12 @@ def test_instanciate():
     assert len(signal.y) == len(signal.x)
     assert np.sum(signal.y) == 0
 
+
 def add_noise():
     signal = SyntheticSignal(duration=300)
     signal.add_noise()
     assert np.sum(np.abs(signal.y)) > 0
+
 
 def test_sin():
     signal = SyntheticSignal(duration=300)
@@ -22,17 +25,16 @@ def test_sin():
     assert len(signal.y) == len(signal.x)
     assert signal.y[0] == 0
 
+
 def test_chirp():
     signal = SyntheticSignal(duration=300)
     signal.add_chirp(1, 5)
     assert len(signal.y) == len(signal.x)
     # TODO should test the frequencies
 
+
 def test_custom():
     n = 300
     signal = SyntheticSignal(duration=n, n_points=n)
-    signal.add_custom(np.ones((n, )))
+    signal.add_custom(np.ones((n,)))
     assert np.sum(signal.y) == n
-
-    
-

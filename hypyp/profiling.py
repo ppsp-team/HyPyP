@@ -1,6 +1,7 @@
 import tracemalloc
 import time
 
+
 class MemoryMonitor(object):
     def __init__(self):
         """
@@ -13,7 +14,7 @@ class MemoryMonitor(object):
 
         """
         pass
-    
+
     def format_memory_size(self, size_bytes):
         if size_bytes >= 1 << 30:  # Greater than or equal to 1 GiB
             return f"{size_bytes / (1 << 30):.2f} G"
@@ -29,11 +30,14 @@ class MemoryMonitor(object):
 
     def __exit__(self, *args):
         res = tracemalloc.get_traced_memory()
-        print(f"[MemoryMonitor] allocated: {self.format_memory_size(res[0])}, peak: {self.format_memory_size(res[1])}", )
+        print(
+            f"[MemoryMonitor] allocated: {self.format_memory_size(res[0])}, peak: {self.format_memory_size(res[1])}",
+        )
         tracemalloc.stop()
 
+
 class TimeTracker(object):
-    def __init__(self, label:str='time_tracker'):
+    def __init__(self, label: str = "time_tracker"):
         """
         Track code execution time. Usage:
 

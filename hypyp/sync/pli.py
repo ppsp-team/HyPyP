@@ -49,8 +49,9 @@ class PLI(BaseMetric):
 
     name = "pli"
 
-    def compute(self, complex_signal: np.ndarray, n_samp: int,
-                transpose_axes: tuple) -> np.ndarray:
+    def compute(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Compute Phase Lag Index.
 
@@ -70,18 +71,19 @@ class PLI(BaseMetric):
         con : np.ndarray
             PLI connectivity matrix with shape (n_epoch, n_freq, 2*n_ch, 2*n_ch).
         """
-        if self._backend == 'metal':
+        if self._backend == "metal":
             return self._compute_metal(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'cuda_kernel':
+        elif self._backend == "cuda_kernel":
             return self._compute_cuda(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'torch':
+        elif self._backend == "torch":
             return self._compute_torch(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'numba':
+        elif self._backend == "numba":
             return self._compute_numba(complex_signal, n_samp, transpose_axes)
         return self._compute_numpy(complex_signal, n_samp, transpose_axes)
 
-    def _compute_numpy(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numpy(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """NumPy implementation of Phase Lag Index."""
         c = np.real(complex_signal)
         s = np.imag(complex_signal)
@@ -89,8 +91,9 @@ class PLI(BaseMetric):
         con = np.abs(np.mean(np.sign(np.imag(dphi)), axis=4))
         return con
 
-    def _compute_metal(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_metal(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Metal compute shader implementation of PLI on Apple Silicon GPU.
 
@@ -101,20 +104,24 @@ class PLI(BaseMetric):
         Requires: pip install pyobjc-framework-Metal
         """
         from .kernels.metal_phase import pli_metal
+
         return pli_metal(complex_signal)
 
-    def _compute_cuda(self, complex_signal: np.ndarray, n_samp: int,
-                      transpose_axes: tuple) -> np.ndarray:
+    def _compute_cuda(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         CUDA kernel implementation of PLI on NVIDIA GPU.
 
         Requires: pip install cupy-cuda12x
         """
         from .kernels.cuda_phase import pli_cuda
+
         return pli_cuda(complex_signal)
 
-    def _compute_numba(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numba(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Numba JIT implementation of PLI with fused kernel.
 
@@ -129,8 +136,9 @@ class PLI(BaseMetric):
         s = np.imag(complex_signal)
         return _pli_numba_kernel(c, s)
 
-    def _compute_torch(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_torch(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         PyTorch implementation of Phase Lag Index using per-channel broadcast.
 
@@ -144,20 +152,21 @@ class PLI(BaseMetric):
         MPS uses float32 precision; CPU/CUDA uses float64.
         """
         device = self._device
-        float_type = torch.float32 if device == 'mps' else torch.float64
-        complex_type = torch.complex64 if device == 'mps' else torch.complex128
+        float_type = torch.float32 if device == "mps" else torch.float64
+        complex_type = torch.complex64 if device == "mps" else torch.complex128
 
         sig = torch.from_numpy(complex_signal).to(device=device, dtype=complex_type)
         n_epochs, n_freq, n_ch, n_times = sig.shape
         c, s = sig.real, sig.imag  # (E, F, C, T)
 
-        con = torch.zeros((n_epochs, n_freq, n_ch, n_ch),
-                          device=device, dtype=float_type)
+        con = torch.zeros(
+            (n_epochs, n_freq, n_ch, n_ch), device=device, dtype=float_type
+        )
 
         for i in range(n_ch):
             # s[:,:,i:i+1,:] is a VIEW (contiguous slice), no copy
             # Broadcasting against (E, F, C, T) produces (E, F, C, T)
-            im = s[:, :, i:i+1, :] * c - c[:, :, i:i+1, :] * s  # (E, F, C, T)
+            im = s[:, :, i : i + 1, :] * c - c[:, :, i : i + 1, :] * s  # (E, F, C, T)
             con[:, :, i, :] = torch.abs(torch.mean(torch.sign(im), dim=-1))
 
         return con.cpu().numpy()
@@ -165,6 +174,7 @@ class PLI(BaseMetric):
 
 # Numba JIT kernel (module-level for caching)
 if NUMBA_AVAILABLE:
+
     @njit(parallel=True, cache=True)
     def _pli_numba_kernel(c, s):
         """
@@ -184,8 +194,10 @@ if NUMBA_AVAILABLE:
                     for j in range(i, n_ch):
                         sign_sum = 0.0
                         for t in range(n_t):
-                            im = s[e, f, i, t] * c[e, f, j, t] \
-                               - c[e, f, i, t] * s[e, f, j, t]
+                            im = (
+                                s[e, f, i, t] * c[e, f, j, t]
+                                - c[e, f, i, t] * s[e, f, j, t]
+                            )
                             if im > 0:
                                 sign_sum += 1.0
                             elif im < 0:

@@ -205,7 +205,7 @@ benchmark data compiled from Mac M4 Max (131 runs) and Narval A100 (111 runs).
 
 The priority can be overridden per-call:
 ```python
-get_metric('plv', optimization='auto', priority=['torch', 'cuda_kernel'])
+get_metric("plv", optimization="auto", priority=["torch", "cuda_kernel"])
 ```
 
 If no GPU backend is available, `'auto'` falls back to numba, then numpy.
@@ -275,20 +275,22 @@ pip install "hypyp[cupy]"
 from hypyp.analyses import compute_sync
 
 # Standard (numpy)
-con = compute_sync(complex_signal, 'plv')
+con = compute_sync(complex_signal, "plv")
 
 # Best available GPU backend
-con = compute_sync(complex_signal, 'plv', optimization='auto')
+con = compute_sync(complex_signal, "plv", optimization="auto")
 
 # Specific backend
-con = compute_sync(complex_signal, 'pli', optimization='metal')
+con = compute_sync(complex_signal, "pli", optimization="metal")
 
 # Custom priority
-con = compute_sync(complex_signal, 'coh', optimization='auto',
-                   priority=['torch', 'cuda_kernel'])
+con = compute_sync(
+    complex_signal, "coh", optimization="auto", priority=["torch", "cuda_kernel"]
+)
 
 # Direct class instantiation
 from hypyp.sync import get_metric
-metric = get_metric('accorr', optimization='auto')
+
+metric = get_metric("accorr", optimization="auto")
 con = metric.compute(complex_signal_internal, n_samp, transpose_axes)
 ```

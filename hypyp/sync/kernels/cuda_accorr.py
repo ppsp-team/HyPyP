@@ -73,6 +73,8 @@ extern "C" __global__ void accorr_kernel(
 """
 
 _accorr_kernel = None
+
+
 def _get_accorr():
     global _accorr_kernel
     if _accorr_kernel is None:
@@ -94,12 +96,15 @@ def accorr_cuda(complex_signal):
 
     z = complex_signal / np.abs(complex_signal)
     c_flat = cp.asarray(
-        np.ascontiguousarray(np.real(z).reshape(n_ef, C, T)), dtype=cp.float64)
+        np.ascontiguousarray(np.real(z).reshape(n_ef, C, T)), dtype=cp.float64
+    )
     s_flat = cp.asarray(
-        np.ascontiguousarray(np.imag(z).reshape(n_ef, C, T)), dtype=cp.float64)
+        np.ascontiguousarray(np.imag(z).reshape(n_ef, C, T)), dtype=cp.float64
+    )
     angle_flat = cp.asarray(
         np.ascontiguousarray(np.angle(complex_signal).reshape(n_ef, C, T)),
-        dtype=cp.float64)
+        dtype=cp.float64,
+    )
 
     idx_i, idx_j = [], []
     for i in range(C):
@@ -117,9 +122,9 @@ def accorr_cuda(complex_signal):
     grid_size = (total_threads + block_size - 1) // block_size
 
     kernel(
-        (grid_size,), (block_size,),
-        (s_flat, c_flat, angle_flat, out, pairs_i, pairs_j,
-         n_ef, C, T, n_pairs)
+        (grid_size,),
+        (block_size,),
+        (s_flat, c_flat, angle_flat, out, pairs_i, pairs_j, n_ef, C, T, n_pairs),
     )
 
     result = cp.asnumpy(out).reshape(E, F, C, C)

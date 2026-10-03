@@ -4,11 +4,12 @@ from typing import List, Generic, TypeVar
 from .base_step import BaseStep
 
 # Generic type for underlying fnirs implementation (mne raw / cedalion recording)
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class BasePreprocessor(ABC, Generic[T]):
     @abstractmethod
-    def read_file(self, path:str, verbose:bool=False) -> T:
+    def read_file(self, path: str, verbose: bool = False) -> T:
         """
         Load the file to be preprocessed. Does not run the preprocess yet
 
@@ -22,7 +23,7 @@ class BasePreprocessor(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def run(self, raw:T, verbose:bool=False):
+    def run(self, raw: T, verbose: bool = False):
         """
         run all the preprocessing steps on a raw object
 
@@ -34,4 +35,3 @@ class BasePreprocessor(ABC, Generic[T]):
             List[BasePreprocessStep[T]]: list of all the intermediary steps of the preprocessing
         """
         pass
-

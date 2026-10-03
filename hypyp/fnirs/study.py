@@ -13,9 +13,10 @@ from ..plots import (
     plot_coherence_connectogram_split,
 )
 
-class Study():
+
+class Study:
     dyads: List[Dyad]
-    dyads_shuffled: List[Dyad]|None
+    dyads_shuffled: List[Dyad] | None
 
     def __init__(self, dyads: List[Dyad] = []):
         """
@@ -44,7 +45,7 @@ class Study():
             if not dyad.is_wtc_computed:
                 return False
         return True
-    
+
     @property
     def df(self) -> CoherenceDataFrame:
         """The pandas dataframe object from computed WTCs"""
@@ -64,22 +65,22 @@ class Study():
             if not dyad.is_preprocessed:
                 dyad.preprocess(preprocessor)
         return self
-    
+
     def compute_wtcs(
         self,
         # All the arguments are a copy from Dyad.compute_wtcs, but we need them explicitely for type hinting
-        wavelet: BaseWavelet|None = None,
-        ch_match: PairChannelMatchType|None = None,
-        only_time_range: Tuple[float,float]|None = None,
-        bin_seconds: float|None = None,
-        period_cuts: List[float]|None = None,
-        frequency_cuts: List[float]|None = None,
+        wavelet: BaseWavelet | None = None,
+        ch_match: PairChannelMatchType | None = None,
+        only_time_range: Tuple[float, float] | None = None,
+        bin_seconds: float | None = None,
+        period_cuts: List[float] | None = None,
+        frequency_cuts: List[float] | None = None,
         verbose: bool = False,
         with_intra: bool = True,
-        downsample: int|None = None,
+        downsample: int | None = None,
         keep_wtcs: bool = True,
         show_time_estimation: bool = True,
-    ): 
+    ):
         """
         Wraps the `compute_wtcs` of all the dyads. Arguments are directly passed to the dyads method
 
@@ -122,13 +123,17 @@ class Study():
                 tracker.stop()
                 if show_time_estimation:
                     self._print_time_estimation(tracker.duration, len(self.dyads))
-                
+
         return self
-    
+
     def _print_time_estimation(self, single_duration, count):
-            print(f'Time for computing one dyad: {TimeTracker.human_readable_duration(single_duration)}')
-            print(f'Expected time for {count} dyads: {TimeTracker.human_readable_duration(single_duration * count)}')
-    
+        print(
+            f"Time for computing one dyad: {TimeTracker.human_readable_duration(single_duration)}"
+        )
+        print(
+            f"Expected time for {count} dyads: {TimeTracker.human_readable_duration(single_duration * count)}"
+        )
+
     def estimate_wtcs_run_time(self, *args, **kwargs):
         """
         Computes the WTC for one dyad and print the expected run time for the whole study
@@ -144,13 +149,13 @@ class Study():
         self._print_time_estimation(tracker.duration, len(self.dyads))
 
         return self
-    
+
     def reset(self):
         self._clear_dyads_shuffle()
         for dyad in self.dyads:
             dyad.reset()
         return self
-    
+
     def _clear_dyads_shuffle(self):
         """
         Delete all the shuffle dyads that have been created
@@ -160,7 +165,7 @@ class Study():
         """
         self.dyads_shuffled = None
         return self
-    
+
     def get_dyads_shuffle(self) -> List[Dyad]:
         """
         Get a list of permutated recording pairs, useful for statistical analysis.
@@ -173,7 +178,14 @@ class Study():
             for j, dyad2 in enumerate(self.dyads):
                 if i == j:
                     continue
-                dyads_shuffle.append(Dyad(dyad1.s1, dyad2.s2, label=f'shuffle s1:{dyad1.label}-s2:{dyad2.label}', is_pseudo=True))
+                dyads_shuffle.append(
+                    Dyad(
+                        dyad1.s1,
+                        dyad2.s2,
+                        label=f"shuffle s1:{dyad1.label}-s2:{dyad2.label}",
+                        is_pseudo=True,
+                    )
+                )
         return dyads_shuffle
 
     # TODO add as argument the number of shuffle dyads
@@ -188,7 +200,7 @@ class Study():
         for dyad_shuffle in self.dyads_shuffled:
             dyad_shuffle.compute_wtcs(*args, **kwargs, with_intra=False)
         return self
-    
+
     def get_coherence_df(self) -> CoherenceDataFrame:
         """
         Loop over every dyad and concatenate all the pandas dataframes into one
@@ -203,7 +215,7 @@ class Study():
         """
         dfs = []
         if not self.is_wtc_computed:
-            raise RuntimeError('wtc not computed')
+            raise RuntimeError("wtc not computed")
 
         for dyad in self.dyads:
             dfs.append(dyad.df)
@@ -213,18 +225,19 @@ class Study():
                 dfs.append(dyad_shuffle.df)
 
         return CoherenceDataFrame.concat(dfs)
-    
+
     #
     # Plots
     #
     def plot_coherence_matrix(
-            self,
-            field1:str='channel1',
-            field2:str='channel2',
-            query:str | None=None,
-            s1_label:str='Subject1',
-            s2_label:str='Subject2',
-            **kwargs):
+        self,
+        field1: str = "channel1",
+        field2: str = "channel2",
+        query: str | None = None,
+        s1_label: str = "Subject1",
+        s2_label: str = "Subject2",
+        **kwargs,
+    ):
         """
         Plot the computed coherence metric for pair of fields (channel or roi) in a matrix format
 
@@ -236,7 +249,7 @@ class Study():
         df = self.df
         if query is not None:
             df = df.query(query)
-            
+
         ch_names1 = []
         ch_names2 = []
 
@@ -249,45 +262,34 @@ class Study():
                 if ch_name not in ch_names2:
                     ch_names2.append(ch_name)
 
-        ordered_names = ch_names1 + [name for name in ch_names2 if name not in ch_names1] 
+        ordered_names = ch_names1 + [
+            name for name in ch_names2 if name not in ch_names1
+        ]
         # TODO: missing ordered roi
 
         return plot_coherence_matrix(
-            df,
-            s1_label,
-            s2_label,
-            field1,
-            field2,
-            ordered_names,
-            **kwargs)
-        
-    def plot_coherence_matrix_per_channel(self, query:str|None=None, **kwargs):
+            df, s1_label, s2_label, field1, field2, ordered_names, **kwargs
+        )
+
+    def plot_coherence_matrix_per_channel(self, query: str | None = None, **kwargs):
         """
         Wraps plot_coherence_matrix to plot per channel
 
         Args:
             query (str | None, optional): pandas query to filter the dataframe. Defaults to None.
         """
-        return self.plot_coherence_matrix(
-            'channel1',
-            'channel2',
-            query,
-            **kwargs)
-        
-    def plot_coherence_matrix_per_roi(self, query:str|None=None, **kwargs):
+        return self.plot_coherence_matrix("channel1", "channel2", query, **kwargs)
+
+    def plot_coherence_matrix_per_roi(self, query: str | None = None, **kwargs):
         """
         Wraps plot_coherence_matrix to plot per region of interest
 
         Args:
             query (str | None, optional): pandas query to filter the dataframe. Defaults to None.
         """
-        return self.plot_coherence_matrix(
-            'roi1',
-            'roi2',
-            query,
-            **kwargs)
-    
-    def plot_coherence_matrix_per_channel_for_task(self, task:str, **kwargs):
+        return self.plot_coherence_matrix("roi1", "roi2", query, **kwargs)
+
+    def plot_coherence_matrix_per_channel_for_task(self, task: str, **kwargs):
         """
         Wraps plot_coherence_matrix_per_channel to plot for a specific task
 
@@ -295,12 +297,10 @@ class Study():
             task (str): task name
         """
         return self.plot_coherence_matrix(
-            'channel1',
-            'channel2',
-            query=f'task=="{task}"',
-            **kwargs)
-        
-    def plot_coherence_matrix_per_roi_for_task(self, task:str, **kwargs):
+            "channel1", "channel2", query=f'task=="{task}"', **kwargs
+        )
+
+    def plot_coherence_matrix_per_roi_for_task(self, task: str, **kwargs):
         """
         Wraps plot_coherence_matrix_per_roi to plot for a specific task
 
@@ -308,62 +308,62 @@ class Study():
             task (str): task name
         """
         return self.plot_coherence_matrix(
-            'roi1',
-            'roi2',
-            query=f'task=="{task}"',
-            **kwargs)
-    
+            "roi1", "roi2", query=f'task=="{task}"', **kwargs
+        )
+
     def plot_coherence_bars_per_task(self, **kwargs):
         """
         Plot coherence metric per task for comparison
         """
-        return plot_coherence_bars_per_task(
-            self.df,
-            **kwargs)
-        
+        return plot_coherence_bars_per_task(self.df, **kwargs)
+
     def plot_coherence_connectogram(
-            self,
-            query:str|None=None,
-            title:str|None=None,
-            s1_label:str='Subject1',
-            s2_label:str='Subject2',
-            **kwargs):
+        self,
+        query: str | None = None,
+        title: str | None = None,
+        s1_label: str = "Subject1",
+        s2_label: str = "Subject2",
+        **kwargs,
+    ):
         df = self.df.copy()
-        selector = df['is_intra']==False
+        selector = df["is_intra"] == False
         df_filtered = df[selector]
 
         if query is not None:
             df_filtered = df_filtered.query(query)
 
         # rename to have them separated in the plot
-        df_filtered.loc[:, 'roi1'] = s1_label + '_' + df_filtered['roi1'].astype(str)
-        df_filtered.loc[:, 'roi2'] = s2_label + '_' + df_filtered['roi2'].astype(str)
+        df_filtered.loc[:, "roi1"] = s1_label + "_" + df_filtered["roi1"].astype(str)
+        df_filtered.loc[:, "roi2"] = s2_label + "_" + df_filtered["roi2"].astype(str)
 
-        pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
+        pivot = df_filtered.pivot_table(
+            index="roi1", columns="roi2", values="coherence", aggfunc="mean"
+        )
 
         if title is None:
-            title = f'{s1_label} / {s2_label}'
+            title = f"{s1_label} / {s2_label}"
 
-        return plot_coherence_connectogram_split(
-            pivot,
-            title=title,
-            **kwargs)
+        return plot_coherence_connectogram_split(pivot, title=title, **kwargs)
 
-    def plot_coherence_connectogram_intra(self, is_intra_of:int, query:str|None=None, **kwargs):
+    def plot_coherence_connectogram_intra(
+        self, is_intra_of: int, query: str | None = None, **kwargs
+    ):
         df = self.df
-        selector = (df['is_intra']==True) & (df['is_intra_of']==is_intra_of)
+        selector = (df["is_intra"] == True) & (df["is_intra_of"] == is_intra_of)
         df_filtered = df[selector]
 
         if query is not None:
             df_filtered = df_filtered.query(query)
 
-        pivot = df_filtered.pivot_table(index='roi1', columns='roi2', values='coherence', aggfunc='mean')
+        pivot = df_filtered.pivot_table(
+            index="roi1", columns="roi2", values="coherence", aggfunc="mean"
+        )
         return plot_coherence_connectogram(pivot, **kwargs)
 
-    def plot_coherence_connectogram_s1(self, query:str|None=None, **kwargs):
+    def plot_coherence_connectogram_s1(self, query: str | None = None, **kwargs):
         return self.plot_coherence_connectogram_intra(1, query, **kwargs)
 
-    def plot_coherence_connectogram_s2(self, query:str|None=None, **kwargs):
+    def plot_coherence_connectogram_s2(self, query: str | None = None, **kwargs):
         return self.plot_coherence_connectogram_intra(2, query, **kwargs)
 
     #
@@ -380,7 +380,7 @@ class Study():
         Returns:
             Study: the Study object
         """
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             return pickle.load(f)
 
     def save_pickle(self, file_path: str):
@@ -390,7 +390,7 @@ class Study():
         Args:
             file_path (str): disk path for the serialisation
         """
-        with open(file_path, 'wb') as f:
+        with open(file_path, "wb") as f:
             pickle.dump(self, f)
 
     def save_feather(self, file_path: str):

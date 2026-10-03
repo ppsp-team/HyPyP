@@ -10,6 +10,7 @@ DEFAULT_MORLET_BANDWIDTH_FREQUENCY = 2
 DEFAULT_MORLET_CENTER_FREQUENCY = 1
 DEFAULT_GAUSSIAN_DEGREE = 2
 
+
 class PywaveletsWavelet(BaseWavelet):
     """
     Parent class for the default Wavelet implementation, using Pywavelets library.
@@ -22,6 +23,7 @@ class PywaveletsWavelet(BaseWavelet):
         upper_bound (float, optional): upper bound for mother wavelet evaluation. Defaults to 8.
         cwt_params (dict | None, optional): params to be sent to cwt(), the Continuous Wavelet Transform. Defaults to None.
     """
+
     cwt_params: dict
     _wavelet_name: str
     lower_bound: float
@@ -30,12 +32,12 @@ class PywaveletsWavelet(BaseWavelet):
 
     def __init__(
         self,
-        wavelet_name:str=f'cmor{DEFAULT_MORLET_BANDWIDTH_FREQUENCY},{DEFAULT_MORLET_CENTER_FREQUENCY}',
-        lower_bound:float=-8,
-        upper_bound:float=8,
-        cwt_params:dict|None=None,
-        period_range:Tuple[float, float]|None=None,
-        frequency_range:Tuple[float, float]|None=None,
+        wavelet_name: str = f"cmor{DEFAULT_MORLET_BANDWIDTH_FREQUENCY},{DEFAULT_MORLET_CENTER_FREQUENCY}",
+        lower_bound: float = -8,
+        upper_bound: float = 8,
+        cwt_params: dict | None = None,
+        period_range: Tuple[float, float] | None = None,
+        frequency_range: Tuple[float, float] | None = None,
         **kwargs,
     ):
         self._wavelet_name = wavelet_name
@@ -47,17 +49,19 @@ class PywaveletsWavelet(BaseWavelet):
         self.cwt_params = cwt_params
 
         # explicitly have period_range and frequency_range arguments, even if they belong to parent class
-        super().__init__(period_range=period_range, frequency_range=frequency_range, **kwargs)
+        super().__init__(
+            period_range=period_range, frequency_range=frequency_range, **kwargs
+        )
 
     @property
     def wavelet_library(self):
-        return 'pywavelets'
+        return "pywavelets"
 
     @property
     def wavelet_name_with_args(self):
         name = self._wavelet_name
         if self.wtc_smoothing_win_size is not None:
-            name += f'[win:{self.wtc_smoothing_win_size}]'
+            name += f"[win:{self.wtc_smoothing_win_size}]"
         return name
 
     @property
@@ -75,19 +79,29 @@ class PywaveletsWavelet(BaseWavelet):
 
     def get_scales(self, dt):
         frequencies = 1 / self.get_periods()
-        scales = pywt.frequency2scale(self._wavelet, frequencies*dt)
+        scales = pywt.frequency2scale(self._wavelet, frequencies * dt)
         return scales
 
-    def cwt(self, y, dt, label='', cache_suffix:str='') -> CWT:
+    def cwt(self, y, dt, label="", cache_suffix: str = "") -> CWT:
         N = len(y)
         times = np.arange(N) * dt
         scales = self.get_scales(dt)
-        W, freqs = pywt.cwt(y, scales, self._wavelet, sampling_period=dt, method='fft', **self.cwt_params)
+        W, freqs = pywt.cwt(
+            y,
+            scales,
+            self._wavelet,
+            sampling_period=dt,
+            method="fft",
+            **self.cwt_params,
+        )
         periods = 1 / freqs
 
         coi = self._get_and_cache_cone_of_influence(N, dt, cache_suffix=cache_suffix)
-    
-        return CWT(weights=W, times=times, scales=scales, periods=periods, coi=coi, label=label)
+
+        return CWT(
+            weights=W, times=times, scales=scales, periods=periods, coi=coi, label=label
+        )
+
 
 class ComplexMorletWavelet(PywaveletsWavelet):
     """
@@ -99,6 +113,7 @@ class ComplexMorletWavelet(PywaveletsWavelet):
         bandwidth_frequency (float, optional): Defaults to 2.
         center_frequency (float, optional): Defaults to 1.
     """
+
     bandwidth_frequency: float
     center_frequency: float
 
@@ -107,30 +122,30 @@ class ComplexMorletWavelet(PywaveletsWavelet):
 
     def __init__(
         self,
-        bandwidth_frequency:float=DEFAULT_MORLET_BANDWIDTH_FREQUENCY,
-        center_frequency:float=DEFAULT_MORLET_CENTER_FREQUENCY,
-        period_range:Tuple[float, float]|None=None,
-        frequency_range:Tuple[float, float]|None=None,
+        bandwidth_frequency: float = DEFAULT_MORLET_BANDWIDTH_FREQUENCY,
+        center_frequency: float = DEFAULT_MORLET_CENTER_FREQUENCY,
+        period_range: Tuple[float, float] | None = None,
+        frequency_range: Tuple[float, float] | None = None,
         **kwargs,
     ):
         self.bandwidth_frequency = bandwidth_frequency
         self.center_frequency = center_frequency
         # explicitly have period_range and frequency_range arguments, even if they belong to parent class
         return super().__init__(
-            wavelet_name=f'cmor{bandwidth_frequency},{center_frequency}', 
-            period_range=period_range, 
-            frequency_range=frequency_range, 
+            wavelet_name=f"cmor{bandwidth_frequency},{center_frequency}",
+            period_range=period_range,
+            frequency_range=frequency_range,
             **kwargs,
         )
-    
+
     @property
     def flambda(self):
         # Equations come from "A Practical Guide to Wavelet Analysis" from Torrence and Compo (1998), Table 1
         f0 = 2 * np.pi * self.center_frequency
         flambda = 2 * np.pi / f0
-        #flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
+        # flambda = 4 * np.pi / (f0 + np.sqrt(2 + f0**2))
         return flambda
-        
+
 
 class ComplexGaussianWavelet(PywaveletsWavelet):
     """
@@ -141,21 +156,22 @@ class ComplexGaussianWavelet(PywaveletsWavelet):
     Args:
         degree (int, optional): the "degree" of "Degree of Gaussian" (DOG). Defaults to 2.
     """
+
     degree: int
 
     default_degree: int = DEFAULT_GAUSSIAN_DEGREE
 
     def __init__(
         self,
-        degree:int=DEFAULT_GAUSSIAN_DEGREE,
-        period_range:Tuple[float, float]|None=None,
-        frequency_range:Tuple[float, float]|None=None,
-        **kwargs
+        degree: int = DEFAULT_GAUSSIAN_DEGREE,
+        period_range: Tuple[float, float] | None = None,
+        frequency_range: Tuple[float, float] | None = None,
+        **kwargs,
     ):
         self.degree = degree
         # explicitly have period_range and frequency_range arguments, even if they belong to parent class
         return super().__init__(
-            wavelet_name=f'cgau{degree}', 
+            wavelet_name=f"cgau{degree}",
             period_range=period_range,
             frequency_range=frequency_range,
             **kwargs,

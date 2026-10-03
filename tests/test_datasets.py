@@ -17,6 +17,7 @@ from hypyp import datasets
 # Cache / registry helpers
 # ---------------------------------------------------------------------------
 
+
 def test_cache_dir_is_path():
     assert isinstance(datasets.cache_dir(), Path)
 
@@ -40,6 +41,7 @@ def test_fetch_unknown_key_raises():
 # EEG helpers
 # ---------------------------------------------------------------------------
 
+
 def test_eeg_epochs_participant1():
     path = datasets.eeg_epochs(participant=1)
     assert Path(path).exists()
@@ -61,6 +63,7 @@ def test_eeg_raw():
 # ---------------------------------------------------------------------------
 # EEGLAB helpers — .fdt companion must be co-located
 # ---------------------------------------------------------------------------
+
 
 def test_eeglab_epochs_set_exists():
     path = datasets.eeglab_epochs()
@@ -89,6 +92,7 @@ def test_eeglab_raw_fdt_colocated():
 # ---------------------------------------------------------------------------
 # fNIRS helpers
 # ---------------------------------------------------------------------------
+
 
 def test_fnirs_samples_default_returns_four():
     paths = datasets.fnirs_samples()
@@ -144,6 +148,7 @@ def test_fnirs_fcs01_parent_companions_colocated():
 # ---------------------------------------------------------------------------
 # XDF helpers
 # ---------------------------------------------------------------------------
+
 
 def test_xdf_dyad_noise():
     path = datasets.xdf_dyad_noise()

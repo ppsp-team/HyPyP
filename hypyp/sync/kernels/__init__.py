@@ -9,6 +9,7 @@ for metrics that cannot be efficiently expressed with torch operations
 # Metal availability (Apple Silicon via PyObjC)
 try:
     import Metal as _Metal
+
     METAL_AVAILABLE = True
 except ImportError:
     METAL_AVAILABLE = False
@@ -16,6 +17,7 @@ except ImportError:
 # CUDA availability (NVIDIA via CuPy)
 try:
     import cupy as _cp
+
     CUPY_AVAILABLE = True
 except ImportError:
     CUPY_AVAILABLE = False

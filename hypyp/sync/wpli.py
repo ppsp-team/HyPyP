@@ -48,8 +48,9 @@ class WPLI(BaseMetric):
 
     name = "wpli"
 
-    def compute(self, complex_signal: np.ndarray, n_samp: int,
-                transpose_axes: tuple) -> np.ndarray:
+    def compute(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Compute Weighted Phase Lag Index.
 
@@ -69,30 +70,35 @@ class WPLI(BaseMetric):
         con : np.ndarray
             wPLI connectivity matrix with shape (n_epoch, n_freq, 2*n_ch, 2*n_ch).
         """
-        if self._backend == 'metal':
+        if self._backend == "metal":
             return self._compute_metal(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'cuda_kernel':
+        elif self._backend == "cuda_kernel":
             return self._compute_cuda(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'torch':
+        elif self._backend == "torch":
             return self._compute_torch(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'numba':
+        elif self._backend == "numba":
             return self._compute_numba(complex_signal, n_samp, transpose_axes)
         return self._compute_numpy(complex_signal, n_samp, transpose_axes)
 
-    def _compute_metal(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_metal(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """Metal compute shader for wPLI on Apple Silicon GPU."""
         from .kernels.metal_phase import wpli_metal
+
         return wpli_metal(complex_signal)
 
-    def _compute_cuda(self, complex_signal: np.ndarray, n_samp: int,
-                      transpose_axes: tuple) -> np.ndarray:
+    def _compute_cuda(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """CUDA kernel for wPLI on NVIDIA GPU."""
         from .kernels.cuda_phase import wpli_cuda
+
         return wpli_cuda(complex_signal)
 
-    def _compute_numba(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numba(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Numba JIT implementation of wPLI with fused kernel.
 
@@ -106,8 +112,9 @@ class WPLI(BaseMetric):
         s = np.imag(complex_signal)
         return _wpli_numba_kernel(c, s)
 
-    def _compute_numpy(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numpy(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """NumPy implementation of Weighted Phase Lag Index."""
         c = np.real(complex_signal)
         s = np.imag(complex_signal)
@@ -119,8 +126,9 @@ class WPLI(BaseMetric):
         con = con_num / con_den
         return con
 
-    def _compute_torch(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_torch(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         PyTorch implementation of Weighted Phase Lag Index.
 
@@ -135,41 +143,46 @@ class WPLI(BaseMetric):
         MPS uses float32 precision; CPU/CUDA uses float64.
         """
         device = self._device
-        float_type = torch.float32 if device == 'mps' else torch.float64
-        complex_type = torch.complex64 if device == 'mps' else torch.complex128
+        float_type = torch.float32 if device == "mps" else torch.float64
+        complex_type = torch.complex64 if device == "mps" else torch.complex128
 
         sig = torch.from_numpy(complex_signal).to(device=device, dtype=complex_type)
         n_epochs, n_freq, n_ch, n_times = sig.shape
         c, s = sig.real, sig.imag
 
-        con = torch.zeros((n_epochs, n_freq, n_ch, n_ch),
-                          device=device, dtype=float_type)
+        con = torch.zeros(
+            (n_epochs, n_freq, n_ch, n_ch), device=device, dtype=float_type
+        )
 
         # Chunk by epoch — each chunk is (F, C, C, T), 5x fewer iterations
         # than (epoch, freq) chunking. Falls back to double loop if chunk
         # would exceed MPS INT_MAX.
         chunk_elements = n_freq * n_ch * n_ch * n_times
-        if device == 'mps' and chunk_elements > 2_000_000_000:
+        if device == "mps" and chunk_elements > 2_000_000_000:
             # Fallback: (epoch, freq) chunking for very large configs
-            formula = 'it,jt->ijt'
+            formula = "it,jt->ijt"
             for e in range(n_epochs):
                 for f in range(n_freq):
                     c_ef = c[e, f]
                     s_ef = s[e, f]
-                    im_dphi = torch.einsum(formula, s_ef, c_ef) - \
-                              torch.einsum(formula, c_ef, s_ef)
+                    im_dphi = torch.einsum(formula, s_ef, c_ef) - torch.einsum(
+                        formula, c_ef, s_ef
+                    )
                     con_num = torch.abs(torch.mean(im_dphi, dim=-1))
                     con_den = torch.mean(torch.abs(im_dphi), dim=-1)
-                    con_den = torch.where(con_den == 0, torch.ones_like(con_den), con_den)
+                    con_den = torch.where(
+                        con_den == 0, torch.ones_like(con_den), con_den
+                    )
                     con[e, f] = con_num / con_den
         else:
             # Fast path: epoch-only chunking
-            formula = 'fit,fjt->fijt'
+            formula = "fit,fjt->fijt"
             for e in range(n_epochs):
                 c_e = c[e]  # (F, C, T)
                 s_e = s[e]
-                im_dphi = torch.einsum(formula, s_e, c_e) - \
-                          torch.einsum(formula, c_e, s_e)
+                im_dphi = torch.einsum(formula, s_e, c_e) - torch.einsum(
+                    formula, c_e, s_e
+                )
                 # |Im| * sign(Im) = Im
                 con_num = torch.abs(torch.mean(im_dphi, dim=-1))
                 con_den = torch.mean(torch.abs(im_dphi), dim=-1)
@@ -181,6 +194,7 @@ class WPLI(BaseMetric):
 
 # Numba JIT kernel (module-level for caching)
 if NUMBA_AVAILABLE:
+
     @njit(parallel=True, cache=True)
     def _wpli_numba_kernel(c, s):
         """
@@ -201,8 +215,10 @@ if NUMBA_AVAILABLE:
                         im_sum = 0.0
                         abs_sum = 0.0
                         for t in range(n_t):
-                            im = s[e, f, i, t] * c[e, f, j, t] \
-                               - c[e, f, i, t] * s[e, f, j, t]
+                            im = (
+                                s[e, f, i, t] * c[e, f, j, t]
+                                - c[e, f, i, t] * s[e, f, j, t]
+                            )
                             im_sum += im
                             abs_sum += abs(im)
                         if abs_sum > 0:

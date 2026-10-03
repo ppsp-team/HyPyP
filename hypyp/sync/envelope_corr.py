@@ -48,8 +48,9 @@ class EnvCorr(BaseMetric):
 
     name = "envcorr"
 
-    def compute(self, complex_signal: np.ndarray, n_samp: int,
-                transpose_axes: tuple) -> np.ndarray:
+    def compute(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Compute Envelope Correlation.
 
@@ -70,32 +71,38 @@ class EnvCorr(BaseMetric):
             Envelope Correlation connectivity matrix with shape
             (n_epoch, n_freq, 2*n_ch, 2*n_ch).
         """
-        if self._backend == 'cuda_kernel':
+        if self._backend == "cuda_kernel":
             return self._compute_cuda(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'torch':
+        elif self._backend == "torch":
             return self._compute_torch(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'numba':
+        elif self._backend == "numba":
             return self._compute_numba(complex_signal, n_samp, transpose_axes)
         return self._compute_numpy(complex_signal, n_samp, transpose_axes)
 
     def _compute_cuda(self, complex_signal, n_samp, transpose_axes):
         """CUDA kernel for Envelope Correlation."""
         from .kernels.cuda_amplitude import envcorr_cuda
+
         return envcorr_cuda(complex_signal)
 
-    def _compute_numpy(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numpy(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """NumPy implementation of Envelope Correlation."""
         n_epoch, n_freq, n_ch_total = complex_signal.shape[:3]
         env = np.abs(complex_signal)
         mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, n_ch_total, 1)
         env = env - mu_env
-        con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
-              np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
+        con = np.einsum(
+            "nilm,nimk->nilk", env, env.transpose(transpose_axes)
+        ) / np.sqrt(
+            np.einsum("nil,nik->nilk", np.sum(env**2, axis=3), np.sum(env**2, axis=3))
+        )
         return con
 
-    def _compute_numba(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numba(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Numba JIT implementation of Envelope Correlation.
 
@@ -106,8 +113,9 @@ class EnvCorr(BaseMetric):
         env = np.abs(complex_signal)
         return _envcorr_numba_kernel(env)
 
-    def _compute_torch(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_torch(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         PyTorch implementation of Envelope Correlation.
 
@@ -116,8 +124,8 @@ class EnvCorr(BaseMetric):
         float64 (CPU/CUDA). No complex arithmetic on GPU.
         """
         device = self._device
-        float_type = torch.float32 if device == 'mps' else torch.float64
-        complex_type = torch.complex64 if device == 'mps' else torch.complex128
+        float_type = torch.float32 if device == "mps" else torch.float64
+        complex_type = torch.complex64 if device == "mps" else torch.complex128
 
         sig = torch.from_numpy(complex_signal).to(device=device, dtype=complex_type)
         env = torch.abs(sig).to(dtype=float_type)  # real envelope
@@ -128,11 +136,11 @@ class EnvCorr(BaseMetric):
         env = env - mu
 
         # Pearson numerator: sum_t(env_i(t) * env_j(t))
-        num = torch.einsum('efit,efjt->efij', env, env)
+        num = torch.einsum("efit,efjt->efij", env, env)
 
         # Denominator: sqrt(sum_t(env_i²) * sum_t(env_j²))
-        sum_sq = torch.sum(env ** 2, dim=3)
-        den = torch.sqrt(torch.einsum('efi,efj->efij', sum_sq, sum_sq))
+        sum_sq = torch.sum(env**2, dim=3)
+        den = torch.sqrt(torch.einsum("efi,efj->efij", sum_sq, sum_sq))
 
         con = num / den
         return con.cpu().numpy()
@@ -140,6 +148,7 @@ class EnvCorr(BaseMetric):
 
 # Numba JIT kernel (module-level for caching)
 if NUMBA_AVAILABLE:
+
     @njit(parallel=True, cache=True)
     def _envcorr_numba_kernel(env):
         """
