@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-03
+
 ### Fixed
 - Metal backend: a single command queue is now cached per device instead of one being created on every call. Long loops (for example surrogate tests) used to exhaust the device's command queues and crash with `'NoneType' object has no attribute 'commandBuffer'` after about 7,800 calls (#279)
 
