@@ -1798,3 +1798,125 @@ class TestBackendCapability:
         n_samp = complex_signal.shape[3]
         with pytest.raises(NotImplementedError, match="_compute_numpy"):
             EmptyMetric().compute(complex_signal, n_samp, (0, 1, 3, 2))
+
+
+# ---------------------------------------------------------------------------
+# Robustness of the optional-dependency probes and of the metric registry
+# ---------------------------------------------------------------------------
+
+
+def _import_hypyp_with_fake_package(tmp_path, module, flag, init_source):
+    """Import hypyp in a fresh interpreter where `module` resolves to a fake
+    package whose `__init__` is `init_source`. Returns the availability flag
+    and the messages of the warnings that name the module."""
+    import json
+    import os
+    import subprocess
+    import sys
+
+    package = tmp_path / module
+    package.mkdir()
+    (package / "__init__.py").write_text(init_source)
+    code = (
+        "import json, warnings\n"
+        "with warnings.catch_warnings(record=True) as caught:\n"
+        "    warnings.simplefilter('always')\n"
+        "    import hypyp.analyses\n"
+        "    from hypyp.sync import base, kernels\n"
+        f"messages = [str(w.message) for w in caught if '{module}' in str(w.message)]\n"
+        f"print('RESULT', json.dumps([bool({flag}), messages]))\n"
+    )
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(
+        [str(tmp_path)] + [p for p in [env.get("PYTHONPATH")] if p]
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, env=env
+    )
+    assert result.returncode == 0, result.stderr[-2000:]
+    line = [l for l in result.stdout.splitlines() if l.startswith("RESULT ")][-1]
+    return json.loads(line[len("RESULT ") :])
+
+
+OPTIONAL_PACKAGES = [
+    ("torch", "base.TORCH_AVAILABLE"),
+    ("numba", "base.NUMBA_AVAILABLE"),
+    ("cupy", "kernels.CUPY_AVAILABLE"),
+    ("Metal", "kernels.METAL_AVAILABLE"),
+]
+
+
+@pytest.mark.parametrize("module, flag", OPTIONAL_PACKAGES)
+@pytest.mark.parametrize(
+    "error",
+    [
+        'OSError("simulated broken install: missing shared library")',
+        'ImportError("simulated broken install: cannot load a symbol")',
+        'ModuleNotFoundError("simulated broken install", name="a_dependency")',
+        'RuntimeError("simulated broken install: version mismatch")',
+    ],
+)
+def test_broken_optional_dependency_does_not_break_import(
+    tmp_path, module, flag, error
+):
+    """An optional package that is installed but fails to load must leave
+    hypyp importable, with the backend reported as unavailable and a warning
+    that names the package and gives the original error."""
+    available, messages = _import_hypyp_with_fake_package(
+        tmp_path, module, flag, f"raise {error}\n"
+    )
+    assert available is False
+    assert len(messages) == 1
+    assert "simulated broken install" in messages[0]
+
+
+@pytest.mark.parametrize("module, flag", OPTIONAL_PACKAGES)
+def test_absent_optional_dependency_stays_silent(tmp_path, module, flag):
+    """A package that is simply not installed disables its backend without
+    any warning, as before."""
+    available, messages = _import_hypyp_with_fake_package(
+        tmp_path,
+        module,
+        flag,
+        f'raise ModuleNotFoundError("No module named {module!r}", name="{module}")\n',
+    )
+    assert available is False
+    assert messages == []
+
+
+@pytest.mark.parametrize(
+    "alias, mode",
+    [("envelope_corr", "envcorr"), ("pow_corr", "powcorr"), ("imaginary_coh", "imcoh")],
+)
+def test_get_metric_accepts_the_aliases_of_compute_sync(alias, mode):
+    assert type(get_metric(alias)) is METRICS[mode]
+    assert type(get_metric(alias.upper())) is METRICS[mode]
+
+
+def test_get_metric_registered_name_wins_over_alias():
+    """A metric that a user registered under the name of an alias is still
+    the one returned."""
+
+    class Custom(METRICS["plv"]):
+        pass
+
+    with patch.dict(METRICS, {"pow_corr": Custom}):
+        assert type(get_metric("pow_corr")) is Custom
+    assert type(get_metric("pow_corr")) is METRICS["powcorr"]
+
+
+def test_get_metric_unknown_mode_still_raises():
+    with pytest.raises(ValueError, match="Unknown metric mode 'nope'"):
+        get_metric("nope")
+
+
+@pytest.mark.parametrize("backend", ["numba", "torch"])
+def test_missing_backend_hint_names_the_pip_extra(backend):
+    flag = f"hypyp.sync.base.{backend.upper()}_AVAILABLE"
+    with patch(flag, False):
+        with pytest.warns(UserWarning) as record:
+            metric = get_metric("plv", optimization=backend)
+    assert metric._backend == "numpy"
+    messages = " ".join(str(w.message) for w in record)
+    assert f'pip install "hypyp[{backend}]"' in messages
+    assert "poetry" not in messages

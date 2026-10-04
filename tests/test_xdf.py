@@ -316,3 +316,17 @@ def test_montage():
         ]
     )
     xdf.set_montage("standard_1020")
+
+
+def test_match_unknown_stream_id_raises_value_error():
+    with pytest.raises(ValueError, match="No stream matching keyword '99'"):
+        XDFImport(file_path, select_matches=[99])
+
+
+def test_match_stream_by_numpy_integer_id():
+    import numpy as np
+
+    expected = XDFImport(file_path, select_matches=[STREAM_ID_EEG_1])
+    for stream_id in (np.int64(STREAM_ID_EEG_1), np.int32(STREAM_ID_EEG_1)):
+        xdf = XDFImport(file_path, select_matches=[stream_id])
+        assert xdf.selected_stream_indices == expected.selected_stream_indices

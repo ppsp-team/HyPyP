@@ -191,11 +191,18 @@ class Study:
     # TODO add as argument the number of shuffle dyads
     def compute_wtcs_shuffle(self, *args, **kwargs):
         """
-        Wraps the `compute_wtcs` of all the dyads_shuffle. Arguments are directly passed to the dyads_shuffle method
+        Wraps the `compute_wtcs` of all the dyads_shuffle. Arguments are directly passed to the dyads_shuffle method,
+        which is always called with `with_intra=False`. Passing `with_intra=False` here is accepted and changes nothing.
 
         Returns:
             self: the Study object itself. Useful for chaining operations
         """
+        # with_intra=False is passed below; drop a redundant one from the caller,
+        # so that the keyword arguments of compute_wtcs can be reused as they are
+        if kwargs.get("with_intra") is False:
+            kwargs = {
+                key: value for key, value in kwargs.items() if key != "with_intra"
+            }
         self.dyads_shuffled = self.get_dyads_shuffle()
         for dyad_shuffle in self.dyads_shuffled:
             dyad_shuffle.compute_wtcs(*args, **kwargs, with_intra=False)

@@ -203,9 +203,13 @@ class XDFImport:
         for keyword_match in keyword_matches:
             # match stream_id
             found_idx = None
-            if type(keyword_match) == int:
-                stream_id = keyword_match
-                found_idx = self.map_id_to_idx[stream_id]
+            # a numpy integer is a stream id too; a bool is not
+            if isinstance(keyword_match, (int, np.integer)) and not isinstance(
+                keyword_match, bool
+            ):
+                stream_id = int(keyword_match)
+                # None for an unknown id, reported below like an unknown name
+                found_idx = self.map_id_to_idx.get(stream_id)
 
             # match stream name
             else:

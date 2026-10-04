@@ -172,7 +172,9 @@ class Recording:
 
     def _fill_subject_label(self):
         if self.subject_label == "":
-            self.subject_label = self.mne_raw.info["subject_info"]["his_id"]
+            # subject_info is None for a Raw built in memory, and his_id is optional
+            subject_info = self.mne_raw.info["subject_info"] or {}
+            self.subject_label = subject_info.get("his_id") or ""
 
         if self.subject_label == "":
             self.subject_label = generate_random_label(10)
