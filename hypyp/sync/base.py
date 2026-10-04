@@ -286,6 +286,10 @@ class BaseMetric(ABC):
     ``_compute_torch``, ``_compute_metal`` and ``_compute_cuda``. Backend
     selection, capability checks and dispatch are then handled here.
 
+    A subclass of an existing metric that adds a ``_compute_*`` method for a
+    backend its parent does not implement must set ``_dispatch_via_table =
+    True`` itself for that method to be used.
+
     A subclass that overrides ``compute`` and does not set the flag itself
     follows the earlier contract, whether it derives from this class or from a
     built-in metric: it is granted whatever backend is requested and
@@ -400,12 +404,37 @@ class BaseMetric(ABC):
 
         The default ``_compute_numpy`` of this class only raises, and a
         non-callable attribute is a placeholder: neither is an implementation.
+
+        A backend also counts only if the class that adopted the table
+        dispatch (the one that sets ``_dispatch_via_table``) already had a
+        method for it. Before the table, the ``compute`` of each built-in
+        metric called a fixed set of ``_compute_*`` methods: a descendant
+        could override one of them, but a method it added for another backend
+        was never called. The 0.6 series changes no computed value, so such a
+        method stays unused until the descendant sets the flag itself.
         """
+
+        def is_implementation(candidate) -> bool:
+            return callable(candidate) and (
+                candidate is not BaseMetric.__dict__["_compute_numpy"]
+            )
+
         method = cls._BACKEND_METHODS.get(backend)
-        implementation = getattr(cls, method, None) if method else None
-        return callable(implementation) and (
-            implementation is not BaseMetric._compute_numpy
-        )
+        if not method or not is_implementation(getattr(cls, method, None)):
+            return False
+        owner, _ = cls._dispatch_owner()
+        if owner is None:
+            return True
+        # The flag may sit on a mixin: the class that adopted the dispatch is
+        # then the metric class that brought the mixin in.
+        adopters = [
+            k for k in cls.__mro__ if issubclass(k, BaseMetric) and owner in k.__mro__
+        ]
+        mro = cls.__mro__
+        for klass in mro[mro.index(adopters[-1]) :]:
+            if method in klass.__dict__:
+                return is_implementation(klass.__dict__[method])
+        return False
 
     @classmethod
     def _dispatch_owner(cls) -> tuple:
@@ -521,8 +550,10 @@ class BaseMetric(ABC):
         -----
         Fallback cascade for ``'auto'`` (per-metric, per-platform):
             Iterates ``AUTO_PRIORITY[metric][platform]`` and returns the
-            first available backend. Falls back to numba → numpy if no
-            GPU backend is available.
+            first available backend the metric implements. An available
+            backend the metric does not implement ends the search in numpy
+            with a warning. Falls back to numba → numpy if no GPU backend
+            is available.
 
         Fallback cascade for explicit backends when unavailable:
             requested backend → numpy (with UserWarning)
@@ -669,7 +700,9 @@ class BaseMetric(ABC):
                 # series does not change computed values, so the selection
                 # still ends in numpy, now with a warning. Moving on to the
                 # next backend of the list instead is left to 0.7.0.
-                if label and available.get(backend):
+                # (A metric without a numpy implementation could not exist
+                # in those versions, so for it the search simply goes on.)
+                if label and available.get(backend) and cls._implements("numpy"):
                     warnings.warn(
                         f"{cls.name!r} has no {label} implementation: computing "
                         f"with numpy, as earlier versions did silently. The "
@@ -801,9 +834,10 @@ class BaseMetric(ABC):
         returned ``None``; it still does for such a subclass. A subclass of a
         built-in metric that overrides ``compute`` and delegates to
         ``super().compute(...)`` gets the table dispatch, which looks the
-        method up on the instance: a ``_compute_*`` method added by the
-        descendant is used, and the warning or errors above apply to a backend
-        that neither it nor its parent implements.
+        method up on the instance, so a ``_compute_*`` method it overrides is
+        used. A method it adds for a backend its parent does not implement is
+        used only if the subclass sets ``_dispatch_via_table`` itself;
+        otherwise the warning or errors above apply to that backend.
         """
         if not self._dispatches_via_table():
             # Reached through super().compute() from a subclass that does its

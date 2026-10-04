@@ -1619,6 +1619,54 @@ class TestBackendCapability:
         assert requested._backend == "numba"
         assert requested.compute(complex_signal, n_samp, axes) == "own numba"
 
+    @pytest.mark.parametrize("delegates", [False, True])
+    def test_backend_method_added_by_a_subclass_needs_the_flag(
+        self, complex_signal, delegates
+    ):
+        """
+        Before the table dispatch, a ``_compute_metal`` added to a subclass of
+        PLV was never called: the request computed in numpy. That result is
+        kept, with a warning, whether the subclass inherits ``compute`` or
+        overrides it only to delegate. The added method is used once the
+        subclass sets ``_dispatch_via_table`` itself.
+        """
+        from hypyp.sync.plv import PLV
+
+        class AddsMetal(PLV):
+            def _compute_metal(self, complex_signal, n_samp, transpose_axes):
+                return "added Metal"
+
+            def _compute_numpy(self, complex_signal, n_samp, transpose_axes):
+                # An overridden method of the parent is still honoured.
+                return 2 * super()._compute_numpy(
+                    complex_signal, n_samp, transpose_axes
+                )
+
+        if delegates:
+
+            class AddsMetal(AddsMetal):  # noqa: F811
+                def compute(self, complex_signal, n_samp, transpose_axes):
+                    return super().compute(complex_signal, n_samp, transpose_axes)
+
+        class Migrated(AddsMetal):
+            _dispatch_via_table = True
+
+        n_samp = complex_signal.shape[3]
+        axes = (0, 1, 3, 2)
+        expected = 2 * PLV()._compute_numpy(complex_signal, n_samp, axes)
+        with patch("hypyp.sync.base.METAL_AVAILABLE", True):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                metric = AddsMetal(optimization="metal")
+                result = metric.compute(complex_signal, n_samp, axes)
+            migrated = Migrated(optimization="metal")
+        assert any("no Metal implementation" in str(w.message) for w in caught)
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(result, expected)
+        assert Migrated.supports("metal") is True
+        assert migrated._backend == "metal"
+        assert migrated.compute(complex_signal, n_samp, axes) == "added Metal"
+
     def test_dispatch_flag_set_by_a_mixin_listed_after_the_base(self):
         """
         A mixin that carries the flag can come after ``BaseMetric`` in the
