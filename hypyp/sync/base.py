@@ -433,7 +433,9 @@ class BaseMetric(ABC):
         mro = cls.__mro__
         for klass in mro[mro.index(adopters[-1]) :]:
             if method in klass.__dict__:
-                return is_implementation(klass.__dict__[method])
+                # getattr, not __dict__: a classmethod or staticmethod is
+                # callable only once its descriptor is resolved.
+                return is_implementation(getattr(klass, method))
         return False
 
     @classmethod
@@ -552,7 +554,8 @@ class BaseMetric(ABC):
             Iterates ``AUTO_PRIORITY[metric][platform]`` and returns the
             first available backend the metric implements. An available
             backend the metric does not implement ends the search in numpy
-            with a warning. Falls back to numba → numpy if no GPU backend
+            with a warning, unless the metric has no numpy implementation,
+            in which case the search goes on. Falls back to numba → numpy if no GPU backend
             is available.
 
         Fallback cascade for explicit backends when unavailable:
@@ -646,7 +649,8 @@ class BaseMetric(ABC):
         Narval A100 benchmarks. Iterates the priority list and returns
         the first available backend the metric implements. An available
         backend the metric does not implement ends the search in numpy with
-        a warning (see the comment in the loop).
+        a warning, unless the metric has no numpy implementation (see the
+        comment in the loop).
 
         Parameters
         ----------
@@ -875,7 +879,7 @@ class BaseMetric(ABC):
         self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
     ) -> np.ndarray:
         """
-        Reference implementation, in numpy. Always available.
+        Reference implementation, in numpy.
 
         Every metric should provide this: it is the correctness oracle the
         accelerated backends are validated against, and the fallback target

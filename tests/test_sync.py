@@ -1730,6 +1730,22 @@ class TestBackendCapability:
         with pytest.warns(UserWarning, match="no numba implementation"):
             assert metric.compute(None, 0, None) == "numpy result"
 
+    def test_classmethod_implementation_is_recognised(self):
+        """A ``_compute_*`` method declared as a classmethod is an
+        implementation like any other."""
+        from hypyp.sync.base import BaseMetric
+
+        class ClassLevel(BaseMetric):
+            name = "class_level"
+            _dispatch_via_table = True
+
+            @classmethod
+            def _compute_numpy(cls, complex_signal, n_samp, transpose_axes):
+                return "numpy result"
+
+        assert ClassLevel.supports("numpy") is True
+        assert ClassLevel().compute(None, 0, None) == "numpy result"
+
     def test_supports_ignores_placeholders(self):
         """supports() must not count a non-callable attribute, nor the default
         ``_compute_numpy`` of the base class, as an implementation."""
