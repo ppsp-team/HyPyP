@@ -343,6 +343,11 @@ class BaseMetric(ABC):
         sign-based metrics and ACCorr, because torch on MPS is faster for the
         einsum metrics at every channel count (see ``AUTO_PRIORITY``).
 
+        A subclass written against the earlier contract, which overrides
+        ``compute`` and branches on ``self._backend`` itself without defining
+        ``_compute_numpy``, cannot be inspected this way. It is trusted with
+        every known backend, exactly as before the capability check existed.
+
         Parameters
         ----------
         backend : str
@@ -361,7 +366,34 @@ class BaseMetric(ABC):
         (True, False)
         """
         method = cls._BACKEND_METHODS.get(backend)
-        return method is not None and hasattr(cls, method)
+        if method is None:
+            return False
+        if not cls._uses_table_dispatch():
+            return cls._dispatches_itself()
+        return callable(getattr(cls, method, None))
+
+    @classmethod
+    def _uses_table_dispatch(cls) -> bool:
+        """Whether the class follows the ``_compute_*`` contract.
+
+        The marker is its own ``_compute_numpy``: the reference implementation
+        is the one method every metric of the current contract provides.
+        """
+        return cls._compute_numpy is not BaseMetric._compute_numpy
+
+    @classmethod
+    def _dispatches_itself(cls) -> bool:
+        """Whether the class follows the earlier contract: its own ``compute``
+        and no ``_compute_numpy``."""
+        return not cls._uses_table_dispatch() and cls.compute is not BaseMetric.compute
+
+    @classmethod
+    def _cpu_fallback(cls) -> tuple:
+        """CPU backend used when no GPU backend can be selected: numba when it
+        is installed and the metric implements it, numpy otherwise."""
+        if NUMBA_AVAILABLE and cls.supports("numba"):
+            return "numba", "cpu"
+        return "numpy", "cpu"
 
     @classmethod
     def _resolve_optimization(
@@ -532,9 +564,7 @@ class BaseMetric(ABC):
                 UserWarning,
                 stacklevel=4,
             )
-            if NUMBA_AVAILABLE:
-                return "numba", "cpu"
-            return "numpy", "cpu"
+            return cls._cpu_fallback()
 
         if priority is None:
             priority = AUTO_PRIORITY.get(cls.name, {}).get(platform, [])
@@ -563,7 +593,7 @@ class BaseMetric(ABC):
         if unimplemented:
             reason = (
                 f"{cls.name!r} has no {' or '.join(unimplemented)} "
-                f"implementation, and no other backend of the priority list "
+                f"implementation, and no GPU backend of the priority list "
                 f"is available on platform '{platform}'."
             )
         else:
@@ -575,9 +605,7 @@ class BaseMetric(ABC):
             UserWarning,
             stacklevel=4,
         )
-        if NUMBA_AVAILABLE:
-            return "numba", "cpu"
-        return "numpy", "cpu"
+        return cls._cpu_fallback()
 
     @staticmethod
     def _resolve_torch() -> tuple:
@@ -639,6 +667,9 @@ class BaseMetric(ABC):
 
         Raises
         ------
+        NotImplementedError
+            If the metric provides neither ``_compute_numpy`` nor its own
+            ``compute``.
         ValueError
             If ``self._backend`` is not a backend this metric implements. The
             message names the metric and the backends it does implement. This
@@ -649,9 +680,21 @@ class BaseMetric(ABC):
 
         Notes
         -----
-        Output dtype follows the backend: numpy, numba and CUDA return
-        ``float64``; the Metal kernels return ``float32``.
+        Output precision follows the backend and the input: the Metal kernels
+        and torch on MPS compute in ``float32`` whatever the input, while the
+        other backends follow the precision of ``complex_signal``.
+
+        A subclass of the earlier contract may call ``super().compute(...)``
+        from its own ``compute``. The base method was then abstract with an
+        empty body and returned ``None``; it still does for such a subclass.
         """
+        if not self._uses_table_dispatch():
+            if self._dispatches_itself():
+                return None
+            raise NotImplementedError(
+                f"{type(self).__name__} must implement _compute_numpy "
+                f"(or override compute)."
+            )
         if not self.supports(self._backend):
             implemented = [b for b in self._BACKEND_METHODS if self.supports(b)]
             raise ValueError(
