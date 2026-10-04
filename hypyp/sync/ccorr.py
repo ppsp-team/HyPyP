@@ -28,53 +28,56 @@ if NUMBA_AVAILABLE:
 class CCorr(BaseMetric):
     """
     Circular Correlation connectivity metric.
-    
+
     CCorr measures the circular correlation coefficient between the phases
     of two signals, using the circular mean for phase centering.
-    
+
     References
     ----------
     Fisher, N. I. (1995). Statistical analysis of circular data. Cambridge University Press.
     """
-    
+
     name = "ccorr"
-    
-    def compute(self, complex_signal: np.ndarray, n_samp: int,
-                transpose_axes: tuple) -> np.ndarray:
+
+    def compute(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Compute Circular Correlation.
-        
+
         Parameters
         ----------
         complex_signal : np.ndarray
             Complex analytic signals with shape (n_epochs, n_freq, 2*n_channels, n_times).
-            
+
         n_samp : int
             Number of time samples.
-            
+
         transpose_axes : tuple
             Axes to transpose for matrix multiplication.
-        
+
         Returns
         -------
         con : np.ndarray
             CCorr connectivity matrix with shape (n_epoch, n_freq, 2*n_ch, 2*n_ch).
         """
-        if self._backend == 'cuda_kernel':
+        if self._backend == "cuda_kernel":
             return self._compute_cuda(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'torch':
+        elif self._backend == "torch":
             return self._compute_torch(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'numba':
+        elif self._backend == "numba":
             return self._compute_numba(complex_signal, n_samp, transpose_axes)
         return self._compute_numpy(complex_signal, n_samp, transpose_axes)
 
     def _compute_cuda(self, complex_signal, n_samp, transpose_axes):
         """CUDA kernel for CCorr."""
         from .kernels.cuda_phase import ccorr_cuda
+
         return ccorr_cuda(complex_signal)
-    
-    def _compute_numpy(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+
+    def _compute_numpy(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         NumPy implementation of CCorr.
 
@@ -95,14 +98,20 @@ class CCorr(BaseMetric):
         ).reshape(n_epoch, n_freq, n_ch_total, 1)
         angle = np.sin(angle - mu_angle)
 
-        formula = 'nilm,nimk->nilk'
-        con = np.abs(np.einsum(formula, angle, angle.transpose(transpose_axes)) /
-                     np.sqrt(np.einsum('nil,nik->nilk', np.sum(angle ** 2, axis=3),
-                                       np.sum(angle ** 2, axis=3))))
+        formula = "nilm,nimk->nilk"
+        con = np.abs(
+            np.einsum(formula, angle, angle.transpose(transpose_axes))
+            / np.sqrt(
+                np.einsum(
+                    "nil,nik->nilk", np.sum(angle**2, axis=3), np.sum(angle**2, axis=3)
+                )
+            )
+        )
         return con
 
-    def _compute_numba(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numba(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Numba JIT implementation of CCorr using angle-free reformulation.
 
@@ -115,8 +124,9 @@ class CCorr(BaseMetric):
         s = np.imag(phase)
         return _ccorr_numba_kernel(c, s)
 
-    def _compute_torch(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_torch(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         PyTorch implementation of CCorr using angle-free reformulation.
 
@@ -132,7 +142,7 @@ class CCorr(BaseMetric):
         after the initial phase normalization, improving MPS float32 precision.
         """
         device = self._device
-        complex_type = torch.complex64 if device == 'mps' else torch.complex128
+        complex_type = torch.complex64 if device == "mps" else torch.complex128
 
         sig = torch.from_numpy(complex_signal).to(device=device, dtype=complex_type)
 
@@ -149,16 +159,17 @@ class CCorr(BaseMetric):
         d = s * C_bar - c * S_bar  # (E, F, C, T)
 
         # Correlation via einsum
-        formula = 'efit,efjt->efij'
+        formula = "efit,efjt->efij"
         num = torch.einsum(formula, d, d)
-        sum_sq = torch.sum(d ** 2, dim=3)
-        den = torch.sqrt(torch.einsum('efi,efj->efij', sum_sq, sum_sq))
+        sum_sq = torch.sum(d**2, dim=3)
+        den = torch.sqrt(torch.einsum("efi,efj->efij", sum_sq, sum_sq))
 
         con = torch.abs(num / den)
         return con.cpu().numpy()
 
-    def _compute_torch_cpu_circmean(self, complex_signal: np.ndarray, n_samp: int,
-                                     transpose_axes: tuple) -> np.ndarray:
+    def _compute_torch_cpu_circmean(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Hybrid approach: circular mean in float64 on CPU, correlation on GPU.
 
@@ -167,24 +178,25 @@ class CCorr(BaseMetric):
         Kept for comparison with the angle-free reformulation.
         """
         device = self._device
-        float_type = torch.float32 if device == 'mps' else torch.float64
+        float_type = torch.float32 if device == "mps" else torch.float64
 
         # Step 1: Circular mean in float64 on CPU (precision-critical)
         angle = np.angle(complex_signal)
         mu_angle = np.arctan2(
             np.mean(np.sin(angle), axis=3),
             np.mean(np.cos(angle), axis=3),
-        ).reshape(complex_signal.shape[0], complex_signal.shape[1],
-                  complex_signal.shape[2], 1)
+        ).reshape(
+            complex_signal.shape[0], complex_signal.shape[1], complex_signal.shape[2], 1
+        )
         centered = np.sin(angle - mu_angle)  # float64, precise
 
         # Step 2: Transfer centered signal to GPU for einsum
         d = torch.from_numpy(centered).to(device=device, dtype=float_type)
 
-        formula = 'efit,efjt->efij'
+        formula = "efit,efjt->efij"
         num = torch.einsum(formula, d, d)
-        sum_sq = torch.sum(d ** 2, dim=3)
-        den = torch.sqrt(torch.einsum('efi,efj->efij', sum_sq, sum_sq))
+        sum_sq = torch.sum(d**2, dim=3)
+        den = torch.sqrt(torch.einsum("efi,efj->efij", sum_sq, sum_sq))
 
         con = torch.abs(num / den)
         return con.cpu().numpy()
@@ -192,6 +204,7 @@ class CCorr(BaseMetric):
 
 # Numba JIT kernel (module-level for caching)
 if NUMBA_AVAILABLE:
+
     @njit(parallel=True, cache=True)
     def _ccorr_numba_kernel(c, s):
         """

@@ -38,8 +38,12 @@ import numpy as np
 from tqdm import tqdm
 
 from .base import (
-    BaseMetric, multiply_conjugate, multiply_product,
-    TORCH_AVAILABLE, MPS_AVAILABLE, NUMBA_AVAILABLE,
+    BaseMetric,
+    multiply_conjugate,
+    multiply_product,
+    TORCH_AVAILABLE,
+    MPS_AVAILABLE,
+    NUMBA_AVAILABLE,
 )
 
 # Conditional imports for optional backends
@@ -76,14 +80,18 @@ class ACCorr(BaseMetric):
 
     name = "accorr"
 
-    def __init__(self, optimization: Optional[str] = None,
-                 priority: Optional[list] = None,
-                 show_progress: bool = True):
+    def __init__(
+        self,
+        optimization: Optional[str] = None,
+        priority: Optional[list] = None,
+        show_progress: bool = True,
+    ):
         super().__init__(optimization, priority)
         self.show_progress = show_progress
 
-    def compute(self, complex_signal: np.ndarray, n_samp: int,
-                transpose_axes: tuple) -> np.ndarray:
+    def compute(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Compute Adjusted Circular Correlation.
 
@@ -101,31 +109,36 @@ class ACCorr(BaseMetric):
         con : np.ndarray
             ACCorr connectivity matrix with shape (n_epoch, n_freq, 2*n_ch, 2*n_ch).
         """
-        if self._backend == 'metal':
+        if self._backend == "metal":
             return self._compute_metal(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'cuda_kernel':
+        elif self._backend == "cuda_kernel":
             return self._compute_cuda(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'numba':
+        elif self._backend == "numba":
             return self._compute_numba(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'torch':
+        elif self._backend == "torch":
             return self._compute_torch(complex_signal, n_samp, transpose_axes)
         else:
             return self._compute_numpy(complex_signal, n_samp, transpose_axes)
 
-    def _compute_metal(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_metal(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """Metal compute shader for ACCorr on Apple Silicon GPU."""
         from .kernels.metal_accorr import accorr_metal
+
         return accorr_metal(complex_signal)
 
-    def _compute_cuda(self, complex_signal: np.ndarray, n_samp: int,
-                      transpose_axes: tuple) -> np.ndarray:
+    def _compute_cuda(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """CUDA kernel for ACCorr on NVIDIA GPU."""
         from .kernels.cuda_accorr import accorr_cuda
+
         return accorr_cuda(complex_signal)
 
-    def _compute_numpy(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numpy(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         NumPy implementation of ACCorr with precompute optimization.
 
@@ -157,8 +170,12 @@ class ACCorr(BaseMetric):
         den = np.zeros((n_epochs, n_freq, n_ch_total, n_ch_total))
 
         total_pairs = (n_ch_total * (n_ch_total + 1)) // 2
-        pbar = tqdm(total=total_pairs, desc="    accorr (denominator)",
-                    disable=not self.show_progress, leave=False)
+        pbar = tqdm(
+            total=total_pairs,
+            desc="    accorr (denominator)",
+            disable=not self.show_progress,
+            leave=False,
+        )
 
         for i in range(n_ch_total):
             for j in range(i, n_ch_total):
@@ -171,7 +188,9 @@ class ACCorr(BaseMetric):
                 x_sin = np.sin(alpha1 - m_adj)
                 y_sin = np.sin(alpha2 - n_adj)
 
-                den_ij = 2 * np.sqrt(np.sum(x_sin**2, axis=2) * np.sum(y_sin**2, axis=2))
+                den_ij = 2 * np.sqrt(
+                    np.sum(x_sin**2, axis=2) * np.sum(y_sin**2, axis=2)
+                )
                 den[:, :, i, j] = den_ij
                 den[:, :, j, i] = den_ij
 
@@ -184,8 +203,9 @@ class ACCorr(BaseMetric):
 
         return con
 
-    def _compute_numba(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numba(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Numba-optimized implementation of ACCorr with precompute.
 
@@ -214,8 +234,9 @@ class ACCorr(BaseMetric):
 
         # Denominator via numba JIT
         angle = np.angle(complex_signal)
-        den = _accorr_den_numba(n_epochs, n_freq, n_ch_total, angle,
-                                m_adj_all, n_adj_all)
+        den = _accorr_den_numba(
+            n_epochs, n_freq, n_ch_total, angle, m_adj_all, n_adj_all
+        )
 
         den = np.where(den == 0, 1, den)
         con = num / den
@@ -241,8 +262,9 @@ class ACCorr(BaseMetric):
     value is empirical; re-derive if you change the upstream tensor layout.
     """
 
-    def _compute_torch(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_torch(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         PyTorch implementation of ACCorr with precompute optimization.
 
@@ -255,7 +277,7 @@ class ACCorr(BaseMetric):
         """
         device = self._device
 
-        if device == 'mps':
+        if device == "mps":
             float_type = torch.float32
             complex_type = torch.complex64
             bytes_per_elem = 4
@@ -264,7 +286,9 @@ class ACCorr(BaseMetric):
             complex_type = torch.complex128
             bytes_per_elem = 8
 
-        complex_tensor = torch.from_numpy(complex_signal).to(device=device, dtype=complex_type)
+        complex_tensor = torch.from_numpy(complex_signal).to(
+            device=device, dtype=complex_type
+        )
         n_epochs, n_freq, n_ch_total, n_times = complex_tensor.shape
 
         # Numerator (vectorized with torch einsum)
@@ -272,7 +296,7 @@ class ACCorr(BaseMetric):
         c, s = z.real, z.imag
 
         # Factorized: 4 einsum shared between cross_conj and cross_prod
-        formula = 'efit,efjt->efij'
+        formula = "efit,efjt->efij"
         cc = torch.einsum(formula, c, c)
         ss = torch.einsum(formula, s, s)
         cs = torch.einsum(formula, c, s)
@@ -293,14 +317,24 @@ class ACCorr(BaseMetric):
 
         # Denominator — choose vectorized or loop based on memory
         angle = torch.angle(complex_tensor)
-        tensor_5d_bytes = n_epochs * n_freq * n_ch_total * n_ch_total * n_times * bytes_per_elem
+        tensor_5d_bytes = (
+            n_epochs * n_freq * n_ch_total * n_ch_total * n_times * bytes_per_elem
+        )
         use_vectorized = tensor_5d_bytes < self._VRAM_THRESHOLD
 
         if use_vectorized:
             den = self._den_vectorized(angle, m_adj_all, n_adj_all, device, float_type)
         else:
-            den = self._den_loop(angle, m_adj_all, n_adj_all, device, float_type,
-                                 n_epochs, n_freq, n_ch_total)
+            den = self._den_loop(
+                angle,
+                m_adj_all,
+                n_adj_all,
+                device,
+                float_type,
+                n_epochs,
+                n_freq,
+                n_ch_total,
+            )
 
         den = torch.where(den == 0, torch.ones_like(den), den)
         con = num / den
@@ -323,25 +357,39 @@ class ACCorr(BaseMetric):
         x_sin = torch.sin(angle.unsqueeze(3) - m_adj_all.unsqueeze(-1))  # (E,F,C,C,T)
         y_sin = torch.sin(angle.unsqueeze(2) - n_adj_all.unsqueeze(-1))  # (E,F,C,C,T)
 
-        sum_x2 = torch.sum(x_sin ** 2, dim=-1)  # (E, F, C, C)
-        sum_y2 = torch.sum(y_sin ** 2, dim=-1)  # (E, F, C, C)
+        sum_x2 = torch.sum(x_sin**2, dim=-1)  # (E, F, C, C)
+        sum_y2 = torch.sum(y_sin**2, dim=-1)  # (E, F, C, C)
 
         return 2.0 * torch.sqrt(sum_x2 * sum_y2)
 
-    def _den_loop(self, angle, m_adj_all, n_adj_all, device, float_type,
-                  n_epochs, n_freq, n_ch_total):
+    def _den_loop(
+        self,
+        angle,
+        m_adj_all,
+        n_adj_all,
+        device,
+        float_type,
+        n_epochs,
+        n_freq,
+        n_ch_total,
+    ):
         """
         Loop-based denominator (fallback for large data).
 
         Iterates over channel pairs when the vectorized 5D tensor
         would exceed the VRAM threshold.
         """
-        den = torch.zeros((n_epochs, n_freq, n_ch_total, n_ch_total),
-                          device=device, dtype=float_type)
+        den = torch.zeros(
+            (n_epochs, n_freq, n_ch_total, n_ch_total), device=device, dtype=float_type
+        )
 
         total_pairs = (n_ch_total * (n_ch_total + 1)) // 2
-        pbar = tqdm(total=total_pairs, desc="    accorr_torch (denominator)",
-                    disable=not self.show_progress, leave=False)
+        pbar = tqdm(
+            total=total_pairs,
+            desc="    accorr_torch (denominator)",
+            disable=not self.show_progress,
+            leave=False,
+        )
 
         for i in range(n_ch_total):
             for j in range(i, n_ch_total):
@@ -354,7 +402,9 @@ class ACCorr(BaseMetric):
                 x_sin = torch.sin(alpha1 - m_adj)
                 y_sin = torch.sin(alpha2 - n_adj)
 
-                den_ij = 2 * torch.sqrt(torch.sum(x_sin**2, dim=2) * torch.sum(y_sin**2, dim=2))
+                den_ij = 2 * torch.sqrt(
+                    torch.sum(x_sin**2, dim=2) * torch.sum(y_sin**2, dim=2)
+                )
                 den[:, :, i, j] = den_ij
                 den[:, :, j, i] = den_ij
 
@@ -366,6 +416,7 @@ class ACCorr(BaseMetric):
 
 # Numba JIT-compiled helper (defined at module level for caching)
 if NUMBA_AVAILABLE:
+
     @njit(parallel=True, cache=True)
     def _accorr_den_numba(n_epochs, n_freq, n_ch_total, angle, m_adj_all, n_adj_all):
         """

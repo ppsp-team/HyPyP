@@ -81,7 +81,9 @@ kernel void pli_kernel(
 def _compile_pli():
     device = Metal.MTLCreateSystemDefaultDevice()
     options = Metal.MTLCompileOptions.new()
-    library, error = device.newLibraryWithSource_options_error_(_PLI_SHADER, options, None)
+    library, error = device.newLibraryWithSource_options_error_(
+        _PLI_SHADER, options, None
+    )
     if error:
         raise RuntimeError(f"Metal PLI shader failed: {error}")
     fn = library.newFunctionWithName_("pli_kernel")
@@ -151,7 +153,9 @@ kernel void wpli_kernel(
 def _compile_wpli():
     device = Metal.MTLCreateSystemDefaultDevice()
     options = Metal.MTLCompileOptions.new()
-    library, error = device.newLibraryWithSource_options_error_(_WPLI_SHADER, options, None)
+    library, error = device.newLibraryWithSource_options_error_(
+        _WPLI_SHADER, options, None
+    )
     if error:
         raise RuntimeError(f"Metal wPLI shader failed: {error}")
     fn = library.newFunctionWithName_("wpli_kernel")

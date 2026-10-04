@@ -2,6 +2,7 @@ from typing import Tuple
 
 import numpy as np
 
+
 class PairSignals:
     x: np.ndarray
     y1: np.ndarray
@@ -27,24 +28,25 @@ class PairSignals:
     label_roi1: str
     label_roi2: str
 
-    def __init__(self,
-                 x,
-                 y1,
-                 y2,
-                 label_ch1='',
-                 label_ch2='',
-                 label_roi1='',
-                 label_roi2='',
-                 label_s1='',
-                 label_s2='',
-                 label_dyad='',
-                 label_task='',
-                 epoch_idx=0,
-                 section_idx=0,
-                 is_intra:bool=False,
-                 is_intra_of:int=0,
-                 is_pseudo:bool=False,
-        ):
+    def __init__(
+        self,
+        x,
+        y1,
+        y2,
+        label_ch1="",
+        label_ch2="",
+        label_roi1="",
+        label_roi2="",
+        label_s1="",
+        label_s2="",
+        label_dyad="",
+        label_task="",
+        epoch_idx=0,
+        section_idx=0,
+        is_intra: bool = False,
+        is_intra_of: int = 0,
+        is_pseudo: bool = False,
+    ):
         """
         A pair of signal that are already aligned and can be compared
 
@@ -90,24 +92,24 @@ class PairSignals:
         self.label_s2 = label_s2
         self.label_roi1 = label_roi1
         self.label_roi2 = label_roi2
-    
+
     @property
     def label(self):
-        ret = f'{self.label_ch1} - {self.label_ch2}'
+        ret = f"{self.label_ch1} - {self.label_ch2}"
 
         prefix = self.label_task
         if self.epoch_idx > 0:
-            prefix = f'{prefix}[{self.epoch_idx}]'
+            prefix = f"{prefix}[{self.epoch_idx}]"
 
         if self.section_idx > 0:
-            prefix = f'{prefix}(section:{self.section_idx})'
+            prefix = f"{prefix}(section:{self.section_idx})"
 
-        if prefix != '':
-            ret = f'{prefix} - {ret}'
-        
+        if prefix != "":
+            ret = f"{prefix} - {ret}"
+
         return ret
 
-    def sub(self, time_range:Tuple[float, float], section_idx:int|None=None):
+    def sub(self, time_range: Tuple[float, float], section_idx: int | None = None):
         """
         Get a new PairSignals from a portion of the initial PairSignals
 
@@ -118,7 +120,7 @@ class PairSignals:
         Returns:
             PairSignals: a new PairSignals
         """
-        if time_range[0] == 0 and time_range[1] == self.n/self.sfreq:
+        if time_range[0] == 0 and time_range[1] == self.n / self.sfreq:
             return self
 
         signal_from = int(self.sfreq * time_range[0])
@@ -126,7 +128,7 @@ class PairSignals:
 
         if section_idx is None:
             section_idx = self.section_idx
-        
+
         return PairSignals(
             self.x[signal_from:signal_to],
             self.y1[signal_from:signal_to],
@@ -145,8 +147,6 @@ class PairSignals:
             epoch_idx=self.epoch_idx,
             section_idx=section_idx,
         )
-    
-    def __repr__(self):
-        return f'Pair({self.label})'
-    
 
+    def __repr__(self):
+        return f"Pair({self.label})"

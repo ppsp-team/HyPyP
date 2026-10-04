@@ -17,6 +17,7 @@ _CACHE_DIR = os.path.join(
     "downloads",
 )
 
+
 class DataBrowser:
     paths: List[str]
 
@@ -28,7 +29,7 @@ class DataBrowser:
         """
         self.paths = []
 
-    def add_source(self, path:str):
+    def add_source(self, path: str):
         """
         Add a folder to look for NIRS files
 
@@ -42,16 +43,16 @@ class DataBrowser:
         return self
 
     @staticmethod
-    def is_path_nirx(path:str) -> bool:
-        return os.path.isfile(path) and path.endswith('.hdr')
+    def is_path_nirx(path: str) -> bool:
+        return os.path.isfile(path) and path.endswith(".hdr")
 
     @staticmethod
-    def is_path_fif(path:str) -> bool:
-        return os.path.isfile(path) and path.endswith('.fif')
+    def is_path_fif(path: str) -> bool:
+        return os.path.isfile(path) and path.endswith(".fif")
 
     @staticmethod
-    def is_path_snirf(path:str) -> bool:
-        return os.path.isfile(path) and path.endswith('.snirf')
+    def is_path_snirf(path: str) -> bool:
+        return os.path.isfile(path) and path.endswith(".snirf")
 
     def list_all_files(self) -> List[str]:
         """
@@ -64,7 +65,7 @@ class DataBrowser:
         for root_path in self.paths:
             if not Path(root_path).exists():
                 continue
-            for path in Path(root_path).rglob('*'):
+            for path in Path(root_path).rglob("*"):
                 if DataBrowser.is_path_fif(str(path)):
                     file_paths.append(str(path.absolute()))
 
@@ -98,13 +99,12 @@ class DataBrowser:
             progressbar=True,
         )
 
-        target_path = os.path.join(extract_path, 'fathers')
+        target_path = os.path.join(extract_path, "fathers")
 
         if not os.path.exists(target_path):
-            with ZipFile(zip_path, 'r') as zip:
-                print(f'Extracting to {extract_path}, (target: {target_path})')
+            with ZipFile(zip_path, "r") as zip:
+                print(f"Extracting to {extract_path}, (target: {target_path})")
                 zip.extractall(path=extract_path)
 
         self.add_source(target_path)
         return target_path
-    

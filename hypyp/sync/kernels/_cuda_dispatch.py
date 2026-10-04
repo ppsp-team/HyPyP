@@ -52,10 +52,12 @@ def run_pairwise_kernel(complex_signal, get_kernel_fn):
 
     c_flat = cp.asarray(
         np.ascontiguousarray(np.real(complex_signal).reshape(n_ef, C, T)),
-        dtype=cp.float64)
+        dtype=cp.float64,
+    )
     s_flat = cp.asarray(
         np.ascontiguousarray(np.imag(complex_signal).reshape(n_ef, C, T)),
-        dtype=cp.float64)
+        dtype=cp.float64,
+    )
 
     # Upper-triangle pair indices
     idx_i, idx_j = [], []
@@ -74,9 +76,9 @@ def run_pairwise_kernel(complex_signal, get_kernel_fn):
     grid_size = (total_threads + block_size - 1) // block_size
 
     kernel(
-        (grid_size,), (block_size,),
-        (s_flat, c_flat, out, pairs_i, pairs_j,
-         n_ef, C, T, n_pairs)
+        (grid_size,),
+        (block_size,),
+        (s_flat, c_flat, out, pairs_i, pairs_j, n_ef, C, T, n_pairs),
     )
 
     result = cp.asnumpy(out).reshape(E, F, C, C)

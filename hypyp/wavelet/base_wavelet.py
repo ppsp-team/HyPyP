@@ -19,7 +19,8 @@ from ..profiling import TimeTracker
 DEFAULT_SMOOTH_WIN_SIZE = 0.6
 
 DEFAULT_PERIOD_RANGE = (2, 20)
-DEFAULT_PERIOD_DJ = 1/12
+DEFAULT_PERIOD_DJ = 1 / 12
+
 
 class BaseWavelet(ABC):
     """
@@ -40,7 +41,7 @@ class BaseWavelet(ABC):
     dj: float
     wtc_smoothing_win_size: float
     period_range: Tuple[float, float]
-    cache: dict|None
+    cache: dict | None
     cache_is_disabled: bool
 
     default_period_range: Tuple[float, float] = DEFAULT_PERIOD_RANGE
@@ -49,14 +50,14 @@ class BaseWavelet(ABC):
 
     def __init__(
         self,
-        period_range:Tuple[float, float]|None=None,
-        frequency_range:Tuple[float, float]|None=None,
-        evaluate:bool=True,
-        cache:dict|None=None,
-        disable_caching:bool=False,
-        verbose:bool=False,
-        dj:float=DEFAULT_PERIOD_DJ,
-        wtc_smoothing_win_size:float=DEFAULT_SMOOTH_WIN_SIZE,
+        period_range: Tuple[float, float] | None = None,
+        frequency_range: Tuple[float, float] | None = None,
+        evaluate: bool = True,
+        cache: dict | None = None,
+        disable_caching: bool = False,
+        verbose: bool = False,
+        dj: float = DEFAULT_PERIOD_DJ,
+        wtc_smoothing_win_size: float = DEFAULT_SMOOTH_WIN_SIZE,
     ):
         self._wavelet = None
         self._psi_x = None
@@ -67,11 +68,11 @@ class BaseWavelet(ABC):
         self.wtc_smoothing_win_size = wtc_smoothing_win_size
 
         if dj > 1:
-            raise RuntimeError(f'dj must be smaller than 1. Received {dj}')
+            raise RuntimeError(f"dj must be smaller than 1. Received {dj}")
         self.dj = dj
 
         if period_range is not None and frequency_range is not None:
-            raise RuntimeError('Cannot specify both period_range and frequency_range')
+            raise RuntimeError("Cannot specify both period_range and frequency_range")
 
         if period_range is not None:
             self.period_range = period_range
@@ -79,11 +80,11 @@ class BaseWavelet(ABC):
             self.period_range = (1 / frequency_range[0], 1 / frequency_range[1])
         else:
             self.period_range = DEFAULT_PERIOD_RANGE
-        
+
         # swap to have them in order
         if self.period_range[0] > self.period_range[1]:
             self.period_range = (self.period_range[1], self.period_range[0])
-        
+
         self.cache = cache
         self.cache_is_disabled = disable_caching
 
@@ -94,39 +95,39 @@ class BaseWavelet(ABC):
 
         if evaluate:
             self.evaluate_psi()
-    
+
     @property
     def psi(self):
         return self._psi
-    
+
     @property
     def psi_x(self):
         return self._psi_x
-    
+
     @property
     def psi_dx(self):
         if self._psi_x is None:
-            raise RuntimeError('Wavelet not evaluated yet')
+            raise RuntimeError("Wavelet not evaluated yet")
         return self._psi_x[1] - self._psi_x[0]
 
     @property
     def domain(self):
         if self._psi_x is None:
-            raise RuntimeError('Wavelet not evaluated yet')
+            raise RuntimeError("Wavelet not evaluated yet")
         return self._psi_x[0], self._psi_x[-1]
 
     @property
     def use_caching(self):
         return not self.cache_is_disabled and self.cache is not None
-    
+
     @abstractmethod
     def evaluate_psi(self):
         pass
-    
+
     @abstractmethod
-    def cwt(self, y, dt, label='') -> CWT:
+    def cwt(self, y, dt, label="") -> CWT:
         pass
-    
+
     @property
     @abstractmethod
     def wavelet_library(self):
@@ -136,12 +137,12 @@ class BaseWavelet(ABC):
     @abstractmethod
     def wavelet_name(self):
         pass
-    
+
     @property
     @abstractmethod
     def wavelet_name_with_args(self):
         pass
-    
+
     @property
     @abstractmethod
     def flambda(self):
@@ -154,26 +155,28 @@ class BaseWavelet(ABC):
         Returns:
             np.array: list of periods that should be used with this wavelet
         """
-        low, high =  self.period_range
-        n_scales = np.log2(high/low) 
+        low, high = self.period_range
+        n_scales = np.log2(high / low)
         n_steps = int(np.round(n_scales / self.dj))
         periods = np.logspace(np.log2(low), np.log2(high), n_steps, base=2)
         return periods
-        
-    def wtc(self,
-            pair: PairSignals,
-            bin_seconds:float|None=None,
-            period_cuts:List[float]|None=None,
-            frequency_cuts:List[float]|None=None,
-            cache_suffix:str='') -> WTC:
+
+    def wtc(
+        self,
+        pair: PairSignals,
+        bin_seconds: float | None = None,
+        period_cuts: List[float] | None = None,
+        frequency_cuts: List[float] | None = None,
+        cache_suffix: str = "",
+    ) -> WTC:
         """
-        Compute the Wavalet Transform Coherence for a pair of signals. 
-        
+        Compute the Wavalet Transform Coherence for a pair of signals.
+
         First computes the Continuous Wavelet Transform of both signals,
         then filters them and finally the coherence between the 2 signals.
 
         It saves to a cache in memory the intermediary results for reuse on other pairs.
-        For example, if there is a pair made of signal A and signal B and then a pair with 
+        For example, if there is a pair made of signal A and signal B and then a pair with
         signal A and signal C, we don't have to re-compute the CWT of signal A twice.
 
         Args:
@@ -191,7 +194,7 @@ class BaseWavelet(ABC):
         dt = pair.dt
 
         if len(y1) != len(y2):
-            raise RuntimeError(f'Arrays not same size. y1:{len(y1)}, y2:{len(y2)}')
+            raise RuntimeError(f"Arrays not same size. y1:{len(y1)}, y2:{len(y2)}")
 
         N = len(y1)
 
@@ -203,18 +206,30 @@ class BaseWavelet(ABC):
         # TODO: maybe this should be in preprocessing instead
         y1 = (y1 - y1.mean()) / y1.std()
         y2 = (y2 - y2.mean()) / y2.std()
-    
-        cwt1_cached = self._get_cache_item(self._get_cache_key_pair(pair, 0, 'cwt', cache_suffix))
-        cwt1: CWT = self.cwt(y1, dt, label=pair.label_ch1) if cwt1_cached is None else cwt1_cached
 
-        cwt2_cached = self._get_cache_item(self._get_cache_key_pair(pair, 1, 'cwt', cache_suffix))
-        cwt2: CWT = self.cwt(y2, dt, label=pair.label_ch2) if cwt2_cached is None else cwt2_cached
+        cwt1_cached = self._get_cache_item(
+            self._get_cache_key_pair(pair, 0, "cwt", cache_suffix)
+        )
+        cwt1: CWT = (
+            self.cwt(y1, dt, label=pair.label_ch1)
+            if cwt1_cached is None
+            else cwt1_cached
+        )
+
+        cwt2_cached = self._get_cache_item(
+            self._get_cache_key_pair(pair, 1, "cwt", cache_suffix)
+        )
+        cwt2: CWT = (
+            self.cwt(y2, dt, label=pair.label_ch2)
+            if cwt2_cached is None
+            else cwt2_cached
+        )
 
         if (cwt1.scales != cwt2.scales).any():
-            raise RuntimeError('The two CWT have different scales')
+            raise RuntimeError("The two CWT have different scales")
 
         if (cwt1.frequencies != cwt2.frequencies).any():
-            raise RuntimeError('The two CWT have different frequencies')
+            raise RuntimeError("The two CWT have different frequencies")
 
         W1 = cwt1.W
         W2 = cwt2.W
@@ -223,7 +238,9 @@ class BaseWavelet(ABC):
         try:
             W12 = W1 * W2.conj()
         except ValueError as e:
-            warnings.warn("Wrong operand shapes could mean that a wrong cached value is used. Please check that cache keys contain all the relevant arguments")
+            warnings.warn(
+                "Wrong operand shapes could mean that a wrong cached value is used. Please check that cache keys contain all the relevant arguments"
+            )
             raise e
 
         periods = cwt1.periods
@@ -237,21 +254,41 @@ class BaseWavelet(ABC):
             cache_suffix=cache_suffix,
         )
 
-        S1_cached = self._get_cache_item(self._get_cache_key_pair(pair, 0, 'smooth', cache_suffix))
-        S1 = self.smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs) if S1_cached is None else S1_cached
+        S1_cached = self._get_cache_item(
+            self._get_cache_key_pair(pair, 0, "smooth", cache_suffix)
+        )
+        S1 = (
+            self.smoothing(np.abs(W1) ** 2 / scaleMatrix, **smoothing_kwargs)
+            if S1_cached is None
+            else S1_cached
+        )
 
-        S2_cached = self._get_cache_item(self._get_cache_key_pair(pair, 1, 'smooth', cache_suffix))
-        S2 = self.smoothing(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs) if S2_cached is None else S2_cached
+        S2_cached = self._get_cache_item(
+            self._get_cache_key_pair(pair, 1, "smooth", cache_suffix)
+        )
+        S2 = (
+            self.smoothing(np.abs(W2) ** 2 / scaleMatrix, **smoothing_kwargs)
+            if S2_cached is None
+            else S2_cached
+        )
 
         S12 = np.abs(self.smoothing(W12 / scaleMatrix, **smoothing_kwargs))
-        wtc = S12 ** 2 / (S1 * S2)
+        wtc = S12**2 / (S1 * S2)
 
         coi = self._get_and_cache_cone_of_influence(N, dt, cache_suffix=cache_suffix)
 
-        self._update_cache_if_none(self._get_cache_key_pair(pair, 0, 'cwt', cache_suffix), cwt1)
-        self._update_cache_if_none(self._get_cache_key_pair(pair, 1, 'cwt', cache_suffix), cwt2)
-        self._update_cache_if_none(self._get_cache_key_pair(pair, 0, 'smooth', cache_suffix), S1)
-        self._update_cache_if_none(self._get_cache_key_pair(pair, 1, 'smooth', cache_suffix), S2)
+        self._update_cache_if_none(
+            self._get_cache_key_pair(pair, 0, "cwt", cache_suffix), cwt1
+        )
+        self._update_cache_if_none(
+            self._get_cache_key_pair(pair, 1, "cwt", cache_suffix), cwt2
+        )
+        self._update_cache_if_none(
+            self._get_cache_key_pair(pair, 0, "smooth", cache_suffix), S1
+        )
+        self._update_cache_if_none(
+            self._get_cache_key_pair(pair, 1, "smooth", cache_suffix), S2
+        )
 
         return WTC(
             wtc,
@@ -275,8 +312,8 @@ class BaseWavelet(ABC):
         if self._get_cache_item(key) is None:
             self._add_cache_item(key, value)
 
-    def _get_and_cache_cone_of_influence(self, N, dt, cache_suffix=''):
-        cache_key = self._get_cache_key('coi', N, dt, cache_suffix)
+    def _get_and_cache_cone_of_influence(self, N, dt, cache_suffix=""):
+        cache_key = self._get_cache_key("coi", N, dt, cache_suffix)
         coi = self._get_cache_item(cache_key)
         if coi is not None:
             return coi
@@ -284,10 +321,9 @@ class BaseWavelet(ABC):
         self._add_cache_item(cache_key, coi)
         return coi
 
-
-    def _get_cone_of_influence(self, N:int, dt:float) -> np.ndarray:
+    def _get_cone_of_influence(self, N: int, dt: float) -> np.ndarray:
         """
-        Get the cone of influence of a Continuous Wavelet Transform, 
+        Get the cone of influence of a Continuous Wavelet Transform,
         that is the region where edge effects become significant due to the finite length of the signal
 
         Args:
@@ -303,15 +339,17 @@ class BaseWavelet(ABC):
         e_folding_time = 1.0 / np.sqrt(2)
         flambda = self.flambda
 
-        coi = (N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2))
+        coi = N / 2 - np.abs(np.arange(0, N) - (N - 1) / 2)
         coi = flambda * e_folding_time * dt * coi
 
         return coi
-    
+
     #
     # Smoothing
     #
-    def smoothing(self, W:np.ndarray, dt:float, scales:np.ndarray, cache_suffix:str='') -> np.ndarray:
+    def smoothing(
+        self, W: np.ndarray, dt: float, scales: np.ndarray, cache_suffix: str = ""
+    ) -> np.ndarray:
         """
         Smooth the weights of a continuous wavelet transform in time and frequency domains.
 
@@ -328,48 +366,54 @@ class BaseWavelet(ABC):
         # Filter in time.
         #
         fft_kwargs = self._get_fft_kwargs(W[0, :])
-        scales_norm = scales # scales are already normalized
-        
-        k = 2 * np.pi * fft.fftfreq(fft_kwargs['n'])
-        k2 = k ** 2
+        scales_norm = scales  # scales are already normalized
+
+        k = 2 * np.pi * fft.fftfreq(fft_kwargs["n"])
+        k2 = k**2
 
         # Smoothing by Gaussian window (absolute value of wavelet function)
         # using the convolution theorem: multiplication by Gaussian curve in
         # Fourier domain for each scale, outer product of scale and frequency
-        gaus_fft = np.exp(-0.5 * (scales_norm[:, np.newaxis] ** 2) * k2)  # Outer product
+        gaus_fft = np.exp(
+            -0.5 * (scales_norm[:, np.newaxis] ** 2) * k2
+        )  # Outer product
 
         W_fft = fft.fft(W, axis=1, **fft_kwargs)
         smooth_fft = gaus_fft * W_fft
         smooth = fft.ifft(smooth_fft, axis=1, **fft_kwargs, overwrite_x=True)
-        T = smooth[:, :W.shape[1]]  # Remove possibly padded region due to FFT
+        T = smooth[:, : W.shape[1]]  # Remove possibly padded region due to FFT
 
         if np.isreal(W).all():
             T = T.real
-        
+
         #
-        # Filter in scale. 
-        # 
-        win_cache_key = self._get_cache_key('boxcar_window', self.wtc_smoothing_win_size, self.dj, cache_suffix)
+        # Filter in scale.
+        #
+        win_cache_key = self._get_cache_key(
+            "boxcar_window", self.wtc_smoothing_win_size, self.dj, cache_suffix
+        )
         win = self._get_cache_item(win_cache_key)
         if win is None:
             win = self._get_smoothing_window(self.wtc_smoothing_win_size, self.dj)
             self._add_cache_item(win_cache_key, win)
 
-        T = convolve1d(T, win, axis=0, mode='nearest')
-        #T = convolve2d(T, win[:, np.newaxis], 'same')  # Scales are "vertical"
+        T = convolve1d(T, win, axis=0, mode="nearest")
+        # T = convolve2d(T, win[:, np.newaxis], 'same')  # Scales are "vertical"
 
         return T
 
     @staticmethod
     def _get_fft_kwargs(signal, **kwargs):
-        return dict(**kwargs, n = int(2 ** np.ceil(np.log2(len(signal)))))
+        return dict(**kwargs, n=int(2 ** np.ceil(np.log2(len(signal)))))
 
     @staticmethod
     def _get_smoothing_window(boxcar_size, dj):
         # Copied from matlab
         # boxcar_size is "in scale"
-        #size_in_scales = boxcar_size
-        size_in_scales = boxcar_size * 2 # the pycwt code has a *2. TODO: find out why it is different from matlab code
+        # size_in_scales = boxcar_size
+        size_in_scales = (
+            boxcar_size * 2
+        )  # the pycwt code has a *2. TODO: find out why it is different from matlab code
         size_in_steps = size_in_scales / dj
         fraction = size_in_steps % 1
         fraction_half = fraction / 2
@@ -389,8 +433,6 @@ class BaseWavelet(ABC):
         # normalize
         win /= win.sum()
         return win
-        
-        
 
     #
     # Caching
@@ -405,15 +447,15 @@ class BaseWavelet(ABC):
         try:
             found = self.cache[key]
             if self.verbose:
-                print(f'Found cache key {key}')
+                print(f"Found cache key {key}")
                 pass
             return found
         except:
             if self.verbose:
-                #print(f'Not found cache key {key}')
+                # print(f'Not found cache key {key}')
                 pass
             return None
-    
+
     def _add_cache_item(self, key, value):
         if self.use_caching:
             self.cache[key] = value
@@ -421,45 +463,46 @@ class BaseWavelet(ABC):
     def clear_cache(self):
         self.cache = dict()
 
-    def _get_cache_key_pair(self, pair: PairSignals, subject_idx: int, obj_id: str, cache_suffix: str = ''):
+    def _get_cache_key_pair(
+        self, pair: PairSignals, subject_idx: int, obj_id: str, cache_suffix: str = ""
+    ):
         if not self.use_caching:
             return None
 
         if subject_idx == 0:
             subject_label = pair.label_s1
             ch_name = pair.label_ch1
-            # include signal length in key because it might have been croped to align y1 and y2 
+            # include signal length in key because it might have been croped to align y1 and y2
             n = len(pair.y1)
         elif subject_idx == 1:
             subject_label = pair.label_s2
             ch_name = pair.label_ch2
             n = len(pair.y2)
         else:
-            raise RuntimeError(f'subject_idx must be 0 or 1')
-        
+            raise RuntimeError(f"subject_idx must be 0 or 1")
+
         if len(subject_label) < 1:
-            raise RuntimeError(f'subjects must have labels to use caching')
+            raise RuntimeError(f"subjects must have labels to use caching")
 
-        if pair.label_task == '':
-            raise RuntimeError(f'must have task to have unique identifiers in caching')
+        if pair.label_task == "":
+            raise RuntimeError(f"must have task to have unique identifiers in caching")
 
-        time_range_str = f'{pair.x[0]}-{pair.x[-1]}'
-        key = f'[{subject_label}][{ch_name}][{pair.label_task}][{pair.epoch_idx}][{n}][{pair.x[0]}-{pair.x[-1]}][{time_range_str}][{obj_id}]'
-        if cache_suffix != '':
-            key += f'_{cache_suffix}'
-        
+        time_range_str = f"{pair.x[0]}-{pair.x[-1]}"
+        key = f"[{subject_label}][{ch_name}][{pair.label_task}][{pair.epoch_idx}][{n}][{pair.x[0]}-{pair.x[-1]}][{time_range_str}][{obj_id}]"
+        if cache_suffix != "":
+            key += f"_{cache_suffix}"
+
         return key
-    
+
     def _get_cache_key(self, *args):
         if not self.use_caching:
             return None
-        return f'key_{"_".join([str(arg) for arg in args])}'
-    
+        return f"key_{'_'.join([str(arg) for arg in args])}"
 
     #
     # Plots
     #
-    def plot_mother_wavelet(self, show_legend=True, ax:Axes|None=None) -> Figure:
+    def plot_mother_wavelet(self, show_legend=True, ax: Axes | None = None) -> Figure:
         if ax is None:
             fig, ax = plt.subplots()
         else:
@@ -470,5 +513,5 @@ class BaseWavelet(ABC):
         ax.plot(self.psi_x, np.abs(self.psi))
         ax.title.set_text(f"mother wavelet ({self.wavelet_name_with_args})")
         if show_legend:
-            ax.legend(['real', 'imag', 'abs'])
+            ax.legend(["real", "imag", "abs"])
         return fig

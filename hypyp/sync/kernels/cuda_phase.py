@@ -52,11 +52,14 @@ extern "C" __global__ void pli_kernel(
 """
 
 _pli_kernel = None
+
+
 def _get_pli():
     global _pli_kernel
     if _pli_kernel is None:
         _pli_kernel = cp.RawKernel(_PLI_SOURCE, "pli_kernel")
     return _pli_kernel
+
 
 def pli_cuda(complex_signal):
     """PLI via CUDA. Float64."""
@@ -92,11 +95,14 @@ extern "C" __global__ void wpli_kernel(
 """
 
 _wpli_kernel = None
+
+
 def _get_wpli():
     global _wpli_kernel
     if _wpli_kernel is None:
         _wpli_kernel = cp.RawKernel(_WPLI_SOURCE, "wpli_kernel")
     return _wpli_kernel
+
 
 def wpli_cuda(complex_signal):
     """wPLI via CUDA. Float64."""
@@ -133,11 +139,14 @@ extern "C" __global__ void plv_kernel(
 """
 
 _plv_kernel = None
+
+
 def _get_plv():
     global _plv_kernel
     if _plv_kernel is None:
         _plv_kernel = cp.RawKernel(_PLV_SOURCE, "plv_kernel")
     return _plv_kernel
+
 
 def plv_cuda(complex_signal):
     """PLV via CUDA. Phase-normalizes then cross-spectrum. Float64."""
@@ -183,11 +192,14 @@ extern "C" __global__ void ccorr_kernel(
 """
 
 _ccorr_kernel = None
+
+
 def _get_ccorr():
     global _ccorr_kernel
     if _ccorr_kernel is None:
         _ccorr_kernel = cp.RawKernel(_CCORR_SOURCE, "ccorr_kernel")
     return _ccorr_kernel
+
 
 def ccorr_cuda(complex_signal):
     """CCorr via CUDA. Phase-normalizes then angle-free Pearson. Float64."""

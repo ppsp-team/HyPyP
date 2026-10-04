@@ -56,11 +56,14 @@ extern "C" __global__ void coh_kernel(
 """
 
 _coh_kernel = None
+
+
 def _get_coh():
     global _coh_kernel
     if _coh_kernel is None:
         _coh_kernel = cp.RawKernel(_COH_SOURCE, "coh_kernel")
     return _coh_kernel
+
 
 def coh_cuda(complex_signal):
     """Coh via CUDA. Float64."""
@@ -99,11 +102,14 @@ extern "C" __global__ void imcoh_kernel(
 """
 
 _imcoh_kernel = None
+
+
 def _get_imcoh():
     global _imcoh_kernel
     if _imcoh_kernel is None:
         _imcoh_kernel = cp.RawKernel(_IMCOH_SOURCE, "imcoh_kernel")
     return _imcoh_kernel
+
 
 def imcoh_cuda(complex_signal):
     """ImCoh via CUDA. Float64."""
@@ -152,11 +158,14 @@ extern "C" __global__ void envcorr_kernel(
 """
 
 _envcorr_kernel = None
+
+
 def _get_envcorr():
     global _envcorr_kernel
     if _envcorr_kernel is None:
         _envcorr_kernel = cp.RawKernel(_ENVCORR_SOURCE, "envcorr_kernel")
     return _envcorr_kernel
+
 
 def envcorr_cuda(complex_signal):
     """EnvCorr via CUDA. Pearson on envelopes. Float64."""
@@ -205,11 +214,14 @@ extern "C" __global__ void powcorr_kernel(
 """
 
 _powcorr_kernel = None
+
+
 def _get_powcorr():
     global _powcorr_kernel
     if _powcorr_kernel is None:
         _powcorr_kernel = cp.RawKernel(_POWCORR_SOURCE, "powcorr_kernel")
     return _powcorr_kernel
+
 
 def powcorr_cuda(complex_signal):
     """PowCorr via CUDA. Pearson on power. Float64."""

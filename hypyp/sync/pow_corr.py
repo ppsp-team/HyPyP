@@ -50,8 +50,9 @@ class PowCorr(BaseMetric):
 
     name = "powcorr"
 
-    def compute(self, complex_signal: np.ndarray, n_samp: int,
-                transpose_axes: tuple) -> np.ndarray:
+    def compute(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Compute Power Correlation.
 
@@ -72,32 +73,38 @@ class PowCorr(BaseMetric):
             Power Correlation connectivity matrix with shape
             (n_epoch, n_freq, 2*n_ch, 2*n_ch).
         """
-        if self._backend == 'cuda_kernel':
+        if self._backend == "cuda_kernel":
             return self._compute_cuda(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'torch':
+        elif self._backend == "torch":
             return self._compute_torch(complex_signal, n_samp, transpose_axes)
-        elif self._backend == 'numba':
+        elif self._backend == "numba":
             return self._compute_numba(complex_signal, n_samp, transpose_axes)
         return self._compute_numpy(complex_signal, n_samp, transpose_axes)
 
     def _compute_cuda(self, complex_signal, n_samp, transpose_axes):
         """CUDA kernel for Power Correlation."""
         from .kernels.cuda_amplitude import powcorr_cuda
+
         return powcorr_cuda(complex_signal)
 
-    def _compute_numpy(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numpy(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """NumPy implementation of Power Correlation."""
         n_epoch, n_freq, n_ch_total = complex_signal.shape[:3]
         env = np.abs(complex_signal) ** 2
         mu_env = np.mean(env, axis=3).reshape(n_epoch, n_freq, n_ch_total, 1)
         env = env - mu_env
-        con = np.einsum('nilm,nimk->nilk', env, env.transpose(transpose_axes)) / \
-              np.sqrt(np.einsum('nil,nik->nilk', np.sum(env ** 2, axis=3), np.sum(env ** 2, axis=3)))
+        con = np.einsum(
+            "nilm,nimk->nilk", env, env.transpose(transpose_axes)
+        ) / np.sqrt(
+            np.einsum("nil,nik->nilk", np.sum(env**2, axis=3), np.sum(env**2, axis=3))
+        )
         return con
 
-    def _compute_numba(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_numba(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         Numba JIT implementation of Power Correlation.
 
@@ -108,8 +115,9 @@ class PowCorr(BaseMetric):
         env = np.abs(complex_signal) ** 2
         return _powcorr_numba_kernel(env)
 
-    def _compute_torch(self, complex_signal: np.ndarray, n_samp: int,
-                       transpose_axes: tuple) -> np.ndarray:
+    def _compute_torch(
+        self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
+    ) -> np.ndarray:
         """
         PyTorch implementation of Power Correlation.
 
@@ -123,8 +131,8 @@ class PowCorr(BaseMetric):
         powers that underflow in float32.
         """
         device = self._device
-        float_type = torch.float32 if device == 'mps' else torch.float64
-        complex_type = torch.complex64 if device == 'mps' else torch.complex128
+        float_type = torch.float32 if device == "mps" else torch.float64
+        complex_type = torch.complex64 if device == "mps" else torch.complex128
 
         sig = torch.from_numpy(complex_signal).to(device=device, dtype=complex_type)
         # Power: |z|² via abs then square
@@ -137,16 +145,17 @@ class PowCorr(BaseMetric):
 
         # L2-normalize per channel: env_hat = env / ||env||
         # Then dot(env_hat_i, env_hat_j) = Pearson correlation directly
-        norm = torch.sqrt(torch.sum(env ** 2, dim=3, keepdim=True))
+        norm = torch.sqrt(torch.sum(env**2, dim=3, keepdim=True))
         norm = torch.where(norm == 0, torch.ones_like(norm), norm)
         env = env / norm
 
-        con = torch.einsum('efit,efjt->efij', env, env)
+        con = torch.einsum("efit,efjt->efij", env, env)
         return con.cpu().numpy()
 
 
 # Numba JIT kernel (module-level for caching)
 if NUMBA_AVAILABLE:
+
     @njit(parallel=True, cache=True)
     def _powcorr_numba_kernel(env):
         """

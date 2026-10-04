@@ -99,7 +99,9 @@ kernel void accorr_kernel(
 def _compile_accorr():
     device = Metal.MTLCreateSystemDefaultDevice()
     options = Metal.MTLCompileOptions.new()
-    library, error = device.newLibraryWithSource_options_error_(_ACCORR_SHADER, options, None)
+    library, error = device.newLibraryWithSource_options_error_(
+        _ACCORR_SHADER, options, None
+    )
     if error:
         raise RuntimeError(f"Metal ACCorr shader failed: {error}")
     fn = library.newFunctionWithName_("accorr_kernel")
@@ -124,7 +126,8 @@ def accorr_metal(complex_signal: np.ndarray) -> np.ndarray:
     c_flat = np.ascontiguousarray(np.real(z).reshape(n_ef, C, T), dtype=np.float32)
     s_flat = np.ascontiguousarray(np.imag(z).reshape(n_ef, C, T), dtype=np.float32)
     angle_flat = np.ascontiguousarray(
-        np.angle(complex_signal).reshape(n_ef, C, T), dtype=np.float32)
+        np.angle(complex_signal).reshape(n_ef, C, T), dtype=np.float32
+    )
 
     idx_i, idx_j = [], []
     for i in range(C):
@@ -137,18 +140,24 @@ def accorr_metal(complex_signal: np.ndarray) -> np.ndarray:
 
     # Metal buffers — extended layout for ACCorr
     buf_s = device.newBufferWithBytes_length_options_(
-        s_flat.tobytes(), s_flat.nbytes, Metal.MTLResourceStorageModeShared)
+        s_flat.tobytes(), s_flat.nbytes, Metal.MTLResourceStorageModeShared
+    )
     buf_c = device.newBufferWithBytes_length_options_(
-        c_flat.tobytes(), c_flat.nbytes, Metal.MTLResourceStorageModeShared)
+        c_flat.tobytes(), c_flat.nbytes, Metal.MTLResourceStorageModeShared
+    )
     buf_angle = device.newBufferWithBytes_length_options_(
-        angle_flat.tobytes(), angle_flat.nbytes, Metal.MTLResourceStorageModeShared)
+        angle_flat.tobytes(), angle_flat.nbytes, Metal.MTLResourceStorageModeShared
+    )
     out_nbytes = n_ef * C * C * 4
     buf_out = device.newBufferWithLength_options_(
-        out_nbytes, Metal.MTLResourceStorageModeShared)
+        out_nbytes, Metal.MTLResourceStorageModeShared
+    )
     buf_pi = device.newBufferWithBytes_length_options_(
-        idx_i.tobytes(), idx_i.nbytes, Metal.MTLResourceStorageModeShared)
+        idx_i.tobytes(), idx_i.nbytes, Metal.MTLResourceStorageModeShared
+    )
     buf_pj = device.newBufferWithBytes_length_options_(
-        idx_j.tobytes(), idx_j.nbytes, Metal.MTLResourceStorageModeShared)
+        idx_j.tobytes(), idx_j.nbytes, Metal.MTLResourceStorageModeShared
+    )
 
     # Constant buffers held in named locals so they can be released in the
     # finally block (passing them inline to setBuffer would leak them).
@@ -182,7 +191,8 @@ def accorr_metal(complex_signal: np.ndarray) -> np.ndarray:
 
             encoder.dispatchThreads_threadsPerThreadgroup_(
                 Metal.MTLSize(total_threads, 1, 1),
-                Metal.MTLSize(threads_per_group, 1, 1))
+                Metal.MTLSize(threads_per_group, 1, 1),
+            )
             encoder.endEncoding()
 
             cmd_buffer.commit()

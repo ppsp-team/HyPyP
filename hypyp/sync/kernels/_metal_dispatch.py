@@ -55,7 +55,8 @@ else:  # pragma: no cover - only exercised without PyObjC Metal
 def make_const_buffer(device, value):
     """Create a Metal buffer containing a single uint32 constant."""
     return device.newBufferWithBytes_length_options_(
-        struct.pack('I', value), 4, Metal.MTLResourceStorageModeShared)
+        struct.pack("I", value), 4, Metal.MTLResourceStorageModeShared
+    )
 
 
 @lru_cache(maxsize=8)
@@ -93,10 +94,12 @@ def run_pairwise_kernel(complex_signal, compile_fn):
     E, F, C, T = complex_signal.shape
     n_ef = E * F
 
-    c_flat = np.ascontiguousarray(np.real(complex_signal).reshape(n_ef, C, T),
-                                  dtype=np.float32)
-    s_flat = np.ascontiguousarray(np.imag(complex_signal).reshape(n_ef, C, T),
-                                  dtype=np.float32)
+    c_flat = np.ascontiguousarray(
+        np.real(complex_signal).reshape(n_ef, C, T), dtype=np.float32
+    )
+    s_flat = np.ascontiguousarray(
+        np.imag(complex_signal).reshape(n_ef, C, T), dtype=np.float32
+    )
 
     # Upper-triangle pair indices
     idx_i, idx_j = [], []
@@ -110,16 +113,21 @@ def run_pairwise_kernel(complex_signal, compile_fn):
 
     # Metal buffers
     buf_s = device.newBufferWithBytes_length_options_(
-        s_flat.tobytes(), s_flat.nbytes, Metal.MTLResourceStorageModeShared)
+        s_flat.tobytes(), s_flat.nbytes, Metal.MTLResourceStorageModeShared
+    )
     buf_c = device.newBufferWithBytes_length_options_(
-        c_flat.tobytes(), c_flat.nbytes, Metal.MTLResourceStorageModeShared)
+        c_flat.tobytes(), c_flat.nbytes, Metal.MTLResourceStorageModeShared
+    )
     out_nbytes = n_ef * C * C * 4
     buf_out = device.newBufferWithLength_options_(
-        out_nbytes, Metal.MTLResourceStorageModeShared)
+        out_nbytes, Metal.MTLResourceStorageModeShared
+    )
     buf_pi = device.newBufferWithBytes_length_options_(
-        idx_i.tobytes(), idx_i.nbytes, Metal.MTLResourceStorageModeShared)
+        idx_i.tobytes(), idx_i.nbytes, Metal.MTLResourceStorageModeShared
+    )
     buf_pj = device.newBufferWithBytes_length_options_(
-        idx_j.tobytes(), idx_j.nbytes, Metal.MTLResourceStorageModeShared)
+        idx_j.tobytes(), idx_j.nbytes, Metal.MTLResourceStorageModeShared
+    )
 
     # Constant buffers held in named locals so they can be released in the
     # finally block (passing them inline to setBuffer would leak them).
@@ -152,7 +160,8 @@ def run_pairwise_kernel(complex_signal, compile_fn):
 
             encoder.dispatchThreads_threadsPerThreadgroup_(
                 Metal.MTLSize(total_threads, 1, 1),
-                Metal.MTLSize(threads_per_group, 1, 1))
+                Metal.MTLSize(threads_per_group, 1, 1),
+            )
             encoder.endEncoding()
 
             cmd_buffer.commit()

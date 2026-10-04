@@ -44,8 +44,12 @@ class's docstring.
 from typing import Optional
 
 from .base import (
-    BaseMetric, multiply_conjugate, multiply_conjugate_time, multiply_product,
-    multiply_conjugate_torch, multiply_conjugate_time_torch,
+    BaseMetric,
+    multiply_conjugate,
+    multiply_conjugate_time,
+    multiply_product,
+    multiply_conjugate_torch,
+    multiply_conjugate_time_torch,
 )
 from .plv import PLV
 from .ccorr import CCorr
@@ -59,43 +63,44 @@ from .pow_corr import PowCorr
 
 # Metric registry: maps mode names to metric classes
 METRICS = {
-    'plv': PLV,
-    'ccorr': CCorr,
-    'accorr': ACCorr,
-    'coh': Coh,
-    'imcoh': ImCoh,
-    'pli': PLI,
-    'wpli': WPLI,
-    'envcorr': EnvCorr,
-    'powcorr': PowCorr,
+    "plv": PLV,
+    "ccorr": CCorr,
+    "accorr": ACCorr,
+    "coh": Coh,
+    "imcoh": ImCoh,
+    "pli": PLI,
+    "wpli": WPLI,
+    "envcorr": EnvCorr,
+    "powcorr": PowCorr,
 }
 
 __all__ = [
     # Base classes and utilities
-    'BaseMetric',
-    'multiply_conjugate',
-    'multiply_conjugate_time',
-    'multiply_product',
-    'multiply_conjugate_torch',
-    'multiply_conjugate_time_torch',
+    "BaseMetric",
+    "multiply_conjugate",
+    "multiply_conjugate_time",
+    "multiply_product",
+    "multiply_conjugate_torch",
+    "multiply_conjugate_time_torch",
     # Metric classes
-    'PLV',
-    'CCorr',
-    'ACCorr',
-    'Coh',
-    'ImCoh',
-    'PLI',
-    'WPLI',
-    'EnvCorr',
-    'PowCorr',
+    "PLV",
+    "CCorr",
+    "ACCorr",
+    "Coh",
+    "ImCoh",
+    "PLI",
+    "WPLI",
+    "EnvCorr",
+    "PowCorr",
     # Registry
-    'METRICS',
-    'get_metric',
+    "METRICS",
+    "get_metric",
 ]
 
 
-def get_metric(mode: str, optimization: Optional[str] = None,
-               priority: Optional[list] = None) -> BaseMetric:
+def get_metric(
+    mode: str, optimization: Optional[str] = None, priority: Optional[list] = None
+) -> BaseMetric:
     """
     Get a connectivity metric instance by name.
 
@@ -130,7 +135,7 @@ def get_metric(mode: str, optimization: Optional[str] = None,
     """
     mode_lower = mode.lower()
     if mode_lower not in METRICS:
-        available = ', '.join(METRICS.keys())
+        available = ", ".join(METRICS.keys())
         raise ValueError(f"Unknown metric mode '{mode}'. Available: {available}")
 
     return METRICS[mode_lower](optimization=optimization, priority=priority)

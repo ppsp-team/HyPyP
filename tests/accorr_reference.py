@@ -74,7 +74,9 @@ def accorr_reference(
             phase_diff = alpha1 - alpha2
             phase_sum = alpha1 + alpha2
 
-            mean_diff = np.angle(np.mean(np.exp(1j * phase_diff), axis=2, keepdims=True))
+            mean_diff = np.angle(
+                np.mean(np.exp(1j * phase_diff), axis=2, keepdims=True)
+            )
             mean_sum = np.angle(np.mean(np.exp(1j * phase_sum), axis=2, keepdims=True))
 
             n_adj = -1 * (mean_diff - mean_sum) / 2
@@ -83,9 +85,7 @@ def accorr_reference(
             x_sin = np.sin(alpha1 - m_adj)
             y_sin = np.sin(alpha2 - n_adj)
 
-            den_ij = 2 * np.sqrt(
-                np.sum(x_sin**2, axis=2) * np.sum(y_sin**2, axis=2)
-            )
+            den_ij = 2 * np.sqrt(np.sum(x_sin**2, axis=2) * np.sum(y_sin**2, axis=2))
             den[:, :, i, j] = den_ij
             den[:, :, j, i] = den_ij
 

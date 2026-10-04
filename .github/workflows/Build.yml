@@ -3,6 +3,20 @@ name: CI
 on: [push, workflow_call]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Check formatting with ruff
+        run: uv run --locked --only-group lint ruff format --check .
+
+      - name: Check for obvious errors with ruff
+        run: uv run --locked --only-group lint ruff check .
+
   build:
     runs-on: ubuntu-latest
     strategy:

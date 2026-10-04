@@ -13,6 +13,7 @@ from .cwt import CWT
 
 MASK_THRESHOLD = 0.5
 
+
 class WTC:
     W: np.ndarray
     cwts: Tuple[CWT]
@@ -50,8 +51,8 @@ class WTC:
     coherence_metric: float
     coherence_masked: float
 
-    bin_seconds: float|None
-    period_cuts: List[float]|None
+    bin_seconds: float | None
+    period_cuts: List[float] | None
     coherence_bins: List[Tuple[float, float, str, str]]
 
     wavelet_library: str
@@ -59,18 +60,18 @@ class WTC:
 
     def __init__(
         self,
-        W:np.ndarray,
-        times:np.ndarray,
-        scales:np.ndarray,
-        periods:np.ndarray,
-        coi:np.ndarray,
+        W: np.ndarray,
+        times: np.ndarray,
+        scales: np.ndarray,
+        periods: np.ndarray,
+        coi: np.ndarray,
         pair: PairSignals,
-        bin_seconds:float|None=None,
-        period_cuts:List[float]|None=None,
-        frequency_cuts:List[float]|None=None,
-        wavelet_library:str='',
-        wavelet_name_with_args:str='',
-        cwts:Tuple[CWT, CWT]=None,
+        bin_seconds: float | None = None,
+        period_cuts: List[float] | None = None,
+        frequency_cuts: List[float] | None = None,
+        wavelet_library: str = "",
+        wavelet_name_with_args: str = "",
+        cwts: Tuple[CWT, CWT] = None,
     ):
         """
         The WTC object holds the results of a Wavelet Transform Coherence
@@ -117,15 +118,15 @@ class WTC:
         self.label_roi2 = pair.label_roi2
 
         # These will not change when we downsample
-        dt = (times[1] - times[0])
+        dt = times[1] - times[0]
         self.dt = dt
         self.sfreq = 1 / dt
         self.nyquist = self.sfreq / 2
 
         self.bin_seconds = bin_seconds
-        
+
         if period_cuts is not None and frequency_cuts is not None:
-            raise RuntimeError('Cannot specify both period_cuts and frequency_cuts')
+            raise RuntimeError("Cannot specify both period_cuts and frequency_cuts")
 
         if frequency_cuts is not None:
             self.period_cuts = list(1 / np.array(frequency_cuts))
@@ -133,7 +134,7 @@ class WTC:
             self.period_cuts = period_cuts
         else:
             self.period_cuts = None
-        
+
         self.coherence_bins = []
 
         self.wavelet_library = wavelet_library
@@ -146,19 +147,19 @@ class WTC:
         if self.period_cuts is None:
             return None
         return 1 / np.array(self.period_cuts)
-    
+
     @property
     def cwt1(self):
         if self.cwts is None:
             return None
         return self.cwts[0]
-    
+
     @property
     def cwt2(self):
         if self.cwts is None:
             return None
         return self.cwts[1]
-    
+
     @property
     def p_ranges(self):
         if self.period_cuts is None:
@@ -180,7 +181,7 @@ class WTC:
                         start_look_at = cursor
                         break
                     cursor += 1
-            
+
             # add one last for the remaining
             if len(p_ranges) == 0:
                 p_ranges.append((0, len(self.periods)))
@@ -188,18 +189,18 @@ class WTC:
                 last_i = p_ranges[-1][1]
                 if last_i < len(self.periods):
                     p_ranges.append((last_i, len(self.periods)))
-                
+
         return p_ranges
-    
-    
+
     @property
     def p_ranges_str(self):
         ret = []
         for p_start, p_end in self.p_ranges:
-            ret.append(f"{self.frequencies[p_start]:.2f}Hz-{self.frequencies[p_end-1]:.2f}Hz")
+            ret.append(
+                f"{self.frequencies[p_start]:.2f}Hz-{self.frequencies[p_end - 1]:.2f}Hz"
+            )
         return ret
-            
-            
+
     @property
     def t_ranges(self):
         # don't use self.dt because we want to deal with downsampled data as well
@@ -236,34 +237,41 @@ class WTC:
 
         # Time and period bins split
         self.coherence_bins = []
-            
+
         # loop over time bins and period bins
         for t_start, t_stop in self.t_ranges:
             for p_start, p_stop in self.p_ranges:
                 wtc_bin = self.wtc_masked[p_start:p_stop, t_start:t_stop]
                 coherence_bin = np.mean(wtc_bin)
                 coherence_masked = np.mean(wtc_bin.mask)
-                if np.ma.is_masked(coherence_bin) or not np.isfinite(coherence_bin) or coherence_masked > MASK_THRESHOLD:
+                if (
+                    np.ma.is_masked(coherence_bin)
+                    or not np.isfinite(coherence_bin)
+                    or coherence_masked > MASK_THRESHOLD
+                ):
                     coherence_bin = np.nan
-                self.coherence_bins.append((
-                    coherence_bin,
-                    coherence_masked,
-                    f'{np.round(t_start*dt):.0f}-{np.round(t_stop*dt):.0f}',
-                    f'{self.periods[p_start]:.1f}-{self.periods[p_stop-1]:.1f}',
-                ))
+                self.coherence_bins.append(
+                    (
+                        coherence_bin,
+                        coherence_masked,
+                        f"{np.round(t_start * dt):.0f}-{np.round(t_stop * dt):.0f}",
+                        f"{self.periods[p_start]:.1f}-{self.periods[p_stop - 1]:.1f}",
+                    )
+                )
 
-    
-    def downsample_in_time(self, bins:int):
+    def downsample_in_time(self, bins: int):
         """
         Merge weights together over time to save memory and allow for faster displaying
 
         Args:
             bins (int): number of bins to keep
         """
-        self.times, self.W, self.coi, self.coif, _factor = downsample_in_time(self.times, self.W, self.coi, self.coif, bins=bins)
+        self.times, self.W, self.coi, self.coif, _factor = downsample_in_time(
+            self.times, self.W, self.coi, self.coif, bins=bins
+        )
         # must recompute coherence in cone of interest
         self._compute_coherence_in_coi()
-    
+
     def _moving_average_1d(self, arr, window_size):
         kernel = np.ones(window_size) / window_size
 
@@ -271,9 +279,9 @@ class WTC:
         mask = np.array(arr.mask)
         valid_indices = np.where(~arr.mask)[0]
         if len(valid_indices) > 0:
-            arr[:valid_indices[0]] = arr[valid_indices[0]]
-            arr[valid_indices[-1]:] = arr[valid_indices[-1]]
-        result = np.convolve(arr, kernel, mode='same') # keep same size array
+            arr[: valid_indices[0]] = arr[valid_indices[0]]
+            arr[valid_indices[-1] :] = arr[valid_indices[-1]]
+        result = np.convolve(arr, kernel, mode="same")  # keep same size array
         return np.ma.masked_array(result, mask)
 
     def get_as_time_series(self, window_size=10) -> np.ndarray:
@@ -281,8 +289,8 @@ class WTC:
         data = np.ma.zeros((len(p_ranges), self.wtc_masked.shape[1]))
         for i in range(len(p_ranges)):
             p_start, p_stop = p_ranges[i]
-            data[i,:] = self.wtc_masked[p_start:p_stop].mean(axis=0)
-        #print(data.shape)
+            data[i, :] = self.wtc_masked[p_start:p_stop].mean(axis=0)
+        # print(data.shape)
         result = np.apply_along_axis(self._moving_average_1d, 1, data, window_size)
         return result
 
@@ -291,30 +299,32 @@ class WTC:
         # IMPORTANT: must match the ordering of COHERENCE_FRAME_COLUMNS
         frames = []
         for bin_id in range(len(self.coherence_bins)):
-            frames.append([
-                self.label_dyad,
-                self.is_intra,
-                self.is_intra_of,
-                self.is_pseudo,
-                self.label_s1,
-                self.label_s2,
-                self.label_roi1,
-                self.label_roi2,
-                self.label_ch1,
-                self.label_ch2,
-                self.task,
-                self.epoch_id,
-                self.section_id,
-                bin_id, 
-                self.coherence_bins[bin_id][0], # metric
-                self.coherence_bins[bin_id][1], # masked
-                self.coherence_bins[bin_id][2], # time range
-                self.coherence_bins[bin_id][3], # period range
-                self.wavelet_library,
-                self.wavelet_name_with_args,
-            ])
+            frames.append(
+                [
+                    self.label_dyad,
+                    self.is_intra,
+                    self.is_intra_of,
+                    self.is_pseudo,
+                    self.label_s1,
+                    self.label_s2,
+                    self.label_roi1,
+                    self.label_roi2,
+                    self.label_ch1,
+                    self.label_ch2,
+                    self.task,
+                    self.epoch_id,
+                    self.section_id,
+                    bin_id,
+                    self.coherence_bins[bin_id][0],  # metric
+                    self.coherence_bins[bin_id][1],  # masked
+                    self.coherence_bins[bin_id][2],  # time range
+                    self.coherence_bins[bin_id][3],  # period range
+                    self.wavelet_library,
+                    self.wavelet_name_with_args,
+                ]
+            )
         return frames
-    
+
     def to_frame(self) -> CoherenceDataFrame:
         """
         Get a typed pandas DataFrame from the WTC
@@ -335,8 +345,10 @@ class WTC:
         Returns:
             Figure: matplotlib.Figure
         """
-        if 'title' not in kwargs:
-            kwargs['title'] = f'{self.label_s1}[{self.label_ch1}] - {self.label_s2}[{self.label_ch2}]'
+        if "title" not in kwargs:
+            kwargs["title"] = (
+                f"{self.label_s1}[{self.label_ch1}] - {self.label_s2}[{self.label_ch2}]"
+            )
 
         return plot_wavelet_transform_weights(
             self.W,
@@ -346,5 +358,5 @@ class WTC:
             self.sfreq,
             bin_seconds=self.bin_seconds,
             frequency_cuts=self.frequency_cuts,
-            **kwargs)
-
+            **kwargs,
+        )

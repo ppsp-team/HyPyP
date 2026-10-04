@@ -3,6 +3,7 @@ import numpy as np
 
 from ..plots import plot_wavelet_transform_weights
 
+
 class CWT:
     W: np.ndarray
     times: np.ndarray
@@ -10,13 +11,21 @@ class CWT:
     scales: np.ndarray
     periods: np.ndarray
     frequencies: np.ndarray
-    coi: np.ndarray # Cone of influence, in periods
-    coif: np.ndarray # Cone of influence, in frequencies
+    coi: np.ndarray  # Cone of influence, in periods
+    coif: np.ndarray  # Cone of influence, in frequencies
     label: str
 
-    def __init__(self, weights:np.ndarray, times:np.ndarray, scales:np.ndarray, periods:np.ndarray, coi:np.ndarray, label:str=''):
+    def __init__(
+        self,
+        weights: np.ndarray,
+        times: np.ndarray,
+        scales: np.ndarray,
+        periods: np.ndarray,
+        coi: np.ndarray,
+        label: str = "",
+    ):
         """
-        The CWT object holds the results of a Continuous Wavelet Transform 
+        The CWT object holds the results of a Continuous Wavelet Transform
 
         Args:
             weights (np.ndarray): weights of the transforms
@@ -46,6 +55,12 @@ class CWT:
         Returns:
             Figure: matplotlib.Figure
         """
-        return plot_wavelet_transform_weights(self.W, self.times, self.frequencies, self.coif, self.sfreq, title=f"CWT of {self.label}", **kwargs)
-
-
+        return plot_wavelet_transform_weights(
+            self.W,
+            self.times,
+            self.frequencies,
+            self.coif,
+            self.sfreq,
+            title=f"CWT of {self.label}",
+            **kwargs,
+        )
