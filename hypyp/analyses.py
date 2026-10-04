@@ -32,7 +32,7 @@ from mne.io.constants import FIFF
 from mne.time_frequency import EpochsSpectrum
 
 from .mvarica import MVAR, connectivity_mvarica
-from .sync import get_metric
+from .sync import METRICS, get_metric
 
 
 def pow(
@@ -457,10 +457,9 @@ def pair_connectivity(
 
     # compute instantaneous analytic signal from EEG data
     if type(frequencies) == list:
-        # average over tapers
-        values = np.mean(
-            compute_single_freq(data, sampling_rate, frequencies), 3
-        ).squeeze()
+        # average over tapers; no squeeze, which would also drop a single
+        # epoch, channel or frequency and break the 5-D layout compute_sync expects
+        values = np.mean(compute_single_freq(data, sampling_rate, frequencies), 3)
     elif type(frequencies) == dict:
         values = compute_freq_bands(data, sampling_rate, frequencies)
     else:
@@ -590,14 +589,13 @@ def compute_sync(
     }
     mode_normalized = mode_map.get(mode_lower, mode_lower)
 
-    # Get the metric from the sync module
-    try:
-        metric = get_metric(
-            mode_normalized, optimization=optimization, priority=priority
-        )
-        con = metric.compute(complex_signal, n_samp, transpose_axes)
-    except ValueError:
+    # Only an unknown metric is reported as unsupported; any other ValueError
+    # (an unknown backend, for instance) keeps its own message
+    if mode_normalized not in METRICS:
         raise ValueError(f'Metric type "{mode}" not supported.')
+
+    metric = get_metric(mode_normalized, optimization=optimization, priority=priority)
+    con = metric.compute(complex_signal, n_samp, transpose_axes)
 
     con = con.swapaxes(0, 1)  # n_freq x n_epoch x 2*n_ch x 2*n_ch
     if epochs_average:
