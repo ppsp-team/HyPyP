@@ -1554,6 +1554,48 @@ class TestBackendCapability:
                 metric = MixedPLV(optimization="metal")
         assert metric._backend == "numpy"
 
+    def test_rebinding_the_parent_compute_keeps_the_capability_check(self):
+        """
+        ``compute = PLV.compute`` in a subclass is the same function as the
+        one the flag of PLV vouches for, not a dispatch of its own: the
+        subclass is still capability-checked.
+        """
+        from hypyp.sync.plv import PLV
+
+        class Alias(PLV):
+            compute = PLV.compute
+
+        assert Alias.supports("numpy") is True
+        assert Alias.supports("metal") is False
+        with patch("hypyp.sync.base.METAL_AVAILABLE", True):
+            with pytest.warns(UserWarning, match="no Metal implementation"):
+                metric = Alias(optimization="metal")
+        assert metric._backend == "numpy"
+
+    def test_auto_does_not_guess_numba_handled_inside_compute(self):
+        """
+        A descendant of a built-in metric that hides ``_compute_numba`` and
+        handles numba inside its own ``compute`` cannot be told apart from
+        one that only delegates. ``'auto'`` therefore falls back to numpy for
+        it, while an explicit request for numba is still granted.
+        """
+        from hypyp.sync.plv import PLV
+
+        class OwnNumba(PLV):
+            _compute_numba = None
+
+            def compute(self, complex_signal, n_samp, transpose_axes):
+                if self._backend == "numba":
+                    return "own numba"
+                return super().compute(complex_signal, n_samp, transpose_axes)
+
+        with (
+            patch("hypyp.sync.base.NUMBA_AVAILABLE", True),
+            patch("hypyp.sync.base.TORCH_AVAILABLE", False),
+        ):
+            assert OwnNumba._cpu_fallback() == ("numpy", "cpu")
+            assert OwnNumba(optimization="numba")._backend == "numba"
+
     def test_delegating_descendant_of_numpy_only_metric_never_gets_numba(self):
         """
         A descendant that overrides ``compute`` only to delegate is trusted

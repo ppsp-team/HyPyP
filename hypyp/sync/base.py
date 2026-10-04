@@ -444,12 +444,19 @@ class BaseMetric(ABC):
         owner, _ = cls._dispatch_owner()
         if owner is None:
             return True
-        # Compare positions in the MRO rather than methods: the class that
-        # sets the flag need not define compute itself (a mixin, or a metric
-        # that keeps the compute of this class).
+        # The flag vouches for the compute that its owner resolves to, which
+        # the owner need not define itself (a mixin, or a metric that keeps
+        # the compute of this class). Compare the functions rather than the
+        # classes that hold them: a descendant that rebinds the very same
+        # function (``compute = PLV.compute``) has not changed the dispatch.
         mro = cls.__mro__
-        compute_provider = next(k for k in mro if "compute" in k.__dict__)
-        return mro.index(compute_provider) >= mro.index(owner)
+
+        def first_compute(classes: tuple):
+            return next(
+                k.__dict__["compute"] for k in classes if "compute" in k.__dict__
+            )
+
+        return first_compute(mro) is first_compute(mro[mro.index(owner) :])
 
     @classmethod
     def _cpu_fallback(cls) -> tuple:
