@@ -8,9 +8,9 @@ AUTO_PRIORITY benchmark dispatch table for the connectivity metrics.
 This module is shared by every concrete metric in ``hypyp.sync``. It
 exposes:
 
-- ``BaseMetric`` — abstract base. Concrete metrics override
-  ``BaseMetric.compute`` and rely on the shared backend-resolution and
-  warning-fallback logic.
+- ``BaseMetric`` — base class. Concrete metrics implement the
+  ``_compute_*`` methods (``_compute_numpy`` at least) and rely on the
+  shared backend-resolution, warning-fallback and dispatch logic.
 - ``multiply_conjugate``, ``multiply_conjugate_time``,
   ``multiply_product`` — vectorised einsum kernels (numpy).
 - ``multiply_conjugate_torch``, ``multiply_conjugate_time_torch`` —
@@ -43,7 +43,7 @@ change.
 """
 
 import warnings
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Optional
 
 import numpy as np
@@ -305,7 +305,7 @@ class BaseMetric(ABC):
 
     #: Maps a backend name to the method implementing it. This table is the
     #: single source of truth for dispatch: ``compute`` looks the backend up
-    #: here, so an unrecognised backend raises ``KeyError`` instead of silently
+    #: here, so an unrecognised backend raises ``ValueError`` instead of silently
     #: falling through to numpy, and ``supports`` derives capability from the
     #: methods a subclass actually defines rather than from a hand-kept list.
     _BACKEND_METHODS = {
@@ -539,11 +539,16 @@ class BaseMetric(ABC):
         if priority is None:
             priority = AUTO_PRIORITY.get(cls.name, {}).get(platform, [])
 
+        # Backends of the priority list this metric has no implementation for,
+        # remembered so the fallback warning can give the real reason.
+        unimplemented = []
         for backend in priority:
             # Skip a backend this metric has no implementation for, so a
             # priority list falls through to the next candidate instead of
             # selecting a backend that would degrade to numpy at dispatch.
             if not cls.supports(backend):
+                if backend in cls._BACKEND_LABELS:
+                    unimplemented.append(cls._BACKEND_LABELS[backend])
                 continue
             if backend == "torch" and TORCH_AVAILABLE:
                 return cls._resolve_torch()
@@ -552,10 +557,21 @@ class BaseMetric(ABC):
             if backend == "cuda_kernel" and CUPY_AVAILABLE:
                 return "cuda_kernel", "cuda"
 
-        # No GPU backend from priority list available — fall back
+        # No GPU backend from priority list available — fall back. When a
+        # backend was skipped for lack of an implementation, say so: "no GPU
+        # backend available" would be false on a machine that has one.
+        if unimplemented:
+            reason = (
+                f"{cls.name!r} has no {' or '.join(unimplemented)} "
+                f"implementation, and no other backend of the priority list "
+                f"is available on platform '{platform}'."
+            )
+        else:
+            reason = (
+                f"No GPU backend available for {cls.name!r} on platform '{platform}'."
+            )
         warnings.warn(
-            f"No GPU backend available for {cls.name!r} on platform "
-            f"'{platform}'. Falling back to CPU.",
+            f"{reason} Falling back to CPU.",
             UserWarning,
             stacklevel=4,
         )
@@ -603,7 +619,9 @@ class BaseMetric(ABC):
 
         Dispatch is table-driven via ``_BACKEND_METHODS``: the backend chosen at
         construction selects the ``_compute_*`` method to run. Subclasses
-        implement those methods and do not override this one.
+        normally implement those methods and leave this one alone; a subclass
+        that overrides ``compute`` itself bypasses the dispatch and is
+        responsible for honouring ``self._backend``.
 
         Parameters
         ----------
@@ -621,9 +639,10 @@ class BaseMetric(ABC):
 
         Raises
         ------
-        KeyError
-            If ``self._backend`` is not a known backend name. This is
-            deliberate: an earlier hand-written ``if/elif`` chain per metric
+        ValueError
+            If ``self._backend`` is not a backend this metric implements. The
+            message names the metric and the backends it does implement. This
+            is deliberate: an earlier hand-written ``if/elif`` chain per metric
             ended in a bare ``return self._compute_numpy(...)``, so an
             unhandled backend was indistinguishable from the numpy default and
             failed silently. Dispatching through the table fails loudly instead.
@@ -633,20 +652,27 @@ class BaseMetric(ABC):
         Output dtype follows the backend: numpy, numba and CUDA return
         ``float64``; the Metal kernels return ``float32``.
         """
-        method_name = self._BACKEND_METHODS[self._backend]
-        method = getattr(self, method_name)
+        if not self.supports(self._backend):
+            implemented = [b for b in self._BACKEND_METHODS if self.supports(b)]
+            raise ValueError(
+                f"{self.name!r} cannot run on backend {self._backend!r}. "
+                f"Backends implemented for this metric: {implemented}."
+            )
+        method = getattr(self, self._BACKEND_METHODS[self._backend])
         return method(complex_signal, n_samp, transpose_axes)
 
-    @abstractmethod
     def _compute_numpy(
         self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple
     ) -> np.ndarray:
         """
         Reference implementation, in numpy. Always available.
 
-        Every metric must provide this: it is the correctness oracle the
+        Every metric should provide this: it is the correctness oracle the
         accelerated backends are validated against, and the fallback target
-        whenever a requested backend is unavailable or unimplemented.
+        whenever a requested backend is unavailable or unimplemented. It is
+        deliberately not an abstract method, so that a subclass written
+        against the earlier contract (overriding ``compute`` only) can still
+        be instantiated; this default raises ``NotImplementedError``.
 
         Parameters
         ----------
@@ -662,3 +688,7 @@ class BaseMetric(ABC):
         con : np.ndarray
             Connectivity matrix with shape (n_epoch, n_freq, 2*n_ch, 2*n_ch).
         """
+        raise NotImplementedError(
+            f"{type(self).__name__} must implement _compute_numpy "
+            f"(or override compute)."
+        )

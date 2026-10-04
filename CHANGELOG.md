@@ -2,7 +2,17 @@
 
 ## [Unreleased]
 
+### Fixed
+- `hypyp.sync`: asking for the Metal backend on a metric that has no Metal kernel (PLV, CCorr, Coh, ImCoh, EnvCorr, PowCorr) used to run in NumPy silently, while the metric object reported `metal`. `optimization='metal'` on these metrics now warns and falls back to NumPy, and a `priority` list skips Metal and moves on to its next backend. Only PLI, wPLI and ACCorr have a Metal kernel; `optimization='auto'` was already correct. No computed value changes (#299)
+- `hypyp.sync`: when every backend of a `priority` list is skipped or unavailable, the warning now gives the real reason (for example "'plv' has no Metal implementation") instead of "No GPU backend available"
+- `hypyp.sync`: a metric whose backend is unknown or not implemented now raises a `ValueError` naming the metric and the backends it implements, instead of computing in NumPy without notice
+- Tests: the six Metal tests that compared NumPy with NumPy are removed, and the four tests that do run a Metal kernel now assert that it ran (#300)
+
+### Added
+- `BaseMetric.supports(backend)` tells whether a metric implements a backend, for example `PLI.supports('metal')`
+
 ### Changed
+- `hypyp.sync`: backend dispatch now lives in `BaseMetric.compute`, and each metric implements `_compute_numpy` plus the optional `_compute_numba`, `_compute_torch`, `_compute_metal` and `_compute_cuda`. This is the recommended way to write a new metric. A subclass that overrides `compute` only, as before, still works
 - The whole code base is formatted with `ruff format` (line length 88). The change is purely cosmetic: the syntax tree of every file is unchanged, apart from whitespace inside docstrings, and the Python examples of `hypyp/sync/README.md` are formatted too. The vendored `hypyp/ext` and the tutorial notebooks are left untouched. The formatting commit is listed in `.git-blame-ignore-revs`, so `git blame` skips it (run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once in your clone; GitHub applies it automatically)
 - The CI now checks formatting (`ruff format --check`) and a small set of lint rules that only catch certain bugs: syntax errors, invalid comparisons and undefined names. Ruff comes from the new `lint` dependency group, which the `dev` group includes
 - `black` is removed from the `dev` dependency group, since `ruff format` replaces it

@@ -1245,5 +1245,80 @@ class TestBackendCapability:
         n_samp = complex_signal.shape[3]
         metric = PLV()
         metric._backend = "not_a_backend"
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError) as excinfo:
             metric.compute(complex_signal, n_samp, (0, 1, 3, 2))
+        # The error must be usable: it names the metric, the offending
+        # backend and the backends that do exist for this metric.
+        message = str(excinfo.value)
+        assert "'plv'" in message
+        assert "'not_a_backend'" in message
+        assert "numpy" in message
+
+    def test_unimplemented_backend_fails_closed(self, complex_signal):
+        """
+        A known backend the metric does not implement must raise the same
+        clear error, not an AttributeError on the missing method.
+        """
+        from hypyp.sync.plv import PLV
+
+        n_samp = complex_signal.shape[3]
+        metric = PLV()
+        metric._backend = "metal"
+        with pytest.raises(ValueError, match="cannot run on backend 'metal'"):
+            metric.compute(complex_signal, n_samp, (0, 1, 3, 2))
+
+    def test_priority_fallback_warning_names_the_skipped_backend(self):
+        """
+        When the only backend of a priority list has no implementation, the
+        fallback warning must give that reason.
+
+        Before, priority=['metal'] on an einsum metric warned "No GPU backend
+        available" on a machine where a GPU backend was available, without
+        mentioning that Metal was skipped for lack of a kernel.
+        """
+        with (
+            patch("hypyp.sync.base.METAL_AVAILABLE", True),
+            patch("hypyp.sync.base.TORCH_AVAILABLE", True),
+            patch("hypyp.sync.base.MPS_AVAILABLE", True),
+        ):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                metric = get_metric("plv", optimization="auto", priority=["metal"])
+
+        assert metric._backend in ("numba", "numpy")
+        messages = [
+            str(w.message) for w in caught if issubclass(w.category, UserWarning)
+        ]
+        assert any("'plv' has no Metal implementation" in m for m in messages), (
+            f"fallback warning does not explain the skip (messages: {messages})"
+        )
+        assert not any("No GPU backend available" in m for m in messages)
+
+    def test_subclass_overriding_only_compute_still_instantiates(self, complex_signal):
+        """
+        The pre-0.6.2 subclassing contract keeps working: a third-party metric
+        that overrides ``compute`` alone, without ``_compute_numpy``, can be
+        instantiated and used.
+        """
+        from hypyp.sync.base import BaseMetric
+
+        class LegacyMetric(BaseMetric):
+            name = "legacy"
+
+            def compute(self, complex_signal, n_samp, transpose_axes):
+                return np.zeros(1)
+
+        n_samp = complex_signal.shape[3]
+        result = LegacyMetric().compute(complex_signal, n_samp, (0, 1, 3, 2))
+        assert result.shape == (1,)
+
+    def test_missing_numpy_implementation_is_reported(self, complex_signal):
+        """A metric with neither ``compute`` nor ``_compute_numpy`` says so."""
+        from hypyp.sync.base import BaseMetric
+
+        class EmptyMetric(BaseMetric):
+            name = "empty"
+
+        n_samp = complex_signal.shape[3]
+        with pytest.raises(NotImplementedError, match="_compute_numpy"):
+            EmptyMetric().compute(complex_signal, n_samp, (0, 1, 3, 2))
