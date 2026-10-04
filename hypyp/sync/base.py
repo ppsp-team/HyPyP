@@ -655,13 +655,32 @@ class BaseMetric(ABC):
         # Backends of the priority list this metric has no implementation for,
         # remembered so the fallback warning can give the real reason.
         unimplemented = []
+        available = {
+            "torch": TORCH_AVAILABLE,
+            "metal": METAL_AVAILABLE,
+            "cuda_kernel": CUPY_AVAILABLE,
+        }
         for backend in priority:
-            # Skip a backend this metric has no implementation for, so a
-            # priority list falls through to the next candidate instead of
-            # selecting a backend that would degrade to numpy at dispatch.
             if not cls.supports(backend):
-                if backend in cls._BACKEND_LABELS:
-                    unimplemented.append(cls._BACKEND_LABELS[backend])
+                label = cls._BACKEND_LABELS.get(backend)
+                # Earlier versions selected an available backend here even
+                # though the metric has no implementation for it, and the
+                # computation then ran in numpy without notice. The 0.6
+                # series does not change computed values, so the selection
+                # still ends in numpy, now with a warning. Moving on to the
+                # next backend of the list instead is left to 0.7.0.
+                if label and available.get(backend):
+                    warnings.warn(
+                        f"{cls.name!r} has no {label} implementation: computing "
+                        f"with numpy, as earlier versions did silently. The "
+                        f"backends that follow in the priority list are not "
+                        f"tried.",
+                        UserWarning,
+                        stacklevel=4,
+                    )
+                    return "numpy", "cpu"
+                if label:
+                    unimplemented.append(label)
                 continue
             if backend == "torch" and TORCH_AVAILABLE:
                 return cls._resolve_torch()

@@ -1330,21 +1330,25 @@ class TestBackendCapability:
         stub.assert_called_once_with(metric, "signal", 7, (0, 1, 3, 2))
 
     @pytest.mark.parametrize("mode", sorted(set(METRICS) - {"pli", "wpli", "accorr"}))
-    def test_auto_priority_skips_unsupported_backend(self, mode):
+    @pytest.mark.parametrize("priority", [["metal", "torch"], ["metal"]])
+    def test_auto_priority_unsupported_backend_stays_on_numpy(self, mode, priority):
         """
-        A priority list must skip a backend the metric cannot run.
+        A priority list that reaches an available backend the metric cannot
+        run keeps computing in numpy, as before, but now says so.
 
-        priority=['metal', 'torch'] on an einsum metric should land on torch,
-        not on a metal that resolves to numpy behind the caller's back.
+        The 0.6 series changes no computed value: moving on to the next
+        backend of the list (torch, or the numba fallback) would.
         """
         with (
             patch("hypyp.sync.base.METAL_AVAILABLE", True),
             patch("hypyp.sync.base.TORCH_AVAILABLE", True),
             patch("hypyp.sync.base.MPS_AVAILABLE", True),
+            patch("hypyp.sync.base.NUMBA_AVAILABLE", True),
         ):
-            metric = get_metric(mode, optimization="auto", priority=["metal", "torch"])
-        assert metric._backend == "torch", (
-            f"{mode}: priority=['metal','torch'] resolved to {metric._backend!r}"
+            with pytest.warns(UserWarning, match="no Metal implementation"):
+                metric = get_metric(mode, optimization="auto", priority=priority)
+        assert (metric._backend, metric._device) == ("numpy", "cpu"), (
+            f"{mode}: priority={priority} resolved to {metric._backend!r}"
         )
 
     def test_unknown_backend_fails_closed(self, complex_signal):
@@ -1384,17 +1388,19 @@ class TestBackendCapability:
 
     def test_priority_fallback_warning_names_the_skipped_backend(self):
         """
-        When the only backend of a priority list has no implementation, the
-        fallback warning must give that reason.
+        When the only backend of a priority list has no implementation and
+        cannot run on the machine either, the fallback warning must give the
+        first reason.
 
         Before, priority=['metal'] on an einsum metric warned "No GPU backend
-        available" on a machine where a GPU backend was available, without
-        mentioning that Metal was skipped for lack of a kernel.
+        available" on a CUDA machine, where a GPU backend was available,
+        without mentioning that the metric has no Metal kernel.
         """
         with (
-            patch("hypyp.sync.base.METAL_AVAILABLE", True),
+            patch("hypyp.sync.base.METAL_AVAILABLE", False),
             patch("hypyp.sync.base.TORCH_AVAILABLE", True),
-            patch("hypyp.sync.base.MPS_AVAILABLE", True),
+            patch("hypyp.sync.base.MPS_AVAILABLE", False),
+            patch("hypyp.sync.base.CUDA_AVAILABLE", True),
         ):
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always")
