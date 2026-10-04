@@ -15,6 +15,7 @@ from typing import Tuple, List
 import math
 import random
 import string
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -26,8 +27,8 @@ from mne import create_info, EpochsArray
 
 
 def create_epochs(
-    raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, duration: float
-) -> Tuple[mne.Epochs, mne.Epochs]:
+    raw_S1: List[mne.io.Raw], raw_S2: List[mne.io.Raw], duration: float
+) -> Tuple[List[mne.Epochs], List[mne.Epochs]]:
     """
     Create epochs from continuous raw EEG data for two participants.
 
@@ -37,11 +38,11 @@ def create_epochs(
 
     Parameters
     ----------
-    raw_S1 : mne.io.Raw
-        Raw EEG data for participant 1
+    raw_S1 : List[mne.io.Raw]
+        Raw EEG recordings for participant 1, one per run
 
-    raw_S2 : mne.io.Raw
-        Raw EEG data for participant 2
+    raw_S2 : List[mne.io.Raw]
+        Raw EEG recordings for participant 2, in the same order
 
     duration : float
         Duration of each epoch in seconds
@@ -72,6 +73,18 @@ def create_epochs(
 
     epoch_S1: List[mne.Epochs] = []
     epoch_S2: List[mne.Epochs] = []
+
+    # zip stops at the shorter list, so the extra recordings are not epoched
+    if (
+        hasattr(raw_S1, "__len__")
+        and hasattr(raw_S2, "__len__")
+        and len(raw_S1) != len(raw_S2)
+    ):
+        warnings.warn(
+            "The two participants have different numbers of recordings "
+            f"({len(raw_S1)} and {len(raw_S2)}). Only the first "
+            f"{min(len(raw_S1), len(raw_S2))} of each are epoched."
+        )
 
     for raw1, raw2 in zip(raw_S1, raw_S2):
         # creating fixed events
@@ -128,6 +141,14 @@ def create_epochs(
         if len(epoch2.info["bads"]) > 0:
             epoch2 = mne.Epochs.interpolate_bads(
                 epoch2, reset_bads=True, mode="accurate", origin="auto", verbose=None
+            )
+
+        if len(epoch1) != len(epoch2):
+            warnings.warn(
+                "The two participants have different numbers of epochs "
+                f"({len(epoch1)} and {len(epoch2)}). Hyperscanning analyses need "
+                "epochs that correspond in time between the two participants; "
+                "check that the two recordings cover the same period."
             )
 
         epoch_S1.append(epoch1)
@@ -209,8 +230,6 @@ def merge(epoch_S1: mne.Epochs, epoch_S2: mne.Epochs) -> mne.Epochs:
         epoch_S1.info["highpass"] != epoch_S2.info["highpass"]
         or epoch_S1.info["lowpass"] != epoch_S2.info["lowpass"]
     ):
-        import warnings
-
         warnings.warn("Filter settings differ between participants. Using S1 settings.")
 
     # checking wether data have the same size
@@ -463,9 +482,13 @@ def normalizing(baseline: np.ndarray, task: np.ndarray, type: str) -> np.ndarray
     if type == "Zscore":
         s = np.subtract(m_task, m_baseline)
         Normed_task = np.divide(s, std_baseline)
-    if type == "Logratio":
+    elif type == "Logratio":
         d = np.divide(m_task, m_baseline)
         Normed_task = np.log10(d)
+    else:
+        raise ValueError(
+            f"Unknown normalization type '{type}'. Use 'Zscore' or 'Logratio'."
+        )
 
     return Normed_task
 
@@ -550,7 +573,8 @@ def generate_virtual_epoch(
         Template Epochs object to copy structure from
 
     W : np.ndarray
-        Coupling matrix between oscillators, with shape (n_channels, n_channels)
+        Coupling matrix between oscillators, with shape (n_channels, n_channels).
+        The number of channels must be even, otherwise a ValueError is raised.
 
     frequency_mean : float, optional
         Mean frequency of oscillators in Hz (default=10)
@@ -589,11 +613,12 @@ def generate_virtual_epoch(
 
     Examples
     --------
-    >>> # Create a simple coupling matrix (3 oscillators)
+    >>> # Create a simple coupling matrix (4 oscillators, as many as channels)
     >>> W = np.array([
-    ...     [0, 0.2, 0],
-    ...     [0.2, 0, 0.2],
-    ...     [0, 0.2, 0]
+    ...     [0, 0.2, 0, 0],
+    ...     [0.2, 0, 0.2, 0],
+    ...     [0, 0.2, 0, 0.2],
+    ...     [0, 0, 0.2, 0]
     ... ])
     >>> # Generate simulated epochs in the alpha band
     >>> sim_epochs = generate_virtual_epoch(
@@ -607,6 +632,12 @@ def generate_virtual_epoch(
 
     n_epo, n_chan, n_samp = epoch.get_data().shape
     sfreq = epoch.info["sfreq"]
+
+    # the initial phases are drawn for two halves of equal size
+    if n_chan % 2 != 0:
+        raise ValueError(
+            f"generate_virtual_epoch needs an even number of channels, got {n_chan}."
+        )
 
     Nt = n_samp * n_epo
     tmax = n_samp / sfreq * n_epo  # s
@@ -785,6 +816,12 @@ def epochs_from_tasks(
             t_starts.append(t_start)
             t_durations.append(t_duration)
             task_events.append([t_start, 0, onset_event_id])
+
+        if len(task_events) == 0:
+            raise ValueError(
+                f'Cannot find onset of task "{task_key}": no event with '
+                f'event_id "{onset_event_id}" in the annotations of the recording'
+            )
 
         all_epochs.append(
             mne.Epochs(

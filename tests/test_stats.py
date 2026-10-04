@@ -351,3 +351,112 @@ def test_pair_connectivity_accorr(epochs):
     # Diagonal should have high values (self-correlation)
     diag_values = np.array([con[0, i, i] for i in range(con.shape[1])])
     assert np.mean(diag_values) > 0.5
+
+
+def _synthetic_pair(n_epochs, n_channels, n_times=512, seed=0):
+    """Random data shaped (2, n_epochs, n_channels, n_times), no download needed."""
+    rng = np.random.default_rng(seed)
+    return rng.standard_normal((2, n_epochs, n_channels, n_times))
+
+
+def _plv_from_definition(data, sampling_rate, frequencies):
+    """PLV written from its definition, without compute_sync or hypyp.sync.
+
+    Returns an array shaped (n_freq, n_epochs, 2*n_channels, 2*n_channels),
+    with the channels of participant 1 first.
+    """
+    # (2, n_epochs, n_channels, n_freq, n_times), tapers averaged
+    signal = np.mean(analyses.compute_single_freq(data, sampling_rate, frequencies), 3)
+    phase = signal / np.abs(signal)
+    both = np.concatenate([phase[0], phase[1]], axis=1)
+    n_times = both.shape[-1]
+    plv = np.abs(np.einsum("ecft,edft->fecd", both, both.conj())) / n_times
+    return plv
+
+
+@pytest.mark.parametrize(
+    "n_epochs, n_channels, frequencies, n_freq",
+    [
+        (3, 4, [8, 12], 4),  # ordinary case, already worked
+        (1, 4, [8, 12], 4),  # single epoch
+        (3, 1, [8, 12], 4),  # single channel per participant
+        (1, 1, [8, 12], 4),
+        (3, 4, [10, 11], 1),  # single frequency
+    ],
+)
+def test_pair_connectivity_frequency_list_singleton_dims(
+    n_epochs, n_channels, frequencies, n_freq
+):
+    """A frequency list must not crash when a dimension has length one, and
+    must give the PLV of the definition with the documented layout."""
+    data = _synthetic_pair(n_epochs, n_channels)
+    expected = _plv_from_definition(data, 256, frequencies)
+    assert expected.shape == (n_freq, n_epochs, 2 * n_channels, 2 * n_channels)
+
+    con = analyses.pair_connectivity(
+        data,
+        sampling_rate=256,
+        frequencies=frequencies,
+        mode="plv",
+        epochs_average=False,
+    )
+    assert con.shape == expected.shape
+    np.testing.assert_allclose(con, expected, rtol=0, atol=1e-12)
+
+    con = analyses.pair_connectivity(
+        data, sampling_rate=256, frequencies=frequencies, mode="plv"
+    )
+    assert con.shape == (n_freq, 2 * n_channels, 2 * n_channels)
+    np.testing.assert_allclose(con, expected.mean(axis=1), rtol=0, atol=1e-12)
+
+
+def test_compute_sync_reports_the_real_error():
+    """Only an unknown metric is reported as an unsupported metric."""
+    complex_signal = analyses.compute_freq_bands(
+        _synthetic_pair(3, 4), 256, {"alpha": [8, 12]}
+    )
+
+    with pytest.raises(ValueError, match='Metric type "nope" not supported.'):
+        analyses.compute_sync(complex_signal, "nope")
+
+    with pytest.raises(ValueError) as excinfo:
+        analyses.compute_sync(complex_signal, "plv", optimization="bogus")
+    assert "not supported" not in str(excinfo.value)
+    assert "bogus" in str(excinfo.value)
+
+
+def _cluster_data(seed=0):
+    """Two groups of 12 observations over 6 features; group 2 is larger on
+    the first three features."""
+    rng = np.random.default_rng(seed)
+    low = rng.standard_normal((12, 6))
+    high = rng.standard_normal((12, 6))
+    high[:, :3] += 5.0
+    adjacency = scipy.sparse.csr_matrix(np.eye(6) + np.eye(6, k=1) + np.eye(6, k=-1))
+    return low, high, adjacency
+
+
+def test_statscluster_unknown_test_name():
+    low, high, adjacency = _cluster_data()
+    with pytest.raises(ValueError, match="bogus"):
+        stats.statscluster([low, high], "bogus", None, adjacency, 0, 50)
+
+
+def test_metaconn_matrix_plot_argument():
+    import matplotlib.pyplot as plt
+
+    ch_con = scipy.sparse.csr_matrix(np.eye(4) + np.eye(4, k=1) + np.eye(4, k=-1))
+    electrodes = [(0, 1), (1, 2), (2, 3)]
+
+    plt.close("all")
+    quiet = stats.metaconn_matrix(electrodes, ch_con, [10, 11], plot=False)
+    assert plt.get_fignums() == []
+
+    # the default still draws, as before
+    drawn = stats.metaconn_matrix(electrodes, ch_con, [10, 11])
+    assert len(plt.get_fignums()) == 1
+    plt.close("all")
+
+    np.testing.assert_array_equal(quiet.metaconn, drawn.metaconn)
+    np.testing.assert_array_equal(quiet.metaconn_freq, drawn.metaconn_freq)
+    assert quiet.metaconn_freq.shape == (6, 6)

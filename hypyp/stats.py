@@ -324,6 +324,7 @@ def metaconn_matrix(
     electrodes: List[Tuple[int, int]],
     ch_con: scipy.sparse.csr_matrix,
     freqs_mean: List[float],
+    plot: bool = True,
 ) -> namedtuple:
     """
     Compute a priori connectivity between pairs of sensors within one brain.
@@ -342,6 +343,10 @@ def metaconn_matrix(
 
     freqs_mean : List[float]
         List of frequencies in the frequency-band-of-interest
+
+    plot : bool, optional
+        Whether to draw the meta-connectivity matrix in the current figure
+        (default=True, the historical behaviour)
 
     Returns
     -------
@@ -401,9 +406,9 @@ def metaconn_matrix(
     metaconn_mult = np.tile(metaconn, (l_freq, l_freq))
     metaconn_freq = np.multiply(init, metaconn_mult)
 
-    # TODO: option with verbose
-    # vizualising the array
-    plt.spy(metaconn_freq)
+    if plot:
+        # vizualising the array
+        plt.spy(metaconn_freq)
 
     metaconn_matrixTuple = namedtuple("metaconn_matrix", ["metaconn", "metaconn_freq"])
 
@@ -677,6 +682,11 @@ def statscluster(
             factor_levels=factor_levels,
             effects="all",
             pvalue=alpha,
+        )
+    else:
+        raise ValueError(
+            f"Unknown test '{test}'. Use 'ind ttest', 'rel ttest', 'f oneway' "
+            "or 'f multipleway'."
         )
 
     # computing the cluster permutation t test

@@ -5,7 +5,7 @@
 ### Fixed
 - `hypyp.sync`: asking for the Metal backend on a metric that has no Metal kernel (PLV, CCorr, Coh, ImCoh, EnvCorr, PowCorr) used to run in NumPy silently, while the metric object reported `metal`. The computation still runs in NumPy, so no computed value changes, but it now warns and the metric object reports `numpy`. This holds for `optimization='metal'` and for a `priority` list that reaches Metal on a machine where Metal is available: the backends that follow in the list are not tried, which is left to 0.7.0. Only PLI, wPLI and ACCorr have a Metal kernel; the default selection of `optimization='auto'` is unchanged for the nine built-in metrics (#299)
 - `hypyp.sync`: when a backend of a `priority` list can neither run on the machine nor be computed by the metric, and no other GPU backend of the list can be used, the warning now says so (for example "'plv' has no Metal implementation") instead of "No GPU backend available"
-- `hypyp.sync`: a metric whose `_backend` was set to a backend it does not implement used to compute in NumPy without notice. It still computes in NumPy, now with a warning. A `_backend` that is not the name of a backend raises a `ValueError` naming the metric and the backends it implements; called through `compute_sync`, that error is still reworded as an unsupported metric (#306)
+- `hypyp.sync`: a metric whose `_backend` was set to a backend it does not implement used to compute in NumPy without notice. It still computes in NumPy, now with a warning. A `_backend` that is not the name of a backend raises a `ValueError` naming the metric and the backends it implements (#306)
 - Tests: the six Metal tests that compared NumPy with NumPy are replaced by tests of the fallback itself (warning, backend and result), the dispatch of every metric to every backend it implements is checked without a GPU, and the four tests that run a Metal kernel now assert that the Metal method was called (#300)
 - `import hypyp.analyses` failed when the import of torch, numba, cupy or the Metal bindings raised anything other than `ImportError`, for example the `OSError` of a missing shared library. The backend is now reported as unavailable, with a warning that gives the original error. An installed package that fails with an `ImportError` used to be skipped silently and now gets the same warning; a package that is not installed is still skipped silently. A package that imports but is broken further down is not covered
 - `hypyp.sync.get_metric` rejected the names `envelope_corr`, `pow_corr` and `imaginary_coh`, which `compute_sync` accepts and the documentation uses. It now accepts them; the mapping is `hypyp.sync.METRIC_ALIASES`, and a metric registered in `METRICS` under one of these names takes precedence
@@ -13,8 +13,16 @@
 - `hypyp.fnirs.Recording.load_raw` raised a `TypeError` for a `Raw` object without `subject_info`, as built in memory with `mne.io.RawArray`, and a `KeyError` when `subject_info` had no `his_id`. Both now get the random label that was intended
 - `hypyp.fnirs.Study.compute_wtcs_shuffle` raised a `TypeError` when given `with_intra=False`, so the keyword arguments of `compute_wtcs` could not be reused. That redundant argument is now accepted; `with_intra=True` is still refused
 - `XDFImport(select_matches=[...])`: an integer that is not the id of a stream raised a bare `KeyError`; it now raises the same `ValueError` as an unknown stream name. A numpy integer is recognised as a stream id
+- `compute_sync` and `pair_connectivity` reported every `ValueError` as `Metric type "..." not supported`, so an unknown `optimization` was announced as an unsupported metric. Only an unknown metric name gets that message now; any other error keeps its own (#306)
+- `pair_connectivity` crashed with an `IndexError` when the frequencies were given as a list and the data had a single epoch, a single channel per participant or a single frequency. Results for data without such a dimension are unchanged
+- `utils.normalizing` raised an `UnboundLocalError` for a `type` name other than `'Zscore'` or `'Logratio'`; it now raises a `ValueError` naming the two valid types
+- `utils.generate_virtual_epoch` failed inside the solver for an odd number of channels; it now raises a `ValueError` saying that the number must be even, and its docstring example uses four oscillators
+- `utils.epochs_from_tasks` failed with `min() iterable argument is empty` when the onset event of a task was absent from the recording; the `ValueError` now names the task and the event
+- `utils.create_epochs` warns when the two participants give different numbers of epochs, or, when both are given as lists, different numbers of recordings. It still returns what it returned before
+- `stats.statscluster` raised an `UnboundLocalError` for an unknown `test`; it now raises a `ValueError` listing the valid names
 
 ### Added
+- `stats.metaconn_matrix` has a `plot` argument. It defaults to `True`, the earlier behaviour; `plot=False` computes the matrices without drawing
 - `BaseMetric.supports(backend)` tells whether a metric implements a backend, for example `PLI.supports('metal')`
 
 ### Changed
