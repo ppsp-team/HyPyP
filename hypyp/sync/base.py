@@ -318,7 +318,9 @@ class BaseMetric(ABC):
     #: The flag vouches for the ``compute`` of the class that sets it: a
     #: descendant that overrides ``compute`` again may add backends of its
     #: own there, so it is no longer capability-checked unless it sets the
-    #: flag too.
+    #: flag too. Setting it back to ``None`` in a descendant does not restore
+    #: the inference: the nearest class of the MRO that sets ``True`` or
+    #: ``False`` decides.
     _dispatch_via_table: Optional[bool] = None
 
     #: Maps a backend name to the method implementing it. This table is the
@@ -440,13 +442,29 @@ class BaseMetric(ABC):
         if not cls._dispatches_via_table():
             return False
         owner, _ = cls._dispatch_owner()
-        return owner is None or cls.compute is owner.compute
+        if owner is None:
+            return True
+        # Compare positions in the MRO rather than methods: the class that
+        # sets the flag need not define compute itself (a mixin, or a metric
+        # that keeps the compute of this class).
+        mro = cls.__mro__
+        compute_provider = next(k for k in mro if "compute" in k.__dict__)
+        return mro.index(compute_provider) >= mro.index(owner)
 
     @classmethod
     def _cpu_fallback(cls) -> tuple:
         """CPU backend used when no GPU backend can be selected: numba when it
-        is installed and the metric implements it, numpy otherwise."""
-        if NUMBA_AVAILABLE and cls.supports("numba"):
+        is installed and the metric implements it, numpy otherwise.
+
+        Nobody asked for numba by name here, so under the table dispatch the
+        method must really exist, even for a descendant that overrides
+        ``compute`` and is otherwise trusted with any backend it requests.
+        """
+        if cls._dispatches_via_table():
+            has_numba = cls._implements("numba")
+        else:
+            has_numba = cls.supports("numba")
+        if NUMBA_AVAILABLE and has_numba:
             return "numba", "cpu"
         return "numpy", "cpu"
 
@@ -746,8 +764,10 @@ class BaseMetric(ABC):
         ``compute``. The base method was then abstract with an empty body and
         returned ``None``; it still does for such a subclass. A subclass of a
         built-in metric that overrides ``compute`` and delegates to
-        ``super().compute(...)`` gets the table dispatch of its parent, and
-        the errors above for a backend the parent does not implement.
+        ``super().compute(...)`` gets the table dispatch, which looks the
+        method up on the instance: a ``_compute_*`` method added by the
+        descendant is used, and the errors above are raised for a backend
+        that neither it nor its parent implements.
         """
         if not self._dispatches_via_table():
             # Reached through super().compute() from a subclass that does its

@@ -1523,12 +1523,67 @@ class TestBackendCapability:
 
         n_samp = complex_signal.shape[3]
         axes = (0, 1, 3, 2)
+        delegated = CustomPLV().compute(complex_signal, n_samp, axes)
+        # Compared with the numpy method itself, and checked to be an array:
+        # two None results would otherwise compare equal.
+        assert isinstance(delegated, np.ndarray)
         np.testing.assert_array_equal(
-            CustomPLV().compute(complex_signal, n_samp, axes),
-            PLV().compute(complex_signal, n_samp, axes),
+            delegated, PLV()._compute_numpy(complex_signal, n_samp, axes)
         )
         # The built-in parent itself stays capability-checked.
         assert PLV.supports("metal") is False
+
+    def test_dispatch_flag_set_by_a_mixin(self):
+        """
+        The class that sets ``_dispatch_via_table`` need not define
+        ``compute``: a mixin can carry the flag. The metric is then
+        capability-checked like its built-in parent, and does not crash.
+        """
+        from hypyp.sync.plv import PLV
+
+        class DispatchPolicy:
+            _dispatch_via_table = True
+
+        class MixedPLV(DispatchPolicy, PLV):
+            pass
+
+        assert MixedPLV.supports("numpy") is True
+        assert MixedPLV.supports("metal") is False
+        with patch("hypyp.sync.base.METAL_AVAILABLE", True):
+            with pytest.warns(UserWarning, match="no Metal implementation"):
+                metric = MixedPLV(optimization="metal")
+        assert metric._backend == "numpy"
+
+    def test_delegating_descendant_of_numpy_only_metric_never_gets_numba(self):
+        """
+        A descendant that overrides ``compute`` only to delegate is trusted
+        with the backends it requests, but the automatic CPU fallback must
+        still not hand it a numba method that does not exist.
+        """
+        from hypyp.sync.base import BaseMetric
+
+        class NumpyOnly(BaseMetric):
+            name = "numpy_only"
+            _dispatch_via_table = True
+
+            def _compute_numpy(self, complex_signal, n_samp, transpose_axes):
+                return "numpy result"
+
+        class Delegating(NumpyOnly):
+            def compute(self, complex_signal, n_samp, transpose_axes):
+                return super().compute(complex_signal, n_samp, transpose_axes)
+
+        with (
+            patch("hypyp.sync.base.NUMBA_AVAILABLE", True),
+            patch("hypyp.sync.base.TORCH_AVAILABLE", False),
+            patch("hypyp.sync.base.MPS_AVAILABLE", False),
+            patch("hypyp.sync.base.CUDA_AVAILABLE", False),
+        ):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                metric = Delegating(optimization="auto")
+        assert metric._backend == "numpy"
+        assert metric.compute(None, 0, None) == "numpy result"
 
     def test_supports_ignores_placeholders(self):
         """supports() must not count a non-callable attribute, nor the default
