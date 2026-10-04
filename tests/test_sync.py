@@ -5,13 +5,14 @@ All optimized implementations are tested against the unoptimized reference
 implementation to ensure numerical correctness.
 """
 
+import warnings
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
 from hypyp.analyses import compute_sync
-from hypyp.sync import get_metric
+from hypyp.sync import METRICS, get_metric
 from hypyp.sync.accorr import ACCorr
 from hypyp.sync.base import (
     BaseMetric,
@@ -23,6 +24,63 @@ from hypyp.sync.base import (
 )
 from hypyp.sync.kernels import CUPY_AVAILABLE
 from tests.accorr_reference import accorr_reference
+
+
+#: Written by hand on purpose: the tests below must not derive their cases
+#: from supports(), the function they check.
+EXPECTED_BACKENDS = {
+    mode: {"numpy", "numba", "torch", "cuda_kernel"}
+    | ({"metal"} if mode in {"pli", "wpli", "accorr"} else set())
+    for mode in (
+        "plv",
+        "ccorr",
+        "accorr",
+        "coh",
+        "imcoh",
+        "pli",
+        "wpli",
+        "envcorr",
+        "powcorr",
+    )
+}
+ALL_BACKENDS = ("numpy", "numba", "torch", "metal", "cuda_kernel")
+
+#: Also by hand: the routing test must not read the method names from
+#: BaseMetric._BACKEND_METHODS, the table it checks.
+EXPECTED_METHODS = {
+    "numpy": "_compute_numpy",
+    "numba": "_compute_numba",
+    "torch": "_compute_torch",
+    "metal": "_compute_metal",
+    "cuda_kernel": "_compute_cuda",
+}
+
+
+def spy_on_kernel(module_name, function_name):
+    """
+    Patch a kernel function of ``hypyp.sync.kernels`` with a spy that still
+    runs it, to prove the kernel itself was entered. The metrics import their
+    kernel inside the method, so patching the module attribute is seen.
+    """
+    import importlib
+
+    module = importlib.import_module(f"hypyp.sync.kernels.{module_name}")
+    return patch.object(
+        module, function_name, side_effect=getattr(module, function_name)
+    )
+
+
+def spy_on(cls, method_name):
+    """
+    Patch ``cls.<method_name>`` with a spy that still runs the real method.
+
+    Asserting ``metric._backend == 'metal'`` only proves what the metric
+    reports. The spy proves that ``compute`` really went through the method of
+    that backend, which is what a broken dispatch would get wrong.
+    """
+    return patch.object(
+        cls, method_name, autospec=True, side_effect=getattr(cls, method_name)
+    )
 
 
 class TestAccorrReference:
@@ -225,20 +283,6 @@ class TestPLV:
                     result[e, f], result[e, f].T, rtol=1e-10, atol=1e-12
                 )
 
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_plv_metal_vs_numpy(self, complex_signal):
-        """Metal PLV should match numpy PLV within float32 tolerance."""
-        from hypyp.sync.plv import PLV
-
-        n_samp = complex_signal.shape[3]
-        result_np = PLV(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = PLV(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
-
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_plv_cuda_vs_numpy(self, complex_signal):
         """CUDA PLV should match numpy PLV exactly (both float64)."""
@@ -356,23 +400,6 @@ class TestCCorr:
         else:
             np.testing.assert_allclose(result_torch, result_np, rtol=1e-9, atol=1e-10)
 
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_ccorr_metal_vs_numpy(self, complex_signal):
-        """Metal CCorr should match numpy CCorr within float32 tolerance.
-
-        Uses Kahan summation with fastMath=OFF to preserve IEEE-754 compliance.
-        """
-        from hypyp.sync.ccorr import CCorr
-
-        n_samp = complex_signal.shape[3]
-        result_np = CCorr(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = CCorr(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
-
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_ccorr_cuda_vs_numpy(self, complex_signal):
         """CUDA CCorr should match numpy CCorr exactly (both float64)."""
@@ -456,20 +483,6 @@ class TestCoh:
                     result[e, f], result[e, f].T, rtol=1e-10, atol=1e-12
                 )
 
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_coh_metal_vs_numpy(self, complex_signal):
-        """Metal Coh should match numpy Coh within float32 tolerance."""
-        from hypyp.sync.coh import Coh
-
-        n_samp = complex_signal.shape[3]
-        result_np = Coh(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = Coh(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
-
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_coh_cuda_vs_numpy(self, complex_signal):
         """CUDA Coh should match numpy Coh exactly (both float64)."""
@@ -552,20 +565,6 @@ class TestImCoh:
                 np.testing.assert_allclose(
                     result[e, f], result[e, f].T, rtol=1e-10, atol=1e-12
                 )
-
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_imcoh_metal_vs_numpy(self, complex_signal):
-        """Metal ImCoh should match numpy ImCoh within float32 tolerance."""
-        from hypyp.sync.imaginary_coh import ImCoh
-
-        n_samp = complex_signal.shape[3]
-        result_np = ImCoh(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = ImCoh(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
 
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_imcoh_cuda_vs_numpy(self, complex_signal):
@@ -755,9 +754,16 @@ class TestPLI:
         result_np = PLI(optimization=None).compute(
             complex_signal, n_samp, self.TRANSPOSE_AXES
         )
-        result_metal = PLI(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
+        metric_metal = PLI(optimization="metal")
+        # A silent fallback to numpy would make this comparison numpy-vs-numpy
+        # and therefore vacuous: check the backend, then that the Metal kernel
+        # function itself is entered.
+        assert metric_metal._backend == "metal"
+        with spy_on_kernel("metal_phase", "pli_metal") as spy:
+            result_metal = metric_metal.compute(
+                complex_signal, n_samp, self.TRANSPOSE_AXES
+            )
+        assert spy.call_count == 1
         # Float32 precision — sign() near zero can flip
         np.testing.assert_allclose(result_metal, result_np, rtol=1e-2, atol=1e-2)
 
@@ -771,7 +777,11 @@ class TestPLI:
             (2, 1, 256, 256)
         )
         n_samp = sig.shape[3]
-        result = PLI(optimization="metal").compute(sig, n_samp, self.TRANSPOSE_AXES)
+        metric = PLI(optimization="metal")
+        assert metric._backend == "metal"
+        with spy_on_kernel("metal_phase", "pli_metal") as spy:
+            result = metric.compute(sig, n_samp, self.TRANSPOSE_AXES)
+        assert spy.call_count == 1
         assert result.shape == (2, 1, 256, 256)
         assert not np.any(np.isnan(result))
         assert np.allclose(np.diagonal(result[0, 0]), 0)  # diagonal = 0
@@ -955,20 +965,6 @@ class TestEnvCorr:
         else:
             np.testing.assert_allclose(result_torch, result_np, rtol=1e-9, atol=1e-10)
 
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_envcorr_metal_vs_numpy(self, complex_signal):
-        """Metal EnvCorr should match numpy EnvCorr within float32 tolerance."""
-        from hypyp.sync.envelope_corr import EnvCorr
-
-        n_samp = complex_signal.shape[3]
-        result_np = EnvCorr(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = EnvCorr(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
-
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_envcorr_cuda_vs_numpy(self, complex_signal):
         """CUDA EnvCorr should match numpy EnvCorr exactly (both float64)."""
@@ -1052,20 +1048,6 @@ class TestPowCorr:
         else:
             np.testing.assert_allclose(result_torch, result_np, rtol=1e-9, atol=1e-10)
 
-    @pytest.mark.skipif(not METAL_AVAILABLE, reason="Metal not available")
-    def test_powcorr_metal_vs_numpy(self, complex_signal):
-        """Metal PowCorr should match numpy PowCorr within float32 tolerance."""
-        from hypyp.sync.pow_corr import PowCorr
-
-        n_samp = complex_signal.shape[3]
-        result_np = PowCorr(optimization=None).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        result_metal = PowCorr(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
-        np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
-
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
     def test_powcorr_cuda_vs_numpy(self, complex_signal):
         """CUDA PowCorr should match numpy PowCorr exactly (both float64)."""
@@ -1089,9 +1071,13 @@ class TestPowCorr:
         result_np = WPLI(optimization=None).compute(
             complex_signal, n_samp, self.TRANSPOSE_AXES
         )
-        result_metal = WPLI(optimization="metal").compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
+        metric_metal = WPLI(optimization="metal")
+        assert metric_metal._backend == "metal"
+        with spy_on_kernel("metal_phase", "wpli_metal") as spy:
+            result_metal = metric_metal.compute(
+                complex_signal, n_samp, self.TRANSPOSE_AXES
+            )
+        assert spy.call_count == 1
         np.testing.assert_allclose(result_metal, result_np, rtol=1e-2, atol=1e-2)
 
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
@@ -1123,9 +1109,13 @@ class TestAccorrKernels:
         result_np = ACCorr(optimization=None, show_progress=False).compute(
             complex_signal, n_samp, self.TRANSPOSE_AXES
         )
-        result_metal = ACCorr(optimization="metal", show_progress=False).compute(
-            complex_signal, n_samp, self.TRANSPOSE_AXES
-        )
+        metric_metal = ACCorr(optimization="metal", show_progress=False)
+        assert metric_metal._backend == "metal"
+        with spy_on_kernel("metal_accorr", "accorr_metal") as spy:
+            result_metal = metric_metal.compute(
+                complex_signal, n_samp, self.TRANSPOSE_AXES
+            )
+        assert spy.call_count == 1
         np.testing.assert_allclose(result_metal, result_np, rtol=1e-5, atol=1e-5)
 
     @pytest.mark.skipif(not CUPY_AVAILABLE, reason="CuPy not available")
@@ -1237,3 +1227,574 @@ class TestAutoDispatch:
         """get_metric passes priority through to the metric class."""
         m = get_metric("accorr", optimization="auto", priority=["numba"])
         assert m._priority == ["numba"]
+
+
+class TestBackendCapability:
+    """
+    A requested backend must either run, or degrade with a warning.
+
+    Only PLI, wPLI and ACCorr have Metal kernels — torch/MPS is the intended
+    GPU path for the six einsum metrics (see hypyp/sync/base.py AUTO_PRIORITY
+    rationale and the support matrix in hypyp/sync/README.md). Requesting
+    'metal' for a metric that has no Metal kernel must therefore be reported,
+    never silently answered with numpy.
+
+    These tests patch the availability flags instead of gating on hardware, so
+    the capability contract is verified on any machine including CI.
+    """
+
+    METAL_CAPABLE = {"pli", "wpli", "accorr"}
+
+    def test_capability_matrix(self):
+        """supports() must answer exactly the hand-written support matrix."""
+        assert set(METRICS) == set(EXPECTED_BACKENDS)
+        for mode, cls in METRICS.items():
+            actual = {b for b in ALL_BACKENDS if cls.supports(b)}
+            assert actual == EXPECTED_BACKENDS[mode], mode
+            assert cls.supports("not_a_backend") is False
+
+    def test_supports_reflects_the_implemented_methods(self):
+        """supports() must be derived from the code, not a hand-kept list."""
+        for mode, cls in METRICS.items():
+            assert cls.supports("metal") == hasattr(cls, "_compute_metal")
+            assert cls.supports("numpy") is True
+            assert cls.supports("numba") == hasattr(cls, "_compute_numba")
+
+    def test_metal_capability_matches_documented_support_matrix(self):
+        """Exactly PLI/wPLI/ACCorr expose a Metal kernel."""
+        actual = {mode for mode, cls in METRICS.items() if cls.supports("metal")}
+        assert actual == self.METAL_CAPABLE
+
+    @pytest.mark.parametrize("mode", sorted(METRICS))
+    def test_metal_request_never_silently_degrades(self, mode, complex_signal):
+        """
+        optimization='metal' either resolves to metal, or warns and uses numpy.
+
+        Regression test: before the capability check, _resolve_optimization
+        granted ('metal', 'mps') to every metric, and compute() then fell
+        through its if/elif chain into _compute_numpy — so six metrics returned
+        a numpy result while reporting _backend == 'metal', with no warning.
+        """
+        with patch("hypyp.sync.base.METAL_AVAILABLE", True):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                metric = get_metric(mode, optimization="metal")
+
+        if mode in self.METAL_CAPABLE:
+            assert metric._backend == "metal"
+        else:
+            assert metric._backend == "numpy", (
+                f"{mode}: asked for metal, resolved to {metric._backend!r} "
+                f"but has no Metal kernel"
+            )
+            messages = [
+                str(w.message) for w in caught if issubclass(w.category, UserWarning)
+            ]
+            assert any("Metal" in m for m in messages), (
+                f"{mode}: degraded to numpy without warning (messages: {messages})"
+            )
+            # The fallback must also compute: same result as a plain numpy
+            # metric, through the numpy method.
+            n_samp = complex_signal.shape[3]
+            axes = (0, 1, 3, 2)
+            expected = get_metric(mode).compute(complex_signal, n_samp, axes)
+            with spy_on(type(metric), "_compute_numpy") as spy:
+                result = metric.compute(complex_signal, n_samp, axes)
+            assert spy.call_count == 1
+            np.testing.assert_array_equal(result, expected)
+
+    @pytest.mark.parametrize(
+        "mode, backend",
+        [
+            (mode, backend)
+            for mode in sorted(EXPECTED_BACKENDS)
+            for backend in sorted(EXPECTED_BACKENDS[mode])
+        ],
+    )
+    def test_compute_routes_to_the_method_of_the_backend(self, mode, backend):
+        """
+        compute() must call the ``_compute_*`` method of the resolved backend,
+        with its arguments, and return its result, for every backend each
+        metric implements. No hardware is needed: the method is replaced by a
+        stub.
+        """
+        cls = METRICS[mode]
+        method_name = EXPECTED_METHODS[backend]
+        metric = cls()
+        metric._backend = backend
+        sentinel = object()
+        with patch.object(cls, method_name, autospec=True) as stub:
+            stub.return_value = sentinel
+            result = metric.compute("signal", 7, (0, 1, 3, 2))
+        assert result is sentinel
+        stub.assert_called_once_with(metric, "signal", 7, (0, 1, 3, 2))
+
+    @pytest.mark.parametrize("mode", sorted(set(METRICS) - {"pli", "wpli", "accorr"}))
+    @pytest.mark.parametrize("priority", [["metal", "torch"], ["metal"]])
+    def test_auto_priority_unsupported_backend_stays_on_numpy(self, mode, priority):
+        """
+        A priority list that reaches an available backend the metric cannot
+        run keeps computing in numpy, as before, but now says so.
+
+        The 0.6 series changes no computed value: moving on to the next
+        backend of the list (torch, or the numba fallback) would.
+        """
+        with (
+            patch("hypyp.sync.base.METAL_AVAILABLE", True),
+            patch("hypyp.sync.base.TORCH_AVAILABLE", True),
+            patch("hypyp.sync.base.MPS_AVAILABLE", True),
+            patch("hypyp.sync.base.NUMBA_AVAILABLE", True),
+        ):
+            with pytest.warns(UserWarning, match="no Metal implementation"):
+                metric = get_metric(mode, optimization="auto", priority=priority)
+        assert (metric._backend, metric._device) == ("numpy", "cpu"), (
+            f"{mode}: priority={priority} resolved to {metric._backend!r}"
+        )
+
+    def test_unknown_backend_fails_closed(self, complex_signal):
+        """
+        An unrecognised _backend must raise, not quietly compute in numpy.
+
+        This is the fail-closed guarantee: the original if/elif chains ended in
+        a bare `return self._compute_numpy(...)`, so any unhandled backend value
+        became indistinguishable from the default.
+        """
+        from hypyp.sync.plv import PLV
+
+        n_samp = complex_signal.shape[3]
+        metric = PLV()
+        metric._backend = "not_a_backend"
+        with pytest.raises(ValueError) as excinfo:
+            metric.compute(complex_signal, n_samp, (0, 1, 3, 2))
+        # The error must be usable: it names the metric, the offending
+        # backend and the backends that do exist for this metric.
+        message = str(excinfo.value)
+        assert "'plv'" in message
+        assert "'not_a_backend'" in message
+        assert "numpy" in message
+
+    def test_unimplemented_backend_computes_in_numpy_with_a_warning(
+        self, complex_signal
+    ):
+        """
+        A known backend the metric does not implement computes in numpy, as
+        before, but says so: the 0.6 series changes no computed value.
+        """
+        from hypyp.sync.plv import PLV
+
+        n_samp = complex_signal.shape[3]
+        axes = (0, 1, 3, 2)
+        metric = PLV()
+        metric._backend = "metal"
+        with pytest.warns(UserWarning, match="'plv' has no Metal implementation"):
+            result = metric.compute(complex_signal, n_samp, axes)
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(
+            result, PLV()._compute_numpy(complex_signal, n_samp, axes)
+        )
+
+    def test_priority_fallback_warning_names_the_skipped_backend(self):
+        """
+        When the only backend of a priority list has no implementation and
+        cannot run on the machine either, the fallback warning must give the
+        first reason.
+
+        Before, priority=['metal'] on an einsum metric warned "No GPU backend
+        available" on a CUDA machine, where a GPU backend was available,
+        without mentioning that the metric has no Metal kernel.
+        """
+        with (
+            patch("hypyp.sync.base.METAL_AVAILABLE", False),
+            patch("hypyp.sync.base.TORCH_AVAILABLE", True),
+            patch("hypyp.sync.base.MPS_AVAILABLE", False),
+            patch("hypyp.sync.base.CUDA_AVAILABLE", True),
+        ):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                metric = get_metric("plv", optimization="auto", priority=["metal"])
+
+        assert metric._backend in ("numba", "numpy")
+        messages = [
+            str(w.message) for w in caught if issubclass(w.category, UserWarning)
+        ]
+        assert any("'plv' has no Metal implementation" in m for m in messages), (
+            f"fallback warning does not explain the skip (messages: {messages})"
+        )
+        assert not any("No GPU backend available" in m for m in messages)
+        # The message must stay true when the CPU fallback is numba: it speaks
+        # of GPU backends only.
+        assert any("no GPU backend of the priority list" in m for m in messages)
+
+    @staticmethod
+    def _legacy_metric(with_helper=False):
+        """A third-party metric written against the pre-0.6.2 contract: it
+        overrides ``compute``, branches on ``self._backend`` itself and has no
+        ``_compute_*`` method."""
+        from hypyp.sync.base import BaseMetric
+
+        class LegacyMetric(BaseMetric):
+            name = "legacy"
+
+            def compute(self, complex_signal, n_samp, transpose_axes):
+                base_result = super().compute(complex_signal, n_samp, transpose_axes)
+                return self._backend, base_result
+
+        class LegacyWithHelper(LegacyMetric):
+            # Same contract, but the author happened to name a helper like the
+            # methods of the current contract. Still its own dispatch.
+            def _compute_numpy(self, complex_signal, n_samp, transpose_axes):
+                return "helper"
+
+        return LegacyWithHelper if with_helper else LegacyMetric
+
+    @pytest.mark.parametrize(
+        "kwargs, expected",
+        [
+            (dict(optimization=None), "numpy"),
+            (dict(optimization="numba"), "numba"),
+            (dict(optimization="torch"), "torch"),
+            (dict(optimization="metal"), "metal"),
+            (dict(optimization="auto", priority=["metal", "torch"]), "metal"),
+            (dict(optimization="auto", priority=["torch"]), "torch"),
+        ],
+    )
+    @pytest.mark.parametrize("with_helper", [False, True])
+    def test_legacy_subclass_keeps_its_own_dispatch(
+        self, kwargs, expected, with_helper
+    ):
+        """
+        A subclass of the earlier contract is granted the backend it asks for,
+        as before the capability check, and without a "no implementation"
+        warning: the base class cannot see inside its ``compute``.
+        """
+        legacy_cls = self._legacy_metric(with_helper)
+        with (
+            patch("hypyp.sync.base.METAL_AVAILABLE", True),
+            patch("hypyp.sync.base.TORCH_AVAILABLE", True),
+            patch("hypyp.sync.base.MPS_AVAILABLE", True),
+            patch("hypyp.sync.base.NUMBA_AVAILABLE", True),
+        ):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                metric = legacy_cls(**kwargs)
+        assert metric._backend == expected
+        assert not any("implementation" in str(w.message) for w in caught)
+        # super().compute() used to be an abstract method with an empty body:
+        # it returned None and must still do so, not raise.
+        assert metric.compute(None, 0, None) == (expected, None)
+
+    @pytest.mark.parametrize("gpu", [True, False])
+    def test_numpy_only_metric_never_gets_numba(self, gpu, complex_signal):
+        """
+        A metric of the current contract that implements numpy alone must
+        resolve to numpy under 'auto', even when numba is installed: the CPU
+        fallback has to respect capability like every other path.
+        """
+        from hypyp.sync.base import BaseMetric
+
+        class NumpyOnly(BaseMetric):
+            name = "numpy_only"
+
+            def _compute_numpy(self, complex_signal, n_samp, transpose_axes):
+                return np.ones(1)
+
+        with (
+            patch("hypyp.sync.base.NUMBA_AVAILABLE", True),
+            patch("hypyp.sync.base.TORCH_AVAILABLE", gpu),
+            patch("hypyp.sync.base.MPS_AVAILABLE", gpu),
+            patch("hypyp.sync.base.CUDA_AVAILABLE", False),
+        ):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                metric = NumpyOnly(optimization="auto")
+        assert metric._backend == "numpy"
+        n_samp = complex_signal.shape[3]
+        assert metric.compute(complex_signal, n_samp, (0, 1, 3, 2)).shape == (1,)
+
+    def test_subclass_of_builtin_with_its_own_backend(self, complex_signal):
+        """
+        A third-party subclass of a built-in metric that handles a backend in
+        its own ``compute`` and delegates the rest to its parent keeps working:
+        the backend is granted without warning, its own branch runs, and the
+        delegation still computes.
+        """
+        from hypyp.sync.plv import PLV
+
+        class CustomPLV(PLV):
+            def compute(self, complex_signal, n_samp, transpose_axes):
+                if self._backend == "metal":
+                    return "custom Metal"
+                return super().compute(complex_signal, n_samp, transpose_axes)
+
+        with patch("hypyp.sync.base.METAL_AVAILABLE", True):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                metric = CustomPLV(optimization="metal")
+        assert metric._backend == "metal"
+        assert not caught
+        assert metric.compute(None, 0, None) == "custom Metal"
+
+        n_samp = complex_signal.shape[3]
+        axes = (0, 1, 3, 2)
+        delegated = CustomPLV().compute(complex_signal, n_samp, axes)
+        # Compared with the numpy method itself, and checked to be an array:
+        # two None results would otherwise compare equal.
+        assert isinstance(delegated, np.ndarray)
+        np.testing.assert_array_equal(
+            delegated, PLV()._compute_numpy(complex_signal, n_samp, axes)
+        )
+        # The built-in parent itself stays capability-checked.
+        assert PLV.supports("metal") is False
+
+    def test_dispatch_flag_set_by_a_mixin(self):
+        """
+        The class that sets ``_dispatch_via_table`` need not define
+        ``compute``: a mixin can carry the flag. The metric is then
+        capability-checked like its built-in parent, and does not crash.
+        """
+        from hypyp.sync.plv import PLV
+
+        class DispatchPolicy:
+            _dispatch_via_table = True
+
+        class MixedPLV(DispatchPolicy, PLV):
+            pass
+
+        assert MixedPLV.supports("numpy") is True
+        assert MixedPLV.supports("metal") is False
+        with patch("hypyp.sync.base.METAL_AVAILABLE", True):
+            with pytest.warns(UserWarning, match="no Metal implementation"):
+                metric = MixedPLV(optimization="metal")
+        assert metric._backend == "numpy"
+
+    def test_rebinding_the_parent_compute_keeps_the_capability_check(self):
+        """
+        ``compute = PLV.compute`` in a subclass is the same function as the
+        one the flag of PLV vouches for, not a dispatch of its own: the
+        subclass is still capability-checked.
+        """
+        from hypyp.sync.plv import PLV
+
+        class Alias(PLV):
+            compute = PLV.compute
+
+        assert Alias.supports("numpy") is True
+        assert Alias.supports("metal") is False
+        with patch("hypyp.sync.base.METAL_AVAILABLE", True):
+            with pytest.warns(UserWarning, match="no Metal implementation"):
+                metric = Alias(optimization="metal")
+        assert metric._backend == "numpy"
+
+    def test_auto_keeps_numba_handled_inside_compute(self, complex_signal):
+        """
+        A descendant of a built-in metric that hides ``_compute_numba`` and
+        handles numba inside its own ``compute`` still gets numba from the
+        CPU fallback of ``'auto'``, as before the capability check, and its
+        own branch runs.
+        """
+        from hypyp.sync.plv import PLV
+
+        class OwnNumba(PLV):
+            _compute_numba = None
+
+            def compute(self, complex_signal, n_samp, transpose_axes):
+                if self._backend == "numba":
+                    return "own numba"
+                return super().compute(complex_signal, n_samp, transpose_axes)
+
+        n_samp = complex_signal.shape[3]
+        axes = (0, 1, 3, 2)
+        with (
+            patch("hypyp.sync.base.NUMBA_AVAILABLE", True),
+            patch("hypyp.sync.base.TORCH_AVAILABLE", False),
+            patch("hypyp.sync.base.MPS_AVAILABLE", False),
+            patch("hypyp.sync.base.CUDA_AVAILABLE", False),
+        ):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                automatic = OwnNumba(optimization="auto")
+            requested = OwnNumba(optimization="numba")
+        assert automatic._backend == "numba"
+        assert automatic.compute(complex_signal, n_samp, axes) == "own numba"
+        assert requested._backend == "numba"
+        assert requested.compute(complex_signal, n_samp, axes) == "own numba"
+
+    @pytest.mark.parametrize("delegates", [False, True])
+    def test_backend_method_added_by_a_subclass_needs_the_flag(
+        self, complex_signal, delegates
+    ):
+        """
+        Before the table dispatch, a ``_compute_metal`` added to a subclass of
+        PLV was never called: the request computed in numpy. That result is
+        kept, with a warning, whether the subclass inherits ``compute`` or
+        overrides it only to delegate. The added method is used once the
+        subclass sets ``_dispatch_via_table`` itself.
+        """
+        from hypyp.sync.plv import PLV
+
+        class AddsMetal(PLV):
+            def _compute_metal(self, complex_signal, n_samp, transpose_axes):
+                return "added Metal"
+
+            def _compute_numpy(self, complex_signal, n_samp, transpose_axes):
+                # An overridden method of the parent is still honoured.
+                return 2 * super()._compute_numpy(
+                    complex_signal, n_samp, transpose_axes
+                )
+
+        if delegates:
+
+            class AddsMetal(AddsMetal):  # noqa: F811
+                def compute(self, complex_signal, n_samp, transpose_axes):
+                    return super().compute(complex_signal, n_samp, transpose_axes)
+
+        class Migrated(AddsMetal):
+            _dispatch_via_table = True
+
+        n_samp = complex_signal.shape[3]
+        axes = (0, 1, 3, 2)
+        expected = 2 * PLV()._compute_numpy(complex_signal, n_samp, axes)
+        with patch("hypyp.sync.base.METAL_AVAILABLE", True):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                metric = AddsMetal(optimization="metal")
+                result = metric.compute(complex_signal, n_samp, axes)
+            migrated = Migrated(optimization="metal")
+        assert any("no Metal implementation" in str(w.message) for w in caught)
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(result, expected)
+        assert Migrated.supports("metal") is True
+        assert migrated._backend == "metal"
+        assert migrated.compute(complex_signal, n_samp, axes) == "added Metal"
+
+    def test_dispatch_flag_set_by_a_mixin_listed_after_the_base(self):
+        """
+        A mixin that carries the flag can come after ``BaseMetric`` in the
+        bases, where no class defines ``compute`` any more. A metric with its
+        own ``compute`` is then trusted with the backend it requests, and one
+        without is capability-checked; neither crashes.
+        """
+
+        class DispatchPolicy:
+            _dispatch_via_table = True
+
+        class OwnDispatch(BaseMetric, DispatchPolicy):
+            name = "own_dispatch"
+
+            def compute(self, complex_signal, n_samp, transpose_axes):
+                return self._backend
+
+        class TableOnly(BaseMetric, DispatchPolicy):
+            name = "table_only"
+
+            def _compute_numpy(self, complex_signal, n_samp, transpose_axes):
+                return "numpy"
+
+        with patch("hypyp.sync.base.NUMBA_AVAILABLE", True):
+            assert OwnDispatch.supports("numba") is True
+            metric = OwnDispatch(optimization="numba")
+            assert metric.compute(None, 0, None) == "numba"
+            assert TableOnly.supports("numpy") is True
+            assert TableOnly.supports("numba") is False
+
+    def test_delegating_descendant_of_numpy_only_metric_still_computes(self):
+        """
+        A descendant that overrides ``compute`` only to delegate is trusted
+        with numba by the automatic CPU fallback, like any class with its own
+        ``compute``. No numba method exists, so the dispatch computes in numpy
+        and warns instead of failing.
+        """
+        from hypyp.sync.base import BaseMetric
+
+        class NumpyOnly(BaseMetric):
+            name = "numpy_only"
+            _dispatch_via_table = True
+
+            def _compute_numpy(self, complex_signal, n_samp, transpose_axes):
+                return "numpy result"
+
+        class Delegating(NumpyOnly):
+            def compute(self, complex_signal, n_samp, transpose_axes):
+                return super().compute(complex_signal, n_samp, transpose_axes)
+
+        with (
+            patch("hypyp.sync.base.NUMBA_AVAILABLE", True),
+            patch("hypyp.sync.base.TORCH_AVAILABLE", False),
+            patch("hypyp.sync.base.MPS_AVAILABLE", False),
+            patch("hypyp.sync.base.CUDA_AVAILABLE", False),
+        ):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                metric = Delegating(optimization="auto")
+        assert metric._backend == "numba"
+        with pytest.warns(UserWarning, match="no numba implementation"):
+            assert metric.compute(None, 0, None) == "numpy result"
+
+    def test_classmethod_implementation_is_recognised(self):
+        """A ``_compute_*`` method declared as a classmethod is an
+        implementation like any other."""
+        from hypyp.sync.base import BaseMetric
+
+        class ClassLevel(BaseMetric):
+            name = "class_level"
+            _dispatch_via_table = True
+
+            @classmethod
+            def _compute_numpy(cls, complex_signal, n_samp, transpose_axes):
+                return "numpy result"
+
+        assert ClassLevel.supports("numpy") is True
+        assert ClassLevel().compute(None, 0, None) == "numpy result"
+
+    def test_supports_ignores_placeholders(self):
+        """supports() must not count a non-callable attribute, nor the default
+        ``_compute_numpy`` of the base class, as an implementation."""
+        from hypyp.sync.base import BaseMetric
+
+        class Placeholder(BaseMetric):
+            name = "placeholder"
+            _compute_torch = None
+
+            def _compute_numpy(self, complex_signal, n_samp, transpose_axes):
+                return np.ones(1)
+
+        class EmptyMetric(BaseMetric):
+            name = "empty"
+
+        assert Placeholder.supports("numpy") is True
+        assert Placeholder.supports("torch") is False
+        assert EmptyMetric.supports("numpy") is False
+        assert BaseMetric.supports("numpy") is False
+
+    def test_torch_only_metric_reports_its_backends(self):
+        """A metric of the current contract without numpy runs the backend it
+        has and names what is missing otherwise."""
+        from hypyp.sync.base import BaseMetric
+
+        class TorchOnly(BaseMetric):
+            name = "torch_only"
+
+            def _compute_torch(self, complex_signal, n_samp, transpose_axes):
+                return "torch result"
+
+        metric = TorchOnly()
+        with pytest.raises(NotImplementedError, match="_compute_numpy"):
+            metric.compute(None, 0, None)
+        metric._backend = "torch"
+        assert metric.compute(None, 0, None) == "torch result"
+        metric._backend = "metal"
+        with pytest.raises(
+            ValueError, match=r"implemented for this metric: \['torch'\]"
+        ):
+            metric.compute(None, 0, None)
+
+    def test_missing_numpy_implementation_is_reported(self, complex_signal):
+        """A metric with neither ``compute`` nor ``_compute_numpy`` says so."""
+        from hypyp.sync.base import BaseMetric
+
+        class EmptyMetric(BaseMetric):
+            name = "empty"
+
+        n_samp = complex_signal.shape[3]
+        with pytest.raises(NotImplementedError, match="_compute_numpy"):
+            EmptyMetric().compute(complex_signal, n_samp, (0, 1, 3, 2))

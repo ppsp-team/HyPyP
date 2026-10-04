@@ -7,8 +7,8 @@ Synchrony and connectivity metrics for hyperscanning analysis.
 Public API
 ----------
 ``BaseMetric``
-    Abstract base class. Concrete metrics inherit from it and implement
-    ``BaseMetric.compute``.
+    Base class. Concrete metrics inherit from it and implement
+    ``_compute_numpy`` plus the optional accelerated ``_compute_*`` methods.
 
 Concrete metric classes (one per file):
 
