@@ -7,8 +7,17 @@
 - `hypyp.sync`: when a backend of a `priority` list can neither run on the machine nor be computed by the metric, and no other GPU backend of the list can be used, the warning now says so (for example "'plv' has no Metal implementation") instead of "No GPU backend available"
 - `hypyp.sync`: a metric whose `_backend` was set to a backend it does not implement used to compute in NumPy without notice. It still computes in NumPy, now with a warning. A `_backend` that is not the name of a backend raises a `ValueError` naming the metric and the backends it implements; called through `compute_sync`, that error is still reworded as an unsupported metric (#306)
 - Tests: the six Metal tests that compared NumPy with NumPy are replaced by tests of the fallback itself (warning, backend and result), the dispatch of every metric to every backend it implements is checked without a GPU, and the four tests that run a Metal kernel now assert that the Metal method was called (#300)
+- `compute_sync` and `pair_connectivity` reported every `ValueError` as `Metric type "..." not supported`, so an unknown `optimization` was announced as an unsupported metric. Only an unknown metric name gets that message now; any other error keeps its own (#306)
+- `pair_connectivity` and `compute_nmPLV` crashed with an `IndexError` when the frequencies were given as a list and the data had a single epoch, a single channel per participant or, for `pair_connectivity`, a single frequency. Results for data without such a dimension are unchanged
+- `utils.normalizing` raised an `UnboundLocalError` for a `type` other than `'Zscore'` or `'Logratio'`; it now raises a `ValueError` naming the two valid types
+- `utils.generate_virtual_epoch` failed inside the solver for an odd number of channels; it now raises a `ValueError` saying that the number must be even, and its docstring example uses four oscillators
+- `utils.epochs_from_tasks` failed with `min() iterable argument is empty` when the onset event of a task was absent from the recording; the `ValueError` now names the task and the event
+- `utils.create_epochs` warns when the two participants give different numbers of epochs. It still returns both lists as before
+- `stats.statscluster` raised an `UnboundLocalError` for an unknown `test`; it now raises a `ValueError` listing the valid names
+- `stats.statscluster` always failed with `tail=-1` (MNE's "incompatible tail and threshold signs"), because the threshold was always positive. The two t-tests now run with the negative threshold and report the negative values of significant clusters in `Stat_obs_plot`. For the F tests, in `statscluster` and `statscondCluster`, `tail=-1` raises a `ValueError` that says why: an F statistic is never negative
 
 ### Added
+- `stats.metaconn_matrix` has a `plot` argument. It defaults to `True`, the earlier behaviour; `plot=False` computes the matrices without drawing
 - `BaseMetric.supports(backend)` tells whether a metric implements a backend, for example `PLI.supports('metal')`
 
 ### Changed
