@@ -27,8 +27,8 @@ from mne import create_info, EpochsArray
 
 
 def create_epochs(
-    raw_S1: mne.io.Raw, raw_S2: mne.io.Raw, duration: float
-) -> Tuple[mne.Epochs, mne.Epochs]:
+    raw_S1: List[mne.io.Raw], raw_S2: List[mne.io.Raw], duration: float
+) -> Tuple[List[mne.Epochs], List[mne.Epochs]]:
     """
     Create epochs from continuous raw EEG data for two participants.
 
@@ -38,11 +38,11 @@ def create_epochs(
 
     Parameters
     ----------
-    raw_S1 : mne.io.Raw
-        Raw EEG data for participant 1
+    raw_S1 : List[mne.io.Raw]
+        Raw EEG recordings for participant 1, one per run
 
-    raw_S2 : mne.io.Raw
-        Raw EEG data for participant 2
+    raw_S2 : List[mne.io.Raw]
+        Raw EEG recordings for participant 2, in the same order
 
     duration : float
         Duration of each epoch in seconds
@@ -73,6 +73,18 @@ def create_epochs(
 
     epoch_S1: List[mne.Epochs] = []
     epoch_S2: List[mne.Epochs] = []
+
+    # zip stops at the shorter list, so the extra recordings are not epoched
+    if (
+        hasattr(raw_S1, "__len__")
+        and hasattr(raw_S2, "__len__")
+        and len(raw_S1) != len(raw_S2)
+    ):
+        warnings.warn(
+            "The two participants have different numbers of recordings "
+            f"({len(raw_S1)} and {len(raw_S2)}). Only the first "
+            f"{min(len(raw_S1), len(raw_S2))} of each are epoched."
+        )
 
     for raw1, raw2 in zip(raw_S1, raw_S2):
         # creating fixed events
@@ -135,8 +147,8 @@ def create_epochs(
             warnings.warn(
                 "The two participants have different numbers of epochs "
                 f"({len(epoch1)} and {len(epoch2)}). Hyperscanning analyses need "
-                "the same epochs for both; equalize them before merging, for "
-                "example with mne.epochs.equalize_epoch_counts."
+                "epochs that correspond in time between the two participants; "
+                "check that the two recordings cover the same period."
             )
 
         epoch_S1.append(epoch1)

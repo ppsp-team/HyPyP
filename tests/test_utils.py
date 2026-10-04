@@ -333,12 +333,21 @@ def test_key_dict_as_data_frame():
 
 
 def test_normalizing_unknown_type():
-    baseline = np.ones((3, 2, 2))
-    task = 2 * np.ones((3, 2, 2))
+    # per channel and frequency: baseline mean 2 and standard deviation 1,
+    # task mean 5
+    baseline = np.stack([np.full((2, 2), 1.0), np.full((2, 2), 3.0)])
+    task = np.stack([np.full((2, 2), 4.0), np.full((2, 2), 6.0)])
+
     with pytest.raises(ValueError, match="zscore"):
         utils.normalizing(baseline, task, "zscore")
+
     # the two documented types still work
-    assert utils.normalizing(baseline, task, "Logratio").shape == (2, 2)
+    np.testing.assert_allclose(
+        utils.normalizing(baseline, task, "Zscore"), np.full((2, 2), 3.0)
+    )
+    np.testing.assert_allclose(
+        utils.normalizing(baseline, task, "Logratio"), np.full((2, 2), np.log10(2.5))
+    )
 
 
 def _fake_epochs(n_channels, n_epochs=2, n_times=50, sfreq=100):
@@ -395,6 +404,17 @@ def test_create_epochs_silent_on_equal_epoch_counts():
     raw1 = _fake_raw_of_duration(10)
     raw2 = _fake_raw_of_duration(10)
     with warnings.catch_warnings():
-        warnings.filterwarnings("error", message=".*different numbers of epochs.*")
+        warnings.filterwarnings("error", message=".*different numbers of.*")
         epo1, epo2 = utils.create_epochs([raw1], [raw2], duration=1.0)
+        # iterables without a length were accepted before and still are
+        utils.create_epochs(iter([raw1]), iter([raw2]), duration=1.0)
     assert len(epo1[0]) == len(epo2[0])
+
+
+def test_create_epochs_warns_on_different_recording_counts():
+    raws = [_fake_raw_of_duration(10) for _ in range(3)]
+
+    with pytest.warns(UserWarning, match="different numbers of recordings"):
+        epo1, epo2 = utils.create_epochs(raws[:2], raws[2:], duration=1.0)
+    # as before, only the recordings that have a counterpart are epoched
+    assert len(epo1) == len(epo2) == 1

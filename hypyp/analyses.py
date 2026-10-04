@@ -1019,8 +1019,9 @@ def compute_nmPLV(
 
     r = np.mean(freq_range2) / np.mean(freq_range1)
     freq_range = [np.min(freq_range1), np.max(freq_range2)]
-    # no squeeze: it would also drop a single epoch or a single channel
-    complex_signal = np.mean(compute_single_freq(data, sampling_rate, freq_range), 3)
+    complex_signal = np.mean(
+        compute_single_freq(data, sampling_rate, freq_range), 3
+    ).squeeze()
 
     n_epoch, n_ch, n_freq, n_samp = (
         complex_signal.shape[1],

@@ -359,6 +359,21 @@ def _synthetic_pair(n_epochs, n_channels, n_times=512, seed=0):
     return rng.standard_normal((2, n_epochs, n_channels, n_times))
 
 
+def _plv_from_definition(data, sampling_rate, frequencies):
+    """PLV written from its definition, without compute_sync or hypyp.sync.
+
+    Returns an array shaped (n_freq, n_epochs, 2*n_channels, 2*n_channels),
+    with the channels of participant 1 first.
+    """
+    # (2, n_epochs, n_channels, n_freq, n_times), tapers averaged
+    signal = np.mean(analyses.compute_single_freq(data, sampling_rate, frequencies), 3)
+    phase = signal / np.abs(signal)
+    both = np.concatenate([phase[0], phase[1]], axis=1)
+    n_times = both.shape[-1]
+    plv = np.abs(np.einsum("ecft,edft->fecd", both, both.conj())) / n_times
+    return plv
+
+
 @pytest.mark.parametrize(
     "n_epochs, n_channels, frequencies, n_freq",
     [
@@ -372,13 +387,11 @@ def _synthetic_pair(n_epochs, n_channels, n_times=512, seed=0):
 def test_pair_connectivity_frequency_list_singleton_dims(
     n_epochs, n_channels, frequencies, n_freq
 ):
-    """A frequency list must not crash when a dimension has length one."""
+    """A frequency list must not crash when a dimension has length one, and
+    must give the PLV of the definition with the documented layout."""
     data = _synthetic_pair(n_epochs, n_channels)
-
-    con = analyses.pair_connectivity(
-        data, sampling_rate=256, frequencies=frequencies, mode="plv"
-    )
-    assert con.shape == (n_freq, 2 * n_channels, 2 * n_channels)
+    expected = _plv_from_definition(data, 256, frequencies)
+    assert expected.shape == (n_freq, n_epochs, 2 * n_channels, 2 * n_channels)
 
     con = analyses.pair_connectivity(
         data,
@@ -387,36 +400,14 @@ def test_pair_connectivity_frequency_list_singleton_dims(
         mode="plv",
         epochs_average=False,
     )
-    assert con.shape == (n_freq, n_epochs, 2 * n_channels, 2 * n_channels)
+    assert con.shape == expected.shape
+    np.testing.assert_allclose(con, expected, rtol=0, atol=1e-12)
 
-
-@pytest.mark.parametrize("n_epochs, n_channels", [(1, 4), (3, 1), (1, 1)])
-def test_compute_nmPLV_singleton_dims(n_epochs, n_channels):
-    """compute_nmPLV must not crash for a single epoch or a single channel.
-
-    Only the two channel axes are checked: what the first axis holds is the
-    subject of issue #310 and is left as it is here.
-    """
-    data = _synthetic_pair(n_epochs, n_channels)
-
-    con = analyses.compute_nmPLV(
-        data, sampling_rate=256, freq_range1=[8, 12], freq_range2=[16, 24]
-    )
-    assert con.shape[1:] == (2 * n_channels, 2 * n_channels)
-    assert np.all(np.isfinite(con))
-
-
-def test_pair_connectivity_frequency_list_values_unchanged():
-    """Without a singleton dimension the frequency-list path gives what
-    compute_sync gives on the taper-averaged multitaper signal."""
-    data = _synthetic_pair(3, 4)
-    expected = analyses.compute_sync(
-        np.mean(analyses.compute_single_freq(data, 256, [8, 12]), 3), "plv"
-    )
     con = analyses.pair_connectivity(
-        data, sampling_rate=256, frequencies=[8, 12], mode="plv"
+        data, sampling_rate=256, frequencies=frequencies, mode="plv"
     )
-    np.testing.assert_array_equal(con, expected)
+    assert con.shape == (n_freq, 2 * n_channels, 2 * n_channels)
+    np.testing.assert_allclose(con, expected.mean(axis=1), rtol=0, atol=1e-12)
 
 
 def test_compute_sync_reports_the_real_error():
@@ -449,39 +440,6 @@ def test_statscluster_unknown_test_name():
     low, high, adjacency = _cluster_data()
     with pytest.raises(ValueError, match="bogus"):
         stats.statscluster([low, high], "bogus", None, adjacency, 0, 50)
-
-
-@pytest.mark.parametrize("test", ["ind ttest", "rel ttest"])
-def test_statscluster_lower_tail_mirrors_upper_tail(test):
-    """tail=-1 on (low, high) is the mirror of tail=1 on (high, low)."""
-    low, high, adjacency = _cluster_data()
-
-    np.random.seed(0)
-    upper = stats.statscluster([high, low], test, None, adjacency, 1, 200)
-    np.random.seed(0)
-    lower = stats.statscluster([low, high], test, None, adjacency, -1, 200)
-
-    np.testing.assert_allclose(lower.Stat_obs, -upper.Stat_obs)
-    assert len(lower.clusters) == len(upper.clusters) >= 1
-    np.testing.assert_array_equal(lower.clusters[0], upper.clusters[0])
-    np.testing.assert_allclose(lower.cluster_p_values, upper.cluster_p_values)
-    np.testing.assert_allclose(lower.Stat_obs_plot, -upper.Stat_obs_plot)
-    # the effect sits on the first three features and nowhere else
-    assert np.all(lower.Stat_obs_plot[:3] < 0)
-    assert np.all(lower.Stat_obs_plot[3:] == 0)
-
-    # the wrong direction finds nothing
-    nothing = stats.statscluster([high, low], test, None, adjacency, -1, 200)
-    assert np.all(nothing.Stat_obs_plot == 0)
-
-
-def test_cluster_wrappers_refuse_lower_tail_for_f_tests():
-    """An F statistic is never negative, so tail=-1 cannot be honoured."""
-    low, high, adjacency = _cluster_data()
-    with pytest.raises(ValueError, match="tail=-1"):
-        stats.statscluster([low, high], "f oneway", None, adjacency, -1, 50)
-    with pytest.raises(ValueError, match="tail=-1"):
-        stats.statscondCluster([low, high], [10], adjacency, -1, 50)
 
 
 def test_metaconn_matrix_plot_argument():

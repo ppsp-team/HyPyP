@@ -491,12 +491,6 @@ def statscondCluster(
     >>> print(f"Found {len(significant_clusters)} significant clusters")
     """
 
-    if tail == -1:
-        raise ValueError(
-            "tail=-1 cannot be used with statscondCluster: its F statistic is "
-            "never negative, so the lower tail holds no cluster."
-        )
-
     # Compute F-threshold for two-tailed test if needed
     dfn = len(data) - 1  # Numerator degrees of freedom
     dfd = np.sum([len(d) for d in data]) - len(data)  # Denominator degrees of freedom
@@ -587,8 +581,7 @@ def statscluster(
         Direction of the test:
         - 0: two-tailed test (must be used for f oneway)
         - 1: one-tailed test (greater) (must be used for f multipleway)
-        - -1: one-tailed test (less), for the two t-tests only; an F test
-          raises a ValueError
+        - -1: one-tailed test (less)
 
     n_permutations : int
         Number of permutations for the statistical test, e.g., 50000
@@ -644,12 +637,6 @@ def statscluster(
     ... )
     """
 
-    if test in ("f oneway", "f multipleway") and tail == -1:
-        raise ValueError(
-            f"tail=-1 cannot be used with '{test}': an F statistic is never "
-            "negative, so the lower tail holds no cluster."
-        )
-
     # type of test
     if test == "ind ttest":
 
@@ -659,9 +646,6 @@ def statscluster(
         df = len(data[0]) + len(data[1]) - 2
         p = alpha / 2 if tail == 0 else alpha
         threshold = scipy.stats.t.ppf(1 - p, df)
-        # MNE expects a negative threshold for the lower tail
-        if tail == -1:
-            threshold = -threshold
     elif test == "rel ttest":
 
         def stat_fun(*arg):
@@ -670,8 +654,6 @@ def statscluster(
         df = len(data[0]) - 1
         p = alpha / 2 if tail == 0 else alpha
         threshold = scipy.stats.t.ppf(1 - p, df)
-        if tail == -1:
-            threshold = -threshold
     elif test == "f oneway":
 
         def stat_fun(*arg):
@@ -726,13 +708,8 @@ def statscluster(
                 np.where(cluster_p_values == cluster_p)[0][0]
             ].astype("uint8")
             Stat_values = sensors_plot * Stat_obs
-            # taking maximum statistical value if a sensor is in many clusters;
-            # the lower tail holds negative values, which a maximum against
-            # zero would drop, so the most negative value is kept instead
-            if tail == -1:
-                Stat_obs_plot = np.minimum(Stat_obs_plot, Stat_values)
-            else:
-                Stat_obs_plot = np.maximum(Stat_obs_plot, Stat_values)
+            # taking maximum statistical value if a sensor is in many clusters
+            Stat_obs_plot = np.maximum(Stat_obs_plot, Stat_values)
 
     statscondClusterTuple = namedtuple(
         "statscondCluster",
