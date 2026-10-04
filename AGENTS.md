@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file tells coding agents how to work in the HyPyP repository. It is deliberately short and contains only facts that are stable today. HyPyP is a Python library for hyperscanning analysis: it computes inter-brain connectivity and related statistics on EEG and fNIRS recordings of two or more participants. Its results end up in scientific publications, so a silent change in a computed value is the most serious defect a contribution can introduce.
+This file tells coding agents how to work in the HyPyP repository. It is deliberately short and contains only facts that are stable today. HyPyP is a Python library for hyperscanning analysis: it computes inter-brain connectivity and related statistics on EEG and fNIRS recordings of pairs of participants. Its results end up in scientific publications, so a silent change in a computed value is the most serious defect a contribution can introduce.
 
 ## Install
 
