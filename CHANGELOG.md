@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-10-04
+
 ### Fixed
 - `hypyp.sync`: asking for the Metal backend on a metric that has no Metal kernel (PLV, CCorr, Coh, ImCoh, EnvCorr, PowCorr) used to run in NumPy silently, while the metric object reported `metal`. The computation still runs in NumPy, so no computed value changes, but it now warns and the metric object reports `numpy`. This holds for `optimization='metal'` and for a `priority` list that reaches Metal on a machine where Metal is available: the backends that follow in the list are not tried, which is left to 0.7.0. Only PLI, wPLI and ACCorr have a Metal kernel; the default selection of `optimization='auto'` is unchanged for the nine built-in metrics (#299)
 - `hypyp.sync`: when a backend of a `priority` list can neither run on the machine nor be computed by the metric, and no other GPU backend of the list can be used, the warning now says so (for example "'plv' has no Metal implementation") instead of "No GPU backend available"
