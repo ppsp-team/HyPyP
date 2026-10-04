@@ -1594,6 +1594,8 @@ class TestBackendCapability:
         with (
             patch("hypyp.sync.base.NUMBA_AVAILABLE", True),
             patch("hypyp.sync.base.TORCH_AVAILABLE", False),
+            patch("hypyp.sync.base.MPS_AVAILABLE", False),
+            patch("hypyp.sync.base.CUDA_AVAILABLE", False),
         ):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
