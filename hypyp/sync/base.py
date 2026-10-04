@@ -452,8 +452,11 @@ class BaseMetric(ABC):
         mro = cls.__mro__
 
         def first_compute(classes: tuple):
+            # A flag owner placed after every class that defines compute (a
+            # mixin listed after BaseMetric) vouches for the table dispatch.
             return next(
-                k.__dict__["compute"] for k in classes if "compute" in k.__dict__
+                (k.__dict__["compute"] for k in classes if "compute" in k.__dict__),
+                BaseMetric.__dict__["compute"],
             )
 
         return first_compute(mro) is first_compute(mro[mro.index(owner) :])

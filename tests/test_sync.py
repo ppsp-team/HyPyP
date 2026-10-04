@@ -1572,7 +1572,7 @@ class TestBackendCapability:
                 metric = Alias(optimization="metal")
         assert metric._backend == "numpy"
 
-    def test_auto_does_not_guess_numba_handled_inside_compute(self):
+    def test_auto_does_not_guess_numba_handled_inside_compute(self, complex_signal):
         """
         A descendant of a built-in metric that hides ``_compute_numba`` and
         handles numba inside its own ``compute`` cannot be told apart from
@@ -1589,12 +1589,54 @@ class TestBackendCapability:
                     return "own numba"
                 return super().compute(complex_signal, n_samp, transpose_axes)
 
+        n_samp = complex_signal.shape[3]
+        axes = (0, 1, 3, 2)
         with (
             patch("hypyp.sync.base.NUMBA_AVAILABLE", True),
             patch("hypyp.sync.base.TORCH_AVAILABLE", False),
         ):
-            assert OwnNumba._cpu_fallback() == ("numpy", "cpu")
-            assert OwnNumba(optimization="numba")._backend == "numba"
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                automatic = OwnNumba(optimization="auto")
+            requested = OwnNumba(optimization="numba")
+        assert automatic._backend == "numpy"
+        result = automatic.compute(complex_signal, n_samp, axes)
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(
+            result, PLV()._compute_numpy(complex_signal, n_samp, axes)
+        )
+        assert requested._backend == "numba"
+        assert requested.compute(complex_signal, n_samp, axes) == "own numba"
+
+    def test_dispatch_flag_set_by_a_mixin_listed_after_the_base(self):
+        """
+        A mixin that carries the flag can come after ``BaseMetric`` in the
+        bases, where no class defines ``compute`` any more. A metric with its
+        own ``compute`` is then trusted with the backend it requests, and one
+        without is capability-checked; neither crashes.
+        """
+
+        class DispatchPolicy:
+            _dispatch_via_table = True
+
+        class OwnDispatch(BaseMetric, DispatchPolicy):
+            name = "own_dispatch"
+
+            def compute(self, complex_signal, n_samp, transpose_axes):
+                return self._backend
+
+        class TableOnly(BaseMetric, DispatchPolicy):
+            name = "table_only"
+
+            def _compute_numpy(self, complex_signal, n_samp, transpose_axes):
+                return "numpy"
+
+        with patch("hypyp.sync.base.NUMBA_AVAILABLE", True):
+            assert OwnDispatch.supports("numba") is True
+            metric = OwnDispatch(optimization="numba")
+            assert metric.compute(None, 0, None) == "numba"
+            assert TableOnly.supports("numpy") is True
+            assert TableOnly.supports("numba") is False
 
     def test_delegating_descendant_of_numpy_only_metric_never_gets_numba(self):
         """
