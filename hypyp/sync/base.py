@@ -286,8 +286,9 @@ class BaseMetric(ABC):
     ``_compute_torch``, ``_compute_metal`` and ``_compute_cuda``. Backend
     selection, capability checks and dispatch are then handled here.
 
-    A subclass that overrides ``compute`` and does not set the flag follows the
-    earlier contract: it is granted whatever backend is requested and
+    A subclass that overrides ``compute`` and does not set the flag itself
+    follows the earlier contract, whether it derives from this class or from a
+    built-in metric: it is granted whatever backend is requested and
     available, and is itself responsible for honouring ``self._backend``.
 
     Parameters
@@ -314,6 +315,10 @@ class BaseMetric(ABC):
     #: "inferred": yes, unless the class overrides ``compute``. The built-in
     #: metrics override ``compute`` only to carry a docstring, so they set
     #: the flag explicitly; so should a new metric written the same way.
+    #: The flag vouches for the ``compute`` of the class that sets it: a
+    #: descendant that overrides ``compute`` again may add backends of its
+    #: own there, so it is no longer capability-checked unless it sets the
+    #: flag too.
     _dispatch_via_table: Optional[bool] = None
 
     #: Maps a backend name to the method implementing it. This table is the
@@ -358,9 +363,9 @@ class BaseMetric(ABC):
 
         A subclass written against the earlier contract, which overrides
         ``compute`` and branches on ``self._backend`` itself, cannot be
-        inspected this way. Unless it sets ``_dispatch_via_table``, it is
-        trusted with every known backend, exactly as before the capability
-        check existed.
+        inspected this way. Unless it sets ``_dispatch_via_table`` itself, it
+        is trusted with every known backend, exactly as before the capability
+        check existed. This holds for a subclass of a built-in metric too.
 
         Parameters
         ----------
@@ -382,26 +387,60 @@ class BaseMetric(ABC):
         method = cls._BACKEND_METHODS.get(backend)
         if method is None:
             return False
-        if not cls._uses_table_dispatch():
+        if not cls._checks_capability():
             return True
-        implementation = getattr(cls, method, None)
-        # The default _compute_numpy of this class only raises: it is not an
-        # implementation.
+        return cls._implements(backend)
+
+    @classmethod
+    def _implements(cls, backend: str) -> bool:
+        """Whether the class has a real ``_compute_*`` method for ``backend``.
+
+        The default ``_compute_numpy`` of this class only raises, and a
+        non-callable attribute is a placeholder: neither is an implementation.
+        """
+        method = cls._BACKEND_METHODS.get(backend)
+        implementation = getattr(cls, method, None) if method else None
         return callable(implementation) and (
             implementation is not BaseMetric._compute_numpy
         )
 
     @classmethod
-    def _uses_table_dispatch(cls) -> bool:
-        """Whether this class dispatches through ``_BACKEND_METHODS``.
+    def _dispatch_owner(cls) -> tuple:
+        """The nearest class of the MRO that sets ``_dispatch_via_table``, and
+        the value it sets; ``(None, None)`` when no class does."""
+        for klass in cls.__mro__:
+            flag = klass.__dict__.get("_dispatch_via_table")
+            if flag is not None:
+                return klass, flag
+        return None, None
 
-        Explicit when ``_dispatch_via_table`` is set. Otherwise inferred: a
-        class that overrides ``compute`` is taken to do its own dispatch, as
-        the contract was before ``compute`` became concrete.
+    @classmethod
+    def _dispatches_via_table(cls) -> bool:
+        """Whether ``BaseMetric.compute`` dispatches for this class.
+
+        Explicit when a class of the MRO sets ``_dispatch_via_table``.
+        Otherwise inferred: a class that overrides ``compute`` is taken to do
+        its own dispatch, as the contract was before ``compute`` became
+        concrete.
         """
-        if cls._dispatch_via_table is not None:
-            return cls._dispatch_via_table
-        return cls.compute is BaseMetric.compute
+        owner, flag = cls._dispatch_owner()
+        if owner is None:
+            return cls.compute is BaseMetric.compute
+        return flag
+
+    @classmethod
+    def _checks_capability(cls) -> bool:
+        """Whether backend selection may rely on the ``_compute_*`` methods.
+
+        True when the table dispatch is the only dispatch: the class uses it,
+        and ``compute`` has not been overridden below the class that set the
+        flag. A descendant that overrides ``compute`` again may handle
+        backends there that no ``_compute_*`` method reveals.
+        """
+        if not cls._dispatches_via_table():
+            return False
+        owner, _ = cls._dispatch_owner()
+        return owner is None or cls.compute is owner.compute
 
     @classmethod
     def _cpu_fallback(cls) -> tuple:
@@ -684,10 +723,12 @@ class BaseMetric(ABC):
         Raises
         ------
         NotImplementedError
-            If the metric provides neither ``_compute_numpy`` nor its own
-            ``compute``.
+            If the backend is numpy and the metric has no ``_compute_numpy``
+            (a metric may implement an accelerated backend alone, but then
+            cannot serve the default ``optimization=None``).
         ValueError
-            If ``self._backend`` is not a backend this metric implements. The
+            If ``self._backend`` is any other backend the metric has no
+            ``_compute_*`` method for, or an unknown name. The
             message names the metric and the backends it does implement. This
             is deliberate: an earlier hand-written ``if/elif`` chain per metric
             ended in a bare ``return self._compute_numpy(...)``, so an
@@ -700,22 +741,25 @@ class BaseMetric(ABC):
         kernels and torch on MPS compute in ``float32`` whatever the input;
         for the other combinations see each metric.
 
-        A subclass that does its own dispatch (see ``_dispatch_via_table``)
-        may call ``super().compute(...)`` from its own ``compute``. The base
-        method was then abstract with an empty body and returned ``None``; it
-        still does for such a subclass.
+        A subclass of ``BaseMetric`` that does its own dispatch (see
+        ``_dispatch_via_table``) may call ``super().compute(...)`` from its own
+        ``compute``. The base method was then abstract with an empty body and
+        returned ``None``; it still does for such a subclass. A subclass of a
+        built-in metric that overrides ``compute`` and delegates to
+        ``super().compute(...)`` gets the table dispatch of its parent, and
+        the errors above for a backend the parent does not implement.
         """
-        if not self._uses_table_dispatch():
+        if not self._dispatches_via_table():
             # Reached through super().compute() from a subclass that does its
             # own dispatch: behave as the former abstract method did.
             return None
-        if not self.supports(self._backend):
+        if not self._implements(self._backend):
             if self._backend == "numpy":
                 raise NotImplementedError(
                     f"{type(self).__name__} must implement _compute_numpy "
                     f"(or override compute)."
                 )
-            implemented = [b for b in self._BACKEND_METHODS if self.supports(b)]
+            implemented = [b for b in self._BACKEND_METHODS if self._implements(b)]
             raise ValueError(
                 f"{self.name!r} cannot run on backend {self._backend!r}. "
                 f"Backends implemented for this metric: {implemented}."

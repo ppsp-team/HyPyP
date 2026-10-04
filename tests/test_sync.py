@@ -45,6 +45,16 @@ EXPECTED_BACKENDS = {
 }
 ALL_BACKENDS = ("numpy", "numba", "torch", "metal", "cuda_kernel")
 
+#: Also by hand: the routing test must not read the method names from
+#: BaseMetric._BACKEND_METHODS, the table it checks.
+EXPECTED_METHODS = {
+    "numpy": "_compute_numpy",
+    "numba": "_compute_numba",
+    "torch": "_compute_torch",
+    "metal": "_compute_metal",
+    "cuda_kernel": "_compute_cuda",
+}
+
 
 def spy_on_kernel(module_name, function_name):
     """
@@ -1309,7 +1319,7 @@ class TestBackendCapability:
         stub.
         """
         cls = METRICS[mode]
-        method_name = cls._BACKEND_METHODS[backend]
+        method_name = EXPECTED_METHODS[backend]
         metric = cls()
         metric._backend = backend
         sentinel = object()
@@ -1487,6 +1497,38 @@ class TestBackendCapability:
         assert metric._backend == "numpy"
         n_samp = complex_signal.shape[3]
         assert metric.compute(complex_signal, n_samp, (0, 1, 3, 2)).shape == (1,)
+
+    def test_subclass_of_builtin_with_its_own_backend(self, complex_signal):
+        """
+        A third-party subclass of a built-in metric that handles a backend in
+        its own ``compute`` and delegates the rest to its parent keeps working:
+        the backend is granted without warning, its own branch runs, and the
+        delegation still computes.
+        """
+        from hypyp.sync.plv import PLV
+
+        class CustomPLV(PLV):
+            def compute(self, complex_signal, n_samp, transpose_axes):
+                if self._backend == "metal":
+                    return "custom Metal"
+                return super().compute(complex_signal, n_samp, transpose_axes)
+
+        with patch("hypyp.sync.base.METAL_AVAILABLE", True):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                metric = CustomPLV(optimization="metal")
+        assert metric._backend == "metal"
+        assert not caught
+        assert metric.compute(None, 0, None) == "custom Metal"
+
+        n_samp = complex_signal.shape[3]
+        axes = (0, 1, 3, 2)
+        np.testing.assert_array_equal(
+            CustomPLV().compute(complex_signal, n_samp, axes),
+            PLV().compute(complex_signal, n_samp, axes),
+        )
+        # The built-in parent itself stays capability-checked.
+        assert PLV.supports("metal") is False
 
     def test_supports_ignores_placeholders(self):
         """supports() must not count a non-callable attribute, nor the default
