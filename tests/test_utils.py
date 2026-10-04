@@ -330,3 +330,71 @@ def test_key_dict_as_data_frame():
     assert df.columns[2] == "c"
     assert df["a"][0] == "foo"
     assert df["b"][0] == "1"
+
+
+def test_normalizing_unknown_type():
+    baseline = np.ones((3, 2, 2))
+    task = 2 * np.ones((3, 2, 2))
+    with pytest.raises(ValueError, match="zscore"):
+        utils.normalizing(baseline, task, "zscore")
+    # the two documented types still work
+    assert utils.normalizing(baseline, task, "Logratio").shape == (2, 2)
+
+
+def _fake_epochs(n_channels, n_epochs=2, n_times=50, sfreq=100):
+    info = mne.create_info(
+        [f"Foo {i}" for i in range(n_channels)], sfreq=sfreq, ch_types="eeg"
+    )
+    data = np.random.randn(n_epochs, n_channels, n_times)
+    return mne.EpochsArray(data, info)
+
+
+def test_generate_virtual_epoch_odd_channel_count():
+    epochs = _fake_epochs(n_channels=3)
+    with pytest.raises(ValueError, match="even number of channels"):
+        utils.generate_virtual_epoch(epochs, W=np.zeros((3, 3)))
+
+
+def test_generate_virtual_epoch_even_channel_count():
+    epochs = _fake_epochs(n_channels=4)
+    simulated = utils.generate_virtual_epoch(epochs, W=np.zeros((4, 4)))
+    assert simulated.get_data(copy=True).shape == epochs.get_data(copy=True).shape
+
+
+def test_epochs_from_tasks_missing_onset_event():
+    raw = get_fake_raw()
+    raw.set_annotations(
+        mne.Annotations(onset=[2, 5], duration=[0, 0], description=[1, 2])
+    )
+    tasks = [utils.Task("ghost", onset_event_id=7, offset_event_id=2)]
+
+    with pytest.raises(ValueError, match='"ghost".*7'):
+        utils.epochs_from_tasks(raw, tasks)
+
+
+def _fake_raw_of_duration(duration, sfreq=100, n_channels=5):
+    info = mne.create_info(
+        [f"Foo {i}" for i in range(n_channels)], sfreq=sfreq, ch_types="eeg"
+    )
+    return mne.io.RawArray(np.random.randn(n_channels, int(sfreq * duration)), info)
+
+
+def test_create_epochs_warns_on_different_epoch_counts():
+    raw_long = _fake_raw_of_duration(10)
+    raw_short = _fake_raw_of_duration(8)
+
+    with pytest.warns(UserWarning, match="different numbers of epochs"):
+        epo1, epo2 = utils.create_epochs([raw_long], [raw_short], duration=1.0)
+    # a warning, not an error: both lists are still returned as before
+    assert len(epo1[0]) != len(epo2[0])
+
+
+def test_create_epochs_silent_on_equal_epoch_counts():
+    import warnings
+
+    raw1 = _fake_raw_of_duration(10)
+    raw2 = _fake_raw_of_duration(10)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", message=".*different numbers of epochs.*")
+        epo1, epo2 = utils.create_epochs([raw1], [raw2], duration=1.0)
+    assert len(epo1[0]) == len(epo2[0])
