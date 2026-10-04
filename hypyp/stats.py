@@ -324,6 +324,7 @@ def metaconn_matrix(
     electrodes: List[Tuple[int, int]],
     ch_con: scipy.sparse.csr_matrix,
     freqs_mean: List[float],
+    plot: bool = True,
 ) -> namedtuple:
     """
     Compute a priori connectivity between pairs of sensors within one brain.
@@ -342,6 +343,10 @@ def metaconn_matrix(
 
     freqs_mean : List[float]
         List of frequencies in the frequency-band-of-interest
+
+    plot : bool, optional
+        Whether to draw the meta-connectivity matrix in the current figure
+        (default=True, the historical behaviour)
 
     Returns
     -------
@@ -401,9 +406,9 @@ def metaconn_matrix(
     metaconn_mult = np.tile(metaconn, (l_freq, l_freq))
     metaconn_freq = np.multiply(init, metaconn_mult)
 
-    # TODO: option with verbose
-    # vizualising the array
-    plt.spy(metaconn_freq)
+    if plot:
+        # vizualising the array
+        plt.spy(metaconn_freq)
 
     metaconn_matrixTuple = namedtuple("metaconn_matrix", ["metaconn", "metaconn_freq"])
 
@@ -485,6 +490,12 @@ def statscondCluster(
     >>> significant_clusters = [i for i, p in enumerate(cluster_stats.cluster_p_values) if p <= 0.05]
     >>> print(f"Found {len(significant_clusters)} significant clusters")
     """
+
+    if tail == -1:
+        raise ValueError(
+            "tail=-1 cannot be used with statscondCluster: its F statistic is "
+            "never negative, so the lower tail holds no cluster."
+        )
 
     # Compute F-threshold for two-tailed test if needed
     dfn = len(data) - 1  # Numerator degrees of freedom
@@ -576,7 +587,8 @@ def statscluster(
         Direction of the test:
         - 0: two-tailed test (must be used for f oneway)
         - 1: one-tailed test (greater) (must be used for f multipleway)
-        - -1: one-tailed test (less)
+        - -1: one-tailed test (less), for the two t-tests only; an F test
+          raises a ValueError
 
     n_permutations : int
         Number of permutations for the statistical test, e.g., 50000
@@ -632,6 +644,12 @@ def statscluster(
     ... )
     """
 
+    if test in ("f oneway", "f multipleway") and tail == -1:
+        raise ValueError(
+            f"tail=-1 cannot be used with '{test}': an F statistic is never "
+            "negative, so the lower tail holds no cluster."
+        )
+
     # type of test
     if test == "ind ttest":
 
@@ -641,6 +659,9 @@ def statscluster(
         df = len(data[0]) + len(data[1]) - 2
         p = alpha / 2 if tail == 0 else alpha
         threshold = scipy.stats.t.ppf(1 - p, df)
+        # MNE expects a negative threshold for the lower tail
+        if tail == -1:
+            threshold = -threshold
     elif test == "rel ttest":
 
         def stat_fun(*arg):
@@ -649,6 +670,8 @@ def statscluster(
         df = len(data[0]) - 1
         p = alpha / 2 if tail == 0 else alpha
         threshold = scipy.stats.t.ppf(1 - p, df)
+        if tail == -1:
+            threshold = -threshold
     elif test == "f oneway":
 
         def stat_fun(*arg):
@@ -678,6 +701,11 @@ def statscluster(
             effects="all",
             pvalue=alpha,
         )
+    else:
+        raise ValueError(
+            f"Unknown test '{test}'. Use 'ind ttest', 'rel ttest', 'f oneway' "
+            "or 'f multipleway'."
+        )
 
     # computing the cluster permutation t test
     Stat_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(
@@ -698,8 +726,13 @@ def statscluster(
                 np.where(cluster_p_values == cluster_p)[0][0]
             ].astype("uint8")
             Stat_values = sensors_plot * Stat_obs
-            # taking maximum statistical value if a sensor is in many clusters
-            Stat_obs_plot = np.maximum(Stat_obs_plot, Stat_values)
+            # taking maximum statistical value if a sensor is in many clusters;
+            # the lower tail holds negative values, which a maximum against
+            # zero would drop, so the most negative value is kept instead
+            if tail == -1:
+                Stat_obs_plot = np.minimum(Stat_obs_plot, Stat_values)
+            else:
+                Stat_obs_plot = np.maximum(Stat_obs_plot, Stat_values)
 
     statscondClusterTuple = namedtuple(
         "statscondCluster",
