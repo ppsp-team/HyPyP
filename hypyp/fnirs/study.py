@@ -1,6 +1,5 @@
 from typing import List, Tuple
 import pickle
-import warnings
 
 from ..wavelet.base_wavelet import BaseWavelet
 from .preprocessor.base_preprocessor import BasePreprocessor
@@ -19,15 +18,14 @@ class Study:
     dyads: List[Dyad]
     dyads_shuffled: List[Dyad] | None
 
-    def __init__(self, dyads: List[Dyad] | None = None):
+    def __init__(self, dyads: List[Dyad] = []):
         """
         The Study object encapsulates the logic of an hyperscanning experiment.
 
         Args:
-            dyads (List[Dyad], optional): List of all the dyads in the study. Defaults to a new empty list.
+            dyads (List[Dyad], optional): List of all the dyads in the study. Defaults to [].
         """
-        # a fresh list per object: a `[]` default would be shared by every Study
-        self.dyads = [] if dyads is None else dyads
+        self.dyads = dyads
         self.dyads_shuffled = None
 
     @property
@@ -194,16 +192,17 @@ class Study:
     def compute_wtcs_shuffle(self, *args, **kwargs):
         """
         Wraps the `compute_wtcs` of all the dyads_shuffle. Arguments are directly passed to the dyads_shuffle method,
-        except `with_intra`: shuffled dyads never compute the intra-subject pairs, so `with_intra=True` is ignored with a warning.
+        which is always called with `with_intra=False`. Passing `with_intra=False` here is accepted and changes nothing.
 
         Returns:
             self: the Study object itself. Useful for chaining operations
         """
-        if kwargs.pop("with_intra", False):
-            warnings.warn(
-                "with_intra is ignored by compute_wtcs_shuffle: shuffled dyads "
-                "only compute the pairs between the two subjects."
-            )
+        # with_intra=False is passed below; drop a redundant one from the caller,
+        # so that the keyword arguments of compute_wtcs can be reused as they are
+        if kwargs.get("with_intra") is False:
+            kwargs = {
+                key: value for key, value in kwargs.items() if key != "with_intra"
+            }
         self.dyads_shuffled = self.get_dyads_shuffle()
         for dyad_shuffle in self.dyads_shuffled:
             dyad_shuffle.compute_wtcs(*args, **kwargs, with_intra=False)

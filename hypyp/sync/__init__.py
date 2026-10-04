@@ -143,7 +143,10 @@ def get_metric(
     ...                  priority=['numba', 'metal'])          # custom priority
     """
     mode_lower = mode.lower()
-    mode_lower = METRIC_ALIASES.get(mode_lower, mode_lower)
+    # a name registered in METRICS wins, so an alias never hides a metric
+    # that a user registered under that name
+    if mode_lower not in METRICS:
+        mode_lower = METRIC_ALIASES.get(mode_lower, mode_lower)
     if mode_lower not in METRICS:
         available = ", ".join(METRICS.keys())
         raise ValueError(f"Unknown metric mode '{mode}'. Available: {available}")

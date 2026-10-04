@@ -1805,36 +1805,26 @@ class TestBackendCapability:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    "module, flag",
-    [
-        ("torch", "base.TORCH_AVAILABLE"),
-        ("numba", "base.NUMBA_AVAILABLE"),
-        ("cupy", "kernels.CUPY_AVAILABLE"),
-        ("Metal", "kernels.METAL_AVAILABLE"),
-    ],
-)
-def test_broken_optional_dependency_does_not_break_import(tmp_path, module, flag):
-    """An optional package that is installed but fails to import (a missing
-    shared library, for instance) must leave hypyp importable, with the
-    backend reported as unavailable and a warning that names the package."""
+def _import_hypyp_with_fake_package(tmp_path, module, flag, init_source):
+    """Import hypyp in a fresh interpreter where `module` resolves to a fake
+    package whose `__init__` is `init_source`. Returns the availability flag
+    and the messages of the warnings that name the module."""
+    import json
     import os
     import subprocess
     import sys
 
     package = tmp_path / module
     package.mkdir()
-    (package / "__init__.py").write_text(
-        'raise OSError("simulated broken install: missing shared library")\n'
-    )
+    (package / "__init__.py").write_text(init_source)
     code = (
-        "import warnings\n"
+        "import json, warnings\n"
         "with warnings.catch_warnings(record=True) as caught:\n"
         "    warnings.simplefilter('always')\n"
         "    import hypyp.analyses\n"
         "    from hypyp.sync import base, kernels\n"
-        f"print('FLAG', {flag})\n"
-        f"print('WARNED', any('{module}' in str(w.message) and 'simulated broken install' in str(w.message) for w in caught))\n"
+        f"messages = [str(w.message) for w in caught if '{module}' in str(w.message)]\n"
+        f"print('RESULT', json.dumps([bool({flag}), messages]))\n"
     )
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join(
@@ -1844,8 +1834,54 @@ def test_broken_optional_dependency_does_not_break_import(tmp_path, module, flag
         [sys.executable, "-c", code], capture_output=True, text=True, env=env
     )
     assert result.returncode == 0, result.stderr[-2000:]
-    assert "FLAG False" in result.stdout
-    assert "WARNED True" in result.stdout
+    line = [l for l in result.stdout.splitlines() if l.startswith("RESULT ")][-1]
+    return json.loads(line[len("RESULT ") :])
+
+
+OPTIONAL_PACKAGES = [
+    ("torch", "base.TORCH_AVAILABLE"),
+    ("numba", "base.NUMBA_AVAILABLE"),
+    ("cupy", "kernels.CUPY_AVAILABLE"),
+    ("Metal", "kernels.METAL_AVAILABLE"),
+]
+
+
+@pytest.mark.parametrize("module, flag", OPTIONAL_PACKAGES)
+@pytest.mark.parametrize(
+    "error",
+    [
+        'OSError("simulated broken install: missing shared library")',
+        'ImportError("simulated broken install: cannot load a symbol")',
+        'ModuleNotFoundError("simulated broken install", name="a_dependency")',
+        'RuntimeError("simulated broken install: version mismatch")',
+    ],
+)
+def test_broken_optional_dependency_does_not_break_import(
+    tmp_path, module, flag, error
+):
+    """An optional package that is installed but fails to load must leave
+    hypyp importable, with the backend reported as unavailable and a warning
+    that names the package and gives the original error."""
+    available, messages = _import_hypyp_with_fake_package(
+        tmp_path, module, flag, f"raise {error}\n"
+    )
+    assert available is False
+    assert len(messages) == 1
+    assert "simulated broken install" in messages[0]
+
+
+@pytest.mark.parametrize("module, flag", OPTIONAL_PACKAGES)
+def test_absent_optional_dependency_stays_silent(tmp_path, module, flag):
+    """A package that is simply not installed disables its backend without
+    any warning, as before."""
+    available, messages = _import_hypyp_with_fake_package(
+        tmp_path,
+        module,
+        flag,
+        f'raise ModuleNotFoundError("No module named {module!r}", name="{module}")\n',
+    )
+    assert available is False
+    assert messages == []
 
 
 @pytest.mark.parametrize(
@@ -1855,6 +1891,18 @@ def test_broken_optional_dependency_does_not_break_import(tmp_path, module, flag
 def test_get_metric_accepts_the_aliases_of_compute_sync(alias, mode):
     assert type(get_metric(alias)) is METRICS[mode]
     assert type(get_metric(alias.upper())) is METRICS[mode]
+
+
+def test_get_metric_registered_name_wins_over_alias():
+    """A metric that a user registered under the name of an alias is still
+    the one returned."""
+
+    class Custom(METRICS["plv"]):
+        pass
+
+    with patch.dict(METRICS, {"pow_corr": Custom}):
+        assert type(get_metric("pow_corr")) is Custom
+    assert type(get_metric("pow_corr")) is METRICS["powcorr"]
 
 
 def test_get_metric_unknown_mode_still_raises():

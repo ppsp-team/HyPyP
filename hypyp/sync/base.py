@@ -50,41 +50,45 @@ import numpy as np
 
 
 # Check optional dependency availability
+def _is_absent(exc: BaseException, package: str) -> bool:
+    """True if `exc` only says that the optional `package` is not installed.
+
+    Any other failure (a missing shared library, an incompatible version, an
+    error while probing a device) means the package is installed but
+    unusable, which deserves a warning instead of a silent fallback.
+    """
+    return isinstance(exc, ModuleNotFoundError) and exc.name == package
+
+
 try:
     import torch
 
     TORCH_AVAILABLE = True
     MPS_AVAILABLE = torch.backends.mps.is_available()
     CUDA_AVAILABLE = torch.cuda.is_available()
-except ImportError:
-    TORCH_AVAILABLE = False
-    MPS_AVAILABLE = False
-    CUDA_AVAILABLE = False
 except Exception as exc:
-    # Installed but unusable (a missing shared library, for instance):
-    # disable the backend instead of making `import hypyp` fail
-    warnings.warn(
-        "torch is installed but could not be imported "
-        f"({type(exc).__name__}: {exc}). The torch backends are disabled.",
-        UserWarning,
-    )
     TORCH_AVAILABLE = False
     MPS_AVAILABLE = False
     CUDA_AVAILABLE = False
+    if not _is_absent(exc, "torch"):
+        warnings.warn(
+            "torch is installed but could not be loaded "
+            f"({type(exc).__name__}: {exc}). The torch backends are disabled.",
+            UserWarning,
+        )
 
 try:
     import numba
 
     NUMBA_AVAILABLE = True
-except ImportError:
-    NUMBA_AVAILABLE = False
 except Exception as exc:
-    warnings.warn(
-        "numba is installed but could not be imported "
-        f"({type(exc).__name__}: {exc}). The numba backend is disabled.",
-        UserWarning,
-    )
     NUMBA_AVAILABLE = False
+    if not _is_absent(exc, "numba"):
+        warnings.warn(
+            "numba is installed but could not be loaded "
+            f"({type(exc).__name__}: {exc}). The numba backend is disabled.",
+            UserWarning,
+        )
 
 # Custom kernel backends
 from .kernels import METAL_AVAILABLE, CUPY_AVAILABLE

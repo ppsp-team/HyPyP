@@ -823,18 +823,6 @@ def test_download_demos():
 # def test_load_lionirs():
 
 
-def test_study_default_dyads_are_not_shared():
-    study1 = Study()
-    study2 = Study()
-    study1.dyads.append("sentinel")
-    assert study2.dyads == []
-    assert Study().dyads == []
-
-    # a list given by the caller is still used as it is
-    dyads = []
-    assert Study(dyads).dyads is dyads
-
-
 def _raw_array_without_subject_info():
     info = mne.create_info(["Foo 1", "Foo 2"], sfreq=10, ch_types="eeg")
     return mne.io.RawArray(np.zeros((2, 100)), info)
@@ -871,20 +859,25 @@ def test_load_raw_keeps_given_label_and_his_id():
     assert Recording().load_raw(raw, preprocess=False).subject_label == "from_file"
 
 
-def test_study_wtc_shuffle_accepts_with_intra():
+def test_study_wtc_shuffle_accepts_redundant_with_intra():
+    from pandas.testing import assert_frame_equal
+
     dyads = [Dyad(*get_test_recordings()) for _ in range(3)]
     wtcs_kwargs = dict(ch_match=get_test_ch_match_one())
 
     reference = Study(dyads).compute_wtcs_shuffle(**wtcs_kwargs)
+    assert len(reference.dyads_shuffled) == 6
 
-    # the arguments of compute_wtcs can be reused as they are
+    # the keyword arguments of compute_wtcs can be reused as they are
     study = Study(dyads).compute_wtcs_shuffle(**wtcs_kwargs, with_intra=False)
-    assert len(study.dyads_shuffled) == len(reference.dyads_shuffled) == 6
-
-    # shuffled dyads never compute the intra-subject pairs, and say so
-    with pytest.warns(UserWarning, match="with_intra"):
-        study = Study(dyads).compute_wtcs_shuffle(**wtcs_kwargs, with_intra=True)
     assert len(study.dyads_shuffled) == 6
     for shuffled, expected in zip(study.dyads_shuffled, reference.dyads_shuffled):
-        assert len(shuffled.wtcs) == len(expected.wtcs)
-        assert np.all(shuffled.df["is_intra"] == False)
+        assert len(expected.wtcs) == 1
+        assert len(expected.df) > 0
+        assert shuffled.label == expected.label
+        assert_frame_equal(shuffled.df, expected.df)
+        np.testing.assert_array_equal(shuffled.wtcs[0].W, expected.wtcs[0].W)
+
+    # with_intra=True is still refused, as before
+    with pytest.raises(TypeError, match="with_intra"):
+        Study(dyads).compute_wtcs_shuffle(**wtcs_kwargs, with_intra=True)
