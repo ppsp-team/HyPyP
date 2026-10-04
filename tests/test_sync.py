@@ -26,6 +26,40 @@ from hypyp.sync.kernels import CUPY_AVAILABLE
 from tests.accorr_reference import accorr_reference
 
 
+#: Written by hand on purpose: the tests below must not derive their cases
+#: from supports(), the function they check.
+EXPECTED_BACKENDS = {
+    mode: {"numpy", "numba", "torch", "cuda_kernel"}
+    | ({"metal"} if mode in {"pli", "wpli", "accorr"} else set())
+    for mode in (
+        "plv",
+        "ccorr",
+        "accorr",
+        "coh",
+        "imcoh",
+        "pli",
+        "wpli",
+        "envcorr",
+        "powcorr",
+    )
+}
+ALL_BACKENDS = ("numpy", "numba", "torch", "metal", "cuda_kernel")
+
+
+def spy_on_kernel(module_name, function_name):
+    """
+    Patch a kernel function of ``hypyp.sync.kernels`` with a spy that still
+    runs it, to prove the kernel itself was entered. The metrics import their
+    kernel inside the method, so patching the module attribute is seen.
+    """
+    import importlib
+
+    module = importlib.import_module(f"hypyp.sync.kernels.{module_name}")
+    return patch.object(
+        module, function_name, side_effect=getattr(module, function_name)
+    )
+
+
 def spy_on(cls, method_name):
     """
     Patch ``cls.<method_name>`` with a spy that still runs the real method.
@@ -711,10 +745,11 @@ class TestPLI:
             complex_signal, n_samp, self.TRANSPOSE_AXES
         )
         metric_metal = PLI(optimization="metal")
-        # Assert the kernel actually ran: a silent fallback to numpy would make
-        # this comparison numpy-vs-numpy and therefore vacuous.
+        # A silent fallback to numpy would make this comparison numpy-vs-numpy
+        # and therefore vacuous: check the backend, then that the Metal kernel
+        # function itself is entered.
         assert metric_metal._backend == "metal"
-        with spy_on(PLI, "_compute_metal") as spy:
+        with spy_on_kernel("metal_phase", "pli_metal") as spy:
             result_metal = metric_metal.compute(
                 complex_signal, n_samp, self.TRANSPOSE_AXES
             )
@@ -734,7 +769,7 @@ class TestPLI:
         n_samp = sig.shape[3]
         metric = PLI(optimization="metal")
         assert metric._backend == "metal"
-        with spy_on(PLI, "_compute_metal") as spy:
+        with spy_on_kernel("metal_phase", "pli_metal") as spy:
             result = metric.compute(sig, n_samp, self.TRANSPOSE_AXES)
         assert spy.call_count == 1
         assert result.shape == (2, 1, 256, 256)
@@ -1028,7 +1063,7 @@ class TestPowCorr:
         )
         metric_metal = WPLI(optimization="metal")
         assert metric_metal._backend == "metal"
-        with spy_on(WPLI, "_compute_metal") as spy:
+        with spy_on_kernel("metal_phase", "wpli_metal") as spy:
             result_metal = metric_metal.compute(
                 complex_signal, n_samp, self.TRANSPOSE_AXES
             )
@@ -1066,7 +1101,7 @@ class TestAccorrKernels:
         )
         metric_metal = ACCorr(optimization="metal", show_progress=False)
         assert metric_metal._backend == "metal"
-        with spy_on(ACCorr, "_compute_metal") as spy:
+        with spy_on_kernel("metal_accorr", "accorr_metal") as spy:
             result_metal = metric_metal.compute(
                 complex_signal, n_samp, self.TRANSPOSE_AXES
             )
@@ -1200,6 +1235,14 @@ class TestBackendCapability:
 
     METAL_CAPABLE = {"pli", "wpli", "accorr"}
 
+    def test_capability_matrix(self):
+        """supports() must answer exactly the hand-written support matrix."""
+        assert set(METRICS) == set(EXPECTED_BACKENDS)
+        for mode, cls in METRICS.items():
+            actual = {b for b in ALL_BACKENDS if cls.supports(b)}
+            assert actual == EXPECTED_BACKENDS[mode], mode
+            assert cls.supports("not_a_backend") is False
+
     def test_supports_reflects_the_implemented_methods(self):
         """supports() must be derived from the code, not a hand-kept list."""
         for mode, cls in METRICS.items():
@@ -1254,9 +1297,8 @@ class TestBackendCapability:
         "mode, backend",
         [
             (mode, backend)
-            for mode in sorted(METRICS)
-            for backend in METRICS[mode]._BACKEND_METHODS
-            if METRICS[mode].supports(backend)
+            for mode in sorted(EXPECTED_BACKENDS)
+            for backend in sorted(EXPECTED_BACKENDS[mode])
         ],
     )
     def test_compute_routes_to_the_method_of_the_backend(self, mode, backend):
@@ -1361,7 +1403,7 @@ class TestBackendCapability:
         assert any("no GPU backend of the priority list" in m for m in messages)
 
     @staticmethod
-    def _legacy_metric():
+    def _legacy_metric(with_helper=False):
         """A third-party metric written against the pre-0.6.2 contract: it
         overrides ``compute``, branches on ``self._backend`` itself and has no
         ``_compute_*`` method."""
@@ -1374,7 +1416,13 @@ class TestBackendCapability:
                 base_result = super().compute(complex_signal, n_samp, transpose_axes)
                 return self._backend, base_result
 
-        return LegacyMetric
+        class LegacyWithHelper(LegacyMetric):
+            # Same contract, but the author happened to name a helper like the
+            # methods of the current contract. Still its own dispatch.
+            def _compute_numpy(self, complex_signal, n_samp, transpose_axes):
+                return "helper"
+
+        return LegacyWithHelper if with_helper else LegacyMetric
 
     @pytest.mark.parametrize(
         "kwargs, expected",
@@ -1387,13 +1435,16 @@ class TestBackendCapability:
             (dict(optimization="auto", priority=["torch"]), "torch"),
         ],
     )
-    def test_legacy_subclass_keeps_its_own_dispatch(self, kwargs, expected):
+    @pytest.mark.parametrize("with_helper", [False, True])
+    def test_legacy_subclass_keeps_its_own_dispatch(
+        self, kwargs, expected, with_helper
+    ):
         """
         A subclass of the earlier contract is granted the backend it asks for,
         as before the capability check, and without a "no implementation"
         warning: the base class cannot see inside its ``compute``.
         """
-        legacy_cls = self._legacy_metric()
+        legacy_cls = self._legacy_metric(with_helper)
         with (
             patch("hypyp.sync.base.METAL_AVAILABLE", True),
             patch("hypyp.sync.base.TORCH_AVAILABLE", True),
@@ -1456,6 +1507,28 @@ class TestBackendCapability:
         assert Placeholder.supports("torch") is False
         assert EmptyMetric.supports("numpy") is False
         assert BaseMetric.supports("numpy") is False
+
+    def test_torch_only_metric_reports_its_backends(self):
+        """A metric of the current contract without numpy runs the backend it
+        has and names what is missing otherwise."""
+        from hypyp.sync.base import BaseMetric
+
+        class TorchOnly(BaseMetric):
+            name = "torch_only"
+
+            def _compute_torch(self, complex_signal, n_samp, transpose_axes):
+                return "torch result"
+
+        metric = TorchOnly()
+        with pytest.raises(NotImplementedError, match="_compute_numpy"):
+            metric.compute(None, 0, None)
+        metric._backend = "torch"
+        assert metric.compute(None, 0, None) == "torch result"
+        metric._backend = "metal"
+        with pytest.raises(
+            ValueError, match=r"implemented for this metric: \['torch'\]"
+        ):
+            metric.compute(None, 0, None)
 
     def test_missing_numpy_implementation_is_reported(self, complex_signal):
         """A metric with neither ``compute`` nor ``_compute_numpy`` says so."""

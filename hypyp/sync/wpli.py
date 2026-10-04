@@ -47,6 +47,7 @@ class WPLI(BaseMetric):
     """
 
     name = "wpli"
+    _dispatch_via_table = True
 
     def compute(
         self, complex_signal: np.ndarray, n_samp: int, transpose_axes: tuple

@@ -79,6 +79,7 @@ class ACCorr(BaseMetric):
     """
 
     name = "accorr"
+    _dispatch_via_table = True
 
     def __init__(
         self,

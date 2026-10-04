@@ -281,8 +281,14 @@ class BaseMetric(ABC):
     """
     Abstract base class for connectivity metrics.
 
-    All connectivity metrics should inherit from this class and implement
-    the compute method.
+    A metric inherits from this class, sets ``_dispatch_via_table = True`` and
+    implements ``_compute_numpy`` plus any of the optional ``_compute_numba``,
+    ``_compute_torch``, ``_compute_metal`` and ``_compute_cuda``. Backend
+    selection, capability checks and dispatch are then handled here.
+
+    A subclass that overrides ``compute`` and does not set the flag follows the
+    earlier contract: it is granted whatever backend is requested and
+    available, and is itself responsible for honouring ``self._backend``.
 
     Parameters
     ----------
@@ -302,6 +308,13 @@ class BaseMetric(ABC):
     """
 
     name: str = "base"
+
+    #: Whether ``compute`` dispatches through ``_BACKEND_METHODS`` and backend
+    #: selection checks which ``_compute_*`` methods exist. ``None`` means
+    #: "inferred": yes, unless the class overrides ``compute``. The built-in
+    #: metrics override ``compute`` only to carry a docstring, so they set
+    #: the flag explicitly; so should a new metric written the same way.
+    _dispatch_via_table: Optional[bool] = None
 
     #: Maps a backend name to the method implementing it. This table is the
     #: single source of truth for dispatch: ``compute`` looks the backend up
@@ -344,9 +357,10 @@ class BaseMetric(ABC):
         einsum metrics at every channel count (see ``AUTO_PRIORITY``).
 
         A subclass written against the earlier contract, which overrides
-        ``compute`` and branches on ``self._backend`` itself without defining
-        ``_compute_numpy``, cannot be inspected this way. It is trusted with
-        every known backend, exactly as before the capability check existed.
+        ``compute`` and branches on ``self._backend`` itself, cannot be
+        inspected this way. Unless it sets ``_dispatch_via_table``, it is
+        trusted with every known backend, exactly as before the capability
+        check existed.
 
         Parameters
         ----------
@@ -369,23 +383,25 @@ class BaseMetric(ABC):
         if method is None:
             return False
         if not cls._uses_table_dispatch():
-            return cls._dispatches_itself()
-        return callable(getattr(cls, method, None))
+            return True
+        implementation = getattr(cls, method, None)
+        # The default _compute_numpy of this class only raises: it is not an
+        # implementation.
+        return callable(implementation) and (
+            implementation is not BaseMetric._compute_numpy
+        )
 
     @classmethod
     def _uses_table_dispatch(cls) -> bool:
-        """Whether the class follows the ``_compute_*`` contract.
+        """Whether this class dispatches through ``_BACKEND_METHODS``.
 
-        The marker is its own ``_compute_numpy``: the reference implementation
-        is the one method every metric of the current contract provides.
+        Explicit when ``_dispatch_via_table`` is set. Otherwise inferred: a
+        class that overrides ``compute`` is taken to do its own dispatch, as
+        the contract was before ``compute`` became concrete.
         """
-        return cls._compute_numpy is not BaseMetric._compute_numpy
-
-    @classmethod
-    def _dispatches_itself(cls) -> bool:
-        """Whether the class follows the earlier contract: its own ``compute``
-        and no ``_compute_numpy``."""
-        return not cls._uses_table_dispatch() and cls.compute is not BaseMetric.compute
+        if cls._dispatch_via_table is not None:
+            return cls._dispatch_via_table
+        return cls.compute is BaseMetric.compute
 
     @classmethod
     def _cpu_fallback(cls) -> tuple:
@@ -680,22 +696,25 @@ class BaseMetric(ABC):
 
         Notes
         -----
-        Output precision follows the backend and the input: the Metal kernels
-        and torch on MPS compute in ``float32`` whatever the input, while the
-        other backends follow the precision of ``complex_signal``.
+        Output precision depends on the backend and on the metric. The Metal
+        kernels and torch on MPS compute in ``float32`` whatever the input;
+        for the other combinations see each metric.
 
-        A subclass of the earlier contract may call ``super().compute(...)``
-        from its own ``compute``. The base method was then abstract with an
-        empty body and returned ``None``; it still does for such a subclass.
+        A subclass that does its own dispatch (see ``_dispatch_via_table``)
+        may call ``super().compute(...)`` from its own ``compute``. The base
+        method was then abstract with an empty body and returned ``None``; it
+        still does for such a subclass.
         """
         if not self._uses_table_dispatch():
-            if self._dispatches_itself():
-                return None
-            raise NotImplementedError(
-                f"{type(self).__name__} must implement _compute_numpy "
-                f"(or override compute)."
-            )
+            # Reached through super().compute() from a subclass that does its
+            # own dispatch: behave as the former abstract method did.
+            return None
         if not self.supports(self._backend):
+            if self._backend == "numpy":
+                raise NotImplementedError(
+                    f"{type(self).__name__} must implement _compute_numpy "
+                    f"(or override compute)."
+                )
             implemented = [b for b in self._BACKEND_METHODS if self.supports(b)]
             raise ValueError(
                 f"{self.name!r} cannot run on backend {self._backend!r}. "
@@ -714,8 +733,8 @@ class BaseMetric(ABC):
         accelerated backends are validated against, and the fallback target
         whenever a requested backend is unavailable or unimplemented. It is
         deliberately not an abstract method, so that a subclass written
-        against the earlier contract (overriding ``compute`` only) can still
-        be instantiated; this default raises ``NotImplementedError``.
+        against the earlier contract (its own ``compute``) can still be
+        instantiated; this default raises ``NotImplementedError``.
 
         Parameters
         ----------
