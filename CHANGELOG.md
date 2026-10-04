@@ -5,6 +5,7 @@
 ### Changed
 - The whole code base is formatted with `ruff format` (line length 88). The change is purely cosmetic: the syntax tree of every file is unchanged, apart from whitespace inside docstrings, and the Python examples of `hypyp/sync/README.md` are formatted too. The vendored `hypyp/ext` and the tutorial notebooks are left untouched. The formatting commit is listed in `.git-blame-ignore-revs`, so `git blame` skips it (run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once in your clone; GitHub applies it automatically)
 - The CI now checks formatting (`ruff format --check`) and a small set of lint rules that only catch certain bugs: syntax errors, invalid comparisons and undefined names. Ruff comes from the new `lint` dependency group, which the `dev` group includes
+- `black` is removed from the `dev` dependency group, since `ruff format` replaces it
 
 ## [0.6.1] - 2026-10-03
 
