@@ -821,3 +821,70 @@ def test_download_demos():
 
 
 # def test_load_lionirs():
+
+
+def test_study_default_dyads_are_not_shared():
+    study1 = Study()
+    study2 = Study()
+    study1.dyads.append("sentinel")
+    assert study2.dyads == []
+    assert Study().dyads == []
+
+    # a list given by the caller is still used as it is
+    dyads = []
+    assert Study(dyads).dyads is dyads
+
+
+def _raw_array_without_subject_info():
+    info = mne.create_info(["Foo 1", "Foo 2"], sfreq=10, ch_types="eeg")
+    return mne.io.RawArray(np.zeros((2, 100)), info)
+
+
+def test_load_raw_without_subject_info_gets_random_label():
+    raw = _raw_array_without_subject_info()
+    assert raw.info["subject_info"] is None
+
+    recording = Recording().load_raw(raw, preprocess=False)
+    assert len(recording.subject_label) == 10
+
+    # a second recording gets its own label
+    other = Recording().load_raw(_raw_array_without_subject_info(), preprocess=False)
+    assert other.subject_label != recording.subject_label
+
+
+def test_load_raw_subject_info_without_his_id_gets_random_label():
+    raw = _raw_array_without_subject_info()
+    raw.info["subject_info"] = dict(id=1)
+
+    recording = Recording().load_raw(raw, preprocess=False)
+    assert len(recording.subject_label) == 10
+
+
+def test_load_raw_keeps_given_label_and_his_id():
+    raw = _raw_array_without_subject_info()
+    assert (
+        Recording(subject_label="s1").load_raw(raw, preprocess=False).subject_label
+        == "s1"
+    )
+
+    raw.info["subject_info"] = dict(his_id="from_file")
+    assert Recording().load_raw(raw, preprocess=False).subject_label == "from_file"
+
+
+def test_study_wtc_shuffle_accepts_with_intra():
+    dyads = [Dyad(*get_test_recordings()) for _ in range(3)]
+    wtcs_kwargs = dict(ch_match=get_test_ch_match_one())
+
+    reference = Study(dyads).compute_wtcs_shuffle(**wtcs_kwargs)
+
+    # the arguments of compute_wtcs can be reused as they are
+    study = Study(dyads).compute_wtcs_shuffle(**wtcs_kwargs, with_intra=False)
+    assert len(study.dyads_shuffled) == len(reference.dyads_shuffled) == 6
+
+    # shuffled dyads never compute the intra-subject pairs, and say so
+    with pytest.warns(UserWarning, match="with_intra"):
+        study = Study(dyads).compute_wtcs_shuffle(**wtcs_kwargs, with_intra=True)
+    assert len(study.dyads_shuffled) == 6
+    for shuffled, expected in zip(study.dyads_shuffled, reference.dyads_shuffled):
+        assert len(shuffled.wtcs) == len(expected.wtcs)
+        assert np.all(shuffled.df["is_intra"] == False)

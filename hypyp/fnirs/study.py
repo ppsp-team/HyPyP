@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import pickle
+import warnings
 
 from ..wavelet.base_wavelet import BaseWavelet
 from .preprocessor.base_preprocessor import BasePreprocessor
@@ -18,14 +19,15 @@ class Study:
     dyads: List[Dyad]
     dyads_shuffled: List[Dyad] | None
 
-    def __init__(self, dyads: List[Dyad] = []):
+    def __init__(self, dyads: List[Dyad] | None = None):
         """
         The Study object encapsulates the logic of an hyperscanning experiment.
 
         Args:
-            dyads (List[Dyad], optional): List of all the dyads in the study. Defaults to [].
+            dyads (List[Dyad], optional): List of all the dyads in the study. Defaults to a new empty list.
         """
-        self.dyads = dyads
+        # a fresh list per object: a `[]` default would be shared by every Study
+        self.dyads = [] if dyads is None else dyads
         self.dyads_shuffled = None
 
     @property
@@ -191,11 +193,17 @@ class Study:
     # TODO add as argument the number of shuffle dyads
     def compute_wtcs_shuffle(self, *args, **kwargs):
         """
-        Wraps the `compute_wtcs` of all the dyads_shuffle. Arguments are directly passed to the dyads_shuffle method
+        Wraps the `compute_wtcs` of all the dyads_shuffle. Arguments are directly passed to the dyads_shuffle method,
+        except `with_intra`: shuffled dyads never compute the intra-subject pairs, so `with_intra=True` is ignored with a warning.
 
         Returns:
             self: the Study object itself. Useful for chaining operations
         """
+        if kwargs.pop("with_intra", False):
+            warnings.warn(
+                "with_intra is ignored by compute_wtcs_shuffle: shuffled dyads "
+                "only compute the pairs between the two subjects."
+            )
         self.dyads_shuffled = self.get_dyads_shuffle()
         for dyad_shuffle in self.dyads_shuffled:
             dyad_shuffle.compute_wtcs(*args, **kwargs, with_intra=False)
