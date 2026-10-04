@@ -60,12 +60,30 @@ except ImportError:
     TORCH_AVAILABLE = False
     MPS_AVAILABLE = False
     CUDA_AVAILABLE = False
+except Exception as exc:
+    # Installed but unusable (a missing shared library, for instance):
+    # disable the backend instead of making `import hypyp` fail
+    warnings.warn(
+        "torch is installed but could not be imported "
+        f"({type(exc).__name__}: {exc}). The torch backends are disabled.",
+        UserWarning,
+    )
+    TORCH_AVAILABLE = False
+    MPS_AVAILABLE = False
+    CUDA_AVAILABLE = False
 
 try:
     import numba
 
     NUMBA_AVAILABLE = True
 except ImportError:
+    NUMBA_AVAILABLE = False
+except Exception as exc:
+    warnings.warn(
+        "numba is installed but could not be imported "
+        f"({type(exc).__name__}: {exc}). The numba backend is disabled.",
+        UserWarning,
+    )
     NUMBA_AVAILABLE = False
 
 # Custom kernel backends
@@ -593,7 +611,7 @@ class BaseMetric(ABC):
                 return "numba", "cpu"
             warnings.warn(
                 "numba not installed, falling back to numpy. "
-                "Install with: poetry install --with optim_numba",
+                'Install with: pip install "hypyp[numba]"',
                 UserWarning,
                 stacklevel=3,
             )
@@ -604,7 +622,7 @@ class BaseMetric(ABC):
                 return cls._resolve_torch()
             warnings.warn(
                 "torch not installed, falling back to numpy. "
-                "Install with: poetry install --with optim_torch",
+                'Install with: pip install "hypyp[torch]"',
                 UserWarning,
                 stacklevel=3,
             )

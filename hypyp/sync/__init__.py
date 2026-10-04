@@ -74,6 +74,13 @@ METRICS = {
     "powcorr": PowCorr,
 }
 
+# Alternative names of the metrics, accepted by get_metric and compute_sync
+METRIC_ALIASES = {
+    "envelope_corr": "envcorr",
+    "pow_corr": "powcorr",
+    "imaginary_coh": "imcoh",
+}
+
 __all__ = [
     # Base classes and utilities
     "BaseMetric",
@@ -94,6 +101,7 @@ __all__ = [
     "PowCorr",
     # Registry
     "METRICS",
+    "METRIC_ALIASES",
     "get_metric",
 ]
 
@@ -108,7 +116,8 @@ def get_metric(
     ----------
     mode : str
         Name of the connectivity metric. One of: 'plv', 'ccorr', 'accorr',
-        'coh', 'imcoh', 'pli', 'wpli', 'envcorr', 'powcorr'.
+        'coh', 'imcoh', 'pli', 'wpli', 'envcorr', 'powcorr'. The aliases
+        'imaginary_coh', 'envelope_corr' and 'pow_corr' are accepted too.
     optimization : str, optional
         Optimization strategy. Options: None, 'auto', 'numba', 'torch',
         'metal', 'cuda_kernel'. See BaseMetric for fallback behavior.
@@ -134,6 +143,7 @@ def get_metric(
     ...                  priority=['numba', 'metal'])          # custom priority
     """
     mode_lower = mode.lower()
+    mode_lower = METRIC_ALIASES.get(mode_lower, mode_lower)
     if mode_lower not in METRICS:
         available = ", ".join(METRICS.keys())
         raise ValueError(f"Unknown metric mode '{mode}'. Available: {available}")
