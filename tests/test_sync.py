@@ -1373,18 +1373,25 @@ class TestBackendCapability:
         assert "'not_a_backend'" in message
         assert "numpy" in message
 
-    def test_unimplemented_backend_fails_closed(self, complex_signal):
+    def test_unimplemented_backend_computes_in_numpy_with_a_warning(
+        self, complex_signal
+    ):
         """
-        A known backend the metric does not implement must raise the same
-        clear error, not an AttributeError on the missing method.
+        A known backend the metric does not implement computes in numpy, as
+        before, but says so: the 0.6 series changes no computed value.
         """
         from hypyp.sync.plv import PLV
 
         n_samp = complex_signal.shape[3]
+        axes = (0, 1, 3, 2)
         metric = PLV()
         metric._backend = "metal"
-        with pytest.raises(ValueError, match="cannot run on backend 'metal'"):
-            metric.compute(complex_signal, n_samp, (0, 1, 3, 2))
+        with pytest.warns(UserWarning, match="'plv' has no Metal implementation"):
+            result = metric.compute(complex_signal, n_samp, axes)
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(
+            result, PLV()._compute_numpy(complex_signal, n_samp, axes)
+        )
 
     def test_priority_fallback_warning_names_the_skipped_backend(self):
         """
@@ -1578,12 +1585,12 @@ class TestBackendCapability:
                 metric = Alias(optimization="metal")
         assert metric._backend == "numpy"
 
-    def test_auto_does_not_guess_numba_handled_inside_compute(self, complex_signal):
+    def test_auto_keeps_numba_handled_inside_compute(self, complex_signal):
         """
         A descendant of a built-in metric that hides ``_compute_numba`` and
-        handles numba inside its own ``compute`` cannot be told apart from
-        one that only delegates. ``'auto'`` therefore falls back to numpy for
-        it, while an explicit request for numba is still granted.
+        handles numba inside its own ``compute`` still gets numba from the
+        CPU fallback of ``'auto'``, as before the capability check, and its
+        own branch runs.
         """
         from hypyp.sync.plv import PLV
 
@@ -1607,12 +1614,8 @@ class TestBackendCapability:
                 warnings.simplefilter("ignore")
                 automatic = OwnNumba(optimization="auto")
             requested = OwnNumba(optimization="numba")
-        assert automatic._backend == "numpy"
-        result = automatic.compute(complex_signal, n_samp, axes)
-        assert isinstance(result, np.ndarray)
-        np.testing.assert_array_equal(
-            result, PLV()._compute_numpy(complex_signal, n_samp, axes)
-        )
+        assert automatic._backend == "numba"
+        assert automatic.compute(complex_signal, n_samp, axes) == "own numba"
         assert requested._backend == "numba"
         assert requested.compute(complex_signal, n_samp, axes) == "own numba"
 
@@ -1646,11 +1649,12 @@ class TestBackendCapability:
             assert TableOnly.supports("numpy") is True
             assert TableOnly.supports("numba") is False
 
-    def test_delegating_descendant_of_numpy_only_metric_never_gets_numba(self):
+    def test_delegating_descendant_of_numpy_only_metric_still_computes(self):
         """
         A descendant that overrides ``compute`` only to delegate is trusted
-        with the backends it requests, but the automatic CPU fallback must
-        still not hand it a numba method that does not exist.
+        with numba by the automatic CPU fallback, like any class with its own
+        ``compute``. No numba method exists, so the dispatch computes in numpy
+        and warns instead of failing.
         """
         from hypyp.sync.base import BaseMetric
 
@@ -1674,8 +1678,9 @@ class TestBackendCapability:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 metric = Delegating(optimization="auto")
-        assert metric._backend == "numpy"
-        assert metric.compute(None, 0, None) == "numpy result"
+        assert metric._backend == "numba"
+        with pytest.warns(UserWarning, match="no numba implementation"):
+            assert metric.compute(None, 0, None) == "numpy result"
 
     def test_supports_ignores_placeholders(self):
         """supports() must not count a non-callable attribute, nor the default

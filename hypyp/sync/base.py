@@ -279,7 +279,7 @@ def multiply_conjugate_time_torch(c, s):
 
 class BaseMetric(ABC):
     """
-    Abstract base class for connectivity metrics.
+    Base class for connectivity metrics.
 
     A metric inherits from this class, sets ``_dispatch_via_table = True`` and
     implements ``_compute_numpy`` plus any of the optional ``_compute_numba``,
@@ -296,7 +296,8 @@ class BaseMetric(ABC):
     optimization : str, optional
         Optimization strategy for computation. Options:
         - None: standard numpy (default)
-        - 'auto': best available (torch > numba > numpy)
+        - 'auto': best backend for this metric and platform (see
+          ``_resolve_auto`` and ``AUTO_PRIORITY``)
         - 'numba': numba JIT compilation (falls back to numpy if unavailable)
         - 'torch': PyTorch with auto-detected GPU (falls back gracefully)
 
@@ -464,17 +465,14 @@ class BaseMetric(ABC):
     @classmethod
     def _cpu_fallback(cls) -> tuple:
         """CPU backend used when no GPU backend can be selected: numba when it
-        is installed and the metric implements it, numpy otherwise.
+        is installed and the metric supports it, numpy otherwise.
 
-        Nobody asked for numba by name here, so under the table dispatch the
-        method must really exist, even for a descendant that overrides
-        ``compute`` and is otherwise trusted with any backend it requests.
+        A class that overrides ``compute`` is trusted with numba here, as it
+        was before the capability check: it may handle numba in its own
+        ``compute``. If it only delegates and no ``_compute_numba`` exists,
+        the dispatch computes in numpy with a warning.
         """
-        if cls._dispatches_via_table():
-            has_numba = cls._implements("numba")
-        else:
-            has_numba = cls.supports("numba")
-        if NUMBA_AVAILABLE and has_numba:
+        if NUMBA_AVAILABLE and cls.supports("numba"):
             return "numba", "cpu"
         return "numpy", "cpu"
 
@@ -615,7 +613,9 @@ class BaseMetric(ABC):
 
         Uses the ``AUTO_PRIORITY`` table compiled from Mac M4 Max and
         Narval A100 benchmarks. Iterates the priority list and returns
-        the first available backend.
+        the first available backend the metric implements. An available
+        backend the metric does not implement ends the search in numpy with
+        a warning (see the comment in the loop).
 
         Parameters
         ----------
@@ -774,13 +774,20 @@ class BaseMetric(ABC):
             (a metric may implement an accelerated backend alone, but then
             cannot serve the default ``optimization=None``).
         ValueError
-            If ``self._backend`` is any other backend the metric has no
-            ``_compute_*`` method for, or an unknown name. The
-            message names the metric and the backends it does implement. This
-            is deliberate: an earlier hand-written ``if/elif`` chain per metric
-            ended in a bare ``return self._compute_numpy(...)``, so an
-            unhandled backend was indistinguishable from the numpy default and
-            failed silently. Dispatching through the table fails loudly instead.
+            If ``self._backend`` is not the name of a backend, or is a backend
+            the metric has no ``_compute_*`` method for while it has no numpy
+            implementation either. The message names the metric and the
+            backends it does implement.
+
+        Warns
+        -----
+        UserWarning
+            If ``self._backend`` is a known backend the metric has no
+            ``_compute_*`` method for. The computation then runs in numpy, as
+            the earlier hand-written ``if/elif`` chain of each metric did
+            without notice. Backend selection never produces this state for a
+            built-in metric; it arises when ``_backend`` is set by hand, or in
+            a subclass that overrides ``compute`` and delegates here.
 
         Notes
         -----
@@ -795,7 +802,7 @@ class BaseMetric(ABC):
         built-in metric that overrides ``compute`` and delegates to
         ``super().compute(...)`` gets the table dispatch, which looks the
         method up on the instance: a ``_compute_*`` method added by the
-        descendant is used, and the errors above are raised for a backend
+        descendant is used, and the warning or errors above apply to a backend
         that neither it nor its parent implements.
         """
         if not self._dispatches_via_table():
@@ -809,6 +816,20 @@ class BaseMetric(ABC):
                     f"(or override compute)."
                 )
             implemented = [b for b in self._BACKEND_METHODS if self._implements(b)]
+            if self._backend in self._BACKEND_METHODS and "numpy" in implemented:
+                # The per-metric if/elif chains this dispatch replaces ended
+                # in the numpy implementation. The 0.6 series changes no
+                # computed value, so a known backend without a method still
+                # computes in numpy, now with a warning.
+                warnings.warn(
+                    f"{self.name!r} has no "
+                    f"{self._BACKEND_LABELS.get(self._backend, self._backend)} "
+                    f"implementation: computing with numpy, as earlier "
+                    f"versions did silently.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                return self._compute_numpy(complex_signal, n_samp, transpose_axes)
             raise ValueError(
                 f"{self.name!r} cannot run on backend {self._backend!r}. "
                 f"Backends implemented for this metric: {implemented}."
