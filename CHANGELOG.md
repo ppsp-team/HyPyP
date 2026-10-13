@@ -15,11 +15,13 @@
 
 - `stats.statscluster(test="rel ttest")` computed a paired t statistic but built its null with `permutation_cluster_test`, which permutes observations between the two groups: after a permutation, observation k of one group and observation k of the other are different pairs, so the null described var(A) + var(B) instead of var(A − B). When the pairs share a large component across features (every EEG participant has a topography) the test was wrong in both directions (p = 0.03 and 0.046 on the review's example where the sign-flip null gives 0.002 and 0.278) and could lose nearly all of its power. It now runs MNE's `permutation_cluster_1samp_test` on the within-pair differences, whose null flips the sign of each difference, and rejects groups of unequal size. **Changes results** for every `rel ttest` call
 
+- `stats.statsCond` applied an FDR correction on top of p-values that MNE's `permutation_t_test` had already corrected by the max-T method (family-wise error rate), so the result was doubly conservative while the docstring described a single FDR correction. The max-T p-values are now returned as they are, `adj_p` is `(p_values <= alpha, p_values)`, and the docstring says that the input must be a contrast (a difference or a log-ratio), since a one-sample test against zero on raw power is "significant" everywhere; a same-sign input now warns. The dead sensor-position block is gone and `epochs` is documented as unused. **Changes results** for `adj_p` and `T_obs_plot`; `T_obs`, `p_values` and `H0` are unchanged
+
 ### Removed
 - `stats.statscluster(test="f multipleway")`. With two factors it never ran (`f_threshold_mway_rm` returns one threshold per effect and MNE rejects the list), and with one factor it permuted observations between subjects under a repeated-measures F, which is not a valid null. The option now raises a `ValueError` that says so; `factor_levels` is kept in the signature, ignored, so that existing calls keep working
 
 ### Added
-- `seed` argument on `stats.statscondCluster` and `stats.statscluster`, forwarded to MNE's permutation, so that a cluster test can be reproduced
+- `seed` argument on `stats.statscondCluster`, `stats.statscluster` and `stats.statsCond`, forwarded to MNE's permutation, so that a test can be reproduced; `stats.statsCond` also accepts `n_permutations="all"` for the exact test
 
 ## [0.6.2] - 2026-10-04
 
