@@ -20,7 +20,11 @@ from scipy.stats import f as f_dist
 import matplotlib.pylab as plt
 import mne
 from mne.channels import find_ch_adjacency
-from mne.stats import combine_adjacency, permutation_cluster_test
+from mne.stats import (
+    combine_adjacency,
+    permutation_cluster_1samp_test,
+    permutation_cluster_test,
+)
 
 
 def statsCond(
@@ -591,22 +595,24 @@ def statscluster(
 
     Parameters
     ----------
-    data : list or np.ndarray
-        For t-tests and one-way ANOVA: list of arrays containing values from
-        different groups or conditions to compare
-        For multiple-way ANOVA: numpy array organized by factors
+    data : list
+        List of arrays containing values from different groups or conditions
+        to compare, each of shape (n_observations, ...) with the layouts
+        described in statscondCluster. For 'rel ttest': two arrays with the
+        same number of observations, observation k of each being the same
+        pair (the same participant, or the same dyad, in two conditions)
 
     test : str
         Type of statistical test to use:
-        - 'ind ttest': Independent samples t-test
-        - 'rel ttest': Related (paired) samples t-test
+        - 'ind ttest': Independent samples t-test (Welch)
+        - 'rel ttest': Related (paired) samples t-test; the null flips the sign
+          of each pair's difference, which is the exchangeability a paired
+          design has (MNE's permutation_cluster_1samp_test on the differences)
         - 'f oneway': One-way ANOVA
-        - 'f multipleway': Multiple-way ANOVA
 
-    factor_levels : List[int] or None
-        For multiple-way ANOVA, list specifying the number of levels for each factor
-        (e.g., [2, 3] for a 2×3 design with 2 levels of factor 1 and 3 levels of factor 2)
-        Set to None for other tests
+    factor_levels : None
+        Ignored. It served 'f multipleway', which was removed, and is kept so
+        that existing calls keep working
 
     ch_con_freq : scipy.sparse.csr_matrix
         Connectivity or metaconnectivity matrix defining adjacency across
@@ -617,8 +623,8 @@ def statscluster(
     tail : int
         Direction of the test:
         - 0: two-tailed test
-        - 1: one-tailed test (greater). The F statistics are non-negative, so
-          use 1 for 'f oneway' and 'f multipleway' (0 gives the same result)
+        - 1: one-tailed test (greater). The F statistic is non-negative, so
+          use 1 for 'f oneway' (0 gives the same result)
         - -1: one-tailed test (less); t-tests only
 
     n_permutations : int
@@ -651,10 +657,8 @@ def statscluster(
     n_sensors) matrix flattened, which counts every pair twice and includes
     the diagonal.
 
-    The function applies different thresholding approaches based on the test type:
-    - For t-tests: Uses the alpha value directly
-    - For one-way ANOVA: Uses the alpha value directly
-    - For multiple-way ANOVA: Calculates appropriate F-thresholds based on factor levels
+    The cluster-forming threshold is the t or F value at `alpha` for the
+    degrees of freedom of the design.
 
     With t_power=1, each location is weighted by its statistical score within a cluster.
 
@@ -671,21 +675,27 @@ def statscluster(
     ...     alpha=0.05
     ... )
     >>>
-    >>> # 2×2 repeated measures ANOVA (within-subjects design)
-    >>> # Factor 1: Condition (2 levels), Factor 2: Time (2 levels)
-    >>> anova_results = statscluster(
-    ...     data_array_2x2,  # Shape: (4, n_subjects, n_features)
-    ...     test='f multipleway',
-    ...     factor_levels=[2, 2],
+    >>> # Paired t-test, the same dyads in two conditions
+    >>> rel_ttest_results = statscluster(
+    ...     [condition1_data, condition2_data],  # observation k: the same dyad
+    ...     test='rel ttest',
+    ...     factor_levels=None,
     ...     ch_con_freq=connectivity.ch_con_freq,
-    ...     tail=1,  # F-tests are one-tailed
+    ...     tail=0,
     ...     n_permutations=10000,
-    ...     alpha=0.05
+    ...     alpha=0.05,
+    ...     seed=0,
     ... )
     """
 
-    if test in ("f oneway", "f multipleway") and tail == -1:
+    if test == "f oneway" and tail == -1:
         raise ValueError("The F statistic is non-negative: use tail=1, not -1.")
+    if test == "f multipleway":
+        raise ValueError(
+            "statscluster(test='f multipleway') was removed: it permuted observations "
+            "between subjects under a repeated-measures F, which is not a valid null, "
+            "and could not run with two factors. See the changelog."
+        )
     ch_con_freq = _check_adjacency(ch_con_freq, data)
 
     # type of test
@@ -697,12 +707,13 @@ def statscluster(
         df = len(data[0]) + len(data[1]) - 2
         threshold = _t_threshold(alpha, df, tail)
     elif test == "rel ttest":
-
-        def stat_fun(*arg):
-            return scipy.stats.ttest_rel(arg[0], arg[1])[0]
-
-        df = len(data[0]) - 1
-        threshold = _t_threshold(alpha, df, tail)
+        if len(data) != 2 or len(data[0]) != len(data[1]):
+            raise ValueError(
+                "'rel ttest' needs two groups with the same number of observations, "
+                "observation k of each being the same pair."
+            )
+        stat_fun = None  # the sign-flip test below computes the paired t itself
+        threshold = _t_threshold(alpha, len(data[0]) - 1, tail)
     elif test == "f oneway":
 
         def stat_fun(*arg):
@@ -711,45 +722,37 @@ def statscluster(
         dfn = len(data) - 1
         dfd = sum(len(d) for d in data) - len(data)
         threshold = f_dist.ppf(1 - alpha, dfn, dfd)
-    elif test == "f multipleway":
-        if max(factor_levels) > 2:
-            correction = True
-        else:
-            correction = False
-
-        def stat_fun(*arg):
-            return mne.stats.f_mway_rm(
-                np.swapaxes(arg, 1, 0),
-                factor_levels,
-                effects="all",
-                correction=correction,
-                return_pvals=False,
-            )[0]
-
-        threshold = mne.stats.f_threshold_mway_rm(
-            n_subjects=data.shape[1],
-            factor_levels=factor_levels,
-            effects="all",
-            pvalue=alpha,
-        )
     else:
         raise ValueError(
-            f"Unknown test '{test}'. Use 'ind ttest', 'rel ttest', 'f oneway' "
-            "or 'f multipleway'."
+            f"Unknown test '{test}'. Use 'ind ttest', 'rel ttest' or 'f oneway'."
         )
 
-    # computing the cluster permutation t test
-    Stat_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(
-        data,
-        stat_fun=stat_fun,
-        threshold=threshold,
-        tail=tail,
-        n_permutations=n_permutations,
-        adjacency=ch_con_freq,
-        t_power=1,
-        out_type="mask",
-        seed=seed,
-    )
+    if test == "rel ttest":
+        # the exchangeability of a paired design: under the null, each pair's
+        # two labels could be swapped, which flips the sign of its difference
+        Stat_obs, clusters, cluster_p_values, H0 = permutation_cluster_1samp_test(
+            np.asarray(data[0]) - np.asarray(data[1]),
+            threshold=threshold,
+            tail=tail,
+            n_permutations=n_permutations,
+            adjacency=ch_con_freq,
+            t_power=1,
+            out_type="mask",
+            seed=seed,
+        )
+    else:
+        # computing the cluster permutation test
+        Stat_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(
+            data,
+            stat_fun=stat_fun,
+            threshold=threshold,
+            tail=tail,
+            n_permutations=n_permutations,
+            adjacency=ch_con_freq,
+            t_power=1,
+            out_type="mask",
+            seed=seed,
+        )
     Stat_obs_plot = _significant_values(Stat_obs, clusters, cluster_p_values, alpha)
 
     statscondClusterTuple = namedtuple(
