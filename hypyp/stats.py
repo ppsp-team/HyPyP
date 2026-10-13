@@ -415,6 +415,28 @@ def metaconn_matrix(
     return metaconn_matrixTuple(metaconn=metaconn, metaconn_freq=metaconn_freq)
 
 
+def _t_threshold(alpha: float, df: int, tail: int) -> float:
+    """Cluster-forming t threshold at alpha; negative for a lower-tail test."""
+    p = alpha / 2 if tail == 0 else alpha
+    threshold = scipy.stats.t.ppf(1 - p, df)
+    return -threshold if tail == -1 else threshold
+
+
+def _significant_values(
+    stat_obs: np.ndarray, clusters: list, cluster_p_values: np.ndarray, alpha: float
+) -> np.ndarray:
+    """The statistic on the features of the significant clusters, zero elsewhere.
+
+    MNE's clusters are disjoint, so every feature takes the statistic of the
+    one cluster it belongs to, with its sign.
+    """
+    values = np.zeros(stat_obs.shape)
+    for mask, p in zip(clusters, cluster_p_values):
+        if p <= alpha:
+            values[mask] = stat_obs[mask]
+    return values
+
+
 def statscondCluster(
     data: list,
     freqs_mean: list,
@@ -422,6 +444,7 @@ def statscondCluster(
     tail: int,
     n_permutations: int,
     alpha: float = 0.05,
+    seed: int | None = None,
 ) -> namedtuple:
     """
     Perform cluster-level statistical permutation test on neurophysiological data.
@@ -444,16 +467,20 @@ def statscondCluster(
         space and frequencies, typically from con_matrix() or metaconn_matrix()
 
     tail : int
-        Direction of the test:
-        - 0: two-tailed test
-        - 1: one-tailed test (greater)
-        - -1: one-tailed test (less)
+        Direction of the test. The F statistic is non-negative, so use 1
+        (0 gives the same result); -1 is rejected.
 
     n_permutations : int
         Number of permutations for the statistical test, e.g., 50000
 
     alpha : float, optional
-        Significance threshold for clusters (default=0.05)
+        Used twice: as the p-value of the F distribution that sets the
+        cluster-forming threshold, and as the cluster-level significance
+        that selects the clusters shown in F_obs_plot (default=0.05)
+
+    seed : int or None, optional
+        Seed of the permutation, forwarded to MNE, so that a run can be
+        reproduced (default=None)
 
     Returns
     -------
@@ -472,8 +499,8 @@ def statscondCluster(
     With t_power=1 (default), each location is weighted by its statistical score
     within a cluster, which gives more weight to stronger effects.
 
-    The function automatically calculates appropriate thresholds for cluster
-    formation based on the F-distribution for two-tailed tests.
+    The cluster-forming threshold is the F value at `alpha` for the degrees of
+    freedom of the design, whatever the tail.
 
     Examples
     --------
@@ -491,14 +518,13 @@ def statscondCluster(
     >>> print(f"Found {len(significant_clusters)} significant clusters")
     """
 
-    # Compute F-threshold for two-tailed test if needed
+    if tail == -1:
+        raise ValueError("The F statistic is non-negative: use tail=1, not -1.")
+
+    # cluster-forming threshold from the F distribution at alpha, for every tail
     dfn = len(data) - 1  # Numerator degrees of freedom
     dfd = np.sum([len(d) for d in data]) - len(data)  # Denominator degrees of freedom
-
-    if tail == 0:
-        threshold = f_dist.ppf(1 - alpha, dfn, dfd)
-    else:
-        threshold = None  # One-tailed test uses MNE's default
+    threshold = f_dist.ppf(1 - alpha, dfn, dfd)
 
     # computing the cluster permutation t test
     F_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(
@@ -509,20 +535,12 @@ def statscondCluster(
         adjacency=ch_con_freq,
         t_power=1,
         out_type="mask",
+        seed=seed,
     )
     # t_power = 1 weighs each location by its statistical score,
     # when set to 0 it gives a count of locations in each cluster
 
-    # getting F values for sensors belonging to a significant cluster
-    F_obs_plot = np.zeros(F_obs.shape)
-    for cluster_p in cluster_p_values:
-        if cluster_p <= alpha:
-            sensors_plot = clusters[
-                np.where(cluster_p_values == cluster_p)[0][0]
-            ].astype("uint8")
-            F_values = sensors_plot * F_obs
-            # taking maximum F value if a sensor belongs to many clusters
-            F_obs_plot = np.maximum(F_obs_plot, F_values)
+    F_obs_plot = _significant_values(F_obs, clusters, cluster_p_values, alpha)
 
     statscondClusterTuple = namedtuple(
         "statscondCluster",
@@ -546,6 +564,7 @@ def statscluster(
     tail: int,
     n_permutations: int,
     alpha: float = 0.05,
+    seed: int | None = None,
 ) -> namedtuple:
     """
     Perform cluster-based statistical tests with various test statistics.
@@ -579,15 +598,22 @@ def statscluster(
 
     tail : int
         Direction of the test:
-        - 0: two-tailed test (must be used for f oneway)
-        - 1: one-tailed test (greater) (must be used for f multipleway)
-        - -1: one-tailed test (less)
+        - 0: two-tailed test
+        - 1: one-tailed test (greater). The F statistics are non-negative, so
+          use 1 for 'f oneway' and 'f multipleway' (0 gives the same result)
+        - -1: one-tailed test (less); t-tests only
 
     n_permutations : int
         Number of permutations for the statistical test, e.g., 50000
 
     alpha : float, optional
-        Significance threshold for clusters (default=0.05)
+        Used twice: as the p-value of the t or F distribution that sets the
+        cluster-forming threshold, and as the cluster-level significance that
+        selects the clusters shown in Stat_obs_plot (default=0.05)
+
+    seed : int or None, optional
+        Seed of the permutation, forwarded to MNE, so that a run can be
+        reproduced (default=None)
 
     Returns
     -------
@@ -637,6 +663,9 @@ def statscluster(
     ... )
     """
 
+    if test in ("f oneway", "f multipleway") and tail == -1:
+        raise ValueError("The F statistic is non-negative: use tail=1, not -1.")
+
     # type of test
     if test == "ind ttest":
 
@@ -644,20 +673,18 @@ def statscluster(
             return scipy.stats.ttest_ind(arg[0], arg[1], equal_var=False)[0]
 
         df = len(data[0]) + len(data[1]) - 2
-        p = alpha / 2 if tail == 0 else alpha
-        threshold = scipy.stats.t.ppf(1 - p, df)
+        threshold = _t_threshold(alpha, df, tail)
     elif test == "rel ttest":
 
         def stat_fun(*arg):
             return scipy.stats.ttest_rel(arg[0], arg[1])[0]
 
         df = len(data[0]) - 1
-        p = alpha / 2 if tail == 0 else alpha
-        threshold = scipy.stats.t.ppf(1 - p, df)
+        threshold = _t_threshold(alpha, df, tail)
     elif test == "f oneway":
 
         def stat_fun(*arg):
-            return scipy.stats.f_oneway(arg[0], arg[1])[0]
+            return scipy.stats.f_oneway(*arg)[0]
 
         dfn = len(data) - 1
         dfd = sum(len(d) for d in data) - len(data)
@@ -699,17 +726,9 @@ def statscluster(
         adjacency=ch_con_freq,
         t_power=1,
         out_type="mask",
+        seed=seed,
     )
-    # getting F values for sensors belonging to a significant cluster
-    Stat_obs_plot = np.zeros(Stat_obs.shape)
-    for cluster_p in cluster_p_values:
-        if cluster_p <= alpha:
-            sensors_plot = clusters[
-                np.where(cluster_p_values == cluster_p)[0][0]
-            ].astype("uint8")
-            Stat_values = sensors_plot * Stat_obs
-            # taking maximum statistical value if a sensor is in many clusters
-            Stat_obs_plot = np.maximum(Stat_obs_plot, Stat_values)
+    Stat_obs_plot = _significant_values(Stat_obs, clusters, cluster_p_values, alpha)
 
     statscondClusterTuple = namedtuple(
         "statscondCluster",
