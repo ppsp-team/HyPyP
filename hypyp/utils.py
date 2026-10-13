@@ -494,7 +494,10 @@ def normalizing(baseline: np.ndarray, task: np.ndarray, type: str) -> np.ndarray
 
 
 def generate_random_epoch(
-    epoch: mne.Epochs, mu: float = 0, sigma: float = 2.0
+    epoch: mne.Epochs,
+    mu: float = 0,
+    sigma: float = 2.0,
+    rng: np.random.Generator | int | None = None,
 ) -> mne.Epochs:
     """
     Generate epochs with random data following a normal distribution.
@@ -512,6 +515,10 @@ def generate_random_epoch(
 
     sigma : float, optional
         Standard deviation of the normal distribution (default=2.0)
+
+    rng : np.random.Generator or int or None, optional
+        Random generator, or a seed for one; None draws a fresh generator
+        (default=None)
 
     Returns
     -------
@@ -547,7 +554,7 @@ def generate_random_epoch(
     i, j, k = data_shape
 
     # Generate a numpy.array with same shape from the normal distribution
-    r_epoch = sigma * np.random.randn(i, j, k) + mu
+    r_epoch = np.random.default_rng(rng).normal(mu, sigma, (i, j, k))
 
     return EpochsArray(data=r_epoch, info=info)
 
@@ -559,6 +566,7 @@ def generate_virtual_epoch(
     frequency_std: float = 0.2,
     noise_phase_level: float = 0.005,
     noise_amplitude_level: float = 0.1,
+    rng: np.random.Generator | int | None = None,
 ) -> mne.Epochs:
     """
     Generate epochs with simulated data using Kuramoto oscillators.
@@ -588,6 +596,11 @@ def generate_virtual_epoch(
     noise_amplitude_level : float, optional
         Amount of noise added to the amplitude (default=0.1)
 
+    rng : np.random.Generator or int or None, optional
+        Random generator, or a seed for one, used for the natural frequencies,
+        the initial phases and the noise; None draws a fresh generator
+        (default=None)
+
     Returns
     -------
     simulated_epochs : mne.Epochs
@@ -604,7 +617,9 @@ def generate_virtual_epoch(
     represents the strength of the connection from oscillator j to oscillator i.
 
     The simulation uses the scipy.integrate.solve_ivp function to solve the
-    differential equations of the Kuramoto model.
+    differential equations of the Kuramoto model, with a step no longer than
+    one sample so that the coupling is integrated at the resolution of the
+    data.
 
     This function is useful for:
     - Testing connectivity measures with known ground truth
@@ -625,9 +640,8 @@ def generate_virtual_epoch(
     ...     real_epochs, W, frequency_mean=10, frequency_std=0.1
     ... )
     >>> # Analyze the simulated data
-    >>> from mne.time_frequency import psd_welch
-    >>> psds, freqs = psd_welch(sim_epochs, fmin=8, fmax=12)
-    >>> print(f"Peak frequency: {freqs[np.argmax(np.mean(psds, axis=0))]}")
+    >>> psds, freqs = sim_epochs.compute_psd(fmin=8, fmax=12).get_data(return_freqs=True)
+    >>> print(f"Peak frequency: {freqs[np.argmax(psds.mean(axis=(0, 1)))]}")
     """
 
     n_epo, n_chan, n_samp = epoch.get_data().shape
@@ -639,11 +653,11 @@ def generate_virtual_epoch(
             f"generate_virtual_epoch needs an even number of channels, got {n_chan}."
         )
 
+    rng = np.random.default_rng(rng)
     Nt = n_samp * n_epo
-    tmax = n_samp / sfreq * n_epo  # s
-    tv = np.linspace(0.0, tmax, Nt)
+    tv = np.arange(Nt) / sfreq
 
-    freq = frequency_mean + frequency_std * np.random.randn(n_chan)
+    freq = frequency_mean + frequency_std * rng.standard_normal(n_chan)
     omega = 2.0 * np.pi * freq
 
     def fp(t, p):
@@ -652,7 +666,9 @@ def generate_virtual_epoch(
             (np.sin(p) * np.matmul(W, np.cos(p).T).T)
             - (np.cos(p) * np.matmul(W, np.sin(p).T).T)
         )
-        dotp = omega - coupling + noise_phase_level * np.random.randn(n_chan) / n_samp
+        dotp = (
+            omega - coupling + noise_phase_level * rng.standard_normal(n_chan) / n_samp
+        )
         return dotp
 
     p0 = (
@@ -661,14 +677,19 @@ def generate_virtual_epoch(
         * np.block(
             [
                 np.zeros(n_chan // 2),
-                np.zeros(n_chan // 2) + np.random.rand(n_chan // 2) + 0.5,
+                np.zeros(n_chan // 2) + rng.random(n_chan // 2) + 0.5,
             ]
         )
     )
-    ans = solve_ivp(fun=fp, t_span=(tv[0], tv[-1]), y0=p0, t_eval=tv)
+    # a step no longer than one sample: at the solver's default tolerances the
+    # unbounded phase is allowed an error of about half a radian per step,
+    # which washes the coupling out
+    ans = solve_ivp(
+        fun=fp, t_span=(tv[0], tv[-1]), y0=p0, t_eval=tv, max_step=1 / sfreq
+    )
     phi = ans["y"].T % (2 * np.pi)
 
-    eeg = np.sin(phi) + noise_amplitude_level * np.random.randn(*phi.shape)
+    eeg = np.sin(phi) + noise_amplitude_level * rng.standard_normal(phi.shape)
 
     simulation = epoch.copy()
     simulation._data = np.transpose(
