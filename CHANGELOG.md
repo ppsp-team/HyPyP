@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Fixed
+- `utils.generate_virtual_epoch` did not integrate the coupling it promised: `solve_ivp` ran at its default tolerances on an unbounded phase (hundreds of radians), which allows an error of about half a radian per step, so a pair of oscillators coupled far above their frequency mismatch came out *less* locked than an uncoupled pair (PLV 0.24 against 0.66 on the review's example). The solver now takes steps no longer than one sample. The time grid was `np.linspace(0, tmax, Nt)`, whose step is `Nt / (Nt - 1)` times too long; it is now `np.arange(Nt) / sfreq`. **Changes results** for every call: any validation of a connectivity measure done with this simulator should be rerun
+- `utils.generate_virtual_epoch` docstring example called `mne.time_frequency.psd_welch`, which no longer exists; it uses `Epochs.compute_psd`
+
+### Added
+- `rng` argument on `utils.generate_virtual_epoch` and `utils.generate_random_epoch` (a `numpy.random.Generator` or a seed), so that a simulation can be reproduced; both used the unseeded global `numpy.random` before
+
 ## [0.6.2] - 2026-10-04
 
 ### Fixed
