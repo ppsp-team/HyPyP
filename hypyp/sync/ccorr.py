@@ -32,9 +32,19 @@ class CCorr(BaseMetric):
     CCorr measures the circular correlation coefficient between the phases
     of two signals, using the circular mean for phase centering.
 
+    Mathematical formulation (Jammalamadaka & SenGupta 2001, eq. 8.2.2):
+        CCorr = |Σ sin(α − ᾱ) sin(β − β̄)| / √(Σ sin²(α − ᾱ) Σ sin²(β − β̄))
+
+    The absolute value is returned, so the sign of the coefficient, which says
+    which signal leads, is discarded. The sums run within one epoch;
+    compute_sync then averages the epochs.
+
     References
     ----------
     Fisher, N. I. (1995). Statistical analysis of circular data. Cambridge University Press.
+    Jammalamadaka, S. R., & SenGupta, A. (2001). Topics in circular statistics. World Scientific.
+    Burgess, A. P. (2013). On the interpretation of synchronization in EEG hyperscanning
+    studies: a cautionary note. Frontiers in Human Neuroscience, 7, 881.
     """
 
     name = "ccorr"

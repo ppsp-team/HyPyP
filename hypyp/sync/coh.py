@@ -35,7 +35,11 @@ class Coh(BaseMetric):
     frequency domain, normalized by their power.
 
     Mathematical formulation:
-        Coh = |⟨XY*⟩|² / (⟨|X|²⟩⟨|Y|²⟩)
+        Coh = |⟨XY*⟩| / √(⟨|X|²⟩⟨|Y|²⟩)
+
+    This is the modulus of the coherency, as mne-connectivity's "coh" returns
+    it, not the magnitude-squared coherence, which is its square. Time averages
+    run within one epoch; compute_sync then averages the epochs.
 
     References
     ----------

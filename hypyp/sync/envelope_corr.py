@@ -39,6 +39,12 @@ class EnvCorr(BaseMetric):
     The implementation normalizes the amplitudes by subtracting the mean
     and dividing by the product of standard deviations.
 
+    The signals are not orthogonalised first: Hipp et al. (2012) remove the
+    zero-lag component of one signal from the other before correlating the
+    envelopes, to discard volume conduction; here the envelopes are
+    correlated as they are. The correlation runs within one epoch;
+    compute_sync then averages the epochs.
+
     References
     ----------
     Hipp, J. F., Hawellek, D. J., Corbetta, M., Siegel, M., & Engel, A. K.

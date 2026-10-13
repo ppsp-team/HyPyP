@@ -38,6 +38,10 @@ class WPLI(BaseMetric):
     Mathematical formulation:
         wPLI = |⟨|Im(XY*)| sign(Im(XY*))⟩| / ⟨|Im(XY*)|⟩
 
+    This is the estimator of Vinck et al. (2011), eq. 8, without the debiasing
+    term of their eq. 11, which is smaller for finite samples. The averages run
+    within one epoch; compute_sync then averages the epochs.
+
     References
     ----------
     Vinck, M., Oostenveld, R., van Wingerden, M., Battaglia, F., & Pennartz,

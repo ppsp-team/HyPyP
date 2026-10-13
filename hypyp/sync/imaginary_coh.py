@@ -36,7 +36,12 @@ class ImCoh(BaseMetric):
     making it robust to volume conduction effects.
 
     Mathematical formulation:
-        ImCoh = Im(⟨XY*⟩) / √(⟨|X|²⟩⟨|Y|²⟩)
+        ImCoh = |Im(⟨XY*⟩)| / √(⟨|X|²⟩⟨|Y|²⟩)
+
+    The absolute value is returned: Nolte et al. (2004) define the imaginary
+    part of coherency with its sign, which says which signal leads; here that
+    sign is discarded and the value has a positive bias under the null. Time
+    averages run within one epoch; compute_sync then averages the epochs.
 
     References
     ----------

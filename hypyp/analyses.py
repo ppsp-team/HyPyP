@@ -393,20 +393,22 @@ def pair_connectivity(
         Specification of frequency bands of interest:
         - If dict: {'band_name': [fmin, fmax], ...} defining frequency bands
           e.g., {'alpha': [8, 12], 'beta': [12, 20]}
-        - If list: [fmin, fmax] for each integer frequency in the range
-          e.g., [5, 30] for all integer frequencies from 5 to 30 Hz
+        - If list: [fmin, fmax] for each integer frequency from fmin up to
+          but not including fmax (np.arange), e.g. [5, 30] for 5, 6, ..., 29 Hz,
+          each a multitaper bin whose half-bandwidth is half its frequency
 
     mode : str
-        Connectivity measure to compute. Options:
-        - 'envelope_corr': envelope correlation
+        Connectivity measure to compute (see compute_sync for the formulas
+        and the conventions). Options:
+        - 'envelope_corr': envelope correlation (not orthogonalised)
         - 'pow_corr': power correlation
         - 'plv': phase locking value
-        - 'ccorr': circular correlation coefficient
+        - 'ccorr': circular correlation coefficient (absolute value)
         - 'accorr': adjusted circular correlation coefficient
-        - 'coh': coherence
-        - 'imaginary_coh': imaginary coherence
+        - 'coh': coherence (the modulus of the coherency, not squared)
+        - 'imaginary_coh': imaginary coherence (absolute value)
         - 'pli': phase lag index
-        - 'wpli': weighted phase lag index
+        - 'wpli': weighted phase lag index (not debiased)
 
     epochs_average : bool, optional
         If True, connectivity values are averaged across epochs (default)
@@ -436,6 +438,11 @@ def pair_connectivity(
     - Coherence measures linear relationship between signals in frequency domain
     - Imaginary coherence is less susceptible to volume conduction
     - PLI and wPLI are robust against common sources and amplitude effects
+
+    Every metric is computed within each epoch and the per-epoch values are
+    then averaged, so the bias of independent signals depends on the epoch
+    length, not on the amount of data: compare studies or conditions at the
+    same epoch length (see compute_sync).
 
     Time complexity scales with O(n_channels^2 × n_epochs × n_frequencies × n_times)
 
@@ -503,12 +510,14 @@ def compute_sync(
         If True, connectivity values are averaged across epochs (default)
         If False, epoch-by-epoch connectivity is preserved
     optimization : str, optional
-        Optimization strategy. May require extra dependencies.
-        Currently only available for 'accorr'. Options:
-        - None: standard numpy implementation (default)
-        - 'auto': best available (torch > numba > numpy)
-        - 'numba': numba JIT compilation (falls back to numpy if unavailable)
-        - 'torch': PyTorch with auto-detected GPU (falls back gracefully)
+        Backend of the computation, for every metric; see hypyp/sync/README.md
+        for the support matrix and the precision of each. Options:
+        - None: NumPy, the reference implementation (default)
+        - 'auto': the best installed backend for the metric and the machine
+          (float32 on Apple GPUs, float64 elsewhere)
+        - 'numba', 'torch', 'metal', 'cuda_kernel': that backend, with a warning
+          and a NumPy computation when it is not installed or the metric has no
+          kernel for it
 
     Returns
     -------
@@ -522,32 +531,50 @@ def compute_sync(
     ValueError
         If an unsupported connectivity metric is specified
 
+    Notes
+    -----
+    Every metric is computed within each epoch: the time average runs over the
+    samples of one epoch and the modulus, ratio or correlation is taken on that
+    epoch; the per-epoch values are then averaged across epochs. The bias of
+    independent signals therefore depends on the epoch length, not on the
+    amount of data (80 s of independent 8-12 Hz noise cut into 1 s, 4 s or
+    16 s epochs gives a PLV of 0.32, 0.15 or 0.08), so compare studies or
+    conditions at the same epoch length (Zimmermann et al. 2024). This is the
+    single-trial form of the measures, not the across-trials form.
+
     Modes
     -----
     'plv' : Phase Locking Value
         ``PLV = |⟨e^{i·Δφ}⟩|`` — ranges [0, 1].
         Lachaux et al. (1999). *Human Brain Mapping*, 8(4), 194–208.
     'ccorr' : Circular Correlation
-        Circular analogue of Pearson r using global circular mean centering.
+        Circular analogue of Pearson r using global circular mean centering,
+        returned as an absolute value (the sign, which says which signal leads,
+        is discarded).
         Fisher, N. I. (1995). *Statistical analysis of circular data*. Cambridge University Press.
     'accorr' : Adjusted Circular Correlation
         Same as ccorr but with per-pair phase centering for improved accuracy.
-        Supports ``optimization`` parameter (numba / torch).
         Zimmermann et al. (2024). *Imaging Neuroscience*, 2.
     'coh' : Coherence
-        ``Coh = |⟨S₁₂⟩|² / (⟨|S₁|²⟩·⟨|S₂|²⟩)`` — ranges [0, 1].
+        ``Coh = |⟨S₁₂⟩| / √(⟨|S₁|²⟩·⟨|S₂|²⟩)`` — ranges [0, 1]. The modulus of
+        the coherency, as mne-connectivity's "coh"; the magnitude-squared
+        coherence is its square.
         Nunez, P. L., & Srinivasan, R. (2006). *Electric fields of the brain*. Oxford University Press.
     'imaginary_coh' / 'imcoh' : Imaginary Coherence
-        ``Im(⟨S₁₂⟩) / √(⟨|S₁|²⟩·⟨|S₂|²⟩)`` — volume-conduction resistant.
+        ``|Im(⟨S₁₂⟩)| / √(⟨|S₁|²⟩·⟨|S₂|²⟩)`` — volume-conduction resistant,
+        returned as an absolute value (Nolte et al. define it with its sign).
         Nolte et al. (2004). *Clinical Neurophysiology*, 115(10), 2292–2307.
     'pli' : Phase Lag Index
         ``|⟨sign(Im(S₁₂))⟩|`` — ranges [0, 1], insensitive to zero-lag coupling.
         Stam et al. (2007). *Human Brain Mapping*, 28(11), 1178–1193.
     'wpli' : Weighted Phase Lag Index
-        ``|⟨|Im(S₁₂)|·sign(Im(S₁₂))⟩| / ⟨|Im(S₁₂)|⟩`` — noise-robust PLI.
+        ``|⟨|Im(S₁₂)|·sign(Im(S₁₂))⟩| / ⟨|Im(S₁₂)|⟩`` — noise-robust PLI, the
+        estimator of eq. 8 without the debiasing term of eq. 11.
         Vinck et al. (2011). *NeuroImage*, 55(4), 1548–1565.
     'envelope_corr' / 'envcorr' : Envelope Correlation
-        Pearson r between signal envelopes (analytic amplitude).
+        Pearson r between signal envelopes (analytic amplitude), without the
+        orthogonalisation of Hipp et al., so within-brain values include
+        volume conduction.
         Hipp et al. (2012). *Nature Neuroscience*, 15(6), 884–890.
     'pow_corr' / 'powcorr' : Power Correlation
         Pearson r between instantaneous signal power.
@@ -824,7 +851,8 @@ def compute_single_freq(
 
     freq_range : List[float]
         A list [fmin, fmax] specifying the frequency range to analyze.
-        Every integer frequency from fmin to fmax will be included.
+        Every integer frequency from fmin up to but not including fmax is
+        included (np.arange(fmin, fmax)): [8, 12] gives 8, 9, 10 and 11 Hz.
 
     Returns
     -------
@@ -835,14 +863,17 @@ def compute_single_freq(
     Notes
     -----
     This function uses MNE's implementation of the multitaper method with 4 cycles
-    per frequency, which provides a good balance between time and frequency resolution.
+    per frequency and MNE's default time-bandwidth product of 4, so the
+    half-bandwidth of each bin is half its frequency: an 8 or 12 Hz tone keeps
+    about a third of its power in the 10 Hz bin. Neighbouring integer bins
+    overlap strongly and are not independent estimates.
 
     Time-frequency decomposition is calculated for each participant separately.
 
     Examples
     --------
     >>> complex_tf = compute_single_freq(data, sampling_rate=256, freq_range=[8, 30])
-    >>> print(f"Shape: {complex_tf.shape}")  # (2, n_epochs, n_channels, n_tapers, 23, n_times)
+    >>> print(f"Shape: {complex_tf.shape}")  # (2, n_epochs, n_channels, n_tapers, 22, n_times)
     """
 
     complex_signal = np.array(

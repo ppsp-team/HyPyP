@@ -28,14 +28,19 @@ https://doi.org/10.1002/(SICI)1097-0193(1999)8:4<194::AID-HBM4>3.0.CO;2-C
 
 **Formula:**
 ```
-CCorr = Σ sin(α₁ − ᾱ₁) · sin(α₂ − ᾱ₂)
-        ─────────────────────────────────────────────────
-        √[ Σ sin²(α₁ − ᾱ₁) · Σ sin²(α₂ − ᾱ₂) ]
+CCorr = | Σ sin(α₁ − ᾱ₁) · sin(α₂ − ᾱ₂)                     |
+        | ───────────────────────────────────────────────── |
+        | √[ Σ sin²(α₁ − ᾱ₁) · Σ sin²(α₂ − ᾱ₂) ]            |
 ```
 where `ᾱ` is the circular mean of `α`.
 
+HyPyP returns the absolute value of the coefficient: the sign, which says
+which signal leads, is discarded, and like every modulus the value has a
+positive bias under the null.
+
 **Reference:** Fisher, N. I. (1995). *Statistical analysis of circular data*.
-Cambridge University Press.
+Cambridge University Press. (Jammalamadaka & SenGupta 2001, eq. 8.2.2;
+Burgess 2013 for its use in hyperscanning.)
 
 ---
 
@@ -64,13 +69,16 @@ https://doi.org/10.1162/imag_a_00350
 
 **Formula:**
 ```
-Coh(f) = |⟨S₁₂(f)⟩|²
-          ─────────────────────────────
-          ⟨|S₁(f)|²⟩ · ⟨|S₂(f)|²⟩
+Coh(f) = |⟨S₁₂(f)⟩|
+          ─────────────────────────────────
+          √[ ⟨|S₁(f)|²⟩ · ⟨|S₂(f)|²⟩ ]
 ```
 where `S₁₂(f)` is the cross-spectrum.
 
-Ranges from 0 to 1. Sensitive to volume conduction.
+This is the modulus of the coherency, as `mne-connectivity`'s `coh`
+returns it, not the magnitude-squared coherence: that is its square
+(`y = x + n` with independent unit-variance noise gives 1/√2 here, 0.5
+magnitude-squared). Ranges from 0 to 1. Sensitive to volume conduction.
 
 **Reference:** Nunez, P. L., & Srinivasan, R. (2006). *Electric fields of the brain:
 the neurophysics of EEG*. Oxford University Press.
@@ -81,7 +89,7 @@ the neurophysics of EEG*. Oxford University Press.
 
 **Formula:**
 ```
-ImCoh(f) = Im(⟨S₁₂(f)⟩)
+ImCoh(f) = | Im(⟨S₁₂(f)⟩) |
            ─────────────────────────────────────
            √[ ⟨|S₁(f)|²⟩ · ⟨|S₂(f)|²⟩ ]
 ```
@@ -89,6 +97,10 @@ ImCoh(f) = Im(⟨S₁₂(f)⟩)
 Volume-conduction resistant: zero-lag (instantaneous) coupling contributes
 only to the real part of coherence, so the imaginary part reflects true
 time-lagged interactions.
+
+HyPyP returns the absolute value. Nolte et al. (2004) define the imaginary
+part of coherency with its sign, which says which signal leads; here that
+sign is discarded and the value has a positive bias under the null.
 
 **Reference:** Nolte, G., et al. (2004). See Coherence above.
 
@@ -123,6 +135,9 @@ WPLI = |⟨|Im(S₁₂)| · sign(Im(S₁₂))⟩|
 Weighted version of PLI that reduces the impact of spectral noise while
 maintaining insensitivity to zero-lag coupling.
 
+This is the estimator of Vinck et al. (2011), eq. 8, without the debiasing
+term of their eq. 11; the debiased wPLI is smaller for finite samples.
+
 **Reference:** Vinck, M., Oostenveld, R., van Wingerden, M., Battaglia, F., &
 Pennartz, C. M. A. (2011). An improved index of phase-synchronization for
 electrophysiological data in the presence of volume-conduction, noise and
@@ -142,6 +157,11 @@ where `|s(t)|` is the analytic amplitude (envelope) of the signal.
 Captures low-frequency amplitude co-fluctuations, often reflecting
 slow network dynamics.
 
+The signals are not orthogonalised first: Hipp et al. (2012) remove the
+zero-lag component of one signal from the other before correlating the
+envelopes, to discard volume conduction; HyPyP correlates the envelopes as
+they are, so within-brain values include volume conduction.
+
 **Reference:** Hipp, J. F., Hawellek, D. J., Corbetta, M., Siegel, M., &
 Engel, A. K. (2012). Large-scale cortical correlation structure of spontaneous
 oscillatory activity. *Nature Neuroscience*, 15(6), 884–890.
@@ -157,6 +177,29 @@ PowCorr = Pearson r( |s₁(t)|², |s₂(t)|² )
 ```
 Similar to envelope correlation but uses instantaneous power rather than
 amplitude. More sensitive to high-amplitude bursts.
+
+---
+
+## Averaging convention
+
+Every metric is computed **within each epoch**: the time average `⟨·⟩_t`
+runs over the samples of one epoch, and the modulus, ratio or correlation is
+taken on that epoch. `compute_sync` then averages the per-epoch values across
+epochs (`epochs_average=True`, the default) or returns them
+(`epochs_average=False`).
+
+Two consequences:
+
+- The bias of independent signals depends on the **epoch length**, not on
+  the amount of data: with the per-epoch PLV, 80 s of independent 8–12 Hz
+  noise cut into 1 s, 4 s or 16 s epochs gives 0.32, 0.15 or 0.08. Compare
+  studies, or conditions, at the same epoch length (Zimmermann et al. 2024).
+- This is the single-trial form of the measures (Lachaux et al. 2000;
+  Mormann et al. 2000), not the across-trials-at-each-time form of Lachaux
+  et al. (1999) or the across-trials wPLI of Vinck et al. (2011). The
+  samples of an analytic signal within an epoch are autocorrelated, so the
+  per-epoch modulus has a larger bias than a cross-trial one with the same
+  number of terms.
 
 ---
 
