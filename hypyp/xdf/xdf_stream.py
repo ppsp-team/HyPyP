@@ -32,31 +32,23 @@ class Markers:
         Returns:
             mne.Annotations: The annotations, with onset time relative to the reference_time
         """
-        onset_times = np.array(self.timestamps) - reference_time
-        empty = mne.Annotations(onset=[], duration=[], description=[])
-        if len(onset_times) == 0:
-            return empty
-
-        i = 0
-        while onset_times[i] < 0:
-            i += 1
-            if i == len(onset_times):
-                # No event after the reference_time
-                return empty
-
-        durations = np.zeros_like(onset_times)
+        onset_times = np.asarray(self.timestamps, dtype=float) - reference_time
+        # markers before the reference time are dropped; the rest are sorted
+        keep = np.flatnonzero(onset_times >= 0)
+        keep = keep[np.argsort(onset_times[keep], kind="stable")]
         return mne.Annotations(
-            onset=onset_times[i:],
-            duration=durations[i:],
-            description=self.descriptions[i:],
+            onset=onset_times[keep],
+            duration=np.zeros(len(keep)),
+            description=[self.descriptions[i] for i in keep],
         )
 
     def __add__(self, other):
         if not isinstance(other, Markers):
             return NotImplemented
-        timestamps = np.concatenate([self.timestamps, self.timestamps])
+        timestamps = np.concatenate([self.timestamps, other.timestamps])
         descriptions = self.descriptions + other.descriptions
-        return Markers(timestamps, descriptions)
+        order = np.argsort(timestamps, kind="stable")
+        return Markers(timestamps[order], [descriptions[i] for i in order])
 
 
 class XDFStream:
@@ -365,11 +357,11 @@ class XDFStream:
             amplitude_range = data.max() - data.min()
 
             if std > std_threshold and amplitude_range > amplitude_threshold:
-                # Data has both a small standard deviation and small amplitude range, indicating it's in mV
+                # Values this large are not in V: take them as µV and convert
                 print(
-                    f"- Std ({std}) and amplitude range ({amplitude_range}) are larges >> converting to V (e.g., * 10e-6)"
+                    f"- Std ({std}) and amplitude range ({amplitude_range}) are larges >> converting from µV to V (* 1e-6)"
                 )
-                return data * 10e-6  # Scale to V
+                return data * 1e-6  # µV to V
 
             # Data has a large standard deviation or amplitude range, indicating it's already in V
             print(

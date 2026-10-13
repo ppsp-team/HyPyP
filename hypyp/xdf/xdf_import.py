@@ -244,13 +244,14 @@ class XDFImport:
 
             stream.convert_to_mne_raw(self.scale, append_stream_id=has_duplicate_names)
 
-        # add annotations from markers streams to data streams
-        for data_stream in self.selected_signal_streams:
-            if data_stream.markers is not None:
-                mne_annotations = data_stream.markers.as_mne_annotations(
-                    data_stream.reference_time
+        # add the markers of the selected marker streams to every signal stream,
+        # with onsets relative to that stream's first sample
+        markers = self.markers
+        if markers is not None:
+            for data_stream in self.selected_signal_streams:
+                data_stream.mne_raw.set_annotations(
+                    markers.as_mne_annotations(data_stream.reference_time)
                 )
-                data_stream.mne_raw.set_annotations(mne_annotations)
 
         if self.verbose:
             print("All convertion to MNE done.")
