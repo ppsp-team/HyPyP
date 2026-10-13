@@ -33,6 +33,7 @@ from mne.time_frequency import EpochsSpectrum
 
 from .mvarica import MVAR, connectivity_mvarica
 from .sync import METRICS, get_metric
+from .sync.base import multiply_conjugate
 
 
 def pow(
@@ -998,9 +999,13 @@ def compute_nmPLV(
     be a 1:2 relationship.
 
     The function:
-    1. Computes the ratio between the mean frequencies of the two ranges
-    2. Applies appropriate phase multiplication to account for the frequency ratio
-    3. Calculates the phase locking value between the adjusted phases
+    1. Computes the ratio between the mean frequencies of the two ranges and
+       reduces it to integers n:m with n * f1 = m * f2
+    2. Takes the phase of both participants at every frequency bin from
+       min(freq_range1) to max(freq_range2), raised to the power n for
+       participant 1 and m for participant 2
+    3. Calculates the phase locking value between the adjusted phases within
+       each epoch, then averages over epochs
 
     This measure is useful for studying cross-frequency coupling between brains,
     where different participants might exhibit coordination at different frequency bands.
@@ -1019,9 +1024,8 @@ def compute_nmPLV(
 
     r = np.mean(freq_range2) / np.mean(freq_range1)
     freq_range = [np.min(freq_range1), np.max(freq_range2)]
-    complex_signal = np.mean(
-        compute_single_freq(data, sampling_rate, freq_range), 3
-    ).squeeze()
+    # (2, n_epochs, n_channels, n_freq, n_times), averaged over the tapers
+    complex_signal = np.mean(compute_single_freq(data, sampling_rate, freq_range), 3)
 
     n_epoch, n_ch, n_freq, n_samp = (
         complex_signal.shape[1],
@@ -1041,16 +1045,13 @@ def compute_nmPLV(
     frac = Fraction(r).limit_denominator(10)
     n, m = frac.numerator, frac.denominator
 
-    # Raise phases to integer powers for n:m coupling
-    phase[:, :, :, :n_ch] = phase[:, :, :, :n_ch] ** n
-    phase[:, :, :, n_ch:] = phase[:, :, :, n_ch:] ** m
+    # n times the phase of participant 1 against m times the phase of participant 2
+    phase[:, :, :n_ch, :] = phase[:, :, :n_ch, :] ** n
+    phase[:, :, n_ch:, :] = phase[:, :, n_ch:, :] ** m
 
-    c = np.real(phase)
-    s = np.imag(phase)
-    dphi = _multiply_conjugate(c, s, transpose_axes=transpose_axes)
-    con = abs(dphi) / n_samp
-    con = np.nanmean(con, axis=1)
-    return con
+    dphi = multiply_conjugate(np.real(phase), np.imag(phase), transpose_axes)
+    con = np.abs(dphi) / n_samp  # (n_epoch, n_freq, 2 * n_ch, 2 * n_ch)
+    return np.nanmean(con.swapaxes(0, 1), axis=1)  # (n_freq, 2 * n_ch, 2 * n_ch)
 
 
 def xwt(
