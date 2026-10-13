@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+- `prep.AR_local(strategy="intersection")` left the participants on different epochs: only the epochs bad for both were dropped from both, then autoreject's `transform` dropped each participant's remaining bad epochs on its own, and `equalize_epoch_counts` matched the counts without matching the epochs. Epoch k of one participant was no longer simultaneous with epoch k of the other, which every inter-brain measure computed afterwards relies on. The epochs dropped are now the same for every participant under both strategies, the bad channels of the kept epochs are interpolated per participant as the docstring always said, and the function raises if the participants do not come out with the same number of epochs. **Changes results** for the intersection strategy: its output epochs are now aligned, and `dic_AR["dyad"]` is the percentage of epochs dropped
+- `prep.AR_local` read the reject logs of the first two participants only, so a third participant's bad epochs were ignored and its epochs went out of alignment; every participant is now included, with `S3`, `S4`, ... in the returned dictionary
+
 ## [0.6.2] - 2026-10-04
 
 ### Fixed
