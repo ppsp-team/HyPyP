@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+- `xdf.Markers.__add__` concatenated the first operand's timestamps with themselves, so with two or more marker streams selected (one per headset, as in the shipped `dyad-example-noise.xdf`) `XDFImport.markers` carried the first stream's times under the second stream's descriptions. The two sets are now concatenated and sorted by time. **Changes results** for every merged marker set
+- `XDFImport` never attached annotations to the Raws: the conversion loop looked for markers on the signal streams, which only marker streams carry. The markers of the selected marker streams are now set on every signal Raw, with onsets relative to that stream's first sample, as the docstring, the tutorial and `datasets.xdf_dyad_with_markers` describe
+- `xdf.Markers.as_mne_annotations` assumed sorted timestamps and stopped at the first non-negative onset, which dropped later markers or kept negative ones; it now keeps every marker at or after the reference time, in time order
+- `XDFImport(scale="auto")` multiplied by `10e-6`, which is 1e-5, neither the µV nor the mV factor; it now multiplies by 1e-6 (µV to V). **Changes results** for every call with `scale="auto"` (no test or tutorial used it)
+
 ## [0.6.2] - 2026-10-04
 
 ### Fixed
