@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Documentation
+- `hypyp/sync/README.md`, the metric docstrings and `analyses.compute_sync` stated formulas the code does not compute: coherence as the magnitude-squared `|⟨S₁₂⟩|² / (⟨|S₁|²⟩⟨|S₂|²⟩)` where the code returns the modulus of the coherency `|⟨S₁₂⟩| / √(...)` (as mne-connectivity's `coh`), imaginary coherence and circular correlation with their sign where the code returns absolute values. The formulas now read as computed, with the consequences (the lead/lag sign is discarded; a modulus has a positive bias under the null). wPLI is documented as the estimator of Vinck et al. 2011 eq. 8 without the debiasing term, envelope correlation as not orthogonalised (Hipp et al. 2012 orthogonalise first). No computed value changes (#293, #301, #302)
+- The averaging convention is stated once in `hypyp/sync/README.md` and in the `compute_sync` and `pair_connectivity` docstrings: every metric is computed within each epoch, then the per-epoch values are averaged, so the bias of independent signals depends on the epoch length and not on the amount of data (80 s of independent 8-12 Hz noise cut into 1 s, 4 s or 16 s epochs gives a PLV of 0.32, 0.15 or 0.08); compare studies or conditions at the same epoch length
+- `analyses.compute_single_freq` and `pair_connectivity` said "every integer frequency from fmin to fmax"; `fmax` is excluded (`np.arange`), so `[8, 30]` gives 22 bins, not 23. The multitaper bandwidth is stated: with 4 cycles and MNE's default time-bandwidth product, the half-bandwidth of each bin is half its frequency, so neighbouring integer bins overlap strongly
+- `compute_sync`'s `optimization` text said the option was only available for `accorr` and that `'auto'` was "torch > numba > numpy"; it applies to every metric and `'auto'` picks per metric and machine (see the backend tables of `hypyp/sync/README.md`)
+- `tutorial/getting_started.ipynb`: the statistics cells say that they demonstrate the API on duplicated data (two or three near-identical copies of one participant per "group"), not a method, and what the data layouts are. The intra- and inter-brain cluster cells pass the connectivity values as one vector per observation in the order of a pair list, with the pair adjacency of `metaconn_matrix` and `metaconn_matrix_2brains`, instead of the full matrix with the channel adjacency, which MNE read as a time lattice
+
 ## [0.6.2] - 2026-10-04
 
 ### Fixed
