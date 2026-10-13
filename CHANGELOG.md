@@ -6,8 +6,11 @@
 - `utils.generate_virtual_epoch` did not integrate the coupling it promised: `solve_ivp` ran at its default tolerances on an unbounded phase (hundreds of radians), which allows an error of about half a radian per step, so a pair of oscillators coupled far above their frequency mismatch came out *less* locked than an uncoupled pair (PLV 0.24 against 0.66 on the review's example). The solver now takes steps no longer than one sample. The time grid was `np.linspace(0, tmax, Nt)`, whose step is `Nt / (Nt - 1)` times too long; it is now `np.arange(Nt) / sfreq`. **Changes results** for every call: any validation of a connectivity measure done with this simulator should be rerun
 - `utils.generate_virtual_epoch` docstring example called `mne.time_frequency.psd_welch`, which no longer exists; it uses `Epochs.compute_psd`
 
+- Tests: a second `TestEnvCorr` class in `tests/test_sync.py` shadowed the first, whose five tests were never collected; the dead copy is removed (#308). `tests/test_signal.py::add_noise` lacked the `test_` prefix and never ran. The synthetic signals of the wavelet, coherence and stats tests are seeded, so their assertions no longer depend on the draw. The XDF sample files are fetched by module fixtures instead of at import, so `pytest` can collect the suite offline
+
 ### Added
-- `rng` argument on `utils.generate_virtual_epoch` and `utils.generate_random_epoch` (a `numpy.random.Generator` or a seed), so that a simulation can be reproduced; both used the unseeded global `numpy.random` before
+- Reference tests: every `hypyp.sync` metric against a scalar written from its definition with numpy and scipy alone (`tests/test_sync_reference.py`, random pair, constant lag, envelope relation, identical channels, |C| against |C|²), and `compute_sync` end to end on narrowband signals with known coupling (`tests/test_pair_connectivity_reference.py`: identical, quarter-turn shift, independent, one coupled pair in its cell of the inter-brain block). `tests/data/README.md` states where the two `.fif` files come from
+- `rng` argument on `utils.generate_virtual_epoch`, `utils.generate_random_epoch` and `signal.SyntheticSignal.add_noise` (a `numpy.random.Generator` or a seed), so that a simulation can be reproduced; all three used the unseeded global `numpy.random` before
 
 ## [0.6.2] - 2026-10-04
 
