@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- `analyses.compute_nmPLV` raised the wrong axis to the n:m powers: on its `(n_epochs, n_freq, 2 * n_channels, n_times)` layout it sliced the last axis, so the first `n_channels` *time samples* of every channel got the power n and the rest the power m, and the two participants were never distinguished. It then averaged over frequency instead of over epochs and returned `(n_epochs, 2 * n_channels, 2 * n_channels)` where the docstring promises `(n_freq, 2 * n_channels, 2 * n_channels)`. Both are repaired: participant 1's phase is raised to n and participant 2's to m, and the result is the epoch average at every frequency. A single epoch or a single channel no longer raises. **Changes results** for every call (#310)
+
 ## [0.6.2] - 2026-10-04
 
 ### Fixed
