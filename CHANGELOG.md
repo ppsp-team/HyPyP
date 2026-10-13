@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+- `mvarica.MVAR(delta=...)`: a non-zero ridge penalty, as in the class docstring example, raised `TypeError` because `construct_equation` was called with one argument too many; the penalty is now passed through
+- `mvarica.MVAR.stability()` raised `ValueError` for `model_order=1`, the companion matrix having no lower block; it is now built for every order
+- `analyses.compute_conn_mvar`: the "merge the epochs" answer reshaped the `(n_epochs, n_freq, n_channels, n_times)` array without moving the epoch axis, so the merged series of one channel was epoch 0's channels end to end rather than that channel's epochs, and the stability check that followed was fitted on channel 0 alone. The epochs are now concatenated in time for every channel and the check uses every channel. **Changes results** for the merge path only
+
 ## [0.6.2] - 2026-10-04
 
 ### Fixed
