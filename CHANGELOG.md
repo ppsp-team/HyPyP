@@ -13,6 +13,11 @@
 - `stats.metaconn_matrix_2brains` inferred the number of channels from the pair list (`max(electrodes[:, 0]) + 1`) and raised `IndexError` for any list not containing the last channel of the first participant; it now takes it from `ch_con.shape[0]`
 - `stats.statscondCluster` and `stats.statscluster` check that the adjacency has one row per feature of an observation and raise a `ValueError` naming the two accepted layouts otherwise; a dense adjacency is converted to sparse with a warning instead of failing inside MNE
 
+- `stats.statscluster(test="rel ttest")` computed a paired t statistic but built its null with `permutation_cluster_test`, which permutes observations between the two groups: after a permutation, observation k of one group and observation k of the other are different pairs, so the null described var(A) + var(B) instead of var(A − B). When the pairs share a large component across features (every EEG participant has a topography) the test was wrong in both directions (p = 0.03 and 0.046 on the review's example where the sign-flip null gives 0.002 and 0.278) and could lose nearly all of its power. It now runs MNE's `permutation_cluster_1samp_test` on the within-pair differences, whose null flips the sign of each difference, and rejects groups of unequal size. **Changes results** for every `rel ttest` call
+
+### Removed
+- `stats.statscluster(test="f multipleway")`. With two factors it never ran (`f_threshold_mway_rm` returns one threshold per effect and MNE rejects the list), and with one factor it permuted observations between subjects under a repeated-measures F, which is not a valid null. The option now raises a `ValueError` that says so; `factor_levels` is kept in the signature, ignored, so that existing calls keep working
+
 ### Added
 - `seed` argument on `stats.statscondCluster` and `stats.statscluster`, forwarded to MNE's permutation, so that a cluster test can be reproduced
 
