@@ -13,13 +13,14 @@ Statistical functions
 
 from collections import namedtuple
 from typing import List, Tuple
+import warnings
 import numpy as np
 import scipy
 from scipy.stats import f as f_dist
 import matplotlib.pylab as plt
 import mne
 from mne.channels import find_ch_adjacency
-from mne.stats import permutation_cluster_test
+from mne.stats import combine_adjacency, permutation_cluster_test
 
 
 def statsCond(
@@ -129,6 +130,40 @@ def statsCond(
     )
 
 
+def _across_frequencies(adjacency, n_freq: int) -> scipy.sparse.csr_matrix:
+    """Adjacency of (feature, frequency) in feature-major order, row index
+    `feature * n_freq + frequency`, which is how MNE flattens data of shape
+    (n_observations, n_features, n_frequencies): neighbouring features at the
+    same frequency, and the same feature at neighbouring frequencies."""
+    # a copy, because combine_adjacency clears the diagonal of its input in place
+    base = scipy.sparse.csr_matrix(adjacency, copy=True)
+    return scipy.sparse.csr_matrix(combine_adjacency(base, n_freq))
+
+
+def _check_adjacency(adjacency, data) -> scipy.sparse.csr_matrix | None:
+    """The adjacency as a sparse matrix with one row per feature of the data."""
+    if adjacency is None:
+        return None
+    if not scipy.sparse.issparse(adjacency):
+        warnings.warn(
+            "the adjacency was given as a dense array; converting it to the sparse "
+            "matrix that MNE's cluster functions require"
+        )
+        adjacency = scipy.sparse.csr_matrix(adjacency)
+    n_features = int(np.prod(np.shape(data[0])[1:]))
+    if adjacency.shape[0] != n_features:
+        raise ValueError(
+            f"the adjacency has {adjacency.shape[0]} rows for {n_features} features "
+            "per observation. Data of shape (n_observations, n_channels, "
+            "n_frequencies) take con_matrix(...).ch_con_freq, whose rows are ordered "
+            "channel-major (channel * n_frequencies + frequency) like the flattened "
+            "data; connectivity values take one vector per observation in the order "
+            "of the `electrodes` list given to metaconn_matrix or "
+            "metaconn_matrix_2brains, with its `metaconn_freq`"
+        )
+    return adjacency
+
+
 def con_matrix(
     epochs: mne.Epochs, freqs_mean: List[float], draw: bool = False
 ) -> namedtuple:
@@ -168,7 +203,11 @@ def con_matrix(
 
     The frequency-space connectivity matrix (ch_con_freq) extends this spatial
     adjacency to include frequency adjacency - neighboring frequencies for the
-    same channel are also considered connected.
+    same channel are also considered connected. Its rows are ordered
+    channel-major, row index `channel * len(freqs_mean) + frequency`, which is
+    the order in which MNE flattens data of shape (n_observations, n_channels,
+    n_frequencies), so it can be passed to statscondCluster or statscluster
+    with such data as is.
 
     These connectivity matrices are used as inputs to cluster-based statistical
     functions to define the neighborhood structure for clustering.
@@ -185,24 +224,9 @@ def con_matrix(
     # creating channel-to-channel connectivity matrix in space
     ch_con, ch_names_con = find_ch_adjacency(epochs.info, ch_type="eeg")
 
-    ch_con_arr = ch_con.toarray()
-
-    # duplicating the array 'freqs_mean' or 'freqs' times (PSD or CSD)
-    # to take channel connectivity across neighboring frequencies into
-    # account
-    l_freq = len(freqs_mean)
-    init = np.zeros((l_freq * len(ch_names_con), l_freq * len(ch_names_con)))
-    for i in range(0, l_freq * len(ch_names_con)):
-        for p in range(0, l_freq * len(ch_names_con)):
-            if (
-                (p // len(ch_names_con) == i // len(ch_names_con))
-                or (p // len(ch_names_con) == i // len(ch_names_con) + 1)
-                or (p // len(ch_names_con) == i // len(ch_names_con) - 1)
-            ):
-                init[i][p] = 1
-
-    ch_con_mult = np.tile(ch_con_arr, (l_freq, l_freq))
-    ch_con_freq = np.multiply(init, ch_con_mult)
+    # the same adjacency at every frequency, plus each channel's neighbouring
+    # frequencies, in the order MNE flattens (n_channels, n_frequencies) data
+    ch_con_freq = _across_frequencies(ch_con, len(freqs_mean))
 
     if draw:
         plt.figure()
@@ -254,8 +278,9 @@ def metaconn_matrix_2brains(
         - metaconn: Connectivity matrix between channel pairs,
           array of shape (len(electrodes), len(electrodes))
         - metaconn_freq: Connectivity matrix between channel pairs across
-          space and frequencies, array of shape
-          (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean))
+          space and frequencies, scipy.sparse.csr_matrix of shape
+          (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean)),
+          row index `pair * len(freqs_mean) + frequency`
 
     Notes
     -----
@@ -263,6 +288,9 @@ def metaconn_matrix_2brains(
     from different participants. It considers two channel pairs connected if:
     1. The respective channels within each participant are connected, or
     2. Some channels are identical across the pairs
+
+    The channels of the second participant are numbered from
+    `ch_con.shape[0]`, as indices_connectivity_interbrain numbers them.
 
     The resulting connectivity matrices define the neighborhood structure for
     cluster-based statistics on hyperscanning data.
@@ -276,36 +304,24 @@ def metaconn_matrix_2brains(
     ... )
     """
 
-    n = np.max(electrodes, axis=0)[0] + 1
-    # n = 62
-    metaconn = np.zeros((len(electrodes), len(electrodes)))
-    for ne1, (e11, e12) in enumerate(electrodes):
-        for ne2, (e21, e22) in enumerate(electrodes):
-            # print(ne1,e11,e12,ne2,e21,e22)
-            # considering no a priori connectivity between the 2 brains
-            metaconn[ne1, ne2] = (
-                ((ch_con[e11, e21]) and (ch_con[e12 - n, e22 - n]))
-                or ((ch_con[e11, e21]) and (e12 == e22))
-                or ((ch_con[e12 - n, e22 - n]) and (e11 == e21))
-                or ((e12 == e22) and (e11 == e21))
-            )
+    n = ch_con.shape[0]
+    adjacency = scipy.sparse.csr_matrix(ch_con).toarray().astype(bool)
+    first, second = np.asarray(electrodes).T
+    # considering no a priori connectivity between the 2 brains: two pairs are
+    # neighbours when, in each brain, their members are adjacent or identical
+    # (second-brain indices below n wrap around, as some callers rely on)
+    own = adjacency[first[:, None], first[None, :]]
+    partner = adjacency[second[:, None] - n, second[None, :] - n]
+    same_own = first[:, None] == first[None, :]
+    same_partner = second[:, None] == second[None, :]
+    metaconn = (
+        (own & partner)
+        | (own & same_partner)
+        | (partner & same_own)
+        | (same_own & same_partner)
+    ).astype(float)
 
-    # duplicating the array 'freqs_mean' times to take channel connectivity
-    # across neighboring frequencies into account
-    l_freq = len(freqs_mean)
-
-    init = np.zeros((l_freq * len(electrodes), l_freq * len(electrodes)))
-    for i in range(0, l_freq * len(electrodes)):
-        for p in range(0, l_freq * len(electrodes)):
-            if (
-                (p // len(electrodes) == i // len(electrodes))
-                or (p // len(electrodes) == i // len(electrodes) + 1)
-                or (p // len(electrodes) == i // len(electrodes) - 1)
-            ):
-                init[i][p] = 1
-
-    metaconn_mult = np.tile(metaconn, (l_freq, l_freq))
-    metaconn_freq = np.multiply(init, metaconn_mult)
+    metaconn_freq = _across_frequencies(metaconn, len(freqs_mean))
 
     if plot:
         # vizualising the array
@@ -355,8 +371,9 @@ def metaconn_matrix(
         - metaconn: Connectivity matrix between channel pairs,
           array of shape (len(electrodes), len(electrodes))
         - metaconn_freq: Connectivity matrix between channel pairs across
-          space and frequencies, array of shape
-          (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean))
+          space and frequencies, scipy.sparse.csr_matrix of shape
+          (len(electrodes)*len(freqs_mean), len(electrodes)*len(freqs_mean)),
+          row index `pair * len(freqs_mean) + frequency`
 
     Notes
     -----
@@ -376,35 +393,27 @@ def metaconn_matrix(
     ... )
     """
 
-    metaconn = np.zeros((len(electrodes), len(electrodes)))
-    for ne1, (e11, e12) in enumerate(electrodes):
-        for ne2, (e21, e22) in enumerate(electrodes):
-            # print(ne1,e11,e12,ne2,e21,e22)
-            metaconn[ne1, ne2] = (
-                ((ch_con[e11, e21]) and (ch_con[e12, e22]))
-                or ((ch_con[e11, e22]) and (ch_con[e12, e21]))
-                or ((ch_con[e11, e21]) and (e12 == e22))
-                or ((ch_con[e11, e22]) and (e12 == e21))
-                or ((ch_con[e12, e21]) and (e11 == e22))
-                or ((ch_con[e12, e22]) and (e11 == e21))
-            )
+    adjacency = scipy.sparse.csr_matrix(ch_con).toarray().astype(bool)
+    first, second = np.asarray(electrodes).T
 
-    # duplicating the array 'freqs_mean' times to take channels connectivity
-    # across neighboring frequencies into account
-    l_freq = len(freqs_mean)
+    def adjacent(x, y):
+        return adjacency[x[:, None], y[None, :]]
 
-    init = np.zeros((l_freq * len(electrodes), l_freq * len(electrodes)))
-    for i in range(0, l_freq * len(electrodes)):
-        for p in range(0, l_freq * len(electrodes)):
-            if (
-                (p // len(electrodes) == i // len(electrodes))
-                or (p // len(electrodes) == i // len(electrodes) + 1)
-                or (p // len(electrodes) == i // len(electrodes) - 1)
-            ):
-                init[i][p] = 1
+    def same(x, y):
+        return x[:, None] == y[None, :]
 
-    metaconn_mult = np.tile(metaconn, (l_freq, l_freq))
-    metaconn_freq = np.multiply(init, metaconn_mult)
+    # two pairs are neighbours when their members are adjacent or identical,
+    # member by member or swapped
+    metaconn = (
+        (adjacent(first, first) & adjacent(second, second))
+        | (adjacent(first, second) & adjacent(second, first))
+        | (adjacent(first, first) & same(second, second))
+        | (adjacent(first, second) & same(second, first))
+        | (adjacent(second, first) & same(first, second))
+        | (adjacent(second, second) & same(first, first))
+    ).astype(float)
+
+    metaconn_freq = _across_frequencies(metaconn, len(freqs_mean))
 
     if plot:
         # vizualising the array
@@ -457,14 +466,20 @@ def statscondCluster(
     ----------
     data : list
         List of arrays containing values from different conditions or groups
-        to compare. Each array has shape (n_observations, n_features)
+        to compare. Each array has shape (n_observations, n_channels,
+        n_frequencies), which MNE flattens channel-major, the order of
+        con_matrix(...).ch_con_freq; or (n_observations, n_pairs) with the
+        connectivity values in the order of the `electrodes` list given to
+        metaconn_matrix or metaconn_matrix_2brains, with its `metaconn_freq`
 
     freqs_mean : list
         Frequencies in the frequency-band-of-interest
 
     ch_con_freq : scipy.sparse.csr_matrix
         Connectivity or metaconnectivity matrix defining adjacency across
-        space and frequencies, typically from con_matrix() or metaconn_matrix()
+        space and frequencies, typically from con_matrix() or metaconn_matrix().
+        It must have one row per feature of an observation; a dense array is
+        converted with a warning
 
     tail : int
         Direction of the test. The F statistic is non-negative, so use 1
@@ -520,6 +535,7 @@ def statscondCluster(
 
     if tail == -1:
         raise ValueError("The F statistic is non-negative: use tail=1, not -1.")
+    ch_con_freq = _check_adjacency(ch_con_freq, data)
 
     # cluster-forming threshold from the F distribution at alpha, for every tail
     dfn = len(data) - 1  # Numerator degrees of freedom
@@ -594,7 +610,9 @@ def statscluster(
 
     ch_con_freq : scipy.sparse.csr_matrix
         Connectivity or metaconnectivity matrix defining adjacency across
-        space and frequencies
+        space and frequencies, with one row per feature of an observation (see
+        statscondCluster for the two layouts); a dense array is converted with
+        a warning
 
     tail : int
         Direction of the test:
@@ -627,8 +645,11 @@ def statscluster(
 
     Notes
     -----
-    For multiple-way ANOVA with connectivity values, the last dimensions may
-    need to be flattened from shape (n_sensors, n_sensors) to a vector using np.reshape.
+    Connectivity values go in as one vector per observation in the order of
+    the `electrodes` list given to metaconn_matrix or metaconn_matrix_2brains,
+    with its `metaconn_freq` as the adjacency; not as the full (n_sensors,
+    n_sensors) matrix flattened, which counts every pair twice and includes
+    the diagonal.
 
     The function applies different thresholding approaches based on the test type:
     - For t-tests: Uses the alpha value directly
@@ -665,6 +686,7 @@ def statscluster(
 
     if test in ("f oneway", "f multipleway") and tail == -1:
         raise ValueError("The F statistic is non-negative: use tail=1, not -1.")
+    ch_con_freq = _check_adjacency(ch_con_freq, data)
 
     # type of test
     if test == "ind ttest":

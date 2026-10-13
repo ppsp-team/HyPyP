@@ -26,42 +26,29 @@ def test_metaconn_matrix_2brains(epochs):
     metaconn_matrix_2brainsTuple = stats.metaconn_matrix_2brains(
         sensor_pairs, con_matrixTuple.ch_con, freq
     )
-    metaconn_freq = metaconn_matrix_2brainsTuple.metaconn_freq
-    # take a random ch_name:
-    random.seed(20)  # Init the random number generator for reproducibility
-    # n = random.randrange(0, 63)
-    # for our data taske into account EOG ch!!!
-    n = random.randrange(0, len(epochs.epo1.info["ch_names"]))
-    tot = len(epochs.epo1.info["ch_names"])
-    p = random.randrange(
-        len(epochs.epo1.info["ch_names"]), len(epochs.epoch_merge.info["ch_names"]) + 1
+    metaconn = metaconn_matrix_2brainsTuple.metaconn
+    metaconn_freq = metaconn_matrix_2brainsTuple.metaconn_freq.toarray()
+    n_freq = len(freq)
+    assert metaconn_freq.shape == (
+        len(sensor_pairs) * n_freq,
+        len(sensor_pairs) * n_freq,
     )
-    # checking for each pair in which ch_name is,
-    # whether ch_name linked himself
-    # (in neighbouring frequencies also)
-    assert metaconn_freq[n + tot, p] == metaconn_freq[n, p]
-    assert metaconn_freq[n - tot, p] == metaconn_freq[n, p]
-    assert metaconn_freq[n + tot, p + tot] == metaconn_freq[n, p]
-    assert metaconn_freq[n - tot, p - tot] == metaconn_freq[n, p]
-    assert metaconn_freq[n, p + tot] == metaconn_freq[n, p]
-    assert metaconn_freq[n, p - tot] == metaconn_freq[n, p]
-    # and not in the other frequencies
-    if metaconn_freq[n, p] == 1:
-        for i in range(1, len(freq)):
-            assert metaconn_freq[n + tot * (i + 1), p] != metaconn_freq[n, p]
-            assert metaconn_freq[n - tot * (i + 1), p] != metaconn_freq[n, p]
-            assert (
-                metaconn_freq[n + tot * (i + 1), p + tot * (i + 1)]
-                != metaconn_freq[n, p]
-            )
-            assert (
-                metaconn_freq[n - tot * (i + 1), p - tot * (i + 1)]
-                != metaconn_freq[n, p]
-            )
-            assert metaconn_freq[n, p + tot * (i + 1)] != metaconn_freq[n, p]
-            assert metaconn_freq[n, p - tot * (i + 1)] != metaconn_freq[n, p]
-            # check for each f if connects to the good other ch and not to more
-            assert metaconn_freq[n + tot * i, p + tot * i] == ch_con_freq[n, p - tot]
+    assert ch_con_freq.shape[0] == len(epochs.epo1.ch_names) * n_freq
+    # rows are ordered pair-major, pair * n_freq + frequency: the pair adjacency
+    # repeats at every frequency, each pair links to itself at the neighbouring
+    # frequencies, and nothing else
+    random.seed(20)  # Init the random number generator for reproducibility
+    for _ in range(50):
+        k, p = random.randrange(len(sensor_pairs)), random.randrange(len(sensor_pairs))
+        for f in range(n_freq):
+            for g in range(n_freq):
+                value = metaconn_freq[k * n_freq + f, p * n_freq + g]
+                if f == g:
+                    assert value == metaconn[k, p]
+                elif k == p and abs(f - g) == 1:
+                    assert value == 1
+                else:
+                    assert value == 0
 
 
 def test_PSD(epochs):
@@ -458,5 +445,7 @@ def test_metaconn_matrix_plot_argument():
     plt.close("all")
 
     np.testing.assert_array_equal(quiet.metaconn, drawn.metaconn)
-    np.testing.assert_array_equal(quiet.metaconn_freq, drawn.metaconn_freq)
+    np.testing.assert_array_equal(
+        quiet.metaconn_freq.toarray(), drawn.metaconn_freq.toarray()
+    )
     assert quiet.metaconn_freq.shape == (6, 6)
