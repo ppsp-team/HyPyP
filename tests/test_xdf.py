@@ -5,8 +5,16 @@ from hypyp.xdf import XDFImport, XDFStream
 from hypyp import datasets
 import mne
 
-file_path = datasets.xdf_dyad_noise()
-file_path_with_markers = datasets.xdf_dyad_with_markers()
+
+@pytest.fixture(scope="module")
+def file_path():
+    return datasets.xdf_dyad_noise()
+
+
+@pytest.fixture(scope="module")
+def file_path_with_markers():
+    return datasets.xdf_dyad_with_markers()
+
 
 ## These have been extracted with print(xdf), and are used for testing select_match by stream id and mapping
 #   Stream id 1 of type 'Accelerometer' with name 'LSLOutletHS1-Accelerometer'
@@ -27,7 +35,7 @@ STREAM_ID_EEG_2 = 7
 STREAM_ID_QUALITY_1 = 8
 
 
-def test_instanciate():
+def test_instanciate(file_path):
     xdf = XDFImport(file_path)
     assert xdf.file_path == file_path
 
@@ -69,20 +77,20 @@ def test_instanciate():
     assert xdf.map_id_to_idx[STREAM_ID_EEG_2] == 7
 
 
-def test_convert_by_default():
+def test_convert_by_default(file_path):
     xdf = XDFImport(file_path, select_type="EEG")
     assert xdf.file_path == file_path
     assert len(xdf.mne_raws) == 2
 
 
-def test_instanciate_no_matching_stream():
+def test_instanciate_no_matching_stream(file_path):
     with pytest.raises(Exception):
         # use a non-existing stream_id
         non_existing_stream_id = 0
         XDFImport(file_path, select_matches=[non_existing_stream_id])
 
 
-def test_xdf_stream_indices_per_type():
+def test_xdf_stream_indices_per_type(file_path):
     # should not be able to create mne object when using stream of type Markers
     xdf = XDFImport(file_path, convert_to_mne=False)
     assert STREAM_ID_MARKERS_1 in xdf.get_stream_ids_for_type("Markers")
@@ -91,18 +99,18 @@ def test_xdf_stream_indices_per_type():
     assert STREAM_ID_EEG_2 in xdf.get_stream_ids_for_type("EEG")
 
 
-def test_all_eeg_streams():
+def test_all_eeg_streams(file_path):
     xdf = XDFImport(file_path)
     assert len(xdf.mne_raws[0].ch_names) == len(xdf.selected_signal_streams[0].ch_names)
 
 
-def test_match_stream_by_idx():
+def test_match_stream_by_idx(file_path):
     xdf = XDFImport(file_path, select_matches=[STREAM_ID_EEG_1])
     assert len(xdf.mne_raws) == 1
     assert len(xdf.mne_raws[0].ch_names) == len(xdf.selected_streams[0].ch_names)
 
 
-def test_match_stream_by_name():
+def test_match_stream_by_name(file_path):
     # first grab the name of the first channel
     xdf_tmp = XDFImport(file_path)
     key = list(xdf_tmp.mne_raws_dict.keys())[0]
@@ -112,7 +120,7 @@ def test_match_stream_by_name():
     assert list(xdf.mne_raws_dict.keys())[0] == key
 
 
-def test_match_stream_by_both():
+def test_match_stream_by_both(file_path):
     # first grab the name of the first channel
     xdf_tmp = XDFImport(file_path)
     key = list(xdf_tmp.mne_raws_dict.keys())[0]
@@ -122,7 +130,7 @@ def test_match_stream_by_both():
     assert len(list(xdf.mne_raws_dict.keys())) == 2
 
 
-def test_match_unexistent_type():
+def test_match_unexistent_type(file_path):
     with pytest.raises(Exception):
         xdf = XDFImport(file_path, select_type="foo")
 
@@ -143,7 +151,7 @@ def test_stream_type_to_mne_type():
     assert XDFStream.get_default_mne_ch_type_for_stream_type("stim") == "stim"
 
 
-def test_stream_type_map_explicit():
+def test_stream_type_map_explicit(file_path):
     mne_force_type = "misc"
     my_map = {"EEG": mne_force_type}
     assert (
@@ -157,13 +165,13 @@ def test_stream_type_map_explicit():
     assert xdf.mne_raws[0].get_channel_types()[0] == "misc"
 
 
-def test_channel_names():
+def test_channel_names(file_path):
     xdf = XDFImport(file_path, convert_to_mne=False)
     ch_names = xdf.available_streams[xdf.map_id_to_idx[STREAM_ID_EEG_1]].ch_names
     assert ch_names[0] == "Ch1"
 
 
-def test_channel_names_standard_metadata():
+def test_channel_names_standard_metadata(file_path_with_markers, file_path):
     # the description of channels in the "file_path" xdf does not follow the spec here https://github.com/sccn/xdf/wiki/EEG-Meta-Data
     # let's try with another xdf file which follows the spec
     xdf = XDFImport(file_path_with_markers, convert_to_mne=False)
@@ -181,7 +189,7 @@ def test_ch_names_to_ch_types():
     assert ch_types == ["eeg", "eeg", "misc", "misc", "misc"]
 
 
-def test_ch_types_in_raw():
+def test_ch_types_in_raw(file_path):
     rawEEG = XDFImport(file_path, select_type="EEG").mne_raws[0]
     assert rawEEG.get_channel_types()[0] == "eeg"
 
@@ -189,7 +197,7 @@ def test_ch_types_in_raw():
     assert rawAcc.get_channel_types()[0] == "misc"
 
 
-def test_fif_file_for_stream():
+def test_fif_file_for_stream(file_path):
     xdf = XDFImport(file_path)
     xdf_stream = xdf.selected_signal_streams[0]
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -201,7 +209,7 @@ def test_fif_file_for_stream():
         )
 
 
-def test_mne_compatible_stream_types():
+def test_mne_compatible_stream_types(file_path):
     xdf = XDFImport(file_path, convert_to_mne=False)
     marker_streams = [
         stream for stream in xdf.available_streams if stream.type == "Markers"
@@ -209,7 +217,7 @@ def test_mne_compatible_stream_types():
     assert marker_streams[0].is_mne_raw_compatible == False
 
 
-def test_subject_unique_name():
+def test_subject_unique_name(file_path):
     xdf = XDFImport(file_path, select_matches=[1], convert_to_mne=False)
     assert xdf.selected_streams[0].get_unique_name() == "LSLOutletHS1-Accelerometer"
     assert (
@@ -218,7 +226,7 @@ def test_subject_unique_name():
     )
 
 
-def test_markers():
+def test_markers(file_path_with_markers):
     xdf = XDFImport(file_path_with_markers)
     keys = list(xdf.markers_dict)
     assert len(keys) == 1
@@ -233,14 +241,14 @@ def test_markers():
     assert len(annotations) > 0
 
 
-def test_merge_markers():
+def test_merge_markers(file_path_with_markers):
     xdf = XDFImport(file_path_with_markers)
     annotations = xdf.markers.as_mne_annotations()
     markers_dup = xdf.markers + xdf.markers
     assert len(markers_dup.as_mne_annotations()) == 2 * len(annotations)
 
 
-def test_markers_timing():
+def test_markers_timing(file_path_with_markers):
     xdf = XDFImport(file_path_with_markers)
     markers = xdf.markers
     offset = markers.timestamps[0]
@@ -255,7 +263,7 @@ def test_markers_timing():
     xdf.mne_raws[0].set_annotations(annotations_for_stream)
 
 
-def test_markers_negative():
+def test_markers_negative(file_path_with_markers):
     xdf = XDFImport(file_path_with_markers)
     annotations_all = xdf.markers.as_mne_annotations()
     first_time = xdf.markers.timestamps[0]
@@ -267,7 +275,7 @@ def test_markers_negative():
     assert len(xdf.markers.as_mne_annotations(first_time + 2000)) == 0
 
 
-def test_fif_files():
+def test_fif_files(file_path):
     xdf = XDFImport(file_path, select_type="EEG")
     with tempfile.TemporaryDirectory() as tmp_dir:
         saved_files = xdf.save_to_fif_files(tmp_dir)
@@ -277,7 +285,7 @@ def test_fif_files():
         _ = mne.io.read_raw_fif(saved_files[1])
 
 
-def test_montage():
+def test_montage(file_path):
     xdf = XDFImport(file_path, select_type="EEG")
     xdf.rename_channels(
         [
@@ -318,12 +326,12 @@ def test_montage():
     xdf.set_montage("standard_1020")
 
 
-def test_match_unknown_stream_id_raises_value_error():
+def test_match_unknown_stream_id_raises_value_error(file_path):
     with pytest.raises(ValueError, match="No stream matching keyword '99'"):
         XDFImport(file_path, select_matches=[99])
 
 
-def test_match_stream_by_numpy_integer_id():
+def test_match_stream_by_numpy_integer_id(file_path):
     import numpy as np
 
     expected = XDFImport(file_path, select_matches=[STREAM_ID_EEG_1])

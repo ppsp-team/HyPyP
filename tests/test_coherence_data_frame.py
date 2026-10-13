@@ -14,8 +14,8 @@ from hypyp.wavelet.wtc import WTC
 
 def test_instanciate():
     wavelet = ComplexMorletWavelet(disable_caching=True)
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise(rng=0)
+    signal2 = SyntheticSignal().add_noise(rng=1)
     res = wavelet.wtc(
         PairSignals(signal1.x, signal1.y, signal2.y, label_ch1="foo", label_ch2="bar")
     )
@@ -39,8 +39,8 @@ def test_instanciate():
 
 def test_save_load_feather():
     wavelet = ComplexMorletWavelet(disable_caching=True)
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise(rng=0)
+    signal2 = SyntheticSignal().add_noise(rng=1)
     res = wavelet.wtc(
         PairSignals(signal1.x, signal1.y, signal2.y, label_ch1="foo", label_ch2="bar")
     )

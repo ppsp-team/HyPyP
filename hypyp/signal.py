@@ -55,17 +55,20 @@ class SyntheticSignal:
         self.y += np.sin(self.x * 2 * np.pi * freq)
         return self
 
-    def add_noise(self, level: float = 0.1):
+    def add_noise(
+        self, level: float = 0.1, rng: np.random.Generator | int | None = None
+    ):
         """
         Add noise to the signal
 
         Args:
             level (float, optional): multiplication factor for the random noise (which is from 0 to 1). Defaults to 0.1.
+            rng (np.random.Generator | int | None, optional): random generator, or a seed for one, so that the noise can be reproduced. Defaults to None, a fresh generator.
 
         Returns:
             SyntheticSignal: object itself, for chaining
         """
-        self.y += level * np.random.normal(0, 1, self.n_points)
+        self.y += level * np.random.default_rng(rng).normal(0, 1, self.n_points)
         return self
 
     def add_custom(self, y: np.ndarray):

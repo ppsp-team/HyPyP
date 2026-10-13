@@ -13,10 +13,12 @@ def test_instanciate():
     assert np.sum(signal.y) == 0
 
 
-def add_noise():
+def test_add_noise():
     signal = SyntheticSignal(duration=300)
-    signal.add_noise()
+    signal.add_noise(rng=0)
     assert np.sum(np.abs(signal.y)) > 0
+    again = SyntheticSignal(duration=300).add_noise(rng=0)
+    np.testing.assert_array_equal(again.y, signal.y)
 
 
 def test_sin():

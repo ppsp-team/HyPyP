@@ -178,8 +178,10 @@ def test_behav_corr(epochs):
     # generate random subjects' connectivity data
     data = []
     for k in range(0, 5):
-        random_r1 = utils.generate_random_epoch(epochs.epo1, mu=0, sigma=0.01)
-        random_r2 = utils.generate_random_epoch(epochs.epo2, mu=4, sigma=0.01)
+        random_r1 = utils.generate_random_epoch(epochs.epo1, mu=0, sigma=0.01, rng=k)
+        random_r2 = utils.generate_random_epoch(
+            epochs.epo2, mu=4, sigma=0.01, rng=100 + k
+        )
         con = analyses.pair_connectivity(
             np.array([random_r1, random_r2]),
             sampling_rate=epochs.epo1.info["sfreq"],
@@ -231,8 +233,8 @@ def test_stats(epochs):
     Test stats
     """
     # with PSD from Epochs with random values
-    random_r1 = utils.generate_random_epoch(epochs.epo1, mu=0, sigma=0.01)
-    random_r2 = utils.generate_random_epoch(epochs.epo2, mu=4, sigma=0.01)
+    random_r1 = utils.generate_random_epoch(epochs.epo1, mu=0, sigma=0.01, rng=0)
+    random_r2 = utils.generate_random_epoch(epochs.epo2, mu=4, sigma=0.01, rng=1)
 
     fmin = 10
     fmax = 13

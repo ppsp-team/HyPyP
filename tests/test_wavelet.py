@@ -94,8 +94,8 @@ def test_cwt(wavelet_class):
 
 
 def test_pair_signals():
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise(rng=0)
+    signal2 = SyntheticSignal().add_noise(rng=1)
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
     sub = pair.sub((0, 1))
     assert sub.x[0] == 0
@@ -105,8 +105,8 @@ def test_pair_signals():
 
 
 def test_pair_signals_epoch():
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise(rng=0)
+    signal2 = SyntheticSignal().add_noise(rng=1)
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
     sub = pair.sub((0, 1), section_idx=pair.section_idx + 1)
     assert sub.section_idx == pair.section_idx + 1
@@ -121,8 +121,8 @@ def test_pair_signals_epoch():
 )
 def test_wtc(wavelet_class):
     wavelet = wavelet_class(disable_caching=True)
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise(rng=0)
+    signal2 = SyntheticSignal().add_noise(rng=1)
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert res.coherence_metric > 0
     assert res.coherence_metric < 1
@@ -137,8 +137,8 @@ def test_wtc(wavelet_class):
 )
 def test_cwts(wavelet_class):
     wavelet = wavelet_class(disable_caching=True)
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise(rng=0)
+    signal2 = SyntheticSignal().add_noise(rng=1)
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     assert res.cwt1 is not None
     assert res.cwt2 is not None
@@ -238,7 +238,7 @@ def test_cache():
 )
 def test_wtc_coi_masked(wavelet_class):
     wavelet = wavelet_class(disable_caching=True)
-    signal = SyntheticSignal().add_noise()
+    signal = SyntheticSignal().add_noise(rng=0)
     res = wavelet.wtc(PairSignals(signal.x, signal.y, signal.y))
     assert res.wtc_masked is not None
     assert res.wtc_masked.mask[0, 0] == True
@@ -255,8 +255,8 @@ def test_wtc_coi_masked(wavelet_class):
 def test_period_frequency_range(wavelet_class):
     frequency_range = np.array([5.0, 1.0])
     period_range = 1 / frequency_range
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise(rng=0)
+    signal2 = SyntheticSignal().add_noise(rng=1)
 
     wavelet1 = wavelet_class(period_range=tuple(period_range), disable_caching=True)
     res1 = wavelet1.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
@@ -322,8 +322,8 @@ def test_smoothing(wavelet_class):
     ],
 )
 def test_to_pandas_df(wavelet_class):
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise(rng=0)
+    signal2 = SyntheticSignal().add_noise(rng=1)
     wavelet = wavelet_class(disable_caching=True)
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y))
     df = res.to_frame()
@@ -359,8 +359,8 @@ def test_downsampling(wavelet_class):
 def test_wtc_time_slicing():
     tmax = 100
     n = 1000
-    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
-    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise(rng=0)
+    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise(rng=1)
     wavelet = ComplexMorletWavelet(disable_caching=True)
     res = wavelet.wtc(PairSignals(signal1.x, signal1.y, signal2.y), bin_seconds=10)
     df = res.to_frame()
@@ -377,8 +377,8 @@ def test_wtc_time_slicing():
 def test_wtc_period_slicing():
     tmax = 100
     n = 1000
-    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
-    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise(rng=0)
+    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise(rng=1)
     wavelet = ComplexMorletWavelet(disable_caching=True)
     period_cuts = [3, 5, 10]
     res = wavelet.wtc(
@@ -396,8 +396,8 @@ def test_wtc_period_slicing():
 def test_wtc_period_vs_frequency_slicing():
     tmax = 100
     n = 1000
-    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
-    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise(rng=0)
+    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise(rng=1)
     wavelet = ComplexMorletWavelet(disable_caching=True)
     period_cuts = np.array([3, 5, 10])
     frequency_cuts = 1 / period_cuts
@@ -412,8 +412,8 @@ def test_wtc_period_vs_frequency_slicing():
 
 
 def test_wtc_time_series():
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise(rng=0)
+    signal2 = SyntheticSignal().add_noise(rng=1)
     wavelet = ComplexMorletWavelet(disable_caching=True)
     period_cuts = [3, 5, 10]
     res = wavelet.wtc(
@@ -427,8 +427,8 @@ def test_wtc_time_series():
 def test_wtc_period_slicing_edge_cases():
     tmax = 100
     n = 1000
-    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
-    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise(rng=0)
+    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise(rng=1)
     wavelet = ComplexMorletWavelet(disable_caching=True)
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
     assert wavelet.wtc(pair, period_cuts=[99999]).to_frame().shape[0] == 1
@@ -441,8 +441,8 @@ def test_wtc_period_slicing_edge_cases():
 def test_wtc_period_time_combined_slicing():
     tmax = 100
     n = 1000
-    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
-    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise()
+    signal1 = SyntheticSignal(duration=tmax, n_points=n).add_noise(rng=0)
+    signal2 = SyntheticSignal(duration=tmax, n_points=n).add_noise(rng=1)
     wavelet = ComplexMorletWavelet(disable_caching=True)
     bin_seconds = 20
     period_cuts = [3, 5, 10]
@@ -465,8 +465,8 @@ def test_wtc_period_time_combined_slicing():
     ],
 )
 def test_wtc_wavelet_info(wavelet_class):
-    signal1 = SyntheticSignal().add_noise()
-    signal2 = SyntheticSignal().add_noise()
+    signal1 = SyntheticSignal().add_noise(rng=0)
+    signal2 = SyntheticSignal().add_noise(rng=1)
     pair = PairSignals(signal1.x, signal1.y, signal2.y)
     wavelet = wavelet_class(disable_caching=True)
     res = wavelet.wtc(pair)
