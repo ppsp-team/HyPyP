@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Fixed
+- `stats.statscluster(test="f oneway")` computed the F statistic on the first two groups only, whatever the number of groups given, while the degrees of freedom and the permutations used all of them; it now computes the one-way F on every group. **Changes results** for any call with more than two groups
+- `stats.statscondCluster` and `stats.statscluster`: `F_obs_plot` and `Stat_obs_plot`, the statistic restricted to the significant clusters, looked each cluster up by its p-value and so kept only the first of several clusters sharing a p-value (the usual case for strong effects, all at `1/(n_permutations + 1)`), and kept nothing of a cluster whose statistic is negative. They now hold the statistic of every significant cluster, with its sign. **Changes results** for these two arrays only; `clusters` and `cluster_p_values` are unchanged
+- `stats.statscluster`: `tail=-1` raised `ValueError: incompatible tail and threshold signs` for the t-tests, because the cluster-forming threshold was always positive; it is now negated for `tail=-1`. For the F-tests `tail=-1` is rejected with a message, since the statistic is non-negative
+- `stats.statscondCluster`: `alpha` set the cluster-forming threshold only for `tail=0`; with `tail=1` MNE's fixed p = 0.05 threshold was used whatever `alpha` was. The F threshold is now computed from `alpha` for every tail. **Changes results** for calls with `tail=1` and `alpha != 0.05`
+
+### Added
+- `seed` argument on `stats.statscondCluster` and `stats.statscluster`, forwarded to MNE's permutation, so that a cluster test can be reproduced
+
 ## [0.6.2] - 2026-10-04
 
 ### Fixed
