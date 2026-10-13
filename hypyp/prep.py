@@ -37,13 +37,14 @@ class DicAR(TypedDict):
         The maximum allowed percentage of epochs to be rejected
 
     S1 : float
-        Percentage of epochs rejected for participant 1
+        Percentage of epochs marked bad for participant 1
 
     S2 : float
-        Percentage of epochs rejected for participant 2
+        Percentage of epochs marked bad for participant 2 (S3, S4, ... for
+        any further participant)
 
     dyad : float
-        Overall percentage of epochs rejected across both participants
+        Percentage of epochs dropped, the same for every participant
     """
 
     strategy: str
@@ -338,6 +339,15 @@ def ICA_fit(
     return icas
 
 
+def _kept_log(reject_log: RejectLog, dropped: List[int]) -> RejectLog:
+    """The reject log of the epochs that remain once `dropped` are gone, with no
+    epoch marked bad, so that autoreject repairs channels and drops nothing."""
+    kept = np.setdiff1d(np.arange(len(reject_log.bad_epochs)), dropped)
+    return RejectLog(
+        np.zeros(len(kept), dtype=bool), reject_log.labels[kept], reject_log.ch_names
+    )
+
+
 def AR_local(
     cleaned_epochs_ICA: List[mne.Epochs],
     strategy: str = "union",
@@ -358,9 +368,10 @@ def AR_local(
 
     strategy : str, optional
         Strategy for handling bad epochs (default='union'):
-        - 'union': Reject epochs that are bad in either participant
-        - 'intersection': Reject only epochs that are bad in both participants,
-          attempt to repair other bad epochs individually
+        - 'union': Drop the epochs that are bad for any participant
+        - 'intersection': Drop only the epochs that are bad for every
+          participant; an epoch bad for one participant is kept and its bad
+          channels are interpolated for that participant
 
     threshold : float, optional
         Maximum acceptable percentage of rejected epochs (default=50.0)
@@ -388,13 +399,17 @@ def AR_local(
     problematic epochs. The identification is based on statistical properties of the
     data and is more objective than manual rejection.
 
-    With the 'intersection' strategy, the function also equalizes the number of
-    epochs between participants after cleaning.
+    Whatever the strategy, every participant comes out with the same epochs:
+    the epochs dropped are dropped for all of them, and in the epochs kept the
+    channels autoreject marked are interpolated for each participant. Epoch k
+    of one participant is therefore still simultaneous with epoch k of the
+    others, which every inter-brain measure relies on.
 
     Raises
     ------
     RuntimeError
-        If the percentage of rejected epochs exceeds the specified threshold
+        If the percentage of rejected epochs exceeds the specified threshold,
+        or if the participants do not come out with the same number of epochs
 
     Examples
     --------
@@ -448,41 +463,42 @@ def AR_local(
         AR.append(ar)
         reject_logs.append(reject_log)
 
-    # taking bad epochs for min 1 subj (dyad)
-    bad1_idx = np.where(reject_logs[0].bad_epochs == True)[0].tolist()
-    bad2_idx = np.where(reject_logs[1].bad_epochs == True)[0].tolist()
-
+    # the epochs to drop: bad for any participant (union) or for all of them
+    # (intersection)
+    bad_sets = [set(np.flatnonzero(log.bad_epochs)) for log in reject_logs]
     if strategy == "union":
-        bad_idx = list(set(bad1_idx).union(set(bad2_idx)))
+        bad_idx = sorted(set.union(*bad_sets))
     elif strategy == "intersection":
-        bad_idx = list(set(bad1_idx).intersection(set(bad2_idx)))
+        bad_idx = sorted(set.intersection(*bad_sets))
     else:
         raise RuntimeError("not good strategy input!")
 
-    # storing the percentage of epochs rejection
-    dic_AR["S1"] = float((len(bad1_idx) / len(cleaned_epochs_ICA[0])) * 100)
-    dic_AR["S2"] = float((len(bad2_idx) / len(cleaned_epochs_ICA[1])) * 100)
+    # storing the percentage of epochs marked bad per participant
+    for subject_id, (bad, clean_epochs_subj) in enumerate(
+        zip(bad_sets, cleaned_epochs_ICA)
+    ):
+        dic_AR[f"S{subject_id + 1}"] = float(len(bad) / len(clean_epochs_subj) * 100)
 
-    # picking good epochs for the two subj
+    # dropping the same epochs for every participant, then repairing the
+    # channels the reject log marked in the epochs that are kept; nothing else
+    # is dropped, so the participants stay on the same epochs
     cleaned_epochs_AR: List[mne.Epochs] = []
-
-    for subject_id, clean_epochs_subj in enumerate(cleaned_epochs_ICA):  # per subj
-        # keep a copy of the original data
+    for ar, reject_log, clean_epochs_subj in zip(AR, reject_logs, cleaned_epochs_ICA):
         epochs_subj = copy.deepcopy(clean_epochs_subj)
         epochs_subj.drop(indices=bad_idx)
-        # interpolating bads or removing epochs
-        ar = AR[subject_id]
-        epochs_AR = ar.transform(epochs_subj)
+        epochs_AR = ar.transform(epochs_subj, reject_log=_kept_log(reject_log, bad_idx))
         cleaned_epochs_AR.append(epochs_AR)
 
-    if strategy == "intersection":
-        # equalizing epochs length between two participants
-        mne.epochs.equalize_epoch_counts(cleaned_epochs_AR)
-
     n_epochs_ICA = len(cleaned_epochs_ICA[0])
-    n_epochs_AR = len(cleaned_epochs_AR[0])
+    n_epochs_AR = n_epochs_ICA - len(bad_idx)
+    lengths = [len(epochs) for epochs in cleaned_epochs_AR]
+    if any(length != n_epochs_AR for length in lengths):
+        raise RuntimeError(
+            f"participants came out of autoreject with {lengths} epochs instead of "
+            f"{n_epochs_AR} each, so their epochs are no longer aligned"
+        )
 
-    dic_AR["dyad"] = float(((n_epochs_ICA - n_epochs_AR) / n_epochs_ICA) * 100)
+    dic_AR["dyad"] = float(len(bad_idx) / n_epochs_ICA * 100)
     if dic_AR["dyad"] >= threshold:
         raise RuntimeError(
             f"percentage of rejected epochs ({dic_AR['dyad']}) above threshold ({threshold})! "

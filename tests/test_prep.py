@@ -82,8 +82,15 @@ def test_AR_local(epochs, AR_local_kwargs):
     assert len(epochs.epo1) >= len(cleaned_epochs_AR[0])
     assert len(epochs.epo2) >= len(cleaned_epochs_AR[1])
     assert len(cleaned_epochs_AR[0]) == len(cleaned_epochs_AR[1])
-    assert dic_AR["S2"] + dic_AR["S1"] == dic_AR["dyad"]
-    assert dic_AR["S2"] <= dic_AR["dyad"]
+    n_kept = round(len(epochs.epo1) * (1 - dic_AR["dyad"] / 100))
+    assert len(cleaned_epochs_AR[0]) == n_kept
+    # the union drops what is bad for either participant, the intersection
+    # only what is bad for both
+    if AR_local_kwargs["strategy"] == "union":
+        assert max(dic_AR["S1"], dic_AR["S2"]) <= dic_AR["dyad"]
+        assert dic_AR["dyad"] <= dic_AR["S1"] + dic_AR["S2"]
+    else:
+        assert dic_AR["dyad"] <= min(dic_AR["S1"], dic_AR["S2"])
 
 
 @pytest.mark.parametrize(
