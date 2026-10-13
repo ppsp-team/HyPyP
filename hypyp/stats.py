@@ -28,42 +28,54 @@ from mne.stats import (
 
 
 def statsCond(
-    data: np.ndarray, epochs: mne.Epochs, n_permutations: int, alpha: float
+    data: np.ndarray,
+    epochs: mne.Epochs,
+    n_permutations: int | str,
+    alpha: float,
+    seed: int | None = None,
 ) -> namedtuple:
     """
-    Perform statistical t-test on participant measures (e.g., PSD) for a condition.
+    One-sample permutation t-test of a contrast against zero, per channel.
 
-    This function tests whether the observed mean significantly deviates from 0
-    using a permutation-based t-test with False Discovery Rate (FDR) correction
-    for multiple comparisons.
+    For every channel, the test asks whether the mean of `data` across
+    participants differs from zero, by flipping the sign of each participant's
+    value (MNE's permutation_t_test). The p-values are corrected for the number
+    of channels by the max-T method, which controls the family-wise error rate.
 
     Parameters
     ----------
     data : np.ndarray
-        Array of participant measures with shape (n_samples, n_tests, n_freq)
-        where n_tests typically represents channels and n_freq the frequencies.
-        Values will be averaged across frequencies for statistics.
+        Array of shape (n_samples, n_tests, n_freq): one contrast per
+        participant (the difference between two conditions, or a log-ratio
+        against a baseline), per channel and frequency. Values are averaged
+        across frequencies before the test. Raw power, which is positive
+        everywhere, would come out "significant" on every channel: pass a
+        contrast.
 
     epochs : mne.Epochs
-        Epochs object for a condition from a random participant, used only
-        to access information like channel positions.
+        Unused; kept so that existing calls keep working.
 
-    n_permutations : int
-        Number of permutations for the statistical test
-        Should be at least 2*n_samples, e.g., 50000
+    n_permutations : int or "all"
+        Number of sign flips drawn, e.g. 5000, or "all" for the exact test
+        over the 2**n_samples flips (feasible up to about twenty participants).
 
     alpha : float
-        Significance threshold for the test, e.g., 0.05
+        Significance threshold on the corrected p-values, e.g. 0.05
+
+    seed : int or None, optional
+        Seed of the permutation, forwarded to MNE, so that a run can be
+        reproduced (default=None)
 
     Returns
     -------
     statsCondTuple : namedtuple
         A named tuple containing:
         - T_obs: T-statistic observed for all variables, array of shape (n_tests)
-        - p_values: p-values for all tests, array of shape (n_tests)
-        - H0: T-statistics obtained by permutations, array of shape (n_permutations)
-        - adj_p: tuple with boolean assessment of significance and FDR-corrected p-values
-        - T_obs_plot: statistical values for significant sensors, array of shape (n_tests)
+        - p_values: max-T corrected p-values, array of shape (n_tests)
+        - H0: maximum absolute T under permutation, array of shape (n_permutations)
+        - adj_p: tuple (p_values <= alpha, p_values), kept for compatibility;
+          the p-values are already corrected and no second correction is applied
+        - T_obs_plot: T_obs on the significant channels, zero elsewhere
 
     Notes
     -----
@@ -71,10 +83,7 @@ def statsCond(
     it doesn't compare two periods, but tests one period against the null hypothesis.
 
     Randomized data are generated with random sign flips, and the test is two-tailed
-    by default (the alternative hypothesis is that the data mean is different from 0).
-
-    To reduce false positives due to multiple comparisons, False Discovery Rate (FDR)
-    correction is applied to the p-values.
+    (the alternative hypothesis is that the data mean is different from 0).
 
     The frequency dimension is reduced to one for the test (average in the frequency
     band-of-interest). To take frequencies into account, use cluster statistics
@@ -82,28 +91,10 @@ def statsCond(
 
     Examples
     --------
-    >>> # Independent t-test between two groups
-    >>> ind_ttest_results = statscluster(
-    ...     [group1_data, group2_data],
-    ...     test='ind ttest',
-    ...     factor_levels=None,
-    ...     ch_con_freq=connectivity.ch_con_freq,
-    ...     tail=0,  # two-tailed test
-    ...     n_permutations=10000,
-    ...     alpha=0.05
-    ... )
-    >>>
-    >>> # 2×2 repeated measures ANOVA (within-subjects design)
-    >>> # Factor 1: Condition (2 levels), Factor 2: Time (2 levels)
-    >>> anova_results = statscluster(
-    ...     data_array_2x2,  # Shape: (4, n_subjects, n_features)
-    ...     test='f multipleway',
-    ...     factor_levels=[2, 2],
-    ...     ch_con_freq=connectivity.ch_con_freq,
-    ...     tail=1,  # F-tests are one-tailed
-    ...     n_permutations=10000,
-    ...     alpha=0.05
-    ... )
+    >>> # Alpha power in a condition against a baseline, one contrast per participant
+    >>> contrast = np.log(power_condition / power_baseline)  # (n_participants, n_channels, n_freq)
+    >>> result = statsCond(contrast, epochs, n_permutations=5000, alpha=0.05, seed=0)
+    >>> significant_channels = np.array(epochs.ch_names)[result.adj_p[0]]
     """
 
     # checking whether data have the same size
@@ -111,19 +102,20 @@ def statsCond(
 
     # averaging across frequencies (compute stats only in ch space)
     power = np.mean(data, axis=2)
+    if np.all(power > 0) or np.all(power < 0):
+        warnings.warn(
+            "every value has the same sign: statsCond tests the mean against zero, "
+            "so pass a contrast (a difference between conditions or a log-ratio), "
+            "not raw power"
+        )
     T_obs, p_values, H0 = mne.stats.permutation_t_test(
-        power, n_permutations, tail=0, n_jobs=1
+        power, n_permutations, tail=0, n_jobs=1, seed=seed
     )
-    adj_p = mne.stats.fdr_correction(p_values, alpha=alpha, method="indep")
+    # the p-values are already corrected for the number of channels (max-T)
+    significant = p_values <= alpha
+    adj_p = (significant, p_values)
 
-    T_obs_plot = np.where(adj_p[0], T_obs, 0)
-
-    # retrieving sensor position
-    pos = np.array([[0, 0]])
-    for i in range(0, len(epochs.info["ch_names"])):
-        cor = np.array([epochs.info["chs"][i]["loc"][0:2]])
-        pos = np.concatenate((pos, cor), axis=0)
-    pos = pos[1:]
+    T_obs_plot = np.where(significant, T_obs, 0)
 
     statsCondTuple = namedtuple(
         "statsCond", ["T_obs", "p_values", "H0", "adj_p", "T_obs_plot"]
