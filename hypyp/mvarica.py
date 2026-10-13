@@ -182,18 +182,12 @@ class MVAR:
         co_0, co_1 = self.coeff.shape
         p = co_1 // co_0
         assert co_1 == co_0 * p
-        top_block = []
-        for i in range(p):
-            top_block.append(self.coeff[:, i::p])
-        top_block = np.hstack(top_block)
-        im = np.eye(co_0)
-        eye_block = im
-        for i in range(p - 2):
-            eye_block = sp.linalg.block_diag(im, eye_block)
-        eye_block = np.hstack([eye_block, np.zeros((co_0 * (p - 1), co_0))])
-        tmp = np.vstack([top_block, eye_block])
-        check_stability = np.all(np.abs(np.linalg.eig(tmp)[0]) < 1)
-        return check_stability
+        top_block = np.hstack([self.coeff[:, i::p] for i in range(p)])
+        # companion matrix: the coefficient blocks on top, shifted identities
+        # below (an empty block for an order-1 model)
+        eye_block = np.eye(co_0 * (p - 1), co_0 * p)
+        companion = np.vstack([top_block, eye_block])
+        return bool(np.all(np.abs(np.linalg.eigvals(companion)) < 1))
 
     def construct_equation(self, signal, delta_1=None):
         """
@@ -272,7 +266,7 @@ class MVAR:
             if self.delta == 0 or self.delta is None:
                 x, y = self.construct_equation(signal)
             else:
-                x, y = self.construct_equation(signal, self.order, self.delta)
+                x, y = self.construct_equation(signal, self.delta)
             coeff, res, rank, s = sp.linalg.lstsq(x, y)
 
             self.coeff = coeff.transpose()

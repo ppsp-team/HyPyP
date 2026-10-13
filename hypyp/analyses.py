@@ -604,6 +604,13 @@ def compute_sync(
     return con
 
 
+def _merge_epochs(real_signal: np.ndarray) -> np.ndarray:
+    """Concatenate the epochs of a (n_epochs, n_freq, n_channels, n_times) array
+    in time, giving (n_freq, n_channels, n_epochs * n_times)."""
+    n_epoch, n_freq, n_ch, n_samp = real_signal.shape
+    return np.moveaxis(real_signal, 0, -2).reshape(n_freq, n_ch, n_epoch * n_samp)
+
+
 def compute_conn_mvar(
     complex_signal: np.ndarray,
     mvar_params: dict,
@@ -763,13 +770,9 @@ def compute_conn_mvar(
                     inp = input("Do you want to merge the epochs?")
 
                     if inp.lower() == "yes":
-                        merged_signal = aug_signal.reshape(
-                            1,
-                            real_signal.shape[1],
-                            real_signal.shape[2],
-                            real_signal.shape[3] * real_signal.shape[0],
-                        )
-                        fit_mvar = mvar.fit(merged_signal[:, 0, 0, :][np.newaxis, ...])
+                        # one epoch holding every epoch's samples end to end
+                        merged_signal = _merge_epochs(real_signal)[np.newaxis, ...]
+                        fit_mvar = mvar.fit(merged_signal[:, 0, :, :])
                         is_stable = fit_mvar.stability()
                         aug_signal = merged_signal[np.newaxis, ...]
                         counter += 1
