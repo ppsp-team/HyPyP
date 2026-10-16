@@ -8,11 +8,11 @@ resolution-markers = [
     "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'ARM64' and sys_platform == 'win32'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine != 'ARM64' and sys_platform == 'win32'",
+    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
+    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.12' and platform_machine == 'ARM64' and sys_platform == 'win32'",
     "python_full_version < '3.12' and platform_machine != 'ARM64' and sys_platform == 'win32'",
-    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
     "python_full_version < '3.12' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
@@ -853,15 +853,15 @@ wheels = [
 
 [[package]]
 name = "htmltools"
-version = "0.6.0"
+version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/1d/c568d17e9fb5ad5aa0ca3531c58d36fe69deb8eee4e53ff6425c1f99f210/htmltools-0.6.0.tar.gz", hash = "sha256:e8a3fb023d748935035db7ff17f620612ffc814a6a80b6ae388f7b7ab182adf7", size = 97152, upload-time = "2024-10-29T20:21:43.378Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/54/e1a0ea0b8db8460fdedf584b4136a5b9e7f9d7072ee008f825f29b103660/htmltools-0.7.0.tar.gz", hash = "sha256:b95f922b7038f1b935ce24691ae74cb1ab9526d9c9cf1c2e2f329c38ef227a10", size = 105807, upload-time = "2026-05-21T15:02:33.357Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0a/ba/aa99706246f1938ca905eb6eeb7db832ac2e157aa4b805acb5cd4cd1791a/htmltools-0.6.0-py3-none-any.whl", hash = "sha256:072a274ff5e2851e0acce13fc5bb2bbdbbad8268dc8b123f881c05012ce7dce0", size = 84954, upload-time = "2024-10-29T20:21:42.067Z" },
+    { url = "https://files.pythonhosted.org/packages/2f/b2/bd9bfa6d77641bd3be57c7cd6ce10294d26db20cb9aedf19ac5d78845886/htmltools-0.7.0-py3-none-any.whl", hash = "sha256:92e5d06aeadb56e0ff63b236971bc58bb9cf6058c7235e3af57868e7bf113e1b", size = 89598, upload-time = "2026-05-21T15:02:32.171Z" },
 ]
 
 [[package]]
@@ -3848,7 +3848,7 @@ wheels = [
 
 [[package]]
 name = "shiny"
-version = "1.6.0"
+version = "1.6.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asgiref" },
@@ -3873,9 +3873,9 @@ dependencies = [
     { name = "watchfiles", marker = "sys_platform != 'emscripten'" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ee/f2/d75ad19f6fa0cb244ff04990c61aa28d88300c69d6220dec3ffb8f3e29eb/shiny-1.6.0.tar.gz", hash = "sha256:54bec20a9cfde0dd3a36a9873863be7dbb4729a33fe7abc9ad9488df6efd6f58", size = 5079489, upload-time = "2026-03-20T20:42:58.2Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/80/a9/28499cf1afa127ede99d1784ad4bfcbb892837e5c9a2b8b5bf294bec9d78/shiny-1.6.4.tar.gz", hash = "sha256:52b83800f165b9fb5740606913b3a6af77ddef4b3ff588e26be2b79f17fa9921", size = 5146452, upload-time = "2026-07-28T19:09:05.957Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/30/d442d84e873786cd31b4bdf69b5981119953ebcbdeaf1988c98bf5a9703b/shiny-1.6.0-py3-none-any.whl", hash = "sha256:8e8ae840f565ecf4fb856a843fdc2d73c39e8ffe78141ccc29d802ecfce3657b", size = 3908742, upload-time = "2026-03-20T20:42:56.535Z" },
+    { url = "https://files.pythonhosted.org/packages/31/3e/294a605d97afd3975eb1704747447fd1ebfe044b128518458fccb9688f94/shiny-1.6.4-py3-none-any.whl", hash = "sha256:88e701bd265c3edcb29cf85368c095f33fef1409316152113abfd2cdf016c90f", size = 3932607, upload-time = "2026-07-28T19:09:03.633Z" },
 ]
 
 [[package]]
