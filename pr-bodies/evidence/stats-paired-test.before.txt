@@ -1,0 +1,324 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+________ test_rel_ttest_equals_the_sign_flip_test_on_the_differences[0] ________
+
+seed = 0
+
+    @pytest.mark.parametrize("seed", range(3))
+    def test_rel_ttest_equals_the_sign_flip_test_on_the_differences(seed):
+        data = paired_groups(20, lift=0.5, seed=seed)
+        result = stats.statscluster(
+            data, "rel ttest", None, ADJACENCY, tail=0, n_permutations=N_PERMUTATIONS, seed=0
+        )
+        threshold = scipy.stats.t.ppf(1 - 0.025, len(data[0]) - 1)
+        t_obs, clusters, p_values, h0 = permutation_cluster_1samp_test(
+            data[0] - data[1],
+            threshold=threshold,
+            tail=0,
+            adjacency=ADJACENCY,
+            n_permutations=N_PERMUTATIONS,
+            t_power=1,
+            out_type="mask",
+            seed=0,
+            verbose=False,
+        )
+        assert_allclose(result.Stat_obs, t_obs)
+        assert_allclose(result.Stat_obs, scipy.stats.ttest_rel(data[0], data[1])[0])
+>       assert_array_equal(result.cluster_p_values, p_values)
+E       AssertionError: 
+E       Arrays are not equal
+E       
+E       Mismatched elements: 2 / 2 (100%)
+E       Mismatch at indices:
+E        [0]: 0.03 (ACTUAL), 0.002 (DESIRED)
+E        [1]: 0.046 (ACTUAL), 0.278 (DESIRED)
+E       Max absolute difference among violations: 0.232
+E       Max relative difference among violations: 14.
+E        ACTUAL: array([0.03 , 0.046])
+E        DESIRED: array([0.002, 0.278])
+
+tests/test_stats_paired.py:55: AssertionError
+----------------------------- Captured stdout call -----------------------------
+stat_fun(H1): min=-0.9163085440854744 max=3.2023054307434635
+Running initial clustering …
+Found 2 clusters
+----------------------------- Captured stderr call -----------------------------
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s] 68%|██████▊   | Permuting : 338/499 [00:00<00:00, 4771.10it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 4747.62it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 4725.17it/s]
+________ test_rel_ttest_equals_the_sign_flip_test_on_the_differences[1] ________
+
+seed = 1
+
+    @pytest.mark.parametrize("seed", range(3))
+    def test_rel_ttest_equals_the_sign_flip_test_on_the_differences(seed):
+        data = paired_groups(20, lift=0.5, seed=seed)
+        result = stats.statscluster(
+            data, "rel ttest", None, ADJACENCY, tail=0, n_permutations=N_PERMUTATIONS, seed=0
+        )
+        threshold = scipy.stats.t.ppf(1 - 0.025, len(data[0]) - 1)
+        t_obs, clusters, p_values, h0 = permutation_cluster_1samp_test(
+            data[0] - data[1],
+            threshold=threshold,
+            tail=0,
+            adjacency=ADJACENCY,
+            n_permutations=N_PERMUTATIONS,
+            t_power=1,
+            out_type="mask",
+            seed=0,
+            verbose=False,
+        )
+        assert_allclose(result.Stat_obs, t_obs)
+        assert_allclose(result.Stat_obs, scipy.stats.ttest_rel(data[0], data[1])[0])
+>       assert_array_equal(result.cluster_p_values, p_values)
+E       AssertionError: 
+E       Arrays are not equal
+E       
+E       Mismatched elements: 1 / 1 (100%)
+E       Mismatch at index:
+E        [0]: 0.038 (ACTUAL), 0.002 (DESIRED)
+E       Max absolute difference among violations: 0.036
+E       Max relative difference among violations: 18.
+E        ACTUAL: array([0.038])
+E        DESIRED: array([0.002])
+
+tests/test_stats_paired.py:55: AssertionError
+----------------------------- Captured stdout call -----------------------------
+stat_fun(H1): min=-1.8059624936023246 max=3.7995080143854976
+Running initial clustering …
+Found 1 cluster
+----------------------------- Captured stderr call -----------------------------
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 4954.52it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 4945.47it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 4942.82it/s]
+________ test_rel_ttest_equals_the_sign_flip_test_on_the_differences[2] ________
+
+seed = 2
+
+    @pytest.mark.parametrize("seed", range(3))
+    def test_rel_ttest_equals_the_sign_flip_test_on_the_differences(seed):
+        data = paired_groups(20, lift=0.5, seed=seed)
+        result = stats.statscluster(
+            data, "rel ttest", None, ADJACENCY, tail=0, n_permutations=N_PERMUTATIONS, seed=0
+        )
+        threshold = scipy.stats.t.ppf(1 - 0.025, len(data[0]) - 1)
+        t_obs, clusters, p_values, h0 = permutation_cluster_1samp_test(
+            data[0] - data[1],
+            threshold=threshold,
+            tail=0,
+            adjacency=ADJACENCY,
+            n_permutations=N_PERMUTATIONS,
+            t_power=1,
+            out_type="mask",
+            seed=0,
+            verbose=False,
+        )
+        assert_allclose(result.Stat_obs, t_obs)
+        assert_allclose(result.Stat_obs, scipy.stats.ttest_rel(data[0], data[1])[0])
+>       assert_array_equal(result.cluster_p_values, p_values)
+E       AssertionError: 
+E       Arrays are not equal
+E       
+E       Mismatched elements: 1 / 1 (100%)
+E       Mismatch at index:
+E        [0]: 0.03 (ACTUAL), 0.002 (DESIRED)
+E       Max absolute difference among violations: 0.028
+E       Max relative difference among violations: 14.
+E        ACTUAL: array([0.03])
+E        DESIRED: array([0.002])
+
+tests/test_stats_paired.py:55: AssertionError
+----------------------------- Captured stdout call -----------------------------
+stat_fun(H1): min=-1.130085689635325 max=5.236566729377917
+Running initial clustering …
+Found 1 cluster
+----------------------------- Captured stderr call -----------------------------
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 4847.03it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 4838.98it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 4836.44it/s]
+_________ test_rel_ttest_finds_a_small_lift_under_a_shared_topography __________
+
+    def test_rel_ttest_finds_a_small_lift_under_a_shared_topography():
+        data = paired_groups(40, lift=0.3, seed=7)
+        result = stats.statscluster(
+            data, "rel ttest", None, ADJACENCY, tail=0, n_permutations=N_PERMUTATIONS, seed=0
+        )
+        significant = [
+            mask for mask, p in zip(result.clusters, result.cluster_p_values) if p <= 0.05
+        ]
+>       assert len(significant) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_stats_paired.py:68: AssertionError
+----------------------------- Captured stdout call -----------------------------
+stat_fun(H1): min=-1.1793423633037547 max=2.761549560952752
+Running initial clustering …
+Found 1 cluster
+----------------------------- Captured stderr call -----------------------------
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 4858.76it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 4853.34it/s]
+_____ test_rel_ttest_needs_the_same_number_of_observations_in_both_groups ______
+
+    def test_rel_ttest_needs_the_same_number_of_observations_in_both_groups():
+        data = paired_groups(20, lift=0.0, seed=0)
+        with pytest.raises(ValueError, match="pair"):
+>           stats.statscluster(
+                [data[0], data[1][:-1]], "rel ttest", None, ADJACENCY, 0, 50
+            )
+
+tests/test_stats_paired.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+hypyp/stats.py:742: in statscluster
+    Stat_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(
+<decorator-gen-335>:12: in permutation_cluster_test
+    ???
+../../../.venv/lib/python3.13/site-packages/mne/stats/cluster_level.py:1248: in permutation_cluster_test
+    return _permutation_cluster_test(
+../../../.venv/lib/python3.13/site-packages/mne/stats/cluster_level.py:951: in _permutation_cluster_test
+    t_obs = stat_fun(*X)
+            ^^^^^^^^^^^^
+hypyp/stats.py:702: in stat_fun
+    return scipy.stats.ttest_rel(arg[0], arg[1])[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../.venv/lib/python3.13/site-packages/scipy/stats/_axis_nan_policy.py:540: in axis_nan_policy_wrapper
+    samples = _broadcast_arrays(samples, axis=axis if not paired else None)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../.venv/lib/python3.13/site-packages/scipy/stats/_axis_nan_policy.py:55: in _broadcast_arrays
+    new_shapes = _broadcast_shapes(shapes, axis)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+shapes = [(20, 12), (19, 12)], axis = None
+
+    def _broadcast_shapes(shapes, axis=None):
+        """
+        Broadcast shapes, ignoring incompatibility of specified axes
+        """
+        if not shapes:
+            return shapes
+    
+        # input validation
+        if axis is not None:
+            axis = np.atleast_1d(axis)
+            message = '`axis` must be an integer, a tuple of integers, or `None`.'
+            try:
+                with np.errstate(invalid='ignore'):
+                    axis_int = axis.astype(int)
+            except ValueError as e:
+                raise AxisError(message) from e
+            if not np.array_equal(axis_int, axis):
+                raise AxisError(message)
+            axis = axis_int
+    
+        # First, ensure all shapes have same number of dimensions by prepending 1s.
+        n_dims = max([len(shape) for shape in shapes])
+        new_shapes = np.ones((len(shapes), n_dims), dtype=int)
+        for row, shape in zip(new_shapes, shapes):
+            row[len(row)-len(shape):] = shape  # can't use negative indices (-0:)
+    
+        # Remove the shape elements of the axes to be ignored, but remember them.
+        if axis is not None:
+            axis[axis < 0] = n_dims + axis[axis < 0]
+            axis = np.sort(axis)
+            if axis[-1] >= n_dims or axis[0] < 0:
+                message = (f"`axis` is out of bounds "
+                           f"for array of dimension {n_dims}")
+                raise AxisError(message)
+    
+            if len(np.unique(axis)) != len(axis):
+                raise AxisError("`axis` must contain only distinct elements")
+    
+            removed_shapes = new_shapes[:, axis]
+            new_shapes = np.delete(new_shapes, axis, axis=1)
+    
+        # If arrays are broadcastable, shape elements that are 1 may be replaced
+        # with a corresponding non-1 shape element. Assuming arrays are
+        # broadcastable, that final shape element can be found with:
+        new_shape = np.max(new_shapes, axis=0)
+        # except in case of an empty array:
+        new_shape *= new_shapes.all(axis=0)
+    
+        # Among all arrays, there can only be one unique non-1 shape element.
+        # Therefore, if any non-1 shape element does not match what we found
+        # above, the arrays must not be broadcastable after all.
+        if np.any(~((new_shapes == 1) | (new_shapes == new_shape))):
+>           raise ValueError("Array shapes are incompatible for broadcasting.")
+E           ValueError: Array shapes are incompatible for broadcasting.
+
+../../../.venv/lib/python3.13/site-packages/scipy/stats/_axis_nan_policy.py:114: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_rel_ttest_needs_the_same_number_of_observations_in_both_groups():
+        data = paired_groups(20, lift=0.0, seed=0)
+>       with pytest.raises(ValueError, match="pair"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'pair'
+E         Actual message: 'Array shapes are incompatible for broadcasting.'
+
+tests/test_stats_paired.py:74: AssertionError
+________________ test_f_multipleway_is_rejected_with_a_pointer _________________
+
+    def test_f_multipleway_is_rejected_with_a_pointer():
+        rng = np.random.default_rng(5)
+        X = rng.standard_normal((4, 12, N_FEATURES))
+        with pytest.raises(ValueError, match="removed"):
+>           stats.statscluster(X, "f multipleway", [2, 2], ADJACENCY, 1, 50)
+
+tests/test_stats_paired.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+hypyp/stats.py:742: in statscluster
+    Stat_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(
+<decorator-gen-335>:12: in permutation_cluster_test
+    ???
+../../../.venv/lib/python3.13/site-packages/mne/stats/cluster_level.py:1248: in permutation_cluster_test
+    return _permutation_cluster_test(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+X = array([[[-8.01931425e-01, -1.32435900e+00, -2.48361622e-01,
+          4.20445238e-01,  1.13604653e+00,  1.09706399e-01...      -7.88062547e-02, -3.10314932e-01, -2.48356720e-01,
+         -3.38111130e-02,  1.25650966e-01,  1.54897842e+00]]])
+threshold = [np.float64(4.844335674943617), np.float64(4.844335674943617), np.float64(4.844335674943617)]
+n_permutations = 50, tail = 1
+stat_fun = <function statscluster.<locals>.stat_fun at 0x7c2fab6a2200>
+adjacency = <Compressed Sparse Row sparse matrix of dtype 'float64'
+	with 34 stored elements and shape (12, 12)>
+n_jobs = None, seed = None, max_step = 1, exclude = None, step_down_p = 0
+t_power = 1, out_type = 'mask', check_disjoint = False, buffer_size = 1000
+
+    def _permutation_cluster_test(
+        X,
+        threshold,
+        n_permutations,
+        tail,
+        stat_fun,
+        adjacency,
+        n_jobs,
+        seed,
+        max_step,
+        exclude,
+        step_down_p,
+        t_power,
+        out_type,
+        check_disjoint,
+        buffer_size,
+    ):
+        """Aux Function.
+    
+        Note. X is required to be a list. Depending on the length of X
+        either a 1 sample t-test or an F test / more sample permutation scheme
+        is elicited.
+        """
+        _check_option("out_type", out_type, ["mask", "indices"])
+        _check_option("tail", tail, [-1, 0, 1])
+        if not isinstance(threshold, dict):
+>           threshold = float(threshold)
+                        ^^^^^^^^^^^^^^^^
+E           TypeError: float() argument must be a string or a real number, not 'list'
+
+../../../.venv/lib/python3.13/site-packages/mne/stats/cluster_level.py:916: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_stats_paired.py::test_rel_ttest_equals_the_sign_flip_test_on_the_differences[0]
+FAILED tests/test_stats_paired.py::test_rel_ttest_equals_the_sign_flip_test_on_the_differences[1]
+FAILED tests/test_stats_paired.py::test_rel_ttest_equals_the_sign_flip_test_on_the_differences[2]
+FAILED tests/test_stats_paired.py::test_rel_ttest_finds_a_small_lift_under_a_shared_topography
+FAILED tests/test_stats_paired.py::test_rel_ttest_needs_the_same_number_of_observations_in_both_groups
+FAILED tests/test_stats_paired.py::test_f_multipleway_is_rejected_with_a_pointer
+6 failed in 0.74s

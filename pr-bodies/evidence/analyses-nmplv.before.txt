@@ -1,0 +1,130 @@
+FF.F                                                                     [100%]
+=================================== FAILURES ===================================
+________________ test_matches_the_definition_on_the_same_phases ________________
+
+    def test_matches_the_definition_on_the_same_phases():
+        data = tone_pair(3, f2=20.0, phase_locked=True, noise=0.5)
+        result = analyses.compute_nmPLV(data, SFREQ, FREQ_RANGE_1, FREQ_RANGE_2)
+>       assert_allclose(result, nm_plv_from_definition(data, 2, 1), rtol=0, atol=1e-12)
+E       AssertionError: 
+E       Not equal to tolerance rtol=0, atol=1e-12
+E       
+E       (shapes (3, 4, 4), (16, 4, 4) mismatch)
+E        ACTUAL: array([[[1.      , 0.795713, 0.043746, 0.020667],
+E               [0.795713, 1.      , 0.037058, 0.021545],
+E               [0.043746, 0.037058, 1.      , 0.650667],...
+E        DESIRED: array([[[1.      , 0.915748, 0.072343, 0.074957],
+E               [0.915748, 1.      , 0.072335, 0.073941],
+E               [0.072343, 0.072335, 1.      , 0.073067],...
+
+tests/test_nmplv.py:55: AssertionError
+________________ test_locked_tones_give_unit_inter_brain_nm_plv ________________
+
+    def test_locked_tones_give_unit_inter_brain_nm_plv():
+        data = tone_pair(3, f2=20.0, phase_locked=True)
+        result = analyses.compute_nmPLV(data, SFREQ, FREQ_RANGE_1, FREQ_RANGE_2)
+>       assert result.shape == (len(FREQS), 2 * N_CHANNELS, 2 * N_CHANNELS)
+E       assert (3, 4, 4) == (16, 4, 4)
+E         
+E         At index 0 diff: 3 != 16
+E         Use -v to get more diff
+
+tests/test_nmplv.py:61: AssertionError
+______________ test_single_epoch_and_single_channel_are_accepted _______________
+
+    def test_single_epoch_and_single_channel_are_accepted():
+        data = tone_pair(1, f2=20.0, phase_locked=True)[:, :, :1]
+>       result = analyses.compute_nmPLV(data, SFREQ, FREQ_RANGE_1, FREQ_RANGE_2)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_nmplv.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+data = array([[[[-0.65201626, -0.44824737, -0.21761165, ..., -0.99229153,
+          -0.93244236, -0.81670494]]],
+
+
+       [[[-0.43524915, -0.8082587 , -0.99039192, ...,  0.85331293,
+           0.50676897,  0.04054774]]]], shape=(2, 1, 1, 4096))
+sampling_rate = 256, freq_range1 = [8, 12], freq_range2 = [16, 24]
+
+    def compute_nmPLV(
+        data: np.ndarray,
+        sampling_rate: int,
+        freq_range1: List[float],
+        freq_range2: List[float],
+    ) -> np.ndarray:
+        """
+        Computes n:m Phase-Locking Value for cross-frequency coupling between participants.
+    
+        This function calculates the phase synchronization between two participants
+        when their brain oscillations operate at different frequency ranges with
+        an integer ratio relationship (n:m).
+    
+        Parameters
+        ----------
+        data : np.ndarray
+            EEG data from two participants with shape (2, n_epochs, n_channels, n_times)
+    
+        sampling_rate : int
+            Sampling rate of the EEG data in Hz
+    
+        freq_range1 : List[float]
+            Frequency range [fmin, fmax] for participant 1
+    
+        freq_range2 : List[float]
+            Frequency range [fmin, fmax] for participant 2
+    
+        Returns
+        -------
+        con : np.ndarray
+            n:m PLV connectivity matrix with shape (n_freq, 2*n_channels, 2*n_channels)
+    
+        Notes
+        -----
+        n:m Phase Locking Value measures synchronization between oscillations at
+        different frequencies when there exists an n:m ratio between them. For example,
+        if participant 1 shows activity at 10 Hz and participant 2 at 20 Hz, this would
+        be a 1:2 relationship.
+    
+        The function:
+        1. Computes the ratio between the mean frequencies of the two ranges
+        2. Applies appropriate phase multiplication to account for the frequency ratio
+        3. Calculates the phase locking value between the adjusted phases
+    
+        This measure is useful for studying cross-frequency coupling between brains,
+        where different participants might exhibit coordination at different frequency bands.
+    
+        References
+        ----------
+        Palva, J. M., Palva, S., & Kaila, K. (2005). Phase synchrony among neuronal
+        oscillations in the human cortex. Journal of Neuroscience, 25(15), 3962-3972.
+    
+        Examples
+        --------
+        >>> # Computing 1:2 PLV between alpha (participant 1) and beta (participant 2)
+        >>> nm_plv = compute_nmPLV(data, sampling_rate=256,
+        ...                        freq_range1=[8, 12], freq_range2=[16, 24])
+        """
+    
+        r = np.mean(freq_range2) / np.mean(freq_range1)
+        freq_range = [np.min(freq_range1), np.max(freq_range2)]
+        complex_signal = np.mean(
+            compute_single_freq(data, sampling_rate, freq_range), 3
+        ).squeeze()
+    
+        n_epoch, n_ch, n_freq, n_samp = (
+            complex_signal.shape[1],
+            complex_signal.shape[2],
+>           complex_signal.shape[3],
+            ^^^^^^^^^^^^^^^^^^^^^^^
+            complex_signal.shape[4],
+        )
+E       IndexError: tuple index out of range
+
+hypyp/analyses.py:1029: IndexError
+=========================== short test summary info ============================
+FAILED tests/test_nmplv.py::test_matches_the_definition_on_the_same_phases - ...
+FAILED tests/test_nmplv.py::test_locked_tones_give_unit_inter_brain_nm_plv - ...
+FAILED tests/test_nmplv.py::test_single_epoch_and_single_channel_are_accepted
+3 failed, 1 passed in 0.47s

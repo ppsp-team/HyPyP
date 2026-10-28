@@ -1,0 +1,129 @@
+=== A. f oneway with 3 groups: stat_fun only uses the first two groups
+stat_fun(H1): min=0.020416963752366124 max=3.99726033925587
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 3236.34it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 3232.49it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 3231.29it/s]hypyp 'f oneway' : clusters 1 p [0.492] | Stat_obs[3:6] [0.27 0.02 3.14]
+scipy f_oneway on all 3 groups, features 3:6: [15.46 26.64 13.97]
+MNE default f_oneway  : clusters 2 p [0.094 0.002]
+
+=== B. negative t cluster vanishes from Stat_obs_plot (np.maximum with zeros)
+stat_fun(H1): min=-1.6190972381258535 max=10.615278751623343
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s] 26%|██▌       | Permuting : 128/499 [00:00<00:00, 2596.61it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 2530.14it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 2529.26it/s]
+cluster p: [0.002] Stat_obs[3:6]: [10.36 10.62  9.91]
+Stat_obs_plot: [-0.   -0.    0.   10.36 10.62  9.91 -0.   -0.   -0.   -0.   -0.    0.  ]  nonzero: 3
+
+=== C. two significant clusters with identical p -> second one dropped from F_obs_plot
+Using a threshold of 4.098172
+stat_fun(H1): min=0.002665360426155472 max=522.2469019017005
+Running initial clustering …
+Found 2 clusters
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 17933.44it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 17885.16it/s]
+cluster p: [0.002 0.002] cluster sizes: [2, 2]
+F_obs_plot nonzero idx: [1 2]  (expected [1 2 8 9])
+
+=== D. tail=-1 with t-tests: threshold is positive -> MNE raises
+ind ttest : ERROR ValueError incompatible tail and threshold signs, got -1 and 1.6859544601667371
+rel ttest : ERROR ValueError incompatible tail and threshold signs, got -1 and 1.7291328115213682
+
+=== E. rel ttest null destroys pairing (known); quick confirmation, 10 datasets
+stat_fun(H1): min=nan max=nan
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5034.91it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5025.70it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 5022.94it/s]stat_fun(H1): min=nan max=nan
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5196.90it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5186.91it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 5184.14it/s]stat_fun(H1): min=nan max=nan
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s] 46%|████▋     | Permuting : 231/499 [00:00<00:00, 4658.46it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 4994.50it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 4977.39it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 4974.75it/s]stat_fun(H1): min=nan max=nan
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5157.41it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5147.56it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 5144.58it/s]stat_fun(H1): min=nan max=nan
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5111.54it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5102.77it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 5099.31it/s]stat_fun(H1): min=nan max=nan
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s] 79%|███████▉  | Permuting : 393/499 [00:00<00:00, 5403.12it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5445.81it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5439.55it/s]
+stat_fun(H1): min=nan max=nan
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5220.97it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5213.27it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 5210.37it/s]stat_fun(H1): min=nan max=nan
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5241.86it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5231.23it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 5227.04it/s]stat_fun(H1): min=nan max=nan
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s] 71%|███████   | Permuting : 352/499 [00:00<00:00, 4938.09it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5035.85it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5026.42it/s]
+stat_fun(H1): min=nan max=nan
+Running initial clustering …
+Found 1 cluster
+  0%|          | Permuting : 0/499 [00:00<?,       ?it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5251.30it/s]100%|██████████| Permuting : 499/499 [00:00<00:00, 5242.50it/s]
+100%|██████████| Permuting : 499/499 [00:00<00:00, 5239.61it/s]detections hypyp rel ttest: 10/10 ; sign-flip 1samp on differences: 10/10
+
+=== F. f multipleway
+2x2: ERROR TypeError float() argument must be a string or a real number, not 'list'
+stat_fun(H1): min=0.05073064554214023 max=3.1542381426788637
+Running initial clustering …
+Found 0 clusters
+single factor [3]: ran; Stat_obs shape (12,)
+list input: ERROR AttributeError 'list' object has no attribute 'shape'
+
+=== G. ind ttest: Welch statistic but pooled df for the threshold
+pooled df used: 36 -> t threshold 2.028
+Welch df range: 32.5 - 35.9 -> t threshold 2.036 - 2.028
+
+=== H. statscondCluster tail handling: tail=0 vs tail=1 give identical results for F
+stat_fun(H1): min=0.0056947371034491295 max=62.96313580157144
+Running initial clustering …
+Found 2 clusters
+  0%|          | Permuting : 0/299 [00:00<?,       ?it/s]100%|██████████| Permuting : 299/299 [00:00<00:00, 15163.31it/s]100%|██████████| Permuting : 299/299 [00:00<00:00, 15102.69it/s]
+Using a threshold of 4.098172
+stat_fun(H1): min=0.0056947371034491295 max=62.96313580157144
+Running initial clustering …
+Found 2 clusters
+  0%|          | Permuting : 0/299 [00:00<?,       ?it/s]100%|██████████| Permuting : 299/299 [00:00<00:00, 18261.33it/s]100%|██████████| Permuting : 299/299 [00:00<00:00, 18190.61it/s]
+tail=0 p: [0.003 0.42 ]  tail=1 p: [0.003 0.35 ]
+threshold used tail=0: F.ppf(0.95,1,38)= 4.098 | tail!=0: MNE default F.ppf(0.95) too (alpha ignored) -> same
+Using a threshold of 4.098172
+stat_fun(H1): min=0.0056947371034491295 max=62.96313580157144
+Running initial clustering …
+Found 2 clusters
+  0%|          | Permuting : 0/299 [00:00<?,       ?it/s]100%|██████████| Permuting : 299/299 [00:00<00:00, 16754.13it/s]100%|██████████| Permuting : 299/299 [00:00<00:00, 16691.03it/s]
+alpha=0.001, tail=1: threshold unchanged? H0 identical to alpha=0.05 run: False
+Using a threshold of 4.098172
+Traceback (most recent call last):
+  File "/home/gdumas/Github/HyPyP-review/scripts/stats/cluster_check.py", line 112, in <module>
+    rm1 = stats.statscondCluster(g, [10], adj, -1, 300, 0.05)
+  File "/home/gdumas/Github/HyPyP/hypyp/stats.py", line 504, in statscondCluster
+    F_obs, clusters, cluster_p_values, H0 = permutation_cluster_test(
+                                            ~~~~~~~~~~~~~~~~~~~~~~~~^
+        data,
+        ^^^^^
+    ...<5 lines>...
+        out_type="mask",
+        ^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "<decorator-gen-305>", line 12, in permutation_cluster_test
+  File "/home/gdumas/Github/HyPyP/.venv/lib/python3.13/site-packages/mne/stats/cluster_level.py", line 1248, in permutation_cluster_test
+    return _permutation_cluster_test(
+        X=X,
+    ...<13 lines>...
+        buffer_size=buffer_size,
+    )
+  File "/home/gdumas/Github/HyPyP/.venv/lib/python3.13/site-packages/mne/stats/cluster_level.py", line 925, in _permutation_cluster_test
+    raise ValueError(
+        f"incompatible tail and threshold signs, got {tail} and {threshold}"
+    )
+ValueError: incompatible tail and threshold signs, got -1 and 4.098171730880841

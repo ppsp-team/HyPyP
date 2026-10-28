@@ -1,0 +1,57 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+________________________ test_coupled_oscillators_lock _________________________
+
+    def test_coupled_oscillators_lock():
+        coupling = np.zeros((4, 4))
+        coupling[2, 0] = 20.0  # oscillator 0 drives oscillator 2
+>       simulated = utils.generate_virtual_epoch(
+            template(),
+            coupling,
+            frequency_mean=10,
+            frequency_std=0.5,
+            noise_phase_level=0.0,
+            noise_amplitude_level=0.0,
+            rng=0,
+        )
+E       TypeError: generate_virtual_epoch() got an unexpected keyword argument 'rng'
+
+tests/test_virtual_epoch.py:35: TypeError
+______ test_free_oscillator_runs_at_the_mean_frequency_on_the_sample_grid ______
+
+    def test_free_oscillator_runs_at_the_mean_frequency_on_the_sample_grid():
+>       simulated = utils.generate_virtual_epoch(
+            template(),
+            np.zeros((4, 4)),
+            frequency_mean=10,
+            frequency_std=0.0,
+            noise_phase_level=0.0,
+            noise_amplitude_level=0.0,
+            rng=0,
+        )
+E       TypeError: generate_virtual_epoch() got an unexpected keyword argument 'rng'
+
+tests/test_virtual_epoch.py:52: TypeError
+__________________ test_rng_makes_the_simulation_reproducible __________________
+
+    def test_rng_makes_the_simulation_reproducible():
+        coupling = np.zeros((4, 4))
+>       first = utils.generate_virtual_epoch(template(), coupling, rng=1).get_data()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: generate_virtual_epoch() got an unexpected keyword argument 'rng'
+
+tests/test_virtual_epoch.py:71: TypeError
+________________________ test_random_epoch_takes_an_rng ________________________
+
+    def test_random_epoch_takes_an_rng():
+>       first = utils.generate_random_epoch(template(), mu=0, sigma=1.0, rng=3).get_data()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: generate_random_epoch() got an unexpected keyword argument 'rng'
+
+tests/test_virtual_epoch.py:79: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_virtual_epoch.py::test_coupled_oscillators_lock - TypeError...
+FAILED tests/test_virtual_epoch.py::test_free_oscillator_runs_at_the_mean_frequency_on_the_sample_grid
+FAILED tests/test_virtual_epoch.py::test_rng_makes_the_simulation_reproducible
+FAILED tests/test_virtual_epoch.py::test_random_epoch_takes_an_rng - TypeErro...
+4 failed in 0.04s

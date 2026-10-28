@@ -1,0 +1,20 @@
+===== Kuramoto: integration accuracy, W=0, no noise, frequency_std=0 (analytic: sin(2*pi*10*t + p0))
+  max|sim - analytic| on solver grid = 4.131e-13; on nominal 1/sfreq grid = 2.492e-01
+  peak frequency on nominal grid = 10.000 Hz (expected 10.000, bias 10*Nt/(Nt-1)=10.0050)
+
+===== Kuramoto: strong unidirectional coupling W[2,0]=20 (locking expected)
+  PLV(ch0,ch2) last epoch = 0.235; uncoupled PLV(ch0,ch3) = 0.662
+  ch0 peak freq = 10.88 Hz
+  ch2 peak freq = 10.88 Hz
+
+===== MVARICA: source ordering with identifiable (Laplacian) innovations, two independent data sets
+  seed 0: off-diagonal PDC (mean over f), rounded:
+[[0.   0.38 0.01]
+ [0.   0.   0.39]
+ [0.01 0.   0.  ]]
+    strongest links (i<-j): [(0, 1), (1, 2)]  (truth: (0<-1), (1<-2))
+  seed 1: off-diagonal PDC (mean over f), rounded:
+[[0.   0.38 0.02]
+ [0.   0.   0.39]
+ [0.01 0.01 0.  ]]
+    strongest links (i<-j): [(0, 1), (1, 2)]  (truth: (0<-1), (1<-2))

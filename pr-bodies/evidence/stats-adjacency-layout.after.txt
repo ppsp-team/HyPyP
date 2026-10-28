@@ -1,0 +1,109 @@
+=== con_matrix on 4 sensors, 2 freqs
+Could not find a adjacency matrix for the data. Computing adjacency based on Delaunay triangulations.
+-- number of adjacent vertices : 4
+/home/gdumas/Github/HyPyP-review/scripts/stats/adj_check.py:35: RuntimeWarning: Ignoring argument "tail", performing 1-tailed F-test
+  permutation_cluster_test(X, adjacency=cm.ch_con_freq, n_permutations=10, verbose=False)
+/home/gdumas/Github/HyPyP-review/scripts/stats/adj_check.py:35: RuntimeWarning: No clusters found, returning empty H0, clusters, and cluster_pv
+  permutation_cluster_test(X, adjacency=cm.ch_con_freq, n_permutations=10, verbose=False)
+ch_con type: <class 'scipy.sparse._csr.csr_array'> 
+ [[1 1 1 0]
+ [1 1 1 1]
+ [1 1 1 1]
+ [0 1 1 1]]
+ch_con_freq type: <class 'scipy.sparse._csr.csr_matrix'> shape (8, 8)
+<Compressed Sparse Row sparse matrix of dtype 'int64'
+	with 36 stored elements and shape (8, 8)>
+  Coords	Values
+  (0, 0)	1
+  (0, 1)	1
+  (0, 2)	1
+  (0, 4)	1
+  (1, 0)	1
+  (1, 1)	1
+  (1, 3)	1
+  (1, 5)	1
+  (2, 0)	1
+  (2, 2)	1
+  (2, 3)	1
+  (2, 4)	1
+  (2, 6)	1
+  (3, 1)	1
+  (3, 2)	1
+  (3, 3)	1
+  (3, 5)	1
+  (3, 7)	1
+  (4, 0)	1
+  (4, 2)	1
+  (4, 4)	1
+  (4, 5)	1
+  (4, 6)	1
+  (5, 1)	1
+  (5, 3)	1
+  (5, 4)	1
+  (5, 5)	1
+  (5, 7)	1
+  (6, 2)	1
+  (6, 4)	1
+  (6, 6)	1
+  (6, 7)	1
+  (7, 3)	1
+  (7, 5)	1
+  (7, 6)	1
+  (7, 7)	1
+equals combine_adjacency(n_freq, ch_con) [freq-major index f*n_ch+ch]: False
+equals combine_adjacency(ch_con, n_freq) [ch-major index ch*n_freq+f]: False
+
+=== dense ch_con_freq straight into permutation_cluster_test
+
+=== feature-order mismatch: 3-D data (n_obs, n_ch, n_freq) vs freq-major ch_con_freq
+hypyp adjacency == correct adjacency for (n_obs,n_ch,n_freq) data: False
+A~B spatially: True ; C~D spatially: True
+hypyp freq-major: n clusters=2, sizes=[1, 2], p=[0.11  0.002]
+correct ch-major: n clusters=2, sizes=[1, 2], p=[0.11  0.002]
+
+=== metaconn_matrix on 4 sensors
+pairs: [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]
+[[1 1 1 1 1 1]
+ [1 1 1 1 1 1]
+ [1 1 0 1 1 1]
+ [1 1 1 1 1 1]
+ [1 1 1 1 1 1]
+ [1 1 1 1 1 1]]
+matches reference (a~c & b~d) | (a~d & b~c): False
+
+=== metaconn_matrix_2brains on 4+4 sensors
+matches reference (a~c & b~d within own brain): False
+(A,D') ~ (D,A') ? 0 (expected 0)
+(A,A') ~ (B,A') ? 1 (expected 1 since A~B)
+(A,A') ~ (A,C') ? 1 (expected 1 since A~C)
+(A,A') ~ (A,D') ? 0 (expected 0 since A!~D)
+
+=== n inference in metaconn_matrix_2brains with a subset of P1 channels
+matches reference with true n=4: False
+
+=== timing of metaconn_matrix_2brains (pure-python O(P^2 F^2))
+n_ch=8: 64 pairs x 3 freqs -> 0.0s
+n_ch=16: 256 pairs x 3 freqs -> 0.0s
+n_ch=24: 576 pairs x 3 freqs -> 0.0s
+=== B'. negative t cluster (group 2 larger) vanishes from Stat_obs_plot
+cluster p: [0.002] Stat_obs[3:6]: [ -9.26 -10.29 -12.86]
+Stat_obs_plot nonzero count: 3 (expected 3)
+
+=== metaconn diagonal debug
+ch_con[0,0], ch_con[3,3], ch_con[0,3]: 1 1 0 <class 'numpy.int64'>
+rule1 ch_con[0,0] and ch_con[3,3] -> 1
+metaconn for the single pair (A,D): [[1.]]
+metaconn for the single pair (A,B): [[1.]]
+
+=== ch_con_freq vs MNE combine_adjacency(n_freq, ch_con): extra links
+Traceback (most recent call last):
+  File "/home/gdumas/.claude/jobs/9fe7d438/tmp/run_in_cwd.py", line 13, in <module>
+    runpy.run_path(sys.argv[1], run_name="__main__")
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen runpy>", line 287, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/gdumas/Github/HyPyP-review/scripts/stats/followup_check.py", line 47, in <module>
+    extra = np.argwhere((hy == 1) & (ref == 0))
+                        ~~~~~~~~~~^~~~~~~~~~~~
+TypeError: unsupported operand type(s) for &: 'csr_matrix' and 'bool'

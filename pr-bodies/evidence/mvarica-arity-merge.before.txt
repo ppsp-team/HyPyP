@@ -1,0 +1,164 @@
+.FF.F                                                                    [100%]
+=================================== FAILURES ===================================
+________________________ test_ridge_penalty_is_accepted ________________________
+
+    def test_ridge_penalty_is_accepted():
+        signal = var2_signal()
+        plain = MVAR(model_order=2).fit(signal).coeff
+>       ridge = MVAR(model_order=2, delta=0.1).fit(signal).coeff
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_mvarica.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <hypyp.mvarica.MVAR object at 0x7d2eea445090>
+signal = array([[[ 0.        ,  0.        ,  0.12573022, ..., -0.86682093,
+         -0.58060528,  0.88538823],
+        [ 0.    ...    [ 0.        ,  0.        ,  1.39000563, ...,  0.37689114,
+         -0.3506106 , -1.7900896 ]]], shape=(5, 3, 4000))
+
+    def fit(self, signal):
+        """
+        Fit the MVAR model to input signal data.
+    
+        This method estimates the MVAR coefficients that best predict the
+        signal values based on their past values.
+    
+        Parameters
+        ----------
+        signal : ndarray
+            Input signal with shape (n_epochs, n_channels, n_samples)
+    
+        Returns
+        -------
+        self : MVAR
+            The fitted MVAR model instance
+    
+        Notes
+        -----
+        The fitting method depends on the 'fitting_method' parameter:
+        - If 'default' and delta=0: Standard least squares
+        - If 'default' and delta≠0: Regularized least squares
+        - If custom object: Uses the object's fit method
+    
+        After fitting, the model coefficients and residuals are stored as attributes.
+        """
+    
+        if self.fit_method.lower() == "default":
+            if self.delta == 0 or self.delta is None:
+                x, y = self.construct_equation(signal)
+            else:
+>               x, y = self.construct_equation(signal, self.order, self.delta)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               TypeError: MVAR.construct_equation() takes from 2 to 3 positional arguments but 4 were given
+
+hypyp/mvarica.py:275: TypeError
+___________________ test_stability_runs_for_model_order_one ____________________
+
+    def test_stability_runs_for_model_order_one():
+>       assert MVAR(model_order=1).fit(var2_signal()).stability()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_mvarica.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+hypyp/mvarica.py:193: in stability
+    eye_block = np.hstack([eye_block, np.zeros((co_0 * (p - 1), co_0))])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tup = [array([[1., 0., 0.],
+       [0., 1., 0.],
+       [0., 0., 1.]]), array([], shape=(0, 3), dtype=float64)]
+
+    @array_function_dispatch(_vhstack_dispatcher)
+    def hstack(tup, *, dtype=None, casting="same_kind"):
+        """
+        Stack arrays in sequence horizontally (column wise).
+    
+        This is equivalent to concatenation along the second axis, except for 1-D
+        arrays where it concatenates along the first axis. Rebuilds arrays divided
+        by `hsplit`.
+    
+        This function makes most sense for arrays with up to 3 dimensions. For
+        instance, for pixel-data with a height (first axis), width (second axis),
+        and r/g/b channels (third axis). The functions `concatenate`, `stack` and
+        `block` provide more general stacking and concatenation operations.
+    
+        Parameters
+        ----------
+        tup : sequence of ndarrays
+            The arrays must have the same shape along all but the second axis,
+            except 1-D arrays which can be any length. In the case of a single
+            array_like input, it will be treated as a sequence of arrays; i.e.,
+            each element along the zeroth axis is treated as a separate array.
+    
+        dtype : str or dtype
+            If provided, the destination array will have this dtype. Cannot be
+            provided together with `out`.
+    
+            .. versionadded:: 1.24
+    
+        casting : {'no', 'equiv', 'safe', 'same_kind', 'unsafe'}, optional
+            Controls what kind of data casting may occur. Defaults to 'same_kind'.
+    
+            .. versionadded:: 1.24
+    
+        Returns
+        -------
+        stacked : ndarray
+            The array formed by stacking the given arrays.
+    
+        See Also
+        --------
+        concatenate : Join a sequence of arrays along an existing axis.
+        stack : Join a sequence of arrays along a new axis.
+        block : Assemble an nd-array from nested lists of blocks.
+        vstack : Stack arrays in sequence vertically (row wise).
+        dstack : Stack arrays in sequence depth wise (along third axis).
+        column_stack : Stack 1-D arrays as columns into a 2-D array.
+        hsplit : Split an array into multiple sub-arrays
+                 horizontally (column-wise).
+        unstack : Split an array into a tuple of sub-arrays along an axis.
+    
+        Examples
+        --------
+        >>> import numpy as np
+        >>> a = np.array((1,2,3))
+        >>> b = np.array((4,5,6))
+        >>> np.hstack((a,b))
+        array([1, 2, 3, 4, 5, 6])
+        >>> a = np.array([[1],[2],[3]])
+        >>> b = np.array([[4],[5],[6]])
+        >>> np.hstack((a,b))
+        array([[1, 4],
+               [2, 5],
+               [3, 6]])
+    
+        """
+        arrs = atleast_1d(*tup)
+        if not isinstance(arrs, tuple):
+            arrs = (arrs,)
+        # As a special case, dimension 0 of 1-dimensional arrays is "horizontal"
+        if arrs and arrs[0].ndim == 1:
+            return _nx.concatenate(arrs, 0, dtype=dtype, casting=casting)
+        else:
+>           return _nx.concatenate(arrs, 1, dtype=dtype, casting=casting)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           ValueError: all the input array dimensions except for the concatenation axis must match exactly, but along dimension 0, the array at index 0 has size 3 and the array at index 1 has size 0
+
+../../../.venv/lib/python3.13/site-packages/numpy/_core/shape_base.py:365: ValueError
+_____________ test_merge_epochs_concatenates_each_channel_in_time ______________
+
+    def test_merge_epochs_concatenates_each_channel_in_time():
+        # (n_epochs, n_freq, n_channels, n_times): epoch 0 holds 0..5, epoch 1 holds 6..11
+        signal = np.arange(12, dtype=float).reshape(2, 1, 2, 3)
+>       merged = analyses._merge_epochs(signal)
+                 ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'hypyp.analyses' has no attribute '_merge_epochs'
+
+tests/test_mvarica.py:62: AttributeError
+=========================== short test summary info ============================
+FAILED tests/test_mvarica.py::test_ridge_penalty_is_accepted - TypeError: MVA...
+FAILED tests/test_mvarica.py::test_stability_runs_for_model_order_one - Value...
+FAILED tests/test_mvarica.py::test_merge_epochs_concatenates_each_channel_in_time
+3 failed, 2 passed in 0.16s

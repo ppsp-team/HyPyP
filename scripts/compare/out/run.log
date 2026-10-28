@@ -1,0 +1,360 @@
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/master.npz
+=== master: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/master.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b01.npz
+=== b01: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b01.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b02.npz
+=== b02: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b02.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b03.npz
+=== b03: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b03.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b04.npz
+=== b04: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b04.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b05.npz
+=== b05: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b05.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b06.npz
+=== b06: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b06.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b07.npz
+=== b07: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b07.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b08.npz
+=== b08: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b08.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b09.npz
+=== b09: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b09.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b10.npz
+=== b10: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b10.npz
+    accorr (denominator):   0%|          | 0/1953 [00:00<?, ?it/s]                                                                  Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.30 and n_interpolate=4
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.20 and n_interpolate=4
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b11.npz
+=== b11: saved 55 arrays to /home/gdumas/Github/HyPyP-review/scripts/compare/out/b11.npz

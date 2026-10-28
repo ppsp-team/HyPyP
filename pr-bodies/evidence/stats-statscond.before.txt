@@ -1,0 +1,85 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_____________ test_p_values_are_the_exact_max_t_sign_flip_p_values _____________
+
+epochs = <EpochsArray | 2 events (all good), 0 – 0.09 s (baseline off), ~9 KiB, data loaded,
+ '1': 2>
+
+    def test_p_values_are_the_exact_max_t_sign_flip_p_values(epochs):
+        data = contrast()
+        result = stats.statsCond(data, epochs, "all", 0.05)
+        power = data.mean(axis=2)
+        assert_allclose(result.T_obs, scipy.stats.ttest_1samp(power, 0.0)[0])
+>       assert_allclose(result.p_values, exact_max_t_p_values(power))
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-07, atol=0
+E       
+E       Mismatched elements: 2 / 4 (50%)
+E       Mismatch at indices:
+E        [0]: 0.003913894324853229 (ACTUAL), 0.00390625 (DESIRED)
+E        [2]: 0.1761252446183953 (ACTUAL), 0.177734375 (DESIRED)
+E       Max absolute difference among violations: 0.00160913
+E       Max relative difference among violations: 0.00905357
+E        ACTUAL: array([0.003914, 1.      , 0.176125, 1.      ])
+E        DESIRED: array([0.003906, 1.      , 0.177734, 1.      ])
+
+tests/test_statscond.py:55: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Permuting 510 times...
+_____________________ test_no_second_correction_is_applied _____________________
+
+epochs = <EpochsArray | 2 events (all good), 0 – 0.09 s (baseline off), ~9 KiB, data loaded,
+ '1': 2>
+
+    def test_no_second_correction_is_applied(epochs):
+        data = contrast()
+        result = stats.statsCond(data, epochs, "all", 0.05)
+>       assert_array_equal(result.adj_p[1], result.p_values)
+E       AssertionError: 
+E       Arrays are not equal
+E       
+E       Mismatched elements: 2 / 4 (50%)
+E       Mismatch at indices:
+E        [0]: 0.015655577299412915 (ACTUAL), 0.003913894324853229 (DESIRED)
+E        [2]: 0.3522504892367906 (ACTUAL), 0.1761252446183953 (DESIRED)
+E       Max absolute difference among violations: 0.17612524
+E       Max relative difference among violations: 3.
+E        ACTUAL: array([0.015656, 1.      , 0.35225 , 1.      ])
+E        DESIRED: array([0.003914, 1.      , 0.176125, 1.      ])
+
+tests/test_statscond.py:61: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Permuting 510 times...
+______________________ test_all_positive_input_is_flagged ______________________
+
+epochs = <EpochsArray | 2 events (all good), 0 – 0.09 s (baseline off), ~9 KiB, data loaded,
+ '1': 2>
+
+    def test_all_positive_input_is_flagged(epochs):
+        power = np.random.default_rng(1).uniform(1.0, 2.0, (N_SUBJECTS, len(NAMES), 3))
+>       with pytest.warns(UserWarning, match="contrast"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT WARN. No warnings of type (<class 'UserWarning'>,) were emitted.
+E        Emitted warnings: [].
+
+tests/test_statscond.py:69: Failed
+----------------------------- Captured stdout call -----------------------------
+Permuting 199 times...
+_________________ test_seed_makes_the_permutation_reproducible _________________
+
+epochs = <EpochsArray | 2 events (all good), 0 – 0.09 s (baseline off), ~9 KiB, data loaded,
+ '1': 2>
+
+    def test_seed_makes_the_permutation_reproducible(epochs):
+        data = contrast(seed=2)
+>       first = stats.statsCond(data, epochs, 200, 0.05, seed=0)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: statsCond() got an unexpected keyword argument 'seed'
+
+tests/test_statscond.py:75: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_statscond.py::test_p_values_are_the_exact_max_t_sign_flip_p_values
+FAILED tests/test_statscond.py::test_no_second_correction_is_applied - Assert...
+FAILED tests/test_statscond.py::test_all_positive_input_is_flagged - Failed: ...
+FAILED tests/test_statscond.py::test_seed_makes_the_permutation_reproducible
+4 failed in 0.05s

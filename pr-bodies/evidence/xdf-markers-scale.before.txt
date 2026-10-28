@@ -1,0 +1,110 @@
+=== A. two EEG streams, stream 2 starts 0.5 s later with a +10 s clock offset; marker at T0+2.0 ===
+Creating RawArray with float64 data, n_channels=4, n_times=1000
+    Range : 0 ... 999 =      0.000 ...     9.990 secs
+Ready.
+Creating RawArray with float64 data, n_channels=4, n_times=1000
+    Range : 0 ... 999 =      0.000 ...     9.990 secs
+Ready.
+Stream 1: Calculated effective sampling rate 73.9887 Hz is different from specified rate 100.0000 Hz.
+EEG1: ref_time=1000.0000 (true start 1000.0); sfreq=100.0, effective_srate=100.0003, n_times=1000, times[0]=0.0, annotations attached=0
+EEG2: ref_time=1000.5000 (true start 1000.5); sfreq=100.0, effective_srate=99.9993, n_times=1000, times[0]=0.0, annotations attached=0
+reference_time diff EEG2-EEG1 = 0.49998154263585093
+  marker onset relative to EEG1: 2.0000  (expected 2.0)
+  marker onset relative to EEG2: 1.5000  (expected 1.5)
+sample 0 of EEG1 has true time 0.0 ; sample 0 of EEG2 has true time 0.5
+-> same sample index != same instant; nothing crops. Raw times both start at 0.
+
+=== B. 2 s gap in EEG1 (true 1005.0-1007.0 dropped), marker at T0+8.0 ===
+Creating RawArray with float64 data, n_channels=4, n_times=800
+    Range : 0 ... 799 =      0.000 ...     7.990 secs
+Ready.
+Stream 1: Segments and clock-segments differ
+segments: [(0, 799)] n_times: 800 raw duration: 7.99
+marker onset=8.654 s -> sample 865 (Raw has 800); the sample really recorded at T0+8.0 is index 600 = Raw t=6.00 s
+effective_srate reported by pyxdf: 73.9886802554503
+
+=== B2. 6 s gap in EEG1 (true 1005-1011 dropped; above the 5 s break threshold), marker at T0+12.0 ===
+Creating RawArray with float64 data, n_channels=4, n_times=1000
+    Range : 0 ... 999 =      0.000 ...     9.990 secs
+Ready.
+Stream 1: last clock offset is statistically anomalous, truncating (see pylsl#67, liblsl#246).
+Stream 1: sample count (175) exceeds footer sample_count (174), truncating extra samples.
+Stream 2: last clock offset is statistically anomalous, truncating (see pylsl#67, liblsl#246).
+Stream 2: sample count (27815) exceeds footer sample_count (27814), truncating extra samples.
+Stream 1: Segments and clock-segments differ
+segments: [(0, 499), (500, 999)] n_times: 1000 raw duration 9.99 s
+marker onset=12.000 s; sample recorded at T0+12.0 is index 600 = Raw t=6.00 s -> off by 6.00 s
+after raw.set_annotations: n annotations kept = 0
+
+=== B3. real cached data_with_clock_resets.xdf ===
+Creating RawArray with float64 data, n_channels=8, n_times=27814
+    Range : 0 ... 27813 =      0.000 ...   278.130 secs
+Ready.
+nominal=100.0 effective=92.934 segments=[(0, 12875), (12876, 27813)] n_times=27814 raw duration=278.1 s
+marker timestamps span 2.9 .. 570.0 s relative to first EEG sample; 83 of 174 markers fall after the Raw ends
+
+=== C. stream 2 really runs at 99.5 Hz (nominal 100) ===
+Creating RawArray with float64 data, n_channels=4, n_times=1000
+    Range : 0 ... 999 =      0.000 ...     9.990 secs
+Ready.
+nominal srate used by Raw: 100.0, pyxdf effective_srate: 99.499
+last sample: Raw says t=9.990, true t=10.040
+
+=== D. Markers.__add__ with two marker streams ===
+timestamps: [1. 2. 1. 2.] descriptions: ['a1', 'a2', 'b1', 'b2']
+Creating RawArray with float64 data, n_channels=4, n_times=300
+    Range : 0 ... 299 =      0.000 ...     2.990 secs
+Ready.
+XDFImport.markers merged: [0.5 0.5] ['m1', 'm2']
+
+=== E. two EEG streams with the same LSL name ===
+Creating RawArray with float64 data, n_channels=4, n_times=300
+    Range : 0 ... 299 =      0.000 ...     2.990 secs
+Ready.
+Creating RawArray with float64 data, n_channels=4, n_times=300
+    Range : 0 ... 299 =      0.000 ...     2.990 secs
+Ready.
+len(mne_raws): 2 len(mne_raws_dict): 1 unique names: ['EEG-1', 'EEG-2']
+select_matches=['EEG'] picks index: [1]
+
+=== F. time_series transpose heuristic: 4 channels, 4 samples ===
+Creating RawArray with float64 data, n_channels=4, n_times=4
+    Range : 0 ... 3 =      0.000 ...     0.030 secs
+Ready.
+raw shape: (4, 4) channel 0 (should be 0,1,2,3 sample index): [ 0.          0.         46.92959976 25.31756592]
+3 samples x 4 channels -> ValueError len(data) (3) does not match len(info["ch_names"]) (4)
+
+=== G. scale='auto' on microvolt data (std 20 uV) ===
+- Std (259.7324342888284) and amplitude range (1061.4738960266113) are larges >> converting to V (e.g., * 10e-6)
+Creating RawArray with float64 data, n_channels=4, n_times=1000
+    Range : 0 ... 999 =      0.000 ...     9.990 secs
+Ready.
+std after auto scaling = 2.013e-04 V  (20 uV would be 2.0e-05 V)
+
+=== H. datasets.fetch(force_download=True) ===
+  _fetcher.fetch called with ('xdf/dyad-example-noise.xdf',) {}
+
+=== I. select_matches edge cases ===
+[2, 2] -> [1, 1]
+[2.0] -> No stream matching keyword '2.0'
+select_type='Markers' + select_matches=[1] -> ['EEG']
+
+=== J. real cached file: are annotations attached? ===
+Creating RawArray with float64 data, n_channels=3, n_times=6536
+    Range : 0 ... 6535 =      0.000 ...     6.535 secs
+Ready.
+Creating RawArray with float64 data, n_channels=3, n_times=6538
+    Range : 0 ... 6537 =      0.000 ...     6.537 secs
+Ready.
+marker streams: ['RandomStrStream'] n markers: 12
+annotations on raws: [0, 0]
+
+=== K. stream declared but no samples ===
+Creating RawArray with float64 data, n_channels=4, n_times=300
+    Range : 0 ... 299 =      0.000 ...     2.990 secs
+Ready.
+-> ValueError len(data) (0) does not match len(info["ch_names"]) (1)
+select_matches=[2] -> ValueError len(data) (0) does not match len(info["ch_names"]) (1)
+
+=== L. vendored Mesh(mode='back') ===
+-> NameError name 'faces' is not defined

@@ -1,0 +1,144 @@
+
+===== case A: bad epoch 5 in S1 only, strategy=union
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+[union] lengths=[39, 39] dic={'strategy': 'union', 'threshold': 50.0, 'S1': 2.5, 'S2': 0.0, 'dyad': 2.5}
+  S1 kept event samples / N_T: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  S2 kept event samples / N_T: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  ALIGNED (identical kept-epoch sets): True
+
+===== case A: bad epoch 5 in S1 only, strategy=intersection
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+[intersection] lengths=[40, 40] dic={'strategy': 'intersection', 'threshold': 50.0, 'S1': 2.5, 'S2': 0.0, 'dyad': 0.0}
+  S1 kept event samples / N_T: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  S2 kept event samples / N_T: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  ALIGNED (identical kept-epoch sets): True
+
+===== case B: bad 5 in S1 only, bad 9 in S2 only, strategy=union
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+[union] lengths=[38, 38] dic={'strategy': 'union', 'threshold': 50.0, 'S1': 2.5, 'S2': 2.5, 'dyad': 5.0}
+  S1 kept event samples / N_T: [0, 1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  S2 kept event samples / N_T: [0, 1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  ALIGNED (identical kept-epoch sets): True
+
+===== case B: bad 5 in S1 only, bad 9 in S2 only, strategy=intersection
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+[intersection] lengths=[40, 40] dic={'strategy': 'intersection', 'threshold': 50.0, 'S1': 2.5, 'S2': 2.5, 'dyad': 0.0}
+  S1 kept event samples / N_T: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  S2 kept event samples / N_T: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  ALIGNED (identical kept-epoch sets): True
+
+===== case C: three participants, bad 7 in S3 only, strategy=union
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+[union-3p] lengths=[39, 39, 39] dic={'strategy': 'union', 'threshold': 50.0, 'S1': 0.0, 'S2': 0.0, 'S3': 2.5, 'dyad': 2.5}
+  S1 kept event samples / N_T: [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  S2 kept event samples / N_T: [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  S3 kept event samples / N_T: [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+  ALIGNED (identical kept-epoch sets): True
+
+===== case D: input mutation check
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+  input lengths before/after: (40, 40) -> (40, 40)
+  input data unchanged: True
+
+===== case E: verbose=True plotting path
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+Running autoreject on ch_type=eeg
+
+
+
+
+Estimated consensus=0.10 and n_interpolate=1
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+No bad epochs were found for your data. Returning a copy of the data you wanted to clean. Interpolation may have been done.
+2.5 percent of bad epochs
+  verbose=True OK
